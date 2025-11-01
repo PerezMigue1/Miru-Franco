@@ -1,6 +1,6 @@
-# Miru Franco Web
+# Miru Franco Web - Frontend
 
-Aplicación web con autenticación completa usando Next.js, MongoDB Atlas y Vercel.
+Aplicación frontend con autenticación completa usando Next.js, diseñada para comunicarse con un backend de Node.js/Express.
 
 ## 🚀 Características
 
@@ -10,17 +10,17 @@ Aplicación web con autenticación completa usando Next.js, MongoDB Atlas y Verc
 - ✅ Recuperación de contraseña por Preguntas de Seguridad
 - ✅ Restablecimiento de contraseña
 - ✅ Autenticación con JWT
-- ✅ Contraseñas hasheadas con bcrypt
+- ✅ Diseño responsive con modo oscuro
 
 ## 📋 Requisitos Previos
 
-- Node.js 18+ 
-- MongoDB Atlas (cuenta gratuita)
+- Node.js 18+
+- Backend API corriendo (Node.js/Express)
 - Cuenta en Vercel (para despliegue)
 
 ## 🔧 Configuración Local
 
-### 1. Clonar e instalar dependencias
+### 1. Instalar dependencias
 
 ```bash
 npm install
@@ -28,38 +28,60 @@ npm install
 
 ### 2. Configurar variables de entorno
 
-Copia el archivo `.env.local.example` a `.env.local`:
-
-```bash
-cp .env.local.example .env.local
-```
-
-Edita `.env.local` con tus credenciales:
+Crea un archivo `.env.local`:
 
 ```env
-MONGODB_URI=mongodb+srv://tu-usuario:tu-password@cluster.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB_NAME=miru-franco
-JWT_SECRET=tu-clave-secreta-super-segura
-JWT_EXPIRES_IN=7d
+# URL de tu backend API
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/auth
+
+# URL de la aplicación (para enlaces de reset password)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 3. Obtener MongoDB Atlas Connection String
+**Nota:** En producción, `NEXT_PUBLIC_API_URL` debe apuntar a tu backend desplegado.
 
-1. Ve a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Crea un cluster gratuito
-3. Ve a "Database Access" y crea un usuario
-4. Ve a "Network Access" y permite acceso desde todas las IPs (0.0.0.0/0) para desarrollo
-5. Ve a "Database" → "Connect" → "Connect your application"
-6. Copia la connection string y reemplaza `<password>` con tu contraseña
-
-### 4. Ejecutar en desarrollo
+### 3. Ejecutar en desarrollo
 
 ```bash
 npm run dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+
+## 🔌 Endpoints del Backend Requeridos
+
+Tu backend debe implementar estos endpoints:
+
+- `POST /api/auth/register` - Registrar nuevo usuario
+- `POST /api/auth/login` - Iniciar sesión
+- `POST /api/auth/forgot-password` - Solicitar recuperación de contraseña
+- `POST /api/auth/reset-password` - Restablecer contraseña
+- `PUT /api/auth/verify-sms` - Enviar código SMS
+- `POST /api/auth/verify-sms` - Verificar código SMS
+- `GET /api/auth/verify-security-questions?email=...` - Obtener preguntas de seguridad
+- `POST /api/auth/verify-security-questions` - Verificar respuestas
+
+### Formato de Respuestas Esperadas
+
+**Login/Register exitoso:**
+```json
+{
+  "success": true,
+  "user": {
+    "_id": "userId",
+    "email": "user@email.com",
+    "name": "Nombre Usuario"
+  },
+  "token": "jwt-token-here"
+}
+```
+
+**Errores:**
+```json
+{
+  "error": "Mensaje de error"
+}
+```
 
 ## 🚀 Desplegar en Vercel
 
@@ -74,36 +96,18 @@ Asegúrate de que tu código esté en GitHub, GitLab o Bitbucket.
 3. Selecciona tu repositorio
 4. Configura las variables de entorno:
 
-   - `MONGODB_URI`: Tu connection string de MongoDB Atlas
-   - `MONGODB_DB_NAME`: Nombre de tu base de datos
-   - `JWT_SECRET`: Una clave secreta segura (usa un generador de secretos)
-   - `JWT_EXPIRES_IN`: `7d` (o el valor que prefieras)
-   - `NEXT_PUBLIC_APP_URL`: La URL de tu aplicación en Vercel (ej: `https://tu-app.vercel.app`)
+   - `NEXT_PUBLIC_API_URL`: URL de tu backend API (ej: `https://api.tudominio.com/api/auth`)
+   - `NEXT_PUBLIC_APP_URL`: URL de tu aplicación en Vercel (ej: `https://miru-franco.vercel.app`)
 
 ### 3. Desplegar
 
 Vercel detectará automáticamente Next.js y desplegará tu aplicación.
-
-### 4. Configurar Network Access en MongoDB Atlas
-
-En MongoDB Atlas, asegúrate de permitir el acceso desde la IP de Vercel. Para producción, puedes:
-
-- Agregar las IPs de Vercel específicamente, o
-- Usar `0.0.0.0/0` (menos seguro pero funcional para desarrollo)
 
 ## 📁 Estructura del Proyecto
 
 ```
 src/
 ├── app/
-│   ├── api/
-│   │   └── auth/
-│   │       ├── login/route.ts
-│   │       ├── register/route.ts
-│   │       ├── forgot-password/route.ts
-│   │       ├── reset-password/route.ts
-│   │       ├── verify-sms/route.ts
-│   │       └── verify-security-questions/route.ts
 │   ├── components/
 │   │   ├── AuthContainer.tsx
 │   │   ├── Login.tsx
@@ -112,51 +116,31 @@ src/
 │   │   ├── ForgotPasswordSMS.tsx
 │   │   ├── ForgotPasswordSecurityQuestions.tsx
 │   │   └── ResetPassword.tsx
-│   ├── lib/
-│   │   ├── mongodb.ts
-│   │   ├── auth.ts
-│   │   └── models/
-│   │       └── User.ts
 │   ├── layout.tsx
 │   └── page.tsx
+└── lib/
+    └── api.ts          # Cliente API para comunicarse con el backend
 ```
-
-## 🔐 API Endpoints
-
-- `POST /api/auth/register` - Registrar nuevo usuario
-- `POST /api/auth/login` - Iniciar sesión
-- `POST /api/auth/forgot-password` - Solicitar recuperación de contraseña
-- `POST /api/auth/reset-password` - Restablecer contraseña
-- `PUT /api/auth/verify-sms` - Enviar código SMS
-- `POST /api/auth/verify-sms` - Verificar código SMS
-- `GET /api/auth/verify-security-questions?email=...` - Obtener preguntas de seguridad
-- `POST /api/auth/verify-security-questions` - Verificar respuestas
 
 ## 🛠️ Tecnologías
 
 - **Next.js 16** - Framework React
-- **MongoDB Atlas** - Base de datos
-- **Vercel** - Hosting y despliegue
 - **TypeScript** - Tipado estático
 - **Tailwind CSS** - Estilos
-- **bcryptjs** - Hash de contraseñas
-- **jsonwebtoken** - Autenticación JWT
+- **React 19** - Biblioteca UI
 
-## 📝 Notas
+## 📝 Notas Importantes
 
-- Las contraseñas se hashean con bcrypt antes de guardarse
-- Los tokens JWT se usan para autenticación
-- Los tokens de reset expiran en 1 hora
-- Los códigos SMS expiran en 5 minutos
-- Las respuestas de seguridad se hashean antes de guardarse
+- Este es un proyecto **solo frontend**
+- Todas las llamadas API se hacen a un backend externo
+- Las variables con `NEXT_PUBLIC_` están disponibles en el cliente
+- El token JWT se guarda en `localStorage`
 
 ## 🔒 Seguridad
 
-- ✅ Contraseñas hasheadas con bcrypt
-- ✅ Tokens JWT seguros
-- ✅ Validación de entrada
-- ✅ Protección contra inyecciones
-- ✅ Tokens con expiración
+- Los tokens JWT se almacenan en `localStorage`
+- Considera implementar HttpOnly cookies en el backend para mayor seguridad
+- Las contraseñas nunca se envían en texto plano (se hashean en el backend)
 
 ## 📄 Licencia
 

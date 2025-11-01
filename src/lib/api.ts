@@ -1,4 +1,5 @@
-const API_BASE = '/api/auth';
+// Cambia esta URL por la URL de tu backend en producción
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/auth';
 
 export interface LoginResponse {
   success: boolean;
