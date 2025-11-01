@@ -77,9 +77,9 @@ export default function ForgotPasswordSecurityQuestions({
       const result = await api.getSecurityQuestions(email);
       
       if (result.questions && result.questions.length > 0) {
-        const selectedQuestions = result.questions.map((q: any, index: number) => ({
+        const selectedQuestions = result.questions.map((q: {_id: string; pregunta?: string; question?: string}, index: number) => ({
           id: `q${index + 1}`,
-          question: q.question,
+          question: q.pregunta || q.question || '',
           answer: '',
         }));
         

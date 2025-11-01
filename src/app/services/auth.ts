@@ -1,19 +1,5 @@
-// Helper para obtener la URL base del backend
-const getBackendBase = (): string => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend-miru-franco.vercel.app/api/auth';
-  
-  if (apiUrl.includes('/api/auth')) {
-    return apiUrl.replace('/api/auth', '');
-  } else if (apiUrl.includes('/api/')) {
-    return apiUrl.replace(/\/api\/.*$/, '');
-  } else {
-    return apiUrl.replace(/\/$/, '');
-  }
-};
-
-// URL base para endpoints de autenticacion
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://backend-miru-franco.vercel.app/api/auth';
-const BACKEND_BASE = getBackendBase();
+import { apiClient } from './client';
+import { BACKEND_BASE } from './config';
 
 export interface LoginResponse {
   success: boolean;
@@ -37,30 +23,50 @@ export interface RegisterResponse {
   error?: string;
 }
 
-export const api = {
-  async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+export interface ForgotPasswordResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+}
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al iniciar sesión');
-    }
+export interface ResetPasswordResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+}
 
+export interface SMSResponse {
+  success?: boolean;
+  message?: string;
+  email?: string;
+  error?: string;
+}
+
+export interface SecurityQuestionsResponse {
+  questions?: Array<{
+    _id: string;
+    pregunta: string;
+    question?: string;
+  }>;
+  error?: string;
+}
+
+// Helper para guardar datos de autenticacion
+const saveAuthData = (data: { token?: string; user?: unknown }) => {
+  if (typeof window !== 'undefined') {
     if (data.token) {
-      // Guardar token en localStorage
       localStorage.setItem('token', data.token);
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
     }
+  }
+};
 
+export const api = {
+  async login(email: string, password: string): Promise<LoginResponse> {
+    const data = await apiClient.post<LoginResponse>('/login', { email, password });
+    saveAuthData(data);
     return data;
   },
 
@@ -91,180 +97,52 @@ export const api = {
     aceptaAvisoPrivacidad: boolean;
     recibePromociones: boolean;
   }): Promise<RegisterResponse> {
-    const response = await fetch(`${API_BASE}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(registerData),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al registrar usuario');
-    }
-
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-    }
-
+    const data = await apiClient.post<RegisterResponse>('/register', registerData);
+    saveAuthData(data);
     return data;
   },
 
-  async forgotPassword(email: string, method: 'email' | 'sms' | 'security-questions' = 'email') {
-    const response = await fetch(`${API_BASE}/forgot-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, method }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al enviar solicitud de recuperación');
-    }
-
-    return data;
+  async forgotPassword(email: string, method: 'email' | 'sms' | 'security-questions' = 'email'): Promise<ForgotPasswordResponse> {
+    return apiClient.post<ForgotPasswordResponse>('/forgot-password', { email, method });
   },
 
-  async resetPassword(token: string | null, email: string | null, password: string) {
-    const response = await fetch(`${API_BASE}/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, email, password }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al restablecer contraseña');
-    }
-
-    return data;
+  async resetPassword(token: string | null, email: string | null, password: string): Promise<ResetPasswordResponse> {
+    return apiClient.post<ResetPasswordResponse>('/reset-password', { token, email, password });
   },
 
-  async sendSMSCode(phone: string) {
-    const response = await fetch(`${API_BASE}/verify-sms`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phone }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al enviar código SMS');
-    }
-
-    return data;
+  async sendSMSCode(phone: string): Promise<SMSResponse> {
+    return apiClient.put<SMSResponse>('/verify-sms', { phone });
   },
 
-  async verifySMSCode(phone: string, code: string) {
-    const response = await fetch(`${API_BASE}/verify-sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phone, code }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al verificar código');
-    }
-
-    return data;
+  async verifySMSCode(phone: string, code: string): Promise<SMSResponse> {
+    return apiClient.post<SMSResponse>('/verify-sms', { phone, code });
   },
 
-  async getSecurityQuestions(email: string) {
-    const response = await fetch(`${API_BASE}/verify-security-questions?email=${encodeURIComponent(email)}`, {
-      method: 'GET',
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al obtener preguntas de seguridad');
-    }
-
-    return data;
+  async getSecurityQuestions(email: string): Promise<SecurityQuestionsResponse> {
+    return apiClient.get<SecurityQuestionsResponse>(`/verify-security-questions?email=${encodeURIComponent(email)}`);
   },
 
-  async verifySecurityQuestions(email: string, answers: Record<string, string>) {
-    const response = await fetch(`${API_BASE}/verify-security-questions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, answers }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al verificar respuestas');
-    }
-
-    return data;
+  async verifySecurityQuestions(email: string, answers: Record<string, string>): Promise<{ success?: boolean; token?: string; error?: string }> {
+    return apiClient.post<{ success?: boolean; token?: string; error?: string }>('/verify-security-questions', { email, answers });
   },
 
   async getAvailableSecurityQuestions() {
-    try {
-      const endpoint = `${BACKEND_BASE}/api/pregunta-seguridad`;
-      console.log('Llamando a:', endpoint);
-      
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      // Verificar si la respuesta es OK antes de parsear JSON
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText || `Error ${response.status}: ${response.statusText}` };
-        }
-        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      // Log para debugging
-      console.log('Respuesta de pregunta-seguridad:', data);
-
-      // La respuesta viene como: { success: true, count: 10, data: [...] }
-      if (data.success && data.data && Array.isArray(data.data)) {
-        return { questions: data.data };
-      } else if (Array.isArray(data)) {
-        // Fallback si viene como array directo
-        return { questions: data };
-      } else if (data.questions && Array.isArray(data.questions)) {
-        // Fallback si viene como { questions: [...] }
-        return data;
-      } else {
-        console.warn('Formato de respuesta inesperado:', data);
-        return { questions: [] };
-      }
-    } catch (error) {
-      console.error('Error en getAvailableSecurityQuestions:', error);
-      throw error;
+    const endpoint = `/api/pregunta-seguridad`;
+    const data = await apiClient.get<{ success?: boolean; count?: number; data?: Array<{_id: string; pregunta: string}>; questions?: Array<{_id: string; pregunta: string}> }>(
+      endpoint,
+      BACKEND_BASE
+    );
+    
+    // Normalizar respuesta
+    if (data.success && data.data && Array.isArray(data.data)) {
+      return { questions: data.data };
+    } else if (Array.isArray(data)) {
+      return { questions: data };
+    } else if (data.questions && Array.isArray(data.questions)) {
+      return data;
     }
+    
+    return { questions: [] };
   },
 };
 
