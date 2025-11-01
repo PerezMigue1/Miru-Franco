@@ -2,18 +2,18 @@
 
 import { useState } from 'react';
 
-interface RegisterProps {
+interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
-  onRegisterSuccess?: () => void;
+  onPasswordReset?: () => void;
+  identifier?: string; // email o teléfono
 }
 
-export default function Register({ 
+export default function ResetPassword({ 
   onSwitchToLogin,
-  onRegisterSuccess 
-}: RegisterProps) {
+  onPasswordReset,
+  identifier
+}: ResetPasswordProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
     password: '',
     confirmPassword: '',
   });
@@ -21,22 +21,10 @@ export default function Register({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
-    }
-    
-    if (!formData.email) {
-      newErrors.email = 'El correo electrónico es requerido';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'El correo electrónico no es válido';
-    }
     
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
@@ -50,10 +38,6 @@ export default function Register({
       newErrors.confirmPassword = 'Confirma tu contraseña';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
-    }
-
-    if (!acceptTerms) {
-      newErrors.terms = 'Debes aceptar los términos y condiciones';
     }
     
     setErrors(newErrors);
@@ -79,85 +63,71 @@ export default function Register({
     setIsLoading(true);
     
     try {
-      const { api } = await import('@/lib/api');
-      await api.register(formData.name, formData.email, formData.password);
-      onRegisterSuccess?.();
-    } catch (error: any) {
-      console.error('Error en registro:', error);
-      setErrors({ general: error.message || 'Error al crear la cuenta' });
+      const { api } = await import('../../services');
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      
+      await api.resetPassword(token, identifier || null, formData.password);
+      setIsSuccess(true);
+      onPasswordReset?.();
+    } catch (error) {
+      console.error('Error restableciendo contraseña:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al restablecer la contraseña. Intenta nuevamente.';
+      setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (isSuccess) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#F2F1ED' }}>
+              Contraseña Restablecida
+            </h2>
+            <p className="mb-6" style={{ color: '#F2F1ED' }}>
+              Tu contraseña ha sido restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.
+            </p>
+            {onSwitchToLogin && (
+              <button
+                onClick={onSwitchToLogin}
+                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
+                style={{ backgroundColor: '#710014' }}
+              >
+                Ir a Iniciar Sesión
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
-        <h2 className="text-2xl font-bold text-center mb-6 text-zinc-900 dark:text-zinc-50">
-          Crear Cuenta
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+          Nueva Contraseña
         </h2>
+        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+          Ingresa tu nueva contraseña
+        </p>
         
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label 
-              htmlFor="name" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
-            >
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.name 
-                  ? 'border-red-500 dark:border-red-600' 
-                  : 'border-zinc-300 dark:border-zinc-700'
-              } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors`}
-              placeholder="Juan Pérez"
-              disabled={isLoading}
-            />
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.name}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label 
-              htmlFor="email" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
-            >
-              Correo Electrónico
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.email 
-                  ? 'border-red-500 dark:border-red-600' 
-                  : 'border-zinc-300 dark:border-zinc-700'
-              } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors`}
-              placeholder="tu@email.com"
-              disabled={isLoading}
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.email}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label 
               htmlFor="password" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
-              Contraseña
+              Nueva Contraseña
             </label>
             <div className="relative">
               <input
@@ -169,7 +139,12 @@ export default function Register({
                   errors.password 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'
-                } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors pr-12`}
+                } focus:outline-none focus:ring-2 transition-colors pr-12`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -204,9 +179,10 @@ export default function Register({
           <div>
             <label 
               htmlFor="confirmPassword" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
-              Confirmar Contraseña
+              Confirmar Nueva Contraseña
             </label>
             <div className="relative">
               <input
@@ -218,7 +194,12 @@ export default function Register({
                   errors.confirmPassword 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'
-                } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors pr-12`}
+                } focus:outline-none focus:ring-2 transition-colors pr-12`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -247,46 +228,8 @@ export default function Register({
             )}
           </div>
 
-          <div className="flex items-start">
-            <input
-              type="checkbox"
-              id="terms"
-              checked={acceptTerms}
-              onChange={(e) => {
-                setAcceptTerms(e.target.checked);
-                if (errors.terms) {
-                  setErrors(prev => {
-                    const newErrors = { ...prev };
-                    delete newErrors.terms;
-                    return newErrors;
-                  });
-                }
-              }}
-              className="mt-1 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400"
-              disabled={isLoading}
-            />
-            <label 
-              htmlFor="terms" 
-              className="ml-2 text-sm text-zinc-600 dark:text-zinc-400"
-            >
-              Acepto los{' '}
-              <a href="#" className="text-zinc-900 dark:text-zinc-50 hover:underline">
-                términos y condiciones
-              </a>{' '}
-              y la{' '}
-              <a href="#" className="text-zinc-900 dark:text-zinc-50 hover:underline">
-                política de privacidad
-              </a>
-            </label>
-          </div>
-          {errors.terms && (
-            <p className="text-sm text-red-600 dark:text-red-400">
-              {errors.terms}
-            </p>
-          )}
-
           {errors.general && (
-            <p className="text-sm text-red-600 dark:text-red-400 text-center">
+            <p className="text-sm text-red-600 dark:text-red-400">
               {errors.general}
             </p>
           )}
@@ -294,24 +237,23 @@ export default function Register({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#710014' }}
           >
-            {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
+            {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
           </button>
         </form>
 
         {onSwitchToLogin && (
           <div className="mt-6 text-center">
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              ¿Ya tienes una cuenta?{' '}
-              <button
-                onClick={onSwitchToLogin}
-                className="font-medium text-zinc-900 dark:text-zinc-50 hover:underline"
-                disabled={isLoading}
-              >
-                Inicia Sesión
-              </button>
-            </p>
+            <button
+              onClick={onSwitchToLogin}
+              className="text-sm transition-colors"
+              style={{ color: '#F2F1ED' }}
+              disabled={isLoading}
+            >
+              ← Volver a Iniciar Sesión
+            </button>
           </div>
         )}
       </div>

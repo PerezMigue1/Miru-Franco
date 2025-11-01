@@ -41,7 +41,7 @@ export default function ForgotPassword({
     setIsLoading(true);
     
     try {
-      const { api } = await import('@/lib/api');
+      const { api } = await import('../../services');
       await api.forgotPassword(email, 'email');
       setIsSent(true);
     } catch (error: any) {
@@ -65,32 +65,34 @@ export default function ForgotPassword({
   if (isSent) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold mb-2 text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#F2F1ED' }}>
               Email Enviado
             </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+            <p className="mb-6" style={{ color: '#F2F1ED' }}>
               Hemos enviado un enlace de recuperación a <strong>{email}</strong>
             </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-500 mb-6">
+            <p className="text-sm mb-6" style={{ color: 'rgba(242,241,237,0.7)' }}>
               Por favor revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.
             </p>
             <div className="space-y-3">
               <button
                 onClick={handleBackToLogin}
-                className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
+            style={{ backgroundColor: '#710014' }}
               >
                 Volver a Iniciar Sesión
               </button>
               <button
                 onClick={handleResendEmail}
-                className="w-full py-3 px-4 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                className="w-full py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors"
+            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
               >
                 Reenviar Email
               </button>
@@ -103,11 +105,11 @@ export default function ForgotPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
-        <h2 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-zinc-50">
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
           Recuperar Contraseña
         </h2>
-        <p className="text-center text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
+        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
         </p>
         
@@ -115,7 +117,8 @@ export default function ForgotPassword({
           <div>
             <label 
               htmlFor="email" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
               Correo Electrónico
             </label>
@@ -137,7 +140,12 @@ export default function ForgotPassword({
                 errors.email 
                   ? 'border-red-500 dark:border-red-600' 
                   : 'border-zinc-300 dark:border-zinc-700'
-              } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors`}
+              } focus:outline-none focus:ring-2 transition-colors`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.email ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
@@ -151,7 +159,8 @@ export default function ForgotPassword({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#710014' }}
           >
             {isLoading ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
           </button>
@@ -166,7 +175,8 @@ export default function ForgotPassword({
               {onSwitchToSMS && (
                 <button
                   onClick={onSwitchToSMS}
-                  className="w-full py-2 px-4 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-sm"
+                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+                  style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
                   disabled={isLoading}
                 >
                   Recuperar por SMS
@@ -175,7 +185,8 @@ export default function ForgotPassword({
               {onSwitchToSecurityQuestions && (
                 <button
                   onClick={onSwitchToSecurityQuestions}
-                  className="w-full py-2 px-4 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-sm"
+                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+                  style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad
@@ -189,7 +200,8 @@ export default function ForgotPassword({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: '#F2F1ED' }}
               disabled={isLoading}
             >
               ← Volver a Iniciar Sesión

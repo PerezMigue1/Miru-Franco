@@ -1,11 +1,14 @@
 'use client';
 
-import AuthContainer from './components/AuthContainer';
+import { useRouter } from 'next/navigation';
+import AuthContainer from './components/auth/AuthContainer';
 
 export default function Home() {
+  const router = useRouter();
+
   const handleAuthSuccess = () => {
     console.log('Usuario autenticado exitosamente');
-    // Aquí puedes redirigir a otra página o actualizar el estado de la aplicación
+    router.push('/home');
   };
 
   return (

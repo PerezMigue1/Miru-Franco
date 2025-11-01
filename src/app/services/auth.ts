@@ -50,13 +50,39 @@ export const api = {
     return data;
   },
 
-  async register(name: string, email: string, password: string, phone?: string): Promise<RegisterResponse> {
+  async register(registerData: {
+    nombre: string;
+    email: string;
+    password: string;
+    telefono: string;
+    fechaNacimiento: string;
+    preguntaSeguridad: {
+      pregunta: string;
+      respuesta: string;
+    };
+    direccion: {
+      calle: string;
+      numero: string;
+      colonia: string;
+      codigoPostal: string;
+      referencia?: string;
+    };
+    perfilCapilar: {
+      tipoCabello: string;
+      tieneAlergias: boolean;
+      alergias?: string;
+      tratamientosQuimicos: boolean;
+      tratamientos?: string;
+    };
+    aceptaAvisoPrivacidad: boolean;
+    recibePromociones: boolean;
+  }): Promise<RegisterResponse> {
     const response = await fetch(`${API_BASE}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, email, password, phone }),
+      body: JSON.stringify(registerData),
     });
 
     const data = await response.json();
@@ -177,6 +203,51 @@ export const api = {
     }
 
     return data;
+  },
+
+  async getAvailableSecurityQuestions() {
+    try {
+      const response = await fetch(`${API_BASE}/security-questions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Verificar si la respuesta es OK antes de parsear JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || `Error ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Log para debugging
+      console.log('Respuesta de security-questions:', data);
+
+      // La respuesta puede venir como un array directo o como { questions: [...] }
+      // Normalizamos para que siempre sea un array
+      if (Array.isArray(data)) {
+        return { questions: data };
+      } else if (data.questions && Array.isArray(data.questions)) {
+        return data;
+      } else if (data.preguntas && Array.isArray(data.preguntas)) {
+        // Si viene como 'preguntas' en lugar de 'questions'
+        return { questions: data.preguntas };
+      } else {
+        console.warn('Formato de respuesta inesperado:', data);
+        return { questions: [] };
+      }
+    } catch (error) {
+      console.error('Error en getAvailableSecurityQuestions:', error);
+      throw error;
+    }
   },
 };
 

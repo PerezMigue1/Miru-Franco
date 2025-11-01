@@ -46,7 +46,7 @@ export default function Login({
     setIsLoading(true);
     
     try {
-      const { api } = await import('@/lib/api');
+      const { api } = await import('../../services');
       await api.login(email, password);
       onLoginSuccess?.();
     } catch (error: any) {
@@ -59,8 +59,8 @@ export default function Login({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
-        <h2 className="text-2xl font-bold text-center mb-6 text-zinc-900 dark:text-zinc-50">
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#F2F1ED' }}>
           Iniciar Sesión
         </h2>
         
@@ -68,7 +68,8 @@ export default function Login({
           <div>
             <label 
               htmlFor="email" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
               Correo Electrónico
             </label>
@@ -90,7 +91,12 @@ export default function Login({
                 errors.email 
                   ? 'border-red-500 dark:border-red-600' 
                   : 'border-zinc-300 dark:border-zinc-700'
-              } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors`}
+              } focus:outline-none focus:ring-2 transition-colors`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.email ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
@@ -104,7 +110,8 @@ export default function Login({
           <div>
             <label 
               htmlFor="password" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
               Contraseña
             </label>
@@ -127,7 +134,12 @@ export default function Login({
                   errors.password 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'
-                } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors pr-12`}
+                } focus:outline-none focus:ring-2 transition-colors pr-12`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -160,7 +172,8 @@ export default function Login({
             <button
               type="button"
               onClick={onSwitchToRecovery}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="text-sm transition-colors"
+            style={{ color: '#F2F1ED' }}
               disabled={isLoading}
             >
               ¿Olvidaste tu contraseña?
@@ -176,7 +189,8 @@ export default function Login({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+            style={{ backgroundColor: '#710014' }}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
@@ -188,7 +202,8 @@ export default function Login({
               ¿No tienes una cuenta?{' '}
               <button
                 onClick={onSwitchToRegister}
-                className="font-medium text-zinc-900 dark:text-zinc-50 hover:underline"
+                className="font-medium hover:underline"
+                style={{ color: '#F2F1ED' }}
                 disabled={isLoading}
               >
                 Regístrate

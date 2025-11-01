@@ -56,7 +56,7 @@ export default function ForgotPasswordSMS({
     setIsLoading(true);
     
     try {
-      const { api } = await import('@/lib/api');
+      const { api } = await import('../../services');
       await api.sendSMSCode(phone);
       setCodeSent(true);
       setTimeLeft(300); // 5 minutos en segundos
@@ -87,7 +87,7 @@ export default function ForgotPasswordSMS({
     setIsLoading(true);
     
     try {
-      const { api } = await import('@/lib/api');
+      const { api } = await import('../../services');
       const result = await api.verifySMSCode(phone, code);
       onCodeVerified?.(result.email || phone);
     } catch (error: any) {
@@ -107,8 +107,8 @@ export default function ForgotPasswordSMS({
   if (codeSent) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
-          <h2 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-zinc-50">
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+          <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
             Código de Verificación
           </h2>
           <p className="text-center text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
@@ -119,7 +119,8 @@ export default function ForgotPasswordSMS({
             <div>
               <label 
                 htmlFor="code" 
-                className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+                className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
               >
                 Código de Verificación
               </label>
@@ -142,7 +143,12 @@ export default function ForgotPasswordSMS({
                   errors.code 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'
-                } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors`}
+                } focus:outline-none focus:ring-2 transition-colors`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.code ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
                 placeholder="000000"
                 disabled={isLoading}
                 maxLength={6}
@@ -155,7 +161,7 @@ export default function ForgotPasswordSMS({
             </div>
 
             {timeLeft > 0 && (
-              <p className="text-sm text-center text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-center" style={{ color: 'rgba(242,241,237,0.7)' }}>
                 El código expira en: <strong>{formatTime(timeLeft)}</strong>
               </p>
             )}
@@ -167,7 +173,8 @@ export default function ForgotPasswordSMS({
                   setCodeSent(false);
                   setCode('');
                 }}
-                className="w-full py-2 px-4 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-sm"
+                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
               >
                 Reenviar Código
               </button>
@@ -176,7 +183,8 @@ export default function ForgotPasswordSMS({
             <button
               type="submit"
               disabled={isLoading || code.length !== 6}
-              className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#710014' }}
             >
               {isLoading ? 'Verificando...' : 'Verificar Código'}
             </button>
@@ -189,7 +197,8 @@ export default function ForgotPasswordSMS({
                 setCode('');
                 setPhone('');
               }}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: '#F2F1ED' }}
               disabled={isLoading}
             >
               ← Cambiar número de teléfono
@@ -202,11 +211,11 @@ export default function ForgotPasswordSMS({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
-        <h2 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-zinc-50">
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
           Recuperar por SMS
         </h2>
-        <p className="text-center text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
+        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
           Ingresa tu número de teléfono y te enviaremos un código de verificación
         </p>
         
@@ -214,7 +223,8 @@ export default function ForgotPasswordSMS({
           <div>
             <label 
               htmlFor="phone" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
               Número de Teléfono
             </label>
@@ -236,7 +246,12 @@ export default function ForgotPasswordSMS({
                 errors.phone 
                   ? 'border-red-500 dark:border-red-600' 
                   : 'border-zinc-300 dark:border-zinc-700'
-              } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors`}
+              } focus:outline-none focus:ring-2 transition-colors`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.phone ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
               placeholder="+1 234 567 8900"
               disabled={isLoading}
             />
@@ -245,7 +260,7 @@ export default function ForgotPasswordSMS({
                 {errors.phone}
               </p>
             )}
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs" style={{ color: 'rgba(242,241,237,0.7)' }}>
               Incluye el código de país (ej: +1, +52)
             </p>
           </div>
@@ -253,7 +268,8 @@ export default function ForgotPasswordSMS({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#710014' }}
           >
             {isLoading ? 'Enviando...' : 'Enviar Código SMS'}
           </button>
@@ -268,7 +284,8 @@ export default function ForgotPasswordSMS({
               {onSwitchToEmail && (
                 <button
                   onClick={onSwitchToEmail}
-                  className="w-full py-2 px-4 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-sm"
+                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
                   disabled={isLoading}
                 >
                   Recuperar por Email
@@ -277,7 +294,8 @@ export default function ForgotPasswordSMS({
               {onSwitchToSecurityQuestions && (
                 <button
                   onClick={onSwitchToSecurityQuestions}
-                  className="w-full py-2 px-4 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-sm"
+                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad
@@ -291,7 +309,8 @@ export default function ForgotPasswordSMS({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: '#F2F1ED' }}
               disabled={isLoading}
             >
               ← Volver a Iniciar Sesión

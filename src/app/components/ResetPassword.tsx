@@ -63,7 +63,7 @@ export default function ResetPassword({
     setIsLoading(true);
     
     try {
-      const { api } = await import('@/lib/api');
+      const { api } = await import('../services');
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
       
@@ -82,23 +82,24 @@ export default function ResetPassword({
   if (isSuccess) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold mb-2 text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#F2F1ED' }}>
               Contraseña Restablecida
             </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+            <p className="mb-6" style={{ color: '#F2F1ED' }}>
               Tu contraseña ha sido restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.
             </p>
             {onSwitchToLogin && (
               <button
                 onClick={onSwitchToLogin}
-                className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
+                style={{ backgroundColor: '#710014' }}
               >
                 Ir a Iniciar Sesión
               </button>
@@ -111,11 +112,11 @@ export default function ResetPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 border border-zinc-200 dark:border-zinc-800">
-        <h2 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-zinc-50">
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
           Nueva Contraseña
         </h2>
-        <p className="text-center text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
+        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
           Ingresa tu nueva contraseña
         </p>
         
@@ -123,7 +124,8 @@ export default function ResetPassword({
           <div>
             <label 
               htmlFor="password" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
               Nueva Contraseña
             </label>
@@ -137,7 +139,12 @@ export default function ResetPassword({
                   errors.password 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'
-                } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors pr-12`}
+                } focus:outline-none focus:ring-2 transition-colors pr-12`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -172,7 +179,8 @@ export default function ResetPassword({
           <div>
             <label 
               htmlFor="confirmPassword" 
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#F2F1ED' }}
             >
               Confirmar Nueva Contraseña
             </label>
@@ -186,7 +194,12 @@ export default function ResetPassword({
                   errors.confirmPassword 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'
-                } bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 transition-colors pr-12`}
+                } focus:outline-none focus:ring-2 transition-colors pr-12`}
+              style={{ 
+                backgroundColor: '#f2f1ed', 
+                color: '#161616',
+                borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -224,7 +237,8 @@ export default function ResetPassword({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#710014' }}
           >
             {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
           </button>
@@ -234,7 +248,8 @@ export default function ResetPassword({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: '#F2F1ED' }}
               disabled={isLoading}
             >
               ← Volver a Iniciar Sesión
