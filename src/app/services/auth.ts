@@ -1,5 +1,19 @@
-// Cambia esta URL por la URL de tu backend en producción
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/auth';
+// Helper para obtener la URL base del backend
+const getBackendBase = (): string => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend-miru-franco.vercel.app/api/auth';
+  
+  if (apiUrl.includes('/api/auth')) {
+    return apiUrl.replace('/api/auth', '');
+  } else if (apiUrl.includes('/api/')) {
+    return apiUrl.replace(/\/api\/.*$/, '');
+  } else {
+    return apiUrl.replace(/\/$/, '');
+  }
+};
+
+// URL base para endpoints de autenticacion
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://backend-miru-franco.vercel.app/api/auth';
+const BACKEND_BASE = getBackendBase();
 
 export interface LoginResponse {
   success: boolean;
@@ -207,7 +221,10 @@ export const api = {
 
   async getAvailableSecurityQuestions() {
     try {
-      const response = await fetch(`${API_BASE}/security-questions`, {
+      const endpoint = `${BACKEND_BASE}/api/pregunta-seguridad`;
+      console.log('Llamando a:', endpoint);
+      
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -229,17 +246,17 @@ export const api = {
       const data = await response.json();
       
       // Log para debugging
-      console.log('Respuesta de security-questions:', data);
+      console.log('Respuesta de pregunta-seguridad:', data);
 
-      // La respuesta puede venir como un array directo o como { questions: [...] }
-      // Normalizamos para que siempre sea un array
-      if (Array.isArray(data)) {
+      // La respuesta viene como: { success: true, count: 10, data: [...] }
+      if (data.success && data.data && Array.isArray(data.data)) {
+        return { questions: data.data };
+      } else if (Array.isArray(data)) {
+        // Fallback si viene como array directo
         return { questions: data };
       } else if (data.questions && Array.isArray(data.questions)) {
+        // Fallback si viene como { questions: [...] }
         return data;
-      } else if (data.preguntas && Array.isArray(data.preguntas)) {
-        // Si viene como 'preguntas' en lugar de 'questions'
-        return { questions: data.preguntas };
       } else {
         console.warn('Formato de respuesta inesperado:', data);
         return { questions: [] };

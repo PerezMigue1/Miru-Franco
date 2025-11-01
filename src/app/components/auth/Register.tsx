@@ -82,7 +82,7 @@ export default function Register({
         console.error('Error cargando preguntas de seguridad:', error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         setErrors({ 
-          general: `Error al cargar preguntas: ${errorMessage}. Verifica que el endpoint /api/auth/security-questions esté disponible.` 
+          general: `Error al cargar preguntas: ${errorMessage}. Verifica que el endpoint /api/pregunta-seguridad esté disponible en el backend.` 
         });
       } finally {
         setLoadingQuestions(false);
