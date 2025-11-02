@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { colors, colorsWithOpacity } from '../utils/colors';
 
 interface MenuHamburguesaProps {
   onClose: () => void;
@@ -34,7 +35,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
     <nav className="h-full">
       {/* Sección de Menú Principal */}
       <div className="p-4 border-b" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
-        <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: '#710014' }}>
+        <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide text-menu-texto-principal">
           Menú Principal
         </h3>
         <ul className="space-y-1">
@@ -45,12 +46,11 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
                 <Link
                   href={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 text-header-footer ${
                     isActive ? '' : 'hover:opacity-80'
                   }`}
                   style={{ 
-                    color: '#161616',
-                    backgroundColor: isActive ? 'rgba(113, 0, 20, 0.1)' : 'transparent',
+                    backgroundColor: isActive ? colorsWithOpacity.hover15 : 'transparent',
                   }}
                 >
                   <span className="text-xl">{item.icon}</span>
@@ -64,7 +64,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
 
       {/* Sección de Marcas */}
       <div className="p-4">
-        <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: '#710014' }}>
+        <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide text-menu-texto-principal">
           Marcas de Productos
         </h3>
         <ul className="space-y-1">
@@ -75,12 +75,11 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
                 <Link
                   href={marca.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 text-header-footer ${
                     isActive ? '' : 'hover:opacity-80'
                   }`}
                   style={{ 
-                    color: '#161616',
-                    backgroundColor: isActive ? 'rgba(113, 0, 20, 0.1)' : 'transparent',
+                    backgroundColor: isActive ? colorsWithOpacity.hover15 : 'transparent',
                   }}
                 >
                   <span className="font-medium">{marca.name}</span>

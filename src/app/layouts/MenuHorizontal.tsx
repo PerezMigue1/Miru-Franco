@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { colors, colorsWithOpacity } from '../utils/colors';
 
 export default function MenuHorizontal() {
   const pathname = usePathname();
@@ -54,18 +55,17 @@ export default function MenuHorizontal() {
             <li key={marca.name} className="relative">
               <Link
                 href={marca.href}
-                className={`relative flex items-center gap-2 px-5 py-2.5 transition-all duration-300 whitespace-nowrap rounded-full ${
+                className={`relative flex items-center gap-2 px-5 py-2.5 transition-all duration-300 whitespace-nowrap rounded-full text-texto-fondo-oscuro ${
                   isActive 
                     ? 'shadow-lg' 
                     : 'hover:opacity-90'
                 }`}
                 style={{ 
-                  color: '#F2F1ED',
-                  backgroundColor: isActive ? 'rgba(113, 0, 20, 0.15)' : 'transparent',
+                  backgroundColor: isActive ? colorsWithOpacity.hover15 : 'transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'rgba(166, 75, 99, 0.2)';
+                    e.currentTarget.style.backgroundColor = colorsWithOpacity.hover20;
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -95,11 +95,10 @@ export default function MenuHorizontal() {
                 {isActive && (
                   <>
                     <svg 
-                      className="w-3.5 h-3.5 ml-0.5" 
+                      className="w-3.5 h-3.5 ml-0.5 text-menu-texto-principal" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
-                      style={{ color: '#710014' }}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -109,8 +108,7 @@ export default function MenuHorizontal() {
               {/* Underline decorativo debajo del item activo */}
               {isActive && (
                 <div 
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-20 h-0.5 rounded-full"
-                  style={{ backgroundColor: '#710014' }}
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-20 h-0.5 rounded-full bg-menu-texto-principal"
                 />
               )}
             </li>

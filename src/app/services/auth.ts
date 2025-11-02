@@ -51,6 +51,17 @@ export interface SecurityQuestionsResponse {
   error?: string;
 }
 
+export interface GoogleLoginResponse {
+  success: boolean;
+  user?: {
+    _id: string;
+    email: string;
+    name: string;
+  };
+  token?: string;
+  error?: string;
+}
+
 // Helper para guardar datos de autenticacion
 const saveAuthData = (data: { token?: string; user?: unknown }) => {
   if (typeof window !== 'undefined') {
@@ -143,6 +154,15 @@ export const api = {
     }
     
     return { questions: [] };
+  },
+
+  async loginWithGoogle(): Promise<GoogleLoginResponse> {
+    // Redirige a la URL de autenticación de Google en el backend
+    // El backend debería manejar la autenticación OAuth y redirigir de vuelta
+    const redirectUrl = `${BACKEND_BASE}/api/auth/google`;
+    window.location.href = redirectUrl;
+    // Nota: Este método no retorna inmediatamente ya que redirige
+    return { success: false, error: 'Redirecting to Google' };
   },
 };
 

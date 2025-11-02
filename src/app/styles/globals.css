@@ -23,10 +23,30 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Fuentes */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Colores personalizados para Tailwind */
+  --color-fondo-general: var(--fondo-general);
+  --color-logo-branding: var(--logo-branding);
+  --color-tarjetas-paneles: var(--tarjetas-paneles);
+  --color-header-footer: var(--header-footer);
+  --color-menu-texto-principal: var(--menu-texto-principal);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-encabezados-alterno: var(--encabezados-alterno);
+  --color-hover: var(--hover);
+  --color-botones-principales: var(--botones-principales);
+  --color-texto-fondo-oscuro: var(--texto-fondo-oscuro);
+  --color-enlaces-textos-interactivos: var(--enlaces-textos-interactivos);
+  --color-fondos-suaves: var(--fondos-suaves);
+  --color-iconografia: var(--iconografia);
+  
+  /* Background y foreground (mantener compatibilidad) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 }
 
 body {

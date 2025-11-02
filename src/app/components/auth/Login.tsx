@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -18,6 +19,7 @@ export default function Login({
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -49,18 +51,32 @@ export default function Login({
       const { api } = await import('../../services');
       await api.login(email, password);
       onLoginSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en login:', error);
-      setErrors({ general: error.message || 'Error al iniciar sesión' });
+      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+      setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const { api } = await import('../../services');
+      await api.loginWithGoogle();
+    } catch (error: unknown) {
+      console.error('Error iniciando sesión con Google:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión con Google';
+      setErrors({ general: errorMessage });
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#F2F1ED' }}>
+      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+        <h2 className="text-2xl font-bold text-center mb-6 text-texto-fondo-oscuro">
           Iniciar Sesión
         </h2>
         
@@ -68,8 +84,7 @@ export default function Login({
           <div>
             <label 
               htmlFor="email" 
-              className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
             >
               Correo Electrónico
             </label>
@@ -87,15 +102,9 @@ export default function Login({
                   });
                 }
               }}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.email 
-                  ? 'border-red-500 dark:border-red-600' 
-                  : 'border-zinc-300 dark:border-zinc-700'
-              } focus:outline-none focus:ring-2 transition-colors`}
+              className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
               style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.email ? '#590C0C' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
               }}
               placeholder="tu@email.com"
               disabled={isLoading}
@@ -110,8 +119,7 @@ export default function Login({
           <div>
             <label 
               htmlFor="password" 
-              className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
             >
               Contraseña
             </label>
@@ -130,16 +138,10 @@ export default function Login({
                     });
                   }
                 }}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.password 
-                    ? 'border-red-500 dark:border-red-600' 
-                    : 'border-zinc-300 dark:border-zinc-700'
-                } focus:outline-none focus:ring-2 transition-colors pr-12`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.password ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors pr-12 bg-texto-fondo-oscuro text-header-footer"
+                style={{ 
+                  borderColor: errors.password ? colors.danger : colorsWithOpacity.bordeVisible
+                }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -172,8 +174,7 @@ export default function Login({
             <button
               type="button"
               onClick={onSwitchToRecovery}
-              className="text-sm transition-colors"
-            style={{ color: '#F2F1ED' }}
+              className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
               disabled={isLoading}
             >
               ¿Olvidaste tu contraseña?
@@ -188,26 +189,73 @@ export default function Login({
 
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
-            style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+            disabled={isLoading || isGoogleLoading}
+            className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
+            style={{ backgroundColor: colors.botonesPrincipales }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
 
+        {/* Divider */}
+        <div className="my-6 flex items-center">
+          <div className="flex-1 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}></div>
+          <span className="px-4 text-sm text-texto-fondo-oscuro" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            O
+          </span>
+          <div className="flex-1 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}></div>
+        </div>
+
+        {/* Google Login Button */}
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading || isGoogleLoading}
+          className="w-full py-3 px-4 rounded-lg border font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 bg-texto-fondo-oscuro hover:opacity-90"
+          style={{ 
+            borderColor: colorsWithOpacity.bordeVisible,
+            color: colors.headerFooter 
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = colorsWithOpacity.bordeSecundario;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colorsWithOpacity.bordeVisible;
+          }}
+        >
+          {isGoogleLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Conectando con Google...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              <span>Continuar con Google</span>
+            </>
+          )}
+        </button>
+
         {onSwitchToRegister && (
           <div className="mt-6 text-center">
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-texto-fondo-oscuro">
               ¿No tienes una cuenta?{' '}
               <button
                 onClick={onSwitchToRegister}
-                className="font-medium hover:underline"
-                style={{ color: '#243B5A' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#A64B63'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
+                className="font-medium hover:underline text-enlaces-textos-interactivos"
+                style={{ color: colors.enlacesTextosInteractivos }}
+                onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
+                onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
                 disabled={isLoading}
               >
                 Regístrate

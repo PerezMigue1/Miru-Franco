@@ -7,6 +7,7 @@ import ForgotPassword from './ForgotPassword';
 import ForgotPasswordSMS from './ForgotPasswordSMS';
 import ForgotPasswordSecurityQuestions from './ForgotPasswordSecurityQuestions';
 import ResetPassword from './ResetPassword';
+import { colors } from '../../utils/colors';
 
 type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-sms' | 'forgot-security' | 'reset-password';
 
@@ -65,7 +66,7 @@ export default function AuthContainer({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#d0b29c' }}>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-fondo-general">
       {currentView === 'login' && (
         <Login
           onSwitchToRegister={() => setCurrentView('register')}

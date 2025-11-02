@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
+import { colors, colorsWithOpacity } from '../utils/colors';
 
 export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -13,15 +14,14 @@ export default function Header() {
   return (
     <>
       {/* Barra Superior - Top Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ backgroundColor: '#161616' }}>
+      <header className="fixed top-0 left-0 right-0 z-50 shadow-sm bg-header-footer">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between" style={{ minHeight: '56px', padding: '8px 0' }}>
             {/* Izquierda: Menu + Logo */}
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 hover:opacity-80 transition-opacity"
-                style={{ color: '#F2F1ED' }}
+                className="p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                 aria-label="Menu"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,9 +46,8 @@ export default function Header() {
                 </div>
                 <div className="flex flex-col items-start justify-center">
                   <h1 
-                    className="text-base md:text-lg font-bold tracking-wide uppercase"
+                    className="text-base md:text-lg font-bold tracking-wide uppercase text-logo-branding"
                     style={{ 
-                      color: '#9f6d1f',
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
                       letterSpacing: '0.05em',
                       lineHeight: '1.2',
@@ -59,9 +58,8 @@ export default function Header() {
                     MIRÚ FRANCO
                   </h1>
                   <h2
-                    className="text-xs md:text-sm font-semibold tracking-wide uppercase"
+                    className="text-xs md:text-sm font-semibold tracking-wide uppercase text-logo-branding"
                     style={{ 
-                      color: '#9f6d1f',
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
                       letterSpacing: '0.05em',
                       lineHeight: '1.2',
@@ -81,8 +79,7 @@ export default function Header() {
               {/* Notificaciones */}
               <div className="relative">
                 <button
-                  className="p-2 hover:opacity-80 transition-opacity relative"
-                  style={{ color: '#F2F1ED' }}
+                  className="p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
                   aria-label="Notificaciones"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,8 +87,7 @@ export default function Header() {
                   </svg>
                   {notificationsCount > 0 && (
                     <span 
-                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                      style={{ backgroundColor: '#590C0C', color: '#F2F1ED' }}
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-danger text-texto-fondo-oscuro"
                     >
                       {notificationsCount}
                     </span>
@@ -103,13 +99,12 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                  style={{ color: '#F2F1ED' }}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span className="font-medium" style={{ color: '#F2F1ED' }}>Usuario</span>
+                  <span className="font-medium">Usuario</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -117,17 +112,17 @@ export default function Header() {
                 
                 {isUserMenuOpen && (
                   <div 
-                    className="absolute right-0 mt-2 rounded-lg shadow-lg border min-w-[200px]"
-                    style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.2)' }}
+                    className="absolute right-0 mt-2 rounded-lg shadow-lg border min-w-[200px] bg-header-footer"
+                    style={{ borderColor: colorsWithOpacity.bordeVisible }}
                   >
                     <div className="py-2">
-                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity" style={{ color: '#F2F1ED' }}>
+                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
                         Mi Perfil
                       </a>
-                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity" style={{ color: '#F2F1ED' }}>
+                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
                         Configuración
                       </a>
-                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity" style={{ color: '#F2F1ED' }}>
+                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
                         Cerrar Sesión
                       </a>
                     </div>
@@ -142,8 +137,8 @@ export default function Header() {
       {/* Menú Hamburguesa */}
       {isMenuOpen && (
         <div 
-          className="fixed left-0 w-80 h-[calc(100vh-72px)] z-50 overflow-y-auto shadow-xl"
-          style={{ backgroundColor: '#F2F1ED', top: '72px' }}
+          className="fixed left-0 w-80 h-[calc(100vh-72px)] z-50 overflow-y-auto shadow-xl text-texto-fondo-oscuro"
+          style={{ backgroundColor: colors.textoFondoOscuro, top: '72px' }}
         >
           <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
         </div>
@@ -158,7 +153,7 @@ export default function Header() {
       )}
 
       {/* Barra de Navegación Secundaria */}
-      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ backgroundColor: '#710014', top: '72px' }}>
+      <nav className="fixed left-0 right-0 z-30 shadow-md bg-menu-texto-principal" style={{ top: '72px' }}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center h-14">
             <MenuHorizontal />
