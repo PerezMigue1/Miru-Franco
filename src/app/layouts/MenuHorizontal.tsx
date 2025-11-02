@@ -63,6 +63,16 @@ export default function MenuHorizontal() {
                   color: '#F2F1ED',
                   backgroundColor: isActive ? 'rgba(242, 241, 237, 0.15)' : 'transparent',
                 }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'rgba(166, 75, 99, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
               >
                 <div className="relative w-5 h-5 flex-shrink-0">
                   <Image

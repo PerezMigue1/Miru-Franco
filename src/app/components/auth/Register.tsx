@@ -47,6 +47,7 @@ export default function Register({
   const [selectedQuestionText, setSelectedQuestionText] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
   // Cargar preguntas de seguridad disponibles
   useEffect(() => {
@@ -275,13 +276,25 @@ export default function Register({
         recibePromociones: formData.receivePromotions,
       };
       
-      await api.register(registerData);
+      const response = await api.register(registerData);
       
-      onRegisterSuccess?.();
+      // Validar que el registro fue exitoso
+      if (response.success) {
+        setRegisterSuccess(true);
+        setErrors({}); // Limpiar errores
+        
+        // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
+        setTimeout(() => {
+          onRegisterSuccess?.();
+        }, 2000);
+      } else {
+        throw new Error(response.error || 'Error al crear la cuenta');
+      }
     } catch (error: unknown) {
       console.error('Error en registro:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al crear la cuenta';
       setErrors({ general: errorMessage });
+      setRegisterSuccess(false);
     } finally {
       setIsLoading(false);
     }
@@ -311,7 +324,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
           placeholder="Juan Pérez"
           disabled={isLoading}
@@ -344,7 +357,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
           placeholder="tu@email.com"
           disabled={isLoading}
@@ -377,7 +390,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
           placeholder="+52 123 456 7890"
           disabled={isLoading}
@@ -411,7 +424,7 @@ export default function Register({
             style={{ 
               backgroundColor: '#f2f1ed', 
               color: '#161616',
-              borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              borderColor: errors.password ? '#590C0C' : 'rgba(255,255,255,0.2)'
             }}
             placeholder="••••••••"
             disabled={isLoading}
@@ -468,7 +481,7 @@ export default function Register({
             style={{ 
               backgroundColor: '#f2f1ed', 
               color: '#161616',
-              borderColor: errors.confirmPassword ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              borderColor: errors.confirmPassword ? '#590C0C' : 'rgba(255,255,255,0.2)'
             }}
             placeholder="••••••••"
             disabled={isLoading}
@@ -520,7 +533,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
           max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
           disabled={isLoading}
@@ -545,8 +558,8 @@ export default function Register({
             <p style={{ color: '#161616' }}>Cargando preguntas...</p>
           </div>
         ) : securityQuestions.length === 0 && errors.general ? (
-          <div className="w-full px-4 py-3 rounded-lg border" style={{ backgroundColor: '#f2f1ed', borderColor: '#dc2626' }}>
-            <p className="text-sm" style={{ color: '#dc2626' }}>{errors.general}</p>
+          <div className="w-full px-4 py-3 rounded-lg border" style={{ backgroundColor: '#f2f1ed', borderColor: '#590C0C' }}>
+            <p className="text-sm" style={{ color: '#590C0C' }}>{errors.general}</p>
           </div>
         ) : (
           <>
@@ -572,7 +585,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.securityQuestion ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.securityQuestion ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
               disabled={isLoading || loadingQuestions}
             >
@@ -626,7 +639,7 @@ export default function Register({
             style={{ 
               backgroundColor: '#f2f1ed', 
               color: '#161616',
-              borderColor: errors.securityAnswer ? '#dc2626' : 'rgba(255,255,255,0.2)'
+              borderColor: errors.securityAnswer ? '#590C0C' : 'rgba(255,255,255,0.2)'
             }}
             placeholder="Tu respuesta"
             disabled={isLoading}
@@ -670,7 +683,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
             placeholder="Calle"
             disabled={isLoading}
@@ -703,7 +716,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
             placeholder="123"
             disabled={isLoading}
@@ -733,7 +746,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
           placeholder="Colonia"
           disabled={isLoading}
@@ -765,7 +778,7 @@ export default function Register({
           style={{ 
             backgroundColor: '#f2f1ed', 
             color: '#161616',
-            borderColor: errors.postalCode ? '#dc2626' : 'rgba(255,255,255,0.2)'
+            borderColor: errors.postalCode ? '#590C0C' : 'rgba(255,255,255,0.2)'
           }}
           placeholder="12345"
           maxLength={5}
@@ -881,7 +894,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
               placeholder="Especifica tus alergias"
               disabled={isLoading}
@@ -938,7 +951,7 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
               placeholder="Especifica los tratamientos"
               disabled={isLoading}
@@ -988,8 +1001,25 @@ export default function Register({
   );
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+    <div className="w-full max-w-md mx-auto relative">
+      {/* Notificación de éxito */}
+      {registerSuccess && (
+        <div 
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg shadow-xl animate-slide-down"
+          style={{ 
+            backgroundColor: '#6E7D57', 
+            border: '1px solid #6E7D57',
+            minWidth: '300px',
+            maxWidth: '90%'
+          }}
+        >
+          <p className="text-sm font-medium text-center text-white">
+            ¡Registro exitoso! Redirigiendo al login...
+          </p>
+        </div>
+      )}
+
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
             Crear Cuenta
@@ -1072,6 +1102,8 @@ export default function Register({
                 disabled={isLoading}
                 className="flex-1 py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#710014' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
               >
                 Continuar
               </button>
@@ -1091,6 +1123,8 @@ export default function Register({
                   disabled={isLoading}
                   className="flex-1 py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#710014' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
                 >
                   {isLoading ? 'Registrando...' : 'Finalizar registro'}
                 </button>

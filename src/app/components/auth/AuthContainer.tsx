@@ -28,7 +28,8 @@ export default function AuthContainer({
   };
 
   const handleRegisterSuccess = () => {
-    onAuthSuccess?.();
+    // Cambiar a la vista de login después de registro exitoso
+    setCurrentView('login');
   };
 
   const handleEmailSent = () => {
@@ -64,7 +65,7 @@ export default function AuthContainer({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#c5ae91' }}>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#d0b29c' }}>
       {currentView === 'login' && (
         <Login
           onSwitchToRegister={() => setCurrentView('register')}

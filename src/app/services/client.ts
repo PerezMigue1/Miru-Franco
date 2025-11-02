@@ -1,6 +1,6 @@
 // Cliente API centralizado con manejo de errores y tokens
 
-import { API_BASE, BACKEND_BASE } from './config';
+import { API_BASE } from './config';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -15,6 +15,8 @@ class ApiClient {
     const { skipAuth = false, endpoint: customEndpoint, ...fetchOptions } = options;
     
     const url = customEndpoint || `${API_BASE}${endpoint}`;
+    
+    console.log(`[API] ${fetchOptions.method || 'GET'} ${url}`);
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -52,13 +54,14 @@ class ApiClient {
           };
         }
         
+        console.error(`[API Error] ${url}:`, errorData);
         throw new Error(errorData.error || errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       return data as T;
     } catch (error) {
-      console.error(`Error en ${endpoint}:`, error);
+      console.error(`[API] Error en ${url}:`, error);
       throw error;
     }
   }
@@ -72,7 +75,7 @@ class ApiClient {
     const url = customBase ? `${customBase}${endpoint}` : undefined;
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
       endpoint: url,
     });
   }
@@ -81,7 +84,7 @@ class ApiClient {
     const url = customBase ? `${customBase}${endpoint}` : undefined;
     return this.request<T>(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
       endpoint: url,
     });
   }

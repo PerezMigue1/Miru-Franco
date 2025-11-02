@@ -68,8 +68,10 @@ export default function Carousel() {
                 <div 
                   className="max-w-4xl w-full rounded-xl p-8 md:p-12 text-center transform transition-all duration-1000"
                   style={{ backgroundColor: '#710014' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
                 >
-                  <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 uppercase" style={{ color: '#c5ae91' }}>
+                  <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 uppercase" style={{ color: '#d0b29c' }}>
                     {slide.title}
                   </h2>
                   <p className="text-lg md:text-xl mb-4" style={{ color: '#F2F1ED' }}>
@@ -82,7 +84,7 @@ export default function Carousel() {
                   )}
                   <button
                     className="px-8 py-3 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: '#161616', color: '#F2F1ED' }}
+                    style={{ backgroundColor: '#2A2A2A', color: '#F2F1ED' }}
                   >
                     Explorar {slide.title.split(' ')[0]}
                   </button>

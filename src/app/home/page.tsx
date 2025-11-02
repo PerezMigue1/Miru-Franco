@@ -20,7 +20,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#c5ae91' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#d0b29c' }}>
       <Header />
       
       <main className="flex-1">
@@ -28,7 +28,7 @@ export default function Home() {
         <Carousel />
 
         {/* Sección 1: Productos */}
-        <section className="py-20" style={{ backgroundColor: '#c5ae91' }}>
+        <section className="py-20" style={{ backgroundColor: '#d0b29c' }}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#161616' }}>
@@ -43,7 +43,7 @@ export default function Home() {
                 <div
                   key={index}
                   className="rounded-lg shadow-lg p-6 border hover:scale-105 transition-transform duration-300 cursor-pointer"
-                  style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}
+                  style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}
                 >
                   <div className="text-5xl mb-4 text-center">{producto.icono}</div>
                   <h3 className="text-xl font-semibold mb-2 text-center" style={{ color: '#F2F1ED' }}>
@@ -59,7 +59,7 @@ export default function Home() {
         </section>
 
         {/* Sección 2: Servicios */}
-        <section className="py-20" style={{ backgroundColor: '#161616' }}>
+        <section className="py-20" style={{ backgroundColor: '#2A2A2A' }}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#F2F1ED' }}>
@@ -90,10 +90,10 @@ export default function Home() {
         </section>
 
         {/* Sección 3: Sobre Nosotros */}
-        <section className="py-20" style={{ backgroundColor: '#c5ae91' }}>
+        <section className="py-20" style={{ backgroundColor: '#C8A48A' }}>
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="rounded-lg shadow-lg p-8 border text-center" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+              <div className="rounded-lg shadow-lg p-8 border text-center" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#F2F1ED' }}>
                   Sobre Nosotros
                 </h2>
@@ -117,7 +117,7 @@ export default function Home() {
         </section>
 
         {/* Sección 4: CTA */}
-        <section className="py-20" style={{ backgroundColor: '#161616' }}>
+        <section className="py-20" style={{ backgroundColor: '#2A2A2A' }}>
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center rounded-lg shadow-lg p-8 border" style={{ backgroundColor: 'rgba(242,241,237,0.1)', borderColor: 'rgba(255,255,255,0.2)' }}>
               <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#F2F1ED' }}>
@@ -136,6 +136,8 @@ export default function Home() {
                 <button
                   className="px-8 py-3 rounded-lg font-semibold text-lg hover:opacity-80 transition-opacity border"
                   style={{ borderColor: 'rgba(242,241,237,0.3)', color: '#F2F1ED' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   Ver Catálogo
                 </button>

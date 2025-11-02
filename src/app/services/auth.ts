@@ -65,7 +65,7 @@ const saveAuthData = (data: { token?: string; user?: unknown }) => {
 
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
-    const data = await apiClient.post<LoginResponse>('/login', { email, password });
+    const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
     saveAuthData(data);
     return data;
   },
@@ -97,7 +97,7 @@ export const api = {
     aceptaAvisoPrivacidad: boolean;
     recibePromociones: boolean;
   }): Promise<RegisterResponse> {
-    const data = await apiClient.post<RegisterResponse>('/register', registerData);
+    const data = await apiClient.post<RegisterResponse>('/api/usuarios', registerData, BACKEND_BASE);
     saveAuthData(data);
     return data;
   },

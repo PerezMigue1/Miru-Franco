@@ -59,7 +59,7 @@ export default function Login({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
         <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#F2F1ED' }}>
           Iniciar Sesión
         </h2>
@@ -95,7 +95,7 @@ export default function Login({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.email ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.email ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
               placeholder="tu@email.com"
               disabled={isLoading}
@@ -138,7 +138,7 @@ export default function Login({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.password ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.password ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
                 placeholder="••••••••"
                 disabled={isLoading}
@@ -191,6 +191,8 @@ export default function Login({
             disabled={isLoading}
             className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
             style={{ backgroundColor: '#710014' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="mt-auto" style={{ backgroundColor: '#161616' }}>
+    <footer className="mt-auto" style={{ backgroundColor: '#2A2A2A' }}>
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Columna 1: Información */}

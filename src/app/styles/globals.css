@@ -1,14 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  /* Colores de la paleta */
-  --warm-sand: #c5ae91;
-  --obsidian-black: #161616;
-  --crimson-depth: #710014;
-  --soft-pearl: #F2F1ED;
+  /* Nueva Paleta de Colores */
+  --fondo-general: #d0b29c;
+  --tarjetas-paneles: #B38E6F;
+  --header: #710014;
+  --menu-texto-principal: #161616;
+  --warning: #D98E04;
+  --danger: #590C0C;
+  --success: #6E7D57;
+  --footer-encabezados: #2A2A2A;
+  --hover: #A64B63;
+  --botones-principales: #710014;
+  --texto-fondo-oscuro: #F2F1ED;
+  --enlaces-textos-interactivos: #243B5A;
+  --fondos-suaves: #C8A48A;
+  --iconografia: #243B5A;
   
-  --background: var(--warm-sand);
-  --foreground: var(--obsidian-black);
+  --background: var(--fondo-general);
+  --foreground: var(--menu-texto-principal);
 }
 
 @theme inline {
@@ -19,8 +29,8 @@
 }
 
 body {
-  background: #c5ae91;
-  color: var(--obsidian-black);
+  background: #d0b29c;
+  color: var(--menu-texto-principal);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -32,4 +42,20 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Animación para notificaciones */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
 }

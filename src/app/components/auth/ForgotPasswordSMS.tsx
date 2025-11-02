@@ -107,7 +107,7 @@ export default function ForgotPasswordSMS({
   if (codeSent) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
           <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
             Código de Verificación
           </h2>
@@ -147,7 +147,7 @@ export default function ForgotPasswordSMS({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.code ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.code ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
                 placeholder="000000"
                 disabled={isLoading}
@@ -185,6 +185,8 @@ export default function ForgotPasswordSMS({
               disabled={isLoading || code.length !== 6}
               className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
             >
               {isLoading ? 'Verificando...' : 'Verificar Código'}
             </button>
@@ -250,7 +252,7 @@ export default function ForgotPasswordSMS({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.phone ? '#dc2626' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.phone ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
               placeholder="+1 234 567 8900"
               disabled={isLoading}
@@ -270,6 +272,8 @@ export default function ForgotPasswordSMS({
             disabled={isLoading}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
           >
             {isLoading ? 'Enviando...' : 'Enviar Código SMS'}
           </button>
