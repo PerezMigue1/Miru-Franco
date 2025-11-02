@@ -26,14 +26,27 @@ export const colors = {
   // Elementos interactivos
   hover: '#A64B63',
   botonesPrincipales: '#710014',
-  enlacesTextosInteractivos: '#243B5A',
+  enlacesTextosInteractivos: '#4A7BA7',
   
   // Textos
   textoFondoOscuro: '#F2F1ED',
   
   // Otros
   encabezadosAlterno: '#2A2A2A',
-  iconografia: '#243B5A',
+  iconografia: '#BFA181',
+} as const;
+
+
+export const socialColors = {
+  
+  // Instagram - Gradiente completo
+  instagramGradient: 'linear-gradient(45deg, #FCAF45 0%, #FF8C42 15%, #E1306C 40%, #833AB4 70%, #405DE6 100%)',
+  
+  // Facebook
+  facebook: '#1877F2',
+  
+  // Twitter/X
+  twitter: '#1DA1F2',
 } as const;
 
 /**
