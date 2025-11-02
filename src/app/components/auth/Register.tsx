@@ -975,7 +975,10 @@ export default function Register({
             disabled={isLoading}
           />
           <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>
-            Acepto <a href="#" className="text-zinc-900 dark:text-zinc-50 hover:underline">Aviso de Privacidad</a>
+            Acepto <a href="#" className="hover:underline" style={{ color: '#243B5A' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#A64B63'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
+            >Aviso de Privacidad</a>
           </span>
         </label>
         {errors.acceptPrivacy && (
@@ -1019,7 +1022,7 @@ export default function Register({
         </div>
       )}
 
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
+      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
             Crear Cuenta
@@ -1139,7 +1142,10 @@ export default function Register({
               ¿Ya tienes una cuenta?{' '}
               <button
                 onClick={onSwitchToLogin}
-                className="font-medium text-zinc-900 dark:text-zinc-50 hover:underline"
+                className="font-medium hover:underline"
+                style={{ color: '#243B5A' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#A64B63'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
                 disabled={isLoading}
               >
                 Inicia Sesión

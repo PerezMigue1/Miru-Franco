@@ -3,13 +3,14 @@
 :root {
   /* Nueva Paleta de Colores */
   --fondo-general: #d0b29c;
+  --logo-branding: #9f6d1f;
   --tarjetas-paneles: #B38E6F;
-  --header: #710014;
-  --menu-texto-principal: #161616;
+  --header-footer: #161616;
+  --menu-texto-principal: #710014;
   --warning: #D98E04;
   --danger: #590C0C;
   --success: #6E7D57;
-  --footer-encabezados: #2A2A2A;
+  --encabezados-alterno: #2A2A2A;
   --hover: #A64B63;
   --botones-principales: #710014;
   --texto-fondo-oscuro: #F2F1ED;

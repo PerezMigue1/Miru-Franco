@@ -145,7 +145,7 @@ export default function ForgotPasswordSecurityQuestions({
   if (questionsLoaded) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
           <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
             Preguntas de Seguridad
           </h2>

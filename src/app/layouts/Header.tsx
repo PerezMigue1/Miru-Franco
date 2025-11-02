@@ -13,7 +13,7 @@ export default function Header() {
   return (
     <>
       {/* Barra Superior - Top Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ backgroundColor: '#710014' }}>
+      <header className="fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ backgroundColor: '#161616' }}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between" style={{ minHeight: '56px', padding: '8px 0' }}>
             {/* Izquierda: Menu + Logo */}
@@ -48,8 +48,8 @@ export default function Header() {
                   <h1 
                     className="text-base md:text-lg font-bold tracking-wide uppercase"
                     style={{ 
-                      color: '#F2F1ED',
-                      textShadow: '0 2px 4px rgba(212, 175, 55, 0.3)',
+                      color: '#9f6d1f',
+                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
                       letterSpacing: '0.05em',
                       lineHeight: '1.2',
                       margin: 0,
@@ -61,8 +61,8 @@ export default function Header() {
                   <h2
                     className="text-xs md:text-sm font-semibold tracking-wide uppercase"
                     style={{ 
-                      color: '#F2F1ED',
-                      textShadow: '0 2px 4px rgba(212, 175, 55, 0.3)',
+                      color: '#9f6d1f',
+                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
                       letterSpacing: '0.05em',
                       lineHeight: '1.2',
                       margin: 0,
@@ -109,7 +109,7 @@ export default function Header() {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span className="font-medium">Usuario</span>
+                  <span className="font-medium" style={{ color: '#F2F1ED' }}>Usuario</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -118,7 +118,7 @@ export default function Header() {
                 {isUserMenuOpen && (
                   <div 
                     className="absolute right-0 mt-2 rounded-lg shadow-lg border min-w-[200px]"
-                    style={{ backgroundColor: '#710014', borderColor: 'rgba(255,255,255,0.2)' }}
+                    style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.2)' }}
                   >
                     <div className="py-2">
                       <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity" style={{ color: '#F2F1ED' }}>
@@ -158,7 +158,7 @@ export default function Header() {
       )}
 
       {/* Barra de Navegación Secundaria */}
-      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ backgroundColor: '#161616', top: '72px' }}>
+      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ backgroundColor: '#710014', top: '72px' }}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center h-14">
             <MenuHorizontal />

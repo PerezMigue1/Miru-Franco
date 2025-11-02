@@ -61,7 +61,7 @@ export default function MenuHorizontal() {
                 }`}
                 style={{ 
                   color: '#F2F1ED',
-                  backgroundColor: isActive ? 'rgba(242, 241, 237, 0.15)' : 'transparent',
+                  backgroundColor: isActive ? 'rgba(113, 0, 20, 0.15)' : 'transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -99,7 +99,7 @@ export default function MenuHorizontal() {
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
-                      style={{ color: '#F2F1ED' }}
+                      style={{ color: '#710014' }}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -110,7 +110,7 @@ export default function MenuHorizontal() {
               {isActive && (
                 <div 
                   className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-20 h-0.5 rounded-full"
-                  style={{ backgroundColor: '#F2F1ED' }}
+                  style={{ backgroundColor: '#710014' }}
                 />
               )}
             </li>

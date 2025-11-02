@@ -58,7 +58,7 @@
 | Obsidian Black | `#161616` | Fondos de formularios y tarjetas |
 | Crimson Depth | `#710014` | Botones primarios y navegación |
 | Soft Pearl | `#F2F1ED` | Texto claro y header |
-| Golden | `#D4AF37` | Logo y branding |
+|  |
 | Red Error | `#dc2626` | Errores y validaciones |
 | Green Success | `#22C55E` | Notificaciones de éxito |
 
@@ -68,11 +68,13 @@
 YO TENGO MI PROPIA PALETA DE COLORES PARA QUE ME AYUDES A CAMBIAR LOS COLORES :
 Fondo general — #d0b29c
 
+Logo y branding - #9f6d1f 
+
 Tarjetas / Paneles — #B38E6F
 
-Header — #710014
+Header / Footer — #161616
 
-Menú horizontal y texto principal — #161616
+Menú horizontal y texto principal — #710014
 
 Advertencias (Warning) — #D98E04
 
@@ -80,9 +82,9 @@ Errores (Danger) — #590C0C
 
 Éxito (Success) — #6E7D57
 
-Footer / Encabezados (alterno oscuro) — #2A2A2A
+Encabezados (alterno oscuro) — #2A2A2A
 
-Hover (botones, enlaces, detalles visuales) — #A64B63
+Hover para boton primario y secundarios (botones, enlaces, detalles visuales) — #A64B63
 
 Botones principales — #710014
 
