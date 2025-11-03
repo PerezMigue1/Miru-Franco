@@ -65,7 +65,13 @@ export default function ResetPassword({
     try {
       const { api } = await import('../../services');
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
+      // Obtener token de la URL o de sessionStorage (flujo interno)
+      const tokenFromUrl = urlParams.get('token');
+      const tokenFromStorage = sessionStorage.getItem('resetToken');
+      const token = tokenFromUrl || tokenFromStorage;
+      if (tokenFromStorage) {
+        sessionStorage.removeItem('resetToken'); // Limpiar después de usarlo
+      }
       
       await api.resetPassword(token, identifier || null, formData.password);
       setIsSuccess(true);
@@ -89,7 +95,7 @@ export default function ResetPassword({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold mb-2" style={{ color: '#F2F1ED' }}>
+            <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
               Contraseña Restablecida
             </h2>
             <p className="mb-6" style={{ color: '#F2F1ED' }}>
@@ -115,7 +121,7 @@ export default function ResetPassword({
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+        <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
           Nueva Contraseña
         </h2>
         <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>

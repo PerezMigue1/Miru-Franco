@@ -71,14 +71,14 @@ export default function Carousel() {
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
                 >
-                  <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 uppercase" style={{ color: '#d0b29c' }}>
+                  <h2 className="text-elegant-display mb-4 uppercase" style={{ color: '#d0b29c' }}>
                     {slide.title}
                   </h2>
-                  <p className="text-lg md:text-xl mb-4" style={{ color: '#F2F1ED' }}>
+                  <p className="text-lead mb-4" style={{ color: '#F2F1ED' }}>
                     {slide.subtitle.split('.')[0]}
                   </p>
                   {slide.subtitle.includes('.') && slide.subtitle.split('.').length > 1 && (
-                    <p className="text-base md:text-lg mb-8" style={{ color: '#F2F1ED' }}>
+                    <p className="text-base mb-8" style={{ color: '#F2F1ED' }}>
                       {slide.subtitle.split('.').slice(1).join('.')}
                     </p>
                   )}

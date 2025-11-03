@@ -6,7 +6,7 @@ interface ForgotPasswordSecurityQuestionsProps {
   onSwitchToLogin?: () => void;
   onSwitchToEmail?: () => void;
   onSwitchToSMS?: () => void;
-  onQuestionsVerified?: () => void;
+  onQuestionsVerified?: (email: string, token?: string) => void;
 }
 
 interface SecurityQuestion {
@@ -77,31 +77,28 @@ export default function ForgotPasswordSecurityQuestions({
       const result = await api.getSecurityQuestions(email);
       
       if (result.questions && result.questions.length > 0) {
-        const selectedQuestions = result.questions.map((q: {_id: string; pregunta?: string; question?: string}, index: number) => ({
-          id: `q${index + 1}`,
+        // Mostrar solo la pregunta asociada al usuario (primera del backend)
+        const q = result.questions[0] as { _id: string; pregunta?: string; question?: string };
+        const selectedQuestion = [{
+          id: `q1`,
           question: q.pregunta || q.question || '',
           answer: '',
-        }));
-        
-        setQuestions(selectedQuestions);
+        }];
+        setQuestions(selectedQuestion);
         setQuestionsLoaded(true);
         setUserAnswers({});
       } else {
-        // Si no hay preguntas configuradas, usar preguntas predeterminadas
-        const shuffled = [...predefinedQuestions].sort(() => 0.5 - Math.random());
-        const selectedQuestions = shuffled.slice(0, 3).map((q, index) => ({
-          id: `q${index + 1}`,
-          question: q,
-          answer: '',
-        }));
-        
-        setQuestions(selectedQuestions);
+        // Sin pregunta asociada, tomar una por defecto para no bloquear el flujo
+        const fallback = predefinedQuestions[0];
+        const selectedQuestion = [{ id: 'q1', question: fallback, answer: '' }];
+        setQuestions(selectedQuestion);
         setQuestionsLoaded(true);
         setUserAnswers({});
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error cargando preguntas:', error);
-      setErrors({ email: error.message || 'No se encontró una cuenta con este email' });
+      const msg = error instanceof Error ? error.message : 'No se encontró una cuenta con este email';
+      setErrors({ email: msg });
     } finally {
       setIsLoading(false);
     }
@@ -121,11 +118,16 @@ export default function ForgotPasswordSecurityQuestions({
         answersObject[q.question] = userAnswers[q.id];
       });
       
-      await api.verifySecurityQuestions(email, answersObject);
-      onQuestionsVerified?.();
-    } catch (error: any) {
+      const result = await api.verifySecurityQuestions(email, answersObject);
+      if (result.success && result.token) {
+        onQuestionsVerified?.(email, result.token);
+      } else {
+        onQuestionsVerified?.(email);
+      }
+    } catch (error: unknown) {
       console.error('Error verificando respuestas:', error);
-      setErrors({ answers: error.message || 'Una o más respuestas son incorrectas. Intenta nuevamente.' });
+      const msg = error instanceof Error ? error.message : 'Una o más respuestas son incorrectas. Intenta nuevamente.';
+      setErrors({ answers: msg });
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +148,7 @@ export default function ForgotPasswordSecurityQuestions({
     return (
       <div className="w-full max-w-md mx-auto">
         <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-          <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+          <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
             Preguntas de Seguridad
           </h2>
           <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>

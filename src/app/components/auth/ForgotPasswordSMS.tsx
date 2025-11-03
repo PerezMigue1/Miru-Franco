@@ -108,7 +108,7 @@ export default function ForgotPasswordSMS({
     return (
       <div className="w-full max-w-md mx-auto">
         <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-          <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+          <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
             Código de Verificación
           </h2>
           <p className="text-center text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
@@ -139,7 +139,7 @@ export default function ForgotPasswordSMS({
                     });
                   }
                 }}
-                className={`w-full px-4 py-3 rounded-lg border text-center text-2xl tracking-widest ${
+                className={`w-full px-4 py-3 rounded-lg border text-center text-3xl tracking-widest ${
                   errors.code 
                     ? 'border-red-500 dark:border-red-600' 
                     : 'border-zinc-300 dark:border-zinc-700'

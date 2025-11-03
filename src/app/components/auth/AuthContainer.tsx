@@ -7,7 +7,7 @@ import ForgotPassword from './ForgotPassword';
 import ForgotPasswordSMS from './ForgotPasswordSMS';
 import ForgotPasswordSecurityQuestions from './ForgotPasswordSecurityQuestions';
 import ResetPassword from './ResetPassword';
-import { colors } from '../../utils/colors';
+
 
 type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-sms' | 'forgot-security' | 'reset-password';
 
@@ -22,7 +22,6 @@ export default function AuthContainer({
 }: AuthContainerProps) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [recoveryIdentifier, setRecoveryIdentifier] = useState<string>('');
-  const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'sms' | 'security-questions'>('email');
 
   const handleLoginSuccess = () => {
     onAuthSuccess?.();
@@ -36,25 +35,24 @@ export default function AuthContainer({
   const handleEmailSent = () => {
     // Cuando se envía el email, guardamos el método pero no cambiamos de vista todavía
     // El usuario verá el mensaje de confirmación y luego puede ir a reset-password
-    setRecoveryMethod('email');
     // Nota: En un flujo real, el usuario haría clic en el enlace del email
     // que lo llevaría a reset-password con un token
   };
 
-  const handleEmailConfirmed = (email: string) => {
-    setRecoveryIdentifier(email);
-    setRecoveryMethod('email');
-    setCurrentView('reset-password');
-  };
+  // handleEmailConfirmed se eliminará hasta integrar el flujo por email directo
 
   const handleSMSCodeVerified = (phone: string) => {
     setRecoveryIdentifier(phone);
-    setRecoveryMethod('sms');
     setCurrentView('reset-password');
   };
 
-  const handleSecurityQuestionsVerified = () => {
-    setRecoveryMethod('security-questions');
+  const handleSecurityQuestionsVerified = (email: string, token?: string) => {
+    setRecoveryIdentifier(email);
+    // Si hay token, guardarlo en localStorage temporalmente o en la URL
+    if (token) {
+      // Guardar token en sessionStorage para que ResetPassword lo pueda obtener
+      sessionStorage.setItem('resetToken', token);
+    }
     setCurrentView('reset-password');
   };
 

@@ -113,28 +113,76 @@ export const api = {
     return data;
   },
 
-  async forgotPassword(email: string, method: 'email' | 'sms' | 'security-questions' = 'email'): Promise<ForgotPasswordResponse> {
-    return apiClient.post<ForgotPasswordResponse>('/forgot-password', { email, method });
+  async forgotPassword(_email: string, _method: 'email' | 'sms' | 'security-questions' = 'email'): Promise<ForgotPasswordResponse> {
+    // Esta ruta no existe en el backend actual
+    // El flujo de recuperación se maneja directamente con las preguntas de seguridad
+    // Por ahora retornamos un mensaje de éxito
+    return {
+      success: true,
+      message: 'Por favor, usa el método de preguntas de seguridad para recuperar tu contraseña'
+    };
   },
 
-  async resetPassword(token: string | null, email: string | null, password: string): Promise<ResetPasswordResponse> {
-    return apiClient.post<ResetPasswordResponse>('/reset-password', { token, email, password });
+  async resetPassword(token: string | null, email: string | null, nuevaPassword: string): Promise<ResetPasswordResponse> {
+    const payload = { token, email, nuevaPassword };
+    console.log('[resetPassword] Enviando:', { 
+      token: token ? `${token.substring(0, 10)}...` : null, 
+      email, 
+      nuevaPassword: nuevaPassword ? `${nuevaPassword.substring(0, 3)}...` : null,
+      nuevaPasswordLength: nuevaPassword?.length 
+    });
+    return apiClient.post<ResetPasswordResponse>(
+      '/api/usuarios/cambiar-password',
+      payload,
+      BACKEND_BASE
+    );
   },
 
-  async sendSMSCode(phone: string): Promise<SMSResponse> {
-    return apiClient.put<SMSResponse>('/verify-sms', { phone });
+  async sendSMSCode(_phone: string): Promise<SMSResponse> {
+    // Esta funcionalidad aún no está implementada en el backend
+    return {
+      success: false,
+      message: 'Funcionalidad SMS aún no disponible'
+    };
   },
 
-  async verifySMSCode(phone: string, code: string): Promise<SMSResponse> {
-    return apiClient.post<SMSResponse>('/verify-sms', { phone, code });
+  async verifySMSCode(_phone: string, _code: string): Promise<SMSResponse> {
+    // Esta funcionalidad aún no está implementada en el backend
+    return {
+      success: false,
+      message: 'Funcionalidad SMS aún no disponible'
+    };
   },
 
   async getSecurityQuestions(email: string): Promise<SecurityQuestionsResponse> {
-    return apiClient.get<SecurityQuestionsResponse>(`/verify-security-questions?email=${encodeURIComponent(email)}`);
+    // Opción 1: Usar /api/pregunta-seguridad?email=... (GET)
+    const data = await apiClient.get<{ success?: boolean; data?: Array<{ _id: string; pregunta: string }> }>(
+      `/api/pregunta-seguridad?email=${encodeURIComponent(email)}`,
+      BACKEND_BASE
+    );
+    
+    if (data.success && data.data && data.data.length > 0) {
+      return {
+        questions: data.data.map(q => ({ _id: q._id, pregunta: q.pregunta }))
+      };
+    }
+    
+    // Si no hay datos, retornar array vacío
+    return { questions: [] };
   },
 
   async verifySecurityQuestions(email: string, answers: Record<string, string>): Promise<{ success?: boolean; token?: string; error?: string }> {
-    return apiClient.post<{ success?: boolean; token?: string; error?: string }>('/verify-security-questions', { email, answers });
+    // El backend espera { email, respuesta } en /api/usuarios/verificar-respuesta
+    // Necesitamos extraer la respuesta del objeto answers
+    const preguntaTexto = Object.keys(answers)[0];
+    const respuesta = answers[preguntaTexto];
+    
+    // Usar la ruta de usuarios que devuelve el token
+    return apiClient.post<{ success?: boolean; token?: string; email?: string; error?: string }>(
+      '/api/usuarios/verificar-respuesta',
+      { email, respuesta },
+      BACKEND_BASE
+    );
   },
 
   async getAvailableSecurityQuestions() {

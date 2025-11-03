@@ -76,7 +76,7 @@ export default function Login({
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
-        <h2 className="text-2xl font-bold text-center mb-6 text-texto-fondo-oscuro">
+        <h2 className="text-page-title text-center mb-6 text-texto-fondo-oscuro">
           Iniciar Sesión
         </h2>
         
@@ -139,9 +139,9 @@ export default function Login({
                   }
                 }}
                 className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors pr-12 bg-texto-fondo-oscuro text-header-footer"
-                style={{ 
+              style={{ 
                   borderColor: errors.password ? colors.danger : colorsWithOpacity.bordeVisible
-                }}
+              }}
                 placeholder="••••••••"
                 disabled={isLoading}
               />

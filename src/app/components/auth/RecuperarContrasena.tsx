@@ -23,24 +23,19 @@ export default function ForgotPassword({
 
   const validateForm = () => {
     const newErrors: { email?: string } = {};
-    
     if (!email) {
       newErrors.email = 'El correo electrónico es requerido';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'El correo electrónico no es válido';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
     setIsLoading(true);
-    
     try {
       const { api } = await import('../../services');
       await api.forgotPassword(email, 'email');
@@ -86,7 +81,7 @@ export default function ForgotPassword({
             <div className="space-y-3">
               <button
                 onClick={handleBackToLogin}
-                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors bg-botones-principales"
+                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
                 style={{ backgroundColor: colors.botonesPrincipales }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
@@ -116,13 +111,9 @@ export default function ForgotPassword({
         <p className="text-center mb-6 text-sm text-texto-fondo-oscuro">
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
         </p>
-        
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label 
-              htmlFor="email" 
-              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
-            >
+            <label htmlFor="email" className="block text-sm font-medium mb-2 text-texto-fondo-oscuro">
               Correo Electrónico
             </label>
             <input
@@ -140,9 +131,7 @@ export default function ForgotPassword({
                 }
               }}
               className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
-              style={{ 
-                borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
-              }}
+              style={{ borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible }}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
@@ -156,50 +145,49 @@ export default function ForgotPassword({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
+            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
           >
-            {isLoading ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
+            {isLoading ? 'Enviando...' : 'Enviar Enlace'}
           </button>
         </form>
 
-        {(onSwitchToSMS || onSwitchToSecurityQuestions) && (
-          <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
-            <p className="text-center text-sm mb-4 text-texto-fondo-oscuro">
-              Otras opciones de recuperación:
-            </p>
-            <div className="space-y-2">
-              {onSwitchToSMS && (
-                <button
-                  onClick={onSwitchToSMS}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
-                  style={{ borderColor: colorsWithOpacity.bordeSecundario }}
-                  disabled={isLoading}
-                >
-                  Recuperar por SMS
-                </button>
-              )}
-              {onSwitchToSecurityQuestions && (
-                <button
-                  onClick={onSwitchToSecurityQuestions}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
-                  style={{ borderColor: colorsWithOpacity.bordeSecundario }}
-                  disabled={isLoading}
-                >
-                  Recuperar por Preguntas de Seguridad
-                </button>
-              )}
-            </div>
+        <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+          <p className="text-center text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            Otras opciones de recuperación:
+          </p>
+          <div className="space-y-2 mt-4">
+            {onSwitchToSMS && (
+              <button
+                onClick={onSwitchToSMS}
+                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+                style={{ borderColor: colorsWithOpacity.bordeSecundario, color: colors.textoFondoOscuro }}
+                disabled={isLoading}
+              >
+                Recuperar por SMS
+              </button>
+            )}
+            {onSwitchToSecurityQuestions && (
+              <button
+                onClick={onSwitchToSecurityQuestions}
+                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+                style={{ borderColor: colorsWithOpacity.bordeSecundario, color: colors.textoFondoOscuro }}
+                disabled={isLoading}
+              >
+                Recuperar por Preguntas de Seguridad
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         {onSwitchToLogin && (
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
+              className="text-sm transition-colors"
+              style={{ color: colors.textoFondoOscuro }}
               disabled={isLoading}
             >
               ← Volver a Iniciar Sesión
@@ -210,4 +198,3 @@ export default function ForgotPassword({
     </div>
   );
 }
-

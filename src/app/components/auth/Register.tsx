@@ -285,7 +285,7 @@ export default function Register({
         
         // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
         setTimeout(() => {
-          onRegisterSuccess?.();
+      onRegisterSuccess?.();
         }, 2000);
       } else {
         throw new Error(response.error || 'Error al crear la cuenta');
@@ -564,8 +564,8 @@ export default function Register({
         ) : (
           <>
             <select
-              id="securityQuestion"
-              value={formData.securityQuestion}
+          id="securityQuestion"
+          value={formData.securityQuestion}
               onChange={(e) => {
                 const selectedId = e.target.value;
                 handleChange('securityQuestion', selectedId);
@@ -577,16 +577,16 @@ export default function Register({
                   setSecurityAnswer('');
                 }
               }}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.securityQuestion 
-                  ? 'border-red-500 dark:border-red-600' 
-                  : 'border-zinc-300 dark:border-zinc-700'
+          className={`w-full px-4 py-3 rounded-lg border ${
+            errors.securityQuestion 
+              ? 'border-red-500 dark:border-red-600' 
+              : 'border-zinc-300 dark:border-zinc-700'
               } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
+          style={{ 
+            backgroundColor: '#f2f1ed', 
+            color: '#161616',
                 borderColor: errors.securityQuestion ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+          }}
               disabled={isLoading || loadingQuestions}
             >
               <option value="">Selecciona una pregunta de seguridad</option>
@@ -599,10 +599,10 @@ export default function Register({
                 );
               })}
             </select>
-            {errors.securityQuestion && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.securityQuestion}
-              </p>
+        {errors.securityQuestion && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            {errors.securityQuestion}
+          </p>
             )}
           </>
         )}
@@ -1024,7 +1024,7 @@ export default function Register({
 
       <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+          <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
             Crear Cuenta
           </h2>
           <div className="flex items-center justify-center gap-2 mb-4">

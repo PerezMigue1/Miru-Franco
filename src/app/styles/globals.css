@@ -20,6 +20,43 @@
   
   --background: var(--fondo-general);
   --foreground: var(--menu-texto-principal);
+  
+  /* ========== SISTEMA TIPOGRÁFICO ========== */
+  
+  /* Font Families */
+  --font-family-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-family-mono: var(--font-geist-mono), 'Courier New', monospace;
+  --font-family-serif: var(--font-playfair-display), 'Times New Roman', serif;
+  
+  /* Escala Tipográfica (basada en ratio 1.25) */
+  --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-base: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --font-size-xl: 1.25rem;      /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+  --font-size-4xl: 2.25rem;     /* 36px */
+  --font-size-5xl: 3rem;       /* 48px */
+  --font-size-6xl: 3.75rem;    /* 60px */
+  
+  /* Line Heights (optimizados para legibilidad) */
+  --line-height-tight: 1.2;      /* Títulos grandes */
+  --line-height-snug: 1.375;     /* Títulos medianos */
+  --line-height-normal: 1.5;     /* Texto de cuerpo */
+  --line-height-relaxed: 1.625;  /* Texto largo */
+  
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.05em;
+  --letter-spacing-wider: 0.1em;
+  
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 }
 
 @theme inline {
@@ -52,7 +89,12 @@
 body {
   background: #d0b29c;
   color: var(--menu-texto-principal);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scrollbar personalizado para el menú horizontal */
@@ -79,4 +121,189 @@ body {
 
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
+}
+
+/* ========== CLASES DE UTILIDAD TIPOGRÁFICA ========== */
+
+/* Display - Títulos más grandes (Hero, Landing) */
+.text-display {
+  font-size: var(--font-size-5xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+@media (min-width: 768px) {
+  .text-display {
+    font-size: var(--font-size-6xl);
+  }
+}
+
+/* Hero - Títulos principales de sección */
+.text-hero {
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+@media (min-width: 768px) {
+  .text-hero {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+/* Section Title - Títulos grandes de sección */
+.text-section-title {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Page Title - Títulos de formularios, páginas */
+.text-page-title {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Subtitle - Títulos de cards, subtítulos */
+.text-subtitle {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Lead - Descripciones importantes, introducciones */
+.text-lead {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-normal);
+}
+
+/* Logo Principal */
+.text-logo {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+  .text-logo {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* Logo Secundario/Subtítulo */
+.text-logo-small {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+  .text-logo-small {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Hero Title con mejor legibilidad en fondos oscuros */
+.text-hero-light {
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 768px) {
+  .text-hero-light {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+/* Mejorar legibilidad de párrafos */
+p {
+  line-height: var(--line-height-relaxed);
+}
+
+/* ========== CLASES CON PLAYFAIR DISPLAY (SERIF ELEGANTE) ========== */
+
+/* Elegant Display - Para títulos hero muy destacados */
+.text-elegant-display {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-5xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+@media (min-width: 768px) {
+  .text-elegant-display {
+    font-size: var(--font-size-6xl);
+  }
+}
+
+/* Elegant Hero - Para títulos principales elegantes */
+.text-elegant-hero {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+@media (min-width: 768px) {
+  .text-elegant-hero {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+/* Elegant Title - Para títulos de sección elegantes */
+.text-elegant-title {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+@media (min-width: 768px) {
+  .text-elegant-title {
+    font-size: var(--font-size-4xl);
+  }
+}
+
+/* Elegant Quote - Para citas o texto destacado elegante */
+.text-elegant-quote {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-normal);
+  font-style: italic;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+@media (min-width: 768px) {
+  .text-elegant-quote {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* Elegant Hero con text-shadow para fondos oscuros */
+.text-elegant-hero-light {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 768px) {
+  .text-elegant-hero-light {
+    font-size: var(--font-size-5xl);
+  }
 }

@@ -46,23 +46,19 @@ export default function Header() {
                 </div>
                 <div className="flex flex-col items-start justify-center">
                   <h1 
-                    className="text-base md:text-lg font-bold tracking-wide uppercase text-logo-branding"
+                    className="text-logo text-logo-branding"
                     style={{ 
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                      letterSpacing: '0.05em',
-                      lineHeight: '1.2',
                       margin: 0,
                       padding: 0
                     }}
                   >
                     MIRÚ FRANCO
-                  </h1>
+                </h1>
                   <h2
-                    className="text-xs md:text-sm font-semibold tracking-wide uppercase text-logo-branding"
+                    className="text-logo-small text-logo-branding"
                     style={{ 
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                      letterSpacing: '0.05em',
-                      lineHeight: '1.2',
                       margin: 0,
                       padding: 0,
                       marginTop: '2px'
@@ -104,7 +100,7 @@ export default function Header() {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span className="font-medium">Usuario</span>
+                  <span className="text-base font-medium">Usuario</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
