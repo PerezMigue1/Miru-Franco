@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { BACKEND_BASE } from './config';
+import { getBackendBaseUrl } from './config';
 
 export interface LoginResponse {
   success: boolean;
@@ -76,6 +76,7 @@ const saveAuthData = (data: { token?: string; user?: unknown }) => {
 
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
     saveAuthData(data);
     return data;
@@ -108,6 +109,7 @@ export const api = {
     aceptaAvisoPrivacidad: boolean;
     recibePromociones: boolean;
   }): Promise<RegisterResponse> {
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const data = await apiClient.post<RegisterResponse>('/api/usuarios', registerData, BACKEND_BASE);
     saveAuthData(data);
     return data;
@@ -124,6 +126,7 @@ export const api = {
   },
 
   async resetPassword(token: string | null, email: string | null, nuevaPassword: string): Promise<ResetPasswordResponse> {
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const payload = { token, email, nuevaPassword };
     console.log('[resetPassword] Enviando:', { 
       token: token ? `${token.substring(0, 10)}...` : null, 
@@ -156,6 +159,7 @@ export const api = {
 
   async getSecurityQuestions(email: string): Promise<SecurityQuestionsResponse> {
     // Opción 1: Usar /api/pregunta-seguridad?email=... (GET)
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const data = await apiClient.get<{ success?: boolean; data?: Array<{ _id: string; pregunta: string }> }>(
       `/api/pregunta-seguridad?email=${encodeURIComponent(email)}`,
       BACKEND_BASE
@@ -174,6 +178,7 @@ export const api = {
   async verifySecurityQuestions(email: string, answers: Record<string, string>): Promise<{ success?: boolean; token?: string; error?: string }> {
     // El backend espera { email, respuesta } en /api/usuarios/verificar-respuesta
     // Necesitamos extraer la respuesta del objeto answers
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const preguntaTexto = Object.keys(answers)[0];
     const respuesta = answers[preguntaTexto];
     
@@ -186,6 +191,7 @@ export const api = {
   },
 
   async getAvailableSecurityQuestions() {
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const endpoint = `/api/pregunta-seguridad`;
     const data = await apiClient.get<{ success?: boolean; count?: number; data?: Array<{_id: string; pregunta: string}>; questions?: Array<{_id: string; pregunta: string}> }>(
       endpoint,
@@ -207,6 +213,7 @@ export const api = {
   async loginWithGoogle(): Promise<GoogleLoginResponse> {
     // Redirige a la URL de autenticación de Google en el backend
     // El backend debería manejar la autenticación OAuth y redirigir de vuelta
+    const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const redirectUrl = `${BACKEND_BASE}/api/auth/google`;
     window.location.href = redirectUrl;
     // Nota: Este método no retorna inmediatamente ya que redirige

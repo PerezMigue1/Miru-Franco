@@ -1,6 +1,6 @@
 // Cliente API centralizado con manejo de errores y tokens
 
-import { API_BASE } from './config';
+import { getApiBaseUrl } from './config';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -14,9 +14,20 @@ class ApiClient {
   ): Promise<T> {
     const { skipAuth = false, endpoint: customEndpoint, ...fetchOptions } = options;
     
-    const url = customEndpoint || `${API_BASE}${endpoint}`;
+    // Calcular API_BASE en runtime para evitar problemas con builds cacheados
+    // Usar getApiBaseUrl() que calcula en runtime en lugar de la constante
+    const apiBase = getApiBaseUrl();
     
-    console.log(`[API] ${fetchOptions.method || 'GET'} ${url}`);
+    // Construir URL: si hay customEndpoint, usarlo; si no, construir desde API_BASE
+    const url = customEndpoint || `${apiBase}${endpoint}`;
+    
+    // Log detallado para debugging en producción
+    console.log(`[API Client] ${fetchOptions.method || 'GET'} ${url}`);
+    if (customEndpoint) {
+      console.log(`[API Client] Using customEndpoint: ${customEndpoint}`);
+    } else {
+      console.log(`[API Client] Using API_BASE (runtime): ${apiBase}`);
+    }
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
