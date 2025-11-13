@@ -349,18 +349,10 @@ export default function Register({
         setRegisterSuccess(true);
         setErrors({}); // Limpiar errores
         
-        // Si el backend indica que se requiere verificación, mostrar mensaje especial
-        if (response.message && response.message.includes('verifica')) {
-          // Mostrar mensaje de verificación por más tiempo
-          setTimeout(() => {
-            onRegisterSuccess?.();
-          }, 4000);
-        } else {
-          // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
-          setTimeout(() => {
-            onRegisterSuccess?.();
-          }, 2000);
-        }
+        // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
+        setTimeout(() => {
+          onRegisterSuccess?.();
+        }, 2000);
       } else {
         // Si el backend devuelve un error específico, mostrarlo
         const backendError = response.error || 'Error al crear la cuenta';
@@ -1128,7 +1120,7 @@ export default function Register({
             ¡Registro exitoso!
           </p>
           <p className="text-xs text-center text-white opacity-90">
-            Se ha enviado un email de verificación a tu correo. Por favor verifica tu cuenta antes de iniciar sesión.
+            Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión.
           </p>
         </div>
       )}
