@@ -1,15 +1,31 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
 import { colors, colorsWithOpacity } from '../utils/colors';
 
 export default function Header() {
+  const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const notificationsCount = 0; // Cambia este valor cuando tengas notificaciones
+
+  const handleLogout = () => {
+    // Limpiar datos de autenticación del localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    
+    // Cerrar el menú de usuario
+    setIsUserMenuOpen(false);
+    
+    // Redirigir al login
+    router.push('/');
+  };
 
   return (
     <>
@@ -118,9 +134,12 @@ export default function Header() {
                       <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
                         Configuración
                       </a>
-                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                      >
                         Cerrar Sesión
-                      </a>
+                      </button>
                     </div>
                   </div>
                 )}

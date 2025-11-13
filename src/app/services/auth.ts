@@ -10,16 +10,31 @@ export interface LoginResponse {
   };
   token?: string;
   error?: string;
+  requiereVerificacion?: boolean;
 }
 
 export interface RegisterResponse {
   success: boolean;
+  message?: string;
   user?: {
     _id: string;
     email: string;
     name: string;
   };
   token?: string;
+  error?: string;
+  requiereVerificacion?: boolean;
+}
+
+export interface VerifyEmailResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message?: string;
   error?: string;
 }
 
@@ -110,8 +125,11 @@ export const api = {
     recibePromociones: boolean;
   }): Promise<RegisterResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
-    const data = await apiClient.post<RegisterResponse>('/api/usuarios', registerData, BACKEND_BASE);
-    saveAuthData(data);
+    const data = await apiClient.post<RegisterResponse>('/api/usuarios/registrar', registerData, BACKEND_BASE);
+    // No guardar datos de autenticación si requiere verificación
+    if (data.success && data.token && !data.requiereVerificacion) {
+      saveAuthData(data);
+    }
     return data;
   },
 
@@ -218,6 +236,23 @@ export const api = {
     window.location.href = redirectUrl;
     // Nota: Este método no retorna inmediatamente ya que redirige
     return { success: false, error: 'Redirecting to Google' };
+  },
+
+  async verifyEmail(token: string, email: string): Promise<VerifyEmailResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    return apiClient.get<VerifyEmailResponse>(
+      `/api/usuarios/verificar-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`,
+      BACKEND_BASE
+    );
+  },
+
+  async resendVerificationEmail(email: string): Promise<ResendVerificationResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    return apiClient.post<ResendVerificationResponse>(
+      '/api/usuarios/reenviar-verificacion',
+      { email },
+      BACKEND_BASE
+    );
   },
 };
 

@@ -17,9 +17,10 @@ export default function Login({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string; showResendButton?: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -49,8 +50,21 @@ export default function Login({
     
     try {
       const { api } = await import('../../services');
-      await api.login(email, password);
-      onLoginSuccess?.();
+      const result = await api.login(email, password);
+      
+      if (!result.success) {
+        if (result.requiereVerificacion) {
+          setErrors({ 
+            general: 'Por favor verifica tu correo electrónico antes de iniciar sesión. ¿No recibiste el email?',
+            showResendButton: true 
+          });
+        } else {
+          setErrors({ general: result.error || 'Error al iniciar sesión' });
+        }
+      } else {
+        // Login exitoso
+        onLoginSuccess?.();
+      }
     } catch (error: unknown) {
       console.error('Error en login:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
@@ -70,6 +84,39 @@ export default function Login({
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión con Google';
       setErrors({ general: errorMessage });
       setIsGoogleLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setErrors({ general: 'Por favor ingresa tu correo electrónico primero' });
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const { api } = await import('../../services');
+      const result = await api.resendVerificationEmail(email);
+      
+      if (result.success) {
+        setErrors({ 
+          general: result.message || 'Se ha enviado un nuevo email de verificación. Revisa tu bandeja de entrada.',
+          showResendButton: false 
+        });
+      } else {
+        setErrors({ 
+          general: result.error || 'Error al reenviar el email de verificación',
+          showResendButton: true 
+        });
+      }
+    } catch (error) {
+      console.error('Error reenviando verificación:', error);
+      setErrors({ 
+        general: 'Error al reenviar el email de verificación',
+        showResendButton: true 
+      });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -182,9 +229,33 @@ export default function Login({
           </div>
 
           {errors.general && (
-            <p className="text-sm text-red-600 dark:text-red-400 text-center">
-              {errors.general}
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-red-600 dark:text-red-400 text-center">
+                {errors.general}
+              </p>
+              {errors.showResendButton && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResending || isLoading}
+                  className="w-full py-2 px-4 rounded-lg border font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  style={{ 
+                    borderColor: colorsWithOpacity.bordeVisible,
+                    color: colors.textoFondoOscuro
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isResending && !isLoading) {
+                      e.currentTarget.style.backgroundColor = colorsWithOpacity.hover20;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  {isResending ? 'Enviando...' : 'Reenviar Email de Verificación'}
+                </button>
+              )}
+            </div>
           )}
 
           <button

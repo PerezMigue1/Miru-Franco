@@ -31,11 +31,11 @@ export default function Register({
     
     // Paso 3: Perfil capilar
     hairType: '',
-    hasAllergies: false,
+    hasAllergies: null as boolean | null,
     allergies: '',
-    hasChemicalTreatments: false,
+    hasChemicalTreatments: null as boolean | null,
     chemicalTreatments: '',
-    acceptPrivacy: false,
+    acceptTerms: false,
     receivePromotions: false,
   });
   
@@ -188,16 +188,22 @@ export default function Register({
       newErrors.hairType = 'Selecciona tu tipo de cabello';
     }
     
-    if (formData.hasAllergies && !formData.allergies.trim()) {
+    // hasAllergies es obligatorio (debe ser true o false, no null)
+    if (formData.hasAllergies === null) {
+      newErrors.hasAllergies = 'Debes indicar si tienes alergias a productos';
+    } else if (formData.hasAllergies === true && !formData.allergies.trim()) {
       newErrors.allergies = 'Especifica tus alergias';
     }
     
-    if (formData.hasChemicalTreatments && !formData.chemicalTreatments.trim()) {
+    // hasChemicalTreatments es obligatorio (debe ser true o false, no null)
+    if (formData.hasChemicalTreatments === null) {
+      newErrors.hasChemicalTreatments = 'Debes indicar si has tenido tratamientos químicos previos';
+    } else if (formData.hasChemicalTreatments === true && !formData.chemicalTreatments.trim()) {
       newErrors.chemicalTreatments = 'Especifica los tratamientos';
     }
     
-    if (!formData.acceptPrivacy) {
-      newErrors.acceptPrivacy = 'Debes aceptar el Aviso de Privacidad';
+    if (!formData.acceptTerms) {
+      newErrors.acceptTerms = 'Debes aceptar los Términos y Condiciones';
     }
     
     setErrors(newErrors);
@@ -218,12 +224,38 @@ export default function Register({
   const handleNext = () => {
     if (currentStep === 1 && !validateStep1()) return;
     if (currentStep === 2 && !validateStep2()) return;
+    
+    // Si vamos al paso 3, resetear todos los campos del paso 3 para que estén desmarcados
+    if (currentStep === 2) {
+      setFormData(prev => ({
+        ...prev,
+        hairType: '',
+        hasAllergies: null,
+        allergies: '',
+        hasChemicalTreatments: null,
+        chemicalTreatments: '',
+        acceptTerms: false,
+        receivePromotions: false,
+      }));
+    }
+    
     setCurrentStep(prev => prev + 1);
   };
 
   const handleSkip = () => {
     if (currentStep === 2) {
       // Omitir dirección, continuar al paso 3
+      // Resetear todos los campos del paso 3 para que estén desmarcados
+      setFormData(prev => ({
+        ...prev,
+        hairType: '',
+        hasAllergies: null,
+        allergies: '',
+        hasChemicalTreatments: null,
+        chemicalTreatments: '',
+        acceptTerms: false,
+        receivePromotions: false,
+      }));
       setCurrentStep(3);
     } else if (currentStep === 3) {
       // Omitir perfil capilar, finalizar registro
@@ -232,7 +264,41 @@ export default function Register({
   };
 
   const handleSubmit = async (skipValidation = false) => {
-    if (!skipValidation && !validateStep3()) return;
+    if (!skipValidation) {
+      // Primero validar y obtener los errores
+      const validationErrors: Record<string, string> = {};
+      
+      if (!formData.hairType) {
+        validationErrors.hairType = 'Selecciona tu tipo de cabello';
+      }
+      
+      if (formData.hasAllergies === null) {
+        validationErrors.hasAllergies = 'Debes indicar si tienes alergias a productos';
+      } else if (formData.hasAllergies === true && !formData.allergies.trim()) {
+        validationErrors.allergies = 'Especifica tus alergias';
+      }
+      
+      if (formData.hasChemicalTreatments === null) {
+        validationErrors.hasChemicalTreatments = 'Debes indicar si has tenido tratamientos químicos previos';
+      } else if (formData.hasChemicalTreatments === true && !formData.chemicalTreatments.trim()) {
+        validationErrors.chemicalTreatments = 'Especifica los tratamientos';
+      }
+      
+      if (!formData.acceptTerms) {
+        validationErrors.acceptTerms = 'Debes aceptar los Términos y Condiciones';
+      }
+      
+      if (Object.keys(validationErrors).length > 0) {
+        // Si hay errores, establecerlos y mostrar mensaje general apropiado
+        if (!formData.acceptTerms) {
+          validationErrors.general = 'Debes aceptar los Términos y Condiciones para continuar';
+        } else {
+          validationErrors.general = 'Por favor, completa todos los campos obligatorios antes de continuar';
+        }
+        setErrors(validationErrors);
+        return;
+      }
+    }
     
     setIsLoading(true);
     
@@ -247,34 +313,34 @@ export default function Register({
         telefono: formData.phone,
         fechaNacimiento: formData.birthDate,
         preguntaSeguridad: {
-          pregunta: selectedQuestionText, // Texto completo de la pregunta
-          respuesta: securityAnswer // Respuesta del usuario
+          pregunta: selectedQuestionText || '', // Texto completo de la pregunta
+          respuesta: securityAnswer || '' // Respuesta del usuario
         },
-        direccion: formData.street ? {
-          calle: formData.street,
-          numero: formData.number,
-          colonia: formData.colony,
-          codigoPostal: formData.postalCode,
+        direccion: {
+          calle: formData.street || '',
+          numero: formData.number || '',
+          colonia: formData.colony || '',
+          codigoPostal: formData.postalCode || '',
           referencia: formData.reference || '',
-        } : {
-          calle: '',
-          numero: '',
-          colonia: '',
-          codigoPostal: '',
-          referencia: ''
         },
         perfilCapilar: {
           tipoCabello: formData.hairType === 'lacio' ? 'liso' : 
                       formData.hairType === 'ondulado' ? 'ondulado' :
-                      formData.hairType === 'rizado' ? 'rizado' : 'liso',
-          tieneAlergias: formData.hasAllergies,
-          alergias: formData.hasAllergies ? formData.allergies : undefined,
-          tratamientosQuimicos: formData.hasChemicalTreatments,
-          tratamientos: formData.hasChemicalTreatments ? formData.chemicalTreatments : undefined,
+                      formData.hairType === 'rizado' ? 'rizado' : 
+                      formData.hairType || 'liso', // Fallback a 'liso' si está vacío
+          tieneAlergias: formData.hasAllergies === true, // Boolean: true o false (no null)
+          alergias: formData.hasAllergies === true ? formData.allergies : undefined,
+          tratamientosQuimicos: formData.hasChemicalTreatments === true, // Boolean: true o false (no null)
+          tratamientos: formData.hasChemicalTreatments === true ? formData.chemicalTreatments : undefined,
         },
-        aceptaAvisoPrivacidad: formData.acceptPrivacy,
+        aceptaAvisoPrivacidad: formData.acceptTerms, // El backend espera aceptaAvisoPrivacidad
         recibePromociones: formData.receivePromotions,
       };
+      
+      // Log para debug (solo en desarrollo)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Datos a enviar al backend:', JSON.stringify(registerData, null, 2));
+      }
       
       const response = await api.register(registerData);
       
@@ -283,17 +349,35 @@ export default function Register({
         setRegisterSuccess(true);
         setErrors({}); // Limpiar errores
         
-        // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
-        setTimeout(() => {
-      onRegisterSuccess?.();
-        }, 2000);
+        // Si el backend indica que se requiere verificación, mostrar mensaje especial
+        if (response.message && response.message.includes('verifica')) {
+          // Mostrar mensaje de verificación por más tiempo
+          setTimeout(() => {
+            onRegisterSuccess?.();
+          }, 4000);
+        } else {
+          // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
+          setTimeout(() => {
+            onRegisterSuccess?.();
+          }, 2000);
+        }
       } else {
-        throw new Error(response.error || 'Error al crear la cuenta');
+        // Si el backend devuelve un error específico, mostrarlo
+        const backendError = response.error || 'Error al crear la cuenta';
+        throw new Error(backendError);
       }
     } catch (error: unknown) {
       console.error('Error en registro:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al crear la cuenta';
-      setErrors({ general: errorMessage });
+      
+      // Si el mensaje contiene "Faltan campos obligatorios", mostrar un mensaje más útil
+      if (errorMessage.toLowerCase().includes('faltan campos') || errorMessage.toLowerCase().includes('campos obligatorios')) {
+        setErrors({ 
+          general: 'Por favor, verifica que todos los campos obligatorios estén completos. Si el problema persiste, recarga la página e intenta nuevamente.' 
+        });
+      } else {
+        setErrors({ general: errorMessage });
+      }
       setRegisterSuccess(false);
     } finally {
       setIsLoading(false);
@@ -860,7 +944,8 @@ export default function Register({
             <input
               type="radio"
               name="hasAllergies"
-              checked={!formData.hasAllergies}
+              value="no"
+              checked={formData.hasAllergies === false}
               onChange={() => {
                 handleChange('hasAllergies', false);
                 handleChange('allergies', '');
@@ -874,14 +959,15 @@ export default function Register({
             <input
               type="radio"
               name="hasAllergies"
-              checked={formData.hasAllergies}
+              value="yes"
+              checked={formData.hasAllergies === true}
               onChange={() => handleChange('hasAllergies', true)}
               className="h-4 w-4 text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400"
               disabled={isLoading}
             />
             <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
           </label>
-          {formData.hasAllergies && (
+          {formData.hasAllergies === true && (
             <input
               type="text"
               value={formData.allergies}
@@ -900,6 +986,11 @@ export default function Register({
               disabled={isLoading}
             />
           )}
+          {errors.hasAllergies && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {errors.hasAllergies}
+            </p>
+          )}
           {errors.allergies && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.allergies}
@@ -917,7 +1008,8 @@ export default function Register({
             <input
               type="radio"
               name="hasChemicalTreatments"
-              checked={!formData.hasChemicalTreatments}
+              value="no"
+              checked={formData.hasChemicalTreatments === false}
               onChange={() => {
                 handleChange('hasChemicalTreatments', false);
                 handleChange('chemicalTreatments', '');
@@ -931,14 +1023,15 @@ export default function Register({
             <input
               type="radio"
               name="hasChemicalTreatments"
-              checked={formData.hasChemicalTreatments}
+              value="yes"
+              checked={formData.hasChemicalTreatments === true}
               onChange={() => handleChange('hasChemicalTreatments', true)}
               className="h-4 w-4 text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400"
               disabled={isLoading}
             />
             <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
           </label>
-          {formData.hasChemicalTreatments && (
+          {formData.hasChemicalTreatments === true && (
             <input
               type="text"
               value={formData.chemicalTreatments}
@@ -957,6 +1050,11 @@ export default function Register({
               disabled={isLoading}
             />
           )}
+          {errors.hasChemicalTreatments && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {errors.hasChemicalTreatments}
+            </p>
+          )}
           {errors.chemicalTreatments && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.chemicalTreatments}
@@ -969,21 +1067,31 @@ export default function Register({
         <label className="flex items-start cursor-pointer">
           <input
             type="checkbox"
-            checked={formData.acceptPrivacy}
-            onChange={(e) => handleChange('acceptPrivacy', e.target.checked)}
+            checked={formData.acceptTerms}
+            onChange={(e) => handleChange('acceptTerms', e.target.checked)}
             className="mt-1 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400"
             disabled={isLoading}
+            required
           />
           <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>
-            Acepto <a href="#" className="hover:underline" style={{ color: '#243B5A' }}
+            Acepto los{' '}
+            <a 
+              href="/terminos" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:underline" 
+              style={{ color: '#243B5A' }}
               onMouseEnter={(e) => e.currentTarget.style.color = '#A64B63'}
               onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
-            >Aviso de Privacidad</a>
+              onClick={(e) => e.stopPropagation()}
+            >
+              Términos y Condiciones
+            </a>
           </span>
         </label>
-        {errors.acceptPrivacy && (
+        {errors.acceptTerms && (
           <p className="text-sm text-red-600 dark:text-red-400">
-            {errors.acceptPrivacy}
+            {errors.acceptTerms}
           </p>
         )}
 
@@ -1008,16 +1116,19 @@ export default function Register({
       {/* Notificación de éxito */}
       {registerSuccess && (
         <div 
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg shadow-xl animate-slide-down"
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-6 rounded-lg shadow-xl animate-slide-down"
           style={{ 
             backgroundColor: '#6E7D57', 
             border: '1px solid #6E7D57',
-            minWidth: '300px',
+            minWidth: '350px',
             maxWidth: '90%'
           }}
         >
-          <p className="text-sm font-medium text-center text-white">
-            ¡Registro exitoso! Redirigiendo al login...
+          <p className="text-sm font-medium text-center text-white mb-2">
+            ¡Registro exitoso!
+          </p>
+          <p className="text-xs text-center text-white opacity-90">
+            Se ha enviado un email de verificación a tu correo. Por favor verifica tu cuenta antes de iniciar sesión.
           </p>
         </div>
       )}
@@ -1087,18 +1198,6 @@ export default function Register({
               </button>
             )}
             
-            {currentStep === 2 && (
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="flex-1 py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors"
-              style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
-                disabled={isLoading}
-              >
-                Omitir
-              </button>
-            )}
-            
             {currentStep < 3 ? (
               <button
                 type="submit"
@@ -1111,27 +1210,16 @@ export default function Register({
                 Continuar
               </button>
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSkip}
-                  className="flex-1 py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors"
-              style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
-                  disabled={isLoading}
-                >
-                  Omitir
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#710014' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
-                >
-                  {isLoading ? 'Registrando...' : 'Finalizar registro'}
-                </button>
-              </>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#710014' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+              >
+                {isLoading ? 'Registrando...' : 'Finalizar registro'}
+              </button>
             )}
           </div>
         </form>
