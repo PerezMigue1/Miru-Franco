@@ -92,9 +92,35 @@ const saveAuthData = (data: { token?: string; user?: unknown }) => {
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
-    const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
-    saveAuthData(data);
-    return data;
+    try {
+      const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
+      saveAuthData(data);
+      return data;
+    } catch (error: unknown) {
+      // Si el error es sobre cuenta no verificada, devolver un objeto con requiereVerificacion
+      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+      
+      // Verificar si el error indica que la cuenta no está activada/verificada
+      const lowerError = errorMessage.toLowerCase();
+      if (lowerError.includes('no está activada') || 
+          lowerError.includes('no está activado') ||
+          lowerError.includes('no está verificada') ||
+          lowerError.includes('no está verificado') ||
+          lowerError.includes('no está confirmada') ||
+          lowerError.includes('no está confirmado') ||
+          lowerError.includes('revisa tu correo') ||
+          lowerError.includes('cuenta no activada') ||
+          lowerError.includes('activar tu cuenta')) {
+        return {
+          success: false,
+          error: errorMessage,
+          requiereVerificacion: true
+        };
+      }
+      
+      // Para otros errores, lanzar el error normalmente
+      throw error;
+    }
   },
 
   async register(registerData: {

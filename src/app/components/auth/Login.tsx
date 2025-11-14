@@ -23,6 +23,8 @@ export default function Login({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  // Guardar credenciales para reintentar login después de verificar
+  const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -49,6 +51,7 @@ export default function Login({
     if (!validateForm()) return;
     
     setIsLoading(true);
+    setErrors({}); // Limpiar errores previos
     
     try {
       const { api } = await import('../../services');
@@ -56,24 +59,69 @@ export default function Login({
       
       if (!result.success) {
         const errorMessage = result.error || 'Error al iniciar sesión';
-        // Si el error indica que la cuenta no está activada, mostrar pantalla de activación
-        if (result.requiereVerificacion || 
-            errorMessage.toLowerCase().includes('activada') || 
-            errorMessage.toLowerCase().includes('activar') ||
-            errorMessage.toLowerCase().includes('confirmada') ||
-            errorMessage.toLowerCase().includes('verificar')) {
+        const lowerError = errorMessage.toLowerCase();
+        
+        // Detectar si la cuenta no está verificada/activada
+        const cuentaNoVerificada = result.requiereVerificacion || 
+            lowerError.includes('no está activada') ||
+            lowerError.includes('no está activado') ||
+            lowerError.includes('no está verificada') ||
+            lowerError.includes('no está verificado') ||
+            lowerError.includes('no está confirmada') ||
+            lowerError.includes('no está confirmado') ||
+            lowerError.includes('revisa tu correo') ||
+            lowerError.includes('cuenta no activada') ||
+            lowerError.includes('activar tu cuenta') ||
+            lowerError.includes('activada') ||
+            lowerError.includes('activar') ||
+            lowerError.includes('confirmada') ||
+            lowerError.includes('verificar');
+        
+        if (cuentaNoVerificada) {
+          // Guardar credenciales para reintentar login después de verificar
+          setPendingCredentials({ email, password });
+          // Mostrar automáticamente la pantalla de activación
           setShowActivation(true);
+          // No mostrar error general cuando se muestra la pantalla de activación
+          setErrors({});
         } else {
           setErrors({ general: errorMessage });
         }
       } else {
         // Login exitoso
+        setShowActivation(false); // Asegurar que no se muestre la pantalla de activación
         onLoginSuccess?.();
       }
     } catch (error: unknown) {
       console.error('Error en login:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
-      setErrors({ general: errorMessage });
+      const lowerError = errorMessage.toLowerCase();
+      
+      // Verificar si el error es sobre cuenta no verificada
+      const cuentaNoVerificada = lowerError.includes('no está activada') ||
+          lowerError.includes('no está activado') ||
+          lowerError.includes('no está verificada') ||
+          lowerError.includes('no está verificado') ||
+          lowerError.includes('no está confirmada') ||
+          lowerError.includes('no está confirmado') ||
+          lowerError.includes('revisa tu correo') ||
+          lowerError.includes('cuenta no activada') ||
+          lowerError.includes('activar tu cuenta') ||
+          lowerError.includes('activada') ||
+          lowerError.includes('activar') ||
+          lowerError.includes('confirmada') ||
+          lowerError.includes('verificar');
+      
+      if (cuentaNoVerificada) {
+        // Guardar credenciales para reintentar login después de verificar
+        setPendingCredentials({ email, password });
+        // Mostrar automáticamente la pantalla de activación
+        setShowActivation(true);
+        // No mostrar error general cuando se muestra la pantalla de activación
+        setErrors({});
+      } else {
+        setErrors({ general: errorMessage });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -127,13 +175,22 @@ export default function Login({
           setShowActivation(false);
           // Intentar login nuevamente después de activar
           setIsLoading(true);
+          setErrors({}); // Limpiar errores previos
+          
+          // Usar credenciales pendientes si existen, de lo contrario usar las del estado
+          const loginEmail = pendingCredentials?.email || email;
+          const loginPassword = pendingCredentials?.password || password;
+          
           try {
             const { api } = await import('../../services');
-            const result = await api.login(email, password);
+            const result = await api.login(loginEmail, loginPassword);
             if (result.success) {
+              // Limpiar credenciales pendientes
+              setPendingCredentials(null);
+              setErrors({});
               onLoginSuccess?.();
             } else {
-              setErrors({ general: result.error || 'Error al iniciar sesión' });
+              setErrors({ general: result.error || 'Error al iniciar sesión. Por favor, intenta nuevamente.' });
             }
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
@@ -145,10 +202,12 @@ export default function Login({
         onBackToRegister={() => {
           // Volver al formulario de login
           setShowActivation(false);
+          setPendingCredentials(null);
         }}
         onSkipToLogin={() => {
           // Si el usuario no quiere verificar ahora, volver al login
           setShowActivation(false);
+          setPendingCredentials(null);
         }}
       />
     );

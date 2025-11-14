@@ -61,12 +61,24 @@ class ApiClient {
           errorData = { 
             error: htmlMatch 
               ? htmlMatch[1] 
-              : errorText.substring(0, 200) || `Error ${response.status}: ${response.statusText}` 
+              : errorText.substring(0, 200) || `Error ${response.status}: ${response.statusText}`,
+            message: htmlMatch 
+              ? htmlMatch[1] 
+              : errorText.substring(0, 200) || `Error ${response.status}: ${response.statusText}`
           };
         }
         
+        // Preservar el mensaje del backend para detectar cuenta no verificada
+        const errorMessage = errorData.error || errorData.message || `Error ${response.status}: ${response.statusText}`;
+        
         console.error(`[API Error] ${url}:`, errorData);
-        throw new Error(errorData.error || errorData.message || `Error ${response.status}: ${response.statusText}`);
+        
+        // Crear un error personalizado que preserve el mensaje original
+        const error = new Error(errorMessage);
+        // Agregar propiedades adicionales para identificar el tipo de error
+        (error as any).status = response.status;
+        (error as any).data = errorData;
+        throw error;
       }
 
       const data = await response.json();
