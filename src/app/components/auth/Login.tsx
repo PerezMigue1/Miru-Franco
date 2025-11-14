@@ -143,6 +143,11 @@ export default function Login({
           }
         }}
         onBackToRegister={() => {
+          // Volver al formulario de login
+          setShowActivation(false);
+        }}
+        onSkipToLogin={() => {
+          // Si el usuario no quiere verificar ahora, volver al login
           setShowActivation(false);
         }}
       />

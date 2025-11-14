@@ -7,12 +7,14 @@ interface ActivateAccountProps {
   email: string;
   onActivationSuccess?: () => void;
   onBackToRegister?: () => void;
+  onSkipToLogin?: () => void;
 }
 
 export default function ActivateAccount({ 
   email, 
   onActivationSuccess,
-  onBackToRegister 
+  onBackToRegister,
+  onSkipToLogin
 }: ActivateAccountProps) {
   const [codigoOTP, setCodigoOTP] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -203,15 +205,27 @@ export default function ActivateAccount({
           {isResending ? 'Enviando...' : 'Reenviar código'}
         </button>
 
-        {onBackToRegister && (
-          <button
-            onClick={onBackToRegister}
-            className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity"
-            style={{ color: colors.enlacesTextosInteractivos }}
-          >
-            ← Volver al registro
-          </button>
-        )}
+        <div className="mt-4 space-y-2">
+          {onBackToRegister && (
+            <button
+              onClick={onBackToRegister}
+              className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity"
+              style={{ color: colors.enlacesTextosInteractivos }}
+            >
+              ← Volver
+            </button>
+          )}
+
+          {onSkipToLogin && (
+            <button
+              onClick={onSkipToLogin}
+              className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity font-medium"
+              style={{ color: colors.enlacesTextosInteractivos }}
+            >
+              Ir al inicio de sesión →
+            </button>
+          )}
+        </div>
 
         {mensaje && (
           <div 
@@ -229,6 +243,9 @@ export default function ActivateAccount({
         <div className="mt-6 text-center">
           <p className="text-xs" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
             El código expira en 2 minutos. Si no lo recibes, verifica tu carpeta de spam.
+          </p>
+          <p className="text-xs mt-2" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            Puedes verificar tu correo más tarde desde el inicio de sesión.
           </p>
         </div>
       </div>

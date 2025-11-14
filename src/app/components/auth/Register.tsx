@@ -1228,6 +1228,19 @@ export default function Register({
           setShowActivation(false);
           setEmailForActivation('');
         }}
+        onSkipToLogin={() => {
+          // Si el usuario no verifica el correo, redirigirlo al login
+          setShowActivation(false);
+          setEmailForActivation('');
+          if (onSwitchToLogin) {
+            onSwitchToLogin();
+          } else {
+            // Si no hay callback, intentar redirigir usando el router de Next.js
+            if (typeof window !== 'undefined') {
+              window.location.href = '/auth?view=login';
+            }
+          }
+        }}
       />
     );
   }
