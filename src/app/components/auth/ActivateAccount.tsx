@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ActivateAccountProps {
@@ -21,6 +21,7 @@ export default function ActivateAccount({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const emailEnviadoRef = useRef<string | null>(null);
 
   // Validación del código OTP
   const validarOTP = (codigo: string): string => {
@@ -87,17 +88,25 @@ export default function ActivateAccount({
     }
   };
 
-  const handleReenviarOTP = async () => {
+  const handleReenviarOTP = async (esAutomatico = false) => {
     setIsResending(true);
     setError('');
-    setMensaje('');
+    // Solo limpiar mensaje si no es automático
+    if (!esAutomatico) {
+      setMensaje('');
+    }
 
     try {
       const { api } = await import('../../services');
       const result = await api.resendOTPCode(email);
       
       if (result.success) {
-        setMensaje('✅ Código reenviado correctamente. Revisa tu correo.');
+        if (esAutomatico) {
+          // Si es automático, mostrar mensaje más discreto
+          setMensaje('✅ Código de verificación enviado. Revisa tu correo.');
+        } else {
+          setMensaje('✅ Código reenviado correctamente. Revisa tu correo.');
+        }
         setError('');
         setCodigoOTP(''); // Limpiar el código anterior
       } else {
@@ -105,12 +114,24 @@ export default function ActivateAccount({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setMensaje('❌ Error de conexión al reenviar el código');
+      if (!esAutomatico) {
+        setMensaje('❌ Error de conexión al reenviar el código');
+      }
       console.error('Error reenviando OTP:', errorMessage);
     } finally {
       setIsResending(false);
     }
   };
+
+  // Enviar código automáticamente cuando el componente se monta o cuando cambia el email
+  useEffect(() => {
+    // Solo enviar si hay un email válido y no se ha enviado para este email antes
+    if (email && emailEnviadoRef.current !== email) {
+      emailEnviadoRef.current = email;
+      handleReenviarOTP(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]); // Ejecutar cuando cambia el email
 
   // Función para obtener clase CSS del input
   const getInputClassName = (): string => {
@@ -189,7 +210,7 @@ export default function ActivateAccount({
         </button>
 
         <button
-          onClick={handleReenviarOTP}
+          onClick={() => handleReenviarOTP(false)}
           disabled={isResending}
           className={`w-full py-2 rounded-lg font-medium transition-all mb-4 ${
             isResending
