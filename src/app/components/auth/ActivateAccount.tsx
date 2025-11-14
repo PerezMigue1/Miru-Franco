@@ -1,0 +1,238 @@
+'use client';
+
+import { useState } from 'react';
+import { colors, colorsWithOpacity } from '../../utils/colors';
+
+interface ActivateAccountProps {
+  email: string;
+  onActivationSuccess?: () => void;
+  onBackToRegister?: () => void;
+}
+
+export default function ActivateAccount({ 
+  email, 
+  onActivationSuccess,
+  onBackToRegister 
+}: ActivateAccountProps) {
+  const [codigoOTP, setCodigoOTP] = useState('');
+  const [mensaje, setMensaje] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  // Validación del código OTP
+  const validarOTP = (codigo: string): string => {
+    if (!codigo.trim()) {
+      return 'El código OTP es obligatorio';
+    }
+    if (codigo.length < 6) {
+      return 'El código OTP debe tener 6 dígitos';
+    }
+    if (!/^[0-9]+$/.test(codigo)) {
+      return 'El código OTP solo puede contener números';
+    }
+    return '';
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Solo números, máximo 6
+    setCodigoOTP(value);
+    
+    // Validación en tiempo real
+    const errorValidacion = validarOTP(value);
+    setError(errorValidacion);
+    
+    // Limpiar mensaje cuando el usuario empiece a escribir
+    if (mensaje && value) {
+      setMensaje('');
+    }
+  };
+
+  const handleVerificarOTP = async () => {
+    // Validación antes de enviar
+    const errorValidacion = validarOTP(codigoOTP);
+    if (errorValidacion) {
+      setError(errorValidacion);
+      setMensaje('');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setMensaje('');
+
+    try {
+      const { api } = await import('../../services');
+      const result = await api.verifyOTP(email, codigoOTP);
+      
+      if (result.success) {
+        setMensaje('✅ Cuenta activada correctamente. Redirigiendo...');
+        setError('');
+        setTimeout(() => {
+          onActivationSuccess?.();
+        }, 1500);
+      } else {
+        setMensaje(result.error || 'Error al verificar el código');
+        setError('El código es incorrecto o ha expirado');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setMensaje('❌ Error de conexión al verificar el código');
+      setError('No se pudo conectar con el servidor');
+      console.error('Error verificando OTP:', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReenviarOTP = async () => {
+    setIsResending(true);
+    setError('');
+    setMensaje('');
+
+    try {
+      const { api } = await import('../../services');
+      const result = await api.resendOTPCode(email);
+      
+      if (result.success) {
+        setMensaje('✅ Código reenviado correctamente. Revisa tu correo.');
+        setError('');
+        setCodigoOTP(''); // Limpiar el código anterior
+      } else {
+        setMensaje(result.error || 'Error al reenviar el código');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setMensaje('❌ Error de conexión al reenviar el código');
+      console.error('Error reenviando OTP:', errorMessage);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  // Función para obtener clase CSS del input
+  const getInputClassName = (): string => {
+    if (error) return 'border-red-500 dark:border-red-600';
+    if (codigoOTP && !error) return 'border-green-500 dark:border-green-600';
+    return 'border-zinc-300 dark:border-zinc-700';
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <div 
+        className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-8"
+        style={{ backgroundColor: colors.tarjetasPaneles }}
+      >
+        <h2 
+          className="text-2xl font-bold text-center mb-2"
+          style={{ color: colors.textoFondoOscuro }}
+        >
+          Activa tu cuenta
+        </h2>
+        <p 
+          className="text-center mb-6 text-sm"
+          style={{ color: colorsWithOpacity.textoFondoOscuro80 }}
+        >
+          Hemos enviado un código de verificación a:
+          <br />
+          <span className="font-semibold" style={{ color: colors.textoFondoOscuro }}>
+            {email}
+          </span>
+        </p>
+
+        <div className="mb-4">
+          <label 
+            htmlFor="otp"
+            className="block text-sm font-medium mb-2"
+            style={{ color: colors.textoFondoOscuro }}
+          >
+            Código de verificación (6 dígitos)
+          </label>
+          <input
+            id="otp"
+            type="text"
+            inputMode="numeric"
+            placeholder="000000"
+            value={codigoOTP}
+            onChange={handleInputChange}
+            className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors text-center text-2xl font-mono tracking-widest ${getInputClassName()}`}
+            style={{ 
+              backgroundColor: '#f2f1ed', 
+              color: '#161616',
+            }}
+            maxLength={6}
+            disabled={isLoading}
+          />
+          {error && (
+            <p className="mt-1 text-sm" style={{ color: colors.danger }}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={handleVerificarOTP}
+          disabled={isLoading || codigoOTP.length !== 6}
+          className={`w-full py-3 rounded-lg font-semibold transition-all mb-3 ${
+            isLoading || codigoOTP.length !== 6
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-90 active:scale-95'
+          }`}
+          style={{ 
+            backgroundColor: colors.botonesPrincipales,
+            color: colors.textoFondoOscuro
+          }}
+        >
+          {isLoading ? 'Verificando...' : 'Verificar código'}
+        </button>
+
+        <button
+          onClick={handleReenviarOTP}
+          disabled={isResending}
+          className={`w-full py-2 rounded-lg font-medium transition-all mb-4 ${
+            isResending
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-80'
+          }`}
+          style={{ 
+            backgroundColor: 'transparent',
+            color: colors.enlacesTextosInteractivos,
+            border: `1px solid ${colors.enlacesTextosInteractivos}`
+          }}
+        >
+          {isResending ? 'Enviando...' : 'Reenviar código'}
+        </button>
+
+        {onBackToRegister && (
+          <button
+            onClick={onBackToRegister}
+            className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity"
+            style={{ color: colors.enlacesTextosInteractivos }}
+          >
+            ← Volver al registro
+          </button>
+        )}
+
+        {mensaje && (
+          <div 
+            className={`mt-4 p-3 rounded-lg text-sm text-center ${
+              mensaje.includes('✅') ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
+            }`}
+            style={{ 
+              color: mensaje.includes('✅') ? colors.success : colors.danger 
+            }}
+          >
+            {mensaje}
+          </div>
+        )}
+
+        <div className="mt-6 text-center">
+          <p className="text-xs" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            El código expira en 2 minutos. Si no lo recibes, verifica tu carpeta de spam.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+

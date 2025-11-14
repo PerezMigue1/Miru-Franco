@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import ActivateAccount from './ActivateAccount';
 
 interface RegisterProps {
   onSwitchToLogin?: () => void;
@@ -48,6 +49,11 @@ export default function Register({
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [showActivation, setShowActivation] = useState(false);
+  const [emailForActivation, setEmailForActivation] = useState('');
+  const [verificandoCorreo, setVerificandoCorreo] = useState(false);
+  const [correoExiste, setCorreoExiste] = useState(false);
+  const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cargar preguntas de seguridad disponibles
   useEffect(() => {
@@ -219,7 +225,71 @@ export default function Register({
         return newErrors;
       });
     }
+    
+    // Validación en tiempo real del correo
+    if (field === 'email' && typeof value === 'string') {
+      const emailValue = value.trim();
+      
+      // Limpiar timeout anterior si existe
+      if (emailTimeoutRef.current) {
+        clearTimeout(emailTimeoutRef.current);
+        emailTimeoutRef.current = null;
+      }
+      
+      // Si el campo está vacío, limpiar estados
+      if (!emailValue) {
+        setCorreoExiste(false);
+        setVerificandoCorreo(false);
+        return;
+      }
+      
+      // Validar formato de email antes de verificar
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        // Debounce: esperar 500ms después de que el usuario deje de escribir
+        emailTimeoutRef.current = setTimeout(async () => {
+          setVerificandoCorreo(true);
+          try {
+            const { api } = await import('../../services');
+            const resultado = await api.verificarCorreoExistente(emailValue);
+            setCorreoExiste(resultado.existe);
+            if (resultado.existe) {
+              setErrors(prev => ({
+                ...prev,
+                email: 'Este correo ya está registrado. Por favor, usa otro correo o inicia sesión.'
+              }));
+            } else {
+              // Limpiar error si el correo está disponible
+              setErrors(prev => {
+                const newErrors = { ...prev };
+                if (newErrors.email && newErrors.email.includes('ya está registrado')) {
+                  delete newErrors.email;
+                }
+                return newErrors;
+              });
+            }
+          } catch (error) {
+            console.error('Error al verificar correo:', error);
+            // No mostrar error si falla la verificación, solo si el correo existe
+          } finally {
+            setVerificandoCorreo(false);
+          }
+        }, 500);
+      } else {
+        // Si el formato no es válido, limpiar el estado de verificación
+        setCorreoExiste(false);
+        setVerificandoCorreo(false);
+      }
+    }
   };
+  
+  // Limpiar timeout al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (emailTimeoutRef.current) {
+        clearTimeout(emailTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleNext = () => {
     if (currentStep === 1 && !validateStep1()) return;
@@ -346,13 +416,19 @@ export default function Register({
       
       // Validar que el registro fue exitoso
       if (response.success) {
-        setRegisterSuccess(true);
         setErrors({}); // Limpiar errores
         
-        // Esperar un momento para mostrar el mensaje de éxito y luego redirigir al login
-        setTimeout(() => {
-          onRegisterSuccess?.();
-        }, 2000);
+        // Si requiere verificación OTP, mostrar pantalla de activación
+        if (response.requiereVerificacion || response.message?.toLowerCase().includes('código') || response.message?.toLowerCase().includes('activar')) {
+          setEmailForActivation(formData.email);
+          setShowActivation(true);
+        } else {
+          // Si no requiere verificación, mostrar éxito y redirigir
+          setRegisterSuccess(true);
+          setTimeout(() => {
+            onRegisterSuccess?.();
+          }, 2000);
+        }
       } else {
         // Si el backend devuelve un error específico, mostrarlo
         const backendError = response.error || 'Error al crear la cuenta';
@@ -420,27 +496,60 @@ export default function Register({
         >
           Correo Electrónico
         </label>
-        <input
-          type="email"
-          id="email"
-          value={formData.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          className={`w-full px-4 py-3 rounded-lg border ${
-            errors.email 
-              ? 'border-red-500 dark:border-red-600' 
-              : 'border-zinc-300 dark:border-zinc-700'
-          } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
-          placeholder="tu@email.com"
-          disabled={isLoading}
-        />
+        <div className="relative">
+          <input
+            type="email"
+            id="email"
+            value={formData.email}
+            onChange={(e) => handleChange('email', e.target.value)}
+            className={`w-full px-4 py-3 rounded-lg border ${
+              errors.email || correoExiste
+                ? 'border-red-500 dark:border-red-600' 
+                : verificandoCorreo
+                ? 'border-yellow-500 dark:border-yellow-600'
+                : 'border-zinc-300 dark:border-zinc-700'
+            } focus:outline-none focus:ring-2 transition-colors pr-12`}
+                style={{ 
+                  backgroundColor: '#f2f1ed', 
+                  color: '#161616',
+                  borderColor: errors.email || correoExiste ? '#590C0C' : verificandoCorreo ? '#F59E0B' : 'rgba(255,255,255,0.2)'
+                }}
+            placeholder="tu@email.com"
+            disabled={isLoading}
+          />
+          {verificandoCorreo && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600"></div>
+            </div>
+          )}
+          {!verificandoCorreo && correoExiste && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <svg className="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
+          {!verificandoCorreo && !correoExiste && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
+        </div>
         {errors.email && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.email}
+          </p>
+        )}
+        {!errors.email && verificandoCorreo && (
+          <p className="mt-1 text-sm text-yellow-600 dark:text-yellow-400">
+            Verificando correo...
+          </p>
+        )}
+        {!errors.email && !verificandoCorreo && !correoExiste && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) && (
+          <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+            ✓ Correo disponible
           </p>
         )}
       </div>
@@ -1102,6 +1211,26 @@ export default function Register({
       </div>
     </div>
   );
+
+  // Si se requiere activación, mostrar pantalla de activación
+  if (showActivation && emailForActivation) {
+    return (
+      <ActivateAccount
+        email={emailForActivation}
+        onActivationSuccess={() => {
+          setShowActivation(false);
+          setRegisterSuccess(true);
+          setTimeout(() => {
+            onRegisterSuccess?.();
+          }, 1500);
+        }}
+        onBackToRegister={() => {
+          setShowActivation(false);
+          setEmailForActivation('');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto relative">

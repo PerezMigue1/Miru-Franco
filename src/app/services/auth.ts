@@ -10,6 +10,7 @@ export interface LoginResponse {
   };
   token?: string;
   error?: string;
+  requiereVerificacion?: boolean; // Indica si la cuenta no está confirmada
 }
 
 export interface RegisterResponse {
@@ -21,6 +22,8 @@ export interface RegisterResponse {
   };
   token?: string;
   error?: string;
+  message?: string;
+  requiereVerificacion?: boolean; // Indica si se requiere verificación OTP
 }
 
 export interface ForgotPasswordResponse {
@@ -59,6 +62,18 @@ export interface GoogleLoginResponse {
     name: string;
   };
   token?: string;
+  error?: string;
+}
+
+export interface VerifyOTPResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface ResendOTPResponse {
+  success: boolean;
+  message?: string;
   error?: string;
 }
 
@@ -111,7 +126,10 @@ export const api = {
   }): Promise<RegisterResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const data = await apiClient.post<RegisterResponse>('/api/usuarios/registrar', registerData, BACKEND_BASE);
-    saveAuthData(data);
+    // No guardar datos de autenticación si requiere verificación
+    if (data.success && data.token && !data.requiereVerificacion) {
+      saveAuthData(data);
+    }
     return data;
   },
 
@@ -218,6 +236,42 @@ export const api = {
     window.location.href = redirectUrl;
     // Nota: Este método no retorna inmediatamente ya que redirige
     return { success: false, error: 'Redirecting to Google' };
+  },
+
+  // Verificar código OTP para activar cuenta
+  async verifyOTP(email: string, codigo: string): Promise<VerifyOTPResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    return apiClient.post<VerifyOTPResponse>(
+      '/api/usuarios/verificar-otp',
+      { email, codigo },
+      BACKEND_BASE
+    );
+  },
+
+  // Reenviar código OTP
+  async resendOTPCode(email: string): Promise<ResendOTPResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    return apiClient.post<ResendOTPResponse>(
+      '/api/usuarios/reenviar-codigo',
+      { email },
+      BACKEND_BASE
+    );
+  },
+
+  // Verificar si un correo ya está registrado (validación en tiempo real)
+  async verificarCorreoExistente(email: string): Promise<{ existe: boolean; message?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<{ existe: boolean; message?: string }>(
+        '/api/auth/verificar-correo',
+        { correo: email },
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error) {
+      console.error('Error al verificar correo:', error);
+      return { existe: false, message: 'Error al verificar el correo' };
+    }
   },
 };
 

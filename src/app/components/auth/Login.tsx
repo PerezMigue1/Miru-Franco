@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { colors, colorsWithOpacity } from '../../utils/colors';
+import ActivateAccount from './ActivateAccount';
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -20,6 +21,8 @@ export default function Login({
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showActivation, setShowActivation] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -52,7 +55,17 @@ export default function Login({
       const result = await api.login(email, password);
       
       if (!result.success) {
-        setErrors({ general: result.error || 'Error al iniciar sesión' });
+        const errorMessage = result.error || 'Error al iniciar sesión';
+        // Si el error indica que la cuenta no está activada, mostrar pantalla de activación
+        if (result.requiereVerificacion || 
+            errorMessage.toLowerCase().includes('activada') || 
+            errorMessage.toLowerCase().includes('activar') ||
+            errorMessage.toLowerCase().includes('confirmada') ||
+            errorMessage.toLowerCase().includes('verificar')) {
+          setShowActivation(true);
+        } else {
+          setErrors({ general: errorMessage });
+        }
       } else {
         // Login exitoso
         onLoginSuccess?.();
@@ -78,6 +91,63 @@ export default function Login({
       setIsGoogleLoading(false);
     }
   };
+
+  const handleResendCode = async () => {
+    if (!email) {
+      setErrors({ general: 'Por favor, ingresa tu correo electrónico primero' });
+      return;
+    }
+
+    setIsResending(true);
+    setErrors({});
+
+    try {
+      const { api } = await import('../../services');
+      const result = await api.resendOTPCode(email);
+      
+      if (result.success) {
+        setErrors({ general: '✅ Código reenviado. Revisa tu correo.' });
+      } else {
+        setErrors({ general: result.error || 'Error al reenviar el código' });
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al reenviar el código';
+      setErrors({ general: errorMessage });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  // Si se requiere activación, mostrar pantalla de activación
+  if (showActivation && email) {
+    return (
+      <ActivateAccount
+        email={email}
+        onActivationSuccess={async () => {
+          setShowActivation(false);
+          // Intentar login nuevamente después de activar
+          setIsLoading(true);
+          try {
+            const { api } = await import('../../services');
+            const result = await api.login(email, password);
+            if (result.success) {
+              onLoginSuccess?.();
+            } else {
+              setErrors({ general: result.error || 'Error al iniciar sesión' });
+            }
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+            setErrors({ general: errorMessage });
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+        onBackToRegister={() => {
+          setShowActivation(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -188,9 +258,28 @@ export default function Login({
           </div>
 
           {errors.general && (
-            <p className="text-sm text-red-600 dark:text-red-400 text-center">
-              {errors.general}
-            </p>
+            <div className="text-center">
+              <p className={`text-sm ${
+                errors.general.includes('✅') 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : 'text-red-600 dark:text-red-400'
+              }`}>
+                {errors.general}
+              </p>
+              {errors.general.toLowerCase().includes('activada') || 
+               errors.general.toLowerCase().includes('activar') ||
+               errors.general.toLowerCase().includes('confirmada') ? (
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={isResending || !email}
+                  className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ color: colors.enlacesTextosInteractivos }}
+                >
+                  {isResending ? 'Enviando...' : 'Reenviar código de activación'}
+                </button>
+              ) : null}
+            </div>
           )}
 
           <button
