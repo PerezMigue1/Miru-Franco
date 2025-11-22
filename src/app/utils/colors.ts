@@ -7,8 +7,8 @@
 
 export const colors = {
   // Fondos
-  fondoGeneral: '#d0b29c',
-  fondosSuaves: '#C8A48A',
+  fondoGeneral: '#DCC8B6',
+  fondosSuaves: '#d0b29c',
   tarjetasPaneles: '#B38E6F',
   
   // Header/Footer/Navegación

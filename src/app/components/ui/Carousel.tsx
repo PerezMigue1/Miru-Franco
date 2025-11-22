@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { colors } from '../../utils/colors';
 
 export default function Carousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -71,7 +72,7 @@ export default function Carousel() {
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
                 >
-                  <h2 className="text-elegant-display mb-4 uppercase" style={{ color: '#d0b29c' }}>
+                  <h2 className="text-elegant-display mb-4 uppercase" style={{ color: colors.fondosSuaves }}>
                     {slide.title}
                   </h2>
                   <p className="text-lead mb-4" style={{ color: '#F2F1ED' }}>
