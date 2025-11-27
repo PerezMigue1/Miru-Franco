@@ -69,6 +69,7 @@ export interface VerifyOTPResponse {
   success: boolean;
   message?: string;
   error?: string;
+  token?: string;  // Token opcional si el backend lo devuelve al verificar OTP
 }
 
 export interface ResendOTPResponse {

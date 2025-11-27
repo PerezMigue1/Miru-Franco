@@ -423,11 +423,25 @@ export default function Register({
           setEmailForActivation(formData.email);
           setShowActivation(true);
         } else {
-          // Si no requiere verificación, mostrar éxito y redirigir
-          setRegisterSuccess(true);
-          setTimeout(() => {
-            onRegisterSuccess?.();
-          }, 2000);
+          // Si no requiere verificación y hay token, guardarlo y redirigir a home
+          if (response.token) {
+            localStorage.setItem('token', response.token);
+            setRegisterSuccess(true);
+            setTimeout(() => {
+              // Redirigir a home en lugar de cambiar a login
+              if (typeof window !== 'undefined') {
+                window.location.href = '/home';
+              } else {
+                onRegisterSuccess?.();
+              }
+            }, 2000);
+          } else {
+            // Si no hay token, mostrar éxito y cambiar a login
+            setRegisterSuccess(true);
+            setTimeout(() => {
+              onRegisterSuccess?.();
+            }, 2000);
+          }
         }
       } else {
         // Si el backend devuelve un error específico, mostrarlo

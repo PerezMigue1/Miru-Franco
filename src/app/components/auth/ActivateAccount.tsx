@@ -69,11 +69,27 @@ export default function ActivateAccount({
       const result = await api.verifyOTP(email, codigoOTP);
       
       if (result.success) {
-        setMensaje('✅ Cuenta activada correctamente. Redirigiendo...');
-        setError('');
-        setTimeout(() => {
-          onActivationSuccess?.();
-        }, 1500);
+        // ✅ Si el backend devuelve un token, guardarlo y redirigir
+        if (result.token) {
+          localStorage.setItem('token', result.token);
+          setMensaje('✅ Cuenta activada correctamente. Redirigiendo...');
+          setError('');
+          setTimeout(() => {
+            // Redirigir a home en lugar de solo llamar onActivationSuccess
+            if (typeof window !== 'undefined') {
+              window.location.href = '/home';
+            } else {
+              onActivationSuccess?.();
+            }
+          }, 1500);
+        } else {
+          // Si no hay token, solo activar y cambiar a login
+          setMensaje('✅ Cuenta activada correctamente. Redirigiendo al login...');
+          setError('');
+          setTimeout(() => {
+            onActivationSuccess?.();
+          }, 1500);
+        }
       } else {
         setMensaje(result.error || 'Error al verificar el código');
         setError('El código es incorrecto o ha expirado');
