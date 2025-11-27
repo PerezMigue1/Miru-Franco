@@ -19,10 +19,21 @@ class ApiClient {
     const apiBase = getApiBaseUrl();
     
     // Construir URL: si hay customEndpoint, usarlo; si no, construir desde API_BASE
-    const url = customEndpoint || `${apiBase}${endpoint}`;
+    // Si customEndpoint es una URL completa, usarla directamente; si no, construir desde customEndpoint + endpoint
+    let url: string;
+    if (customEndpoint) {
+      // Si customEndpoint ya incluye el endpoint completo, usarlo directamente
+      // Si no, construir: customEndpoint + endpoint
+      url = customEndpoint.includes('http') && !customEndpoint.endsWith(endpoint) 
+        ? `${customEndpoint}${endpoint}` 
+        : customEndpoint;
+    } else {
+      url = `${apiBase}${endpoint}`;
+    }
     
     // Log detallado para debugging en producción
     console.log(`[API Client] ${fetchOptions.method || 'GET'} ${url}`);
+    console.log(`[API Client] Endpoint: ${endpoint}`);
     if (customEndpoint) {
       console.log(`[API Client] Using customEndpoint: ${customEndpoint}`);
     } else {
@@ -85,10 +96,10 @@ class ApiClient {
         console.error(`[API Error] ${url}:`, errorData);
         
         // Crear un error personalizado que preserve el mensaje original
-        const error = new Error(errorMessage);
+        const error = new Error(errorMessage) as Error & { status?: number; data?: unknown };
         // Agregar propiedades adicionales para identificar el tipo de error
-        (error as any).status = response.status;
-        (error as any).data = errorData;
+        error.status = response.status;
+        error.data = errorData;
         throw error;
       }
 
@@ -96,12 +107,29 @@ class ApiClient {
       return data as T;
     } catch (error) {
       console.error(`[API] Error en ${url}:`, error);
+      
+      // Mejorar mensaje de error para "Failed to fetch" (problemas de CORS o conexión)
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        const enhancedError = new Error(
+          `No se pudo conectar con el servidor en ${url}. ` +
+          `Posibles causas: CORS no configurado, backend no disponible, o URL incorrecta. ` +
+          `Verifica que el backend esté corriendo y que CORS permita solicitudes desde el frontend.`
+        ) as Error & { originalError?: Error; url?: string; isNetworkError?: boolean };
+        enhancedError.originalError = error;
+        enhancedError.url = url;
+        enhancedError.isNetworkError = true;
+        throw enhancedError;
+      }
+      
       throw error;
     }
   }
 
   async get<T>(endpoint: string, customBase?: string): Promise<T> {
+    // Construir URL completa: customBase + endpoint
+    // Si customBase ya incluye el endpoint, usarlo directamente
     const url = customBase ? `${customBase}${endpoint}` : undefined;
+    console.log(`[API Client] GET - endpoint: ${endpoint}, customBase: ${customBase}, constructed url: ${url}`);
     return this.request<T>(endpoint, { method: 'GET', endpoint: url });
   }
 
