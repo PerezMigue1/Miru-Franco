@@ -127,17 +127,14 @@ export default function Login({
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
-    try {
-      const { api } = await import('../../services');
-      await api.loginWithGoogle();
-    } catch (error: unknown) {
-      console.error('Error iniciando sesión con Google:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión con Google';
-      setErrors({ general: errorMessage });
-      setIsGoogleLoading(false);
-    }
+    // ✅ CORRECTO: Redirección directa del navegador (según guía GUIA_FRONTEND_GOOGLE_OAUTH.md)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://miru-franco.onrender.com';
+    const redirectUrl = `${API_URL}/api/auth/google`;
+    window.location.href = redirectUrl;
+    // Nota: No necesitamos manejar errores aquí porque la redirección es inmediata
+    // El usuario será redirigido a Google para autenticarse
   };
 
   const handleResendCode = async () => {

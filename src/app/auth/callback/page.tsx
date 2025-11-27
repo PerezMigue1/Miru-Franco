@@ -28,9 +28,11 @@ function AuthCallbackContent() {
     }
 
     if (success === 'true' && token) {
-      // Guardar token y datos del usuario
+      // ✅ Guardar token según guía GUIA_FRONTEND_GOOGLE_OAUTH.md
       try {
         localStorage.setItem('token', token);
+        // También guardar como 'authToken' para compatibilidad con la guía
+        localStorage.setItem('authToken', token);
         
         // Intentar obtener datos del usuario del token o hacer una petición al backend
         // Por ahora solo guardamos el token

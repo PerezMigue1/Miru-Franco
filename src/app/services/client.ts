@@ -50,6 +50,17 @@ class ApiClient {
 
       // Manejar errores HTTP
       if (!response.ok) {
+        // ✅ Manejar error 401 (No autorizado) según guía
+        if (response.status === 401) {
+          // Token inválido o expirado
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            // Redirigir al login solo si estamos en el cliente
+            window.location.href = '/';
+          }
+          throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+        }
+
         const errorText = await response.text();
         let errorData;
         
