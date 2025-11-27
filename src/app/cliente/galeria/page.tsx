@@ -49,9 +49,11 @@ export default function GaleriaPage() {
                 <p className="text-4xl">📸</p>
               </div>
               <div className="p-4">
-                <Badge variant={getCategoryColor(trabajo.categoria)} size="sm" className="mb-2">
-                  {trabajo.categoria}
-                </Badge>
+                <div className="mb-2">
+                  <Badge variant={getCategoryColor(trabajo.categoria)} size="sm">
+                    {trabajo.categoria}
+                  </Badge>
+                </div>
                 <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
                   {trabajo.descripcion}
                 </p>
