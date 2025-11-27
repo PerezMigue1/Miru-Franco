@@ -4,7 +4,7 @@
 export const getBackendBase = (): string => {
   // En el cliente (navegador), usar process.env.NEXT_PUBLIC_API_URL
   // En el servidor, también usar process.env.NEXT_PUBLIC_API_URL
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend-miru-franco.vercel.app';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://miru-franco.onrender.com';
   
   // Si la URL incluye /api/auth, removerlo
   if (apiUrl.includes('/api/auth')) {
