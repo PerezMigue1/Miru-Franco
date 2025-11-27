@@ -2,7 +2,7 @@
 
 :root {
   /* Nueva Paleta de Colores */
-  --fondo-general: #d0b29c;
+  --fondo-general: #DCC8B6;
   --logo-branding: #9f6d1f;
   --tarjetas-paneles: #B38E6F;
   --header-footer: #161616;
@@ -15,7 +15,7 @@
   --botones-principales: #710014;
   --texto-fondo-oscuro: #F2F1ED;
   --enlaces-textos-interactivos: #243B5A;
-  --fondos-suaves: #C8A48A;
+  --fondos-suaves: #d0b29c;
   --iconografia: #243B5A;
   
   --background: var(--fondo-general);
@@ -87,7 +87,7 @@
 }
 
 body {
-  background: #d0b29c;
+  background: #DCC8B6;
   color: var(--menu-texto-principal);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-base);

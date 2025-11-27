@@ -3,6 +3,7 @@
 import Header from '../layouts/Header';
 import Carousel from '../components/ui/Carousel';
 import Footer from '../layouts/Footer';
+import { colors } from '../utils/colors';
 
 export default function Home() {
   const productos = [
@@ -20,7 +21,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#d0b29c' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.fondoGeneral }}>
       <Header />
       
       <main className="flex-1">
@@ -28,7 +29,7 @@ export default function Home() {
         <Carousel />
 
         {/* Sección 1: Productos */}
-        <section className="py-20" style={{ backgroundColor: '#d0b29c' }}>
+        <section className="py-20" style={{ backgroundColor: colors.fondoGeneral }}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-hero mb-4" style={{ color: '#161616' }}>
@@ -90,7 +91,7 @@ export default function Home() {
         </section>
 
         {/* Sección 3: Sobre Nosotros */}
-        <section className="py-20" style={{ backgroundColor: '#C8A48A' }}>
+        <section className="py-20" style={{ backgroundColor: colors.fondosSuaves }}>
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="rounded-lg shadow-lg p-8 border text-center" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>

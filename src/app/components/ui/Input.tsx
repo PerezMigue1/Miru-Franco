@@ -48,7 +48,6 @@ export default function Input({
             backgroundColor: colors.textoFondoOscuro,
             borderColor: error ? colors.danger : colorsWithOpacity.bordeVisible,
             color: colors.menuTextoPrincipal,
-            focusRingColor: colors.hover,
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = colors.hover;

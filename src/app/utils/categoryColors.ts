@@ -24,8 +24,6 @@ export const getCategoryColor = (categoria: string): BadgeVariant => {
     
     // Productos
     'cuidado': 'info',
-    'tratamiento': 'success',
-    'químico': 'warning',
     
     // Estados y tipos
     'venta': 'success',

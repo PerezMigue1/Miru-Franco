@@ -70,7 +70,7 @@ export default function Button({
       style={{
         backgroundColor: variant === 'outline' ? variantStyle.bg : variantStyle.bg,
         color: variantStyle.text,
-        border: variant === 'outline' ? `2px solid ${variantStyle.border}` : 'none',
+        border: variant === 'outline' && 'border' in variantStyle ? `2px solid ${variantStyle.border}` : 'none',
       }}
       onMouseEnter={(e) => {
         if (!props.disabled) {
