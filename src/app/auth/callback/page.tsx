@@ -14,6 +14,18 @@ function AuthCallbackContent() {
     const token = searchParams.get('token');
     const success = searchParams.get('success');
     const error = searchParams.get('error');
+    const errorCode = searchParams.get('code');
+    const errorId = searchParams.get('id');
+
+    // Detectar errores de Vercel (404: NOT_FOUND, DEPLOYMENT_NOT_FOUND)
+    if (errorCode === '404' || errorId?.includes('DEPLOYMENT_NOT_FOUND')) {
+      setStatus('error');
+      setMessage('Error de configuración: La URL de callback no coincide con el deployment. Por favor, verifica la configuración de Google OAuth en el backend.');
+      setTimeout(() => {
+        router.push('/?error=callback_config_error');
+      }, 3000);
+      return;
+    }
 
     if (success === 'true' && token) {
       // Guardar token y datos del usuario
@@ -48,6 +60,9 @@ function AuthCallbackContent() {
           break;
         case 'access_denied':
           errorMessage = 'Autorización cancelada';
+          break;
+        case 'callback_config_error':
+          errorMessage = 'Error de configuración: La URL de callback no está correctamente configurada. Por favor, contacta al administrador.';
           break;
         default:
           errorMessage = `Error: ${error}`;
