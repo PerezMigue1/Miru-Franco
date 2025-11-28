@@ -74,8 +74,10 @@ export default function ForgotPassword({
 
   const handleResendEmail = () => {
     setIsSent(false);
+    const currentEmail = email;
     setEmail('');
-    onEmailSent?.();
+    // No llamar onEmailSent aquí porque el usuario debe volver a enviar el código
+    // onEmailSent se llamará cuando se envíe el código nuevamente
   };
 
   if (isSent) {
