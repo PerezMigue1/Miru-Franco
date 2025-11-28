@@ -21,7 +21,6 @@ export default function ForgotPassword({
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ email?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isSent, setIsSent] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string } = {};
@@ -50,10 +49,10 @@ export default function ForgotPassword({
       const result = await api.sendPasswordRecoveryOTP(email);
       
       if (result.success) {
-        // ✅ Código enviado exitosamente
-        setIsSent(true);
-        onCodeSent?.(email); // Pasar email al callback
+        // ✅ Código enviado exitosamente - redirigir automáticamente a verificación OTP
+        onCodeSent?.(email); // Pasar email al callback para cambiar a vista OTP
         onEmailSent?.(email);
+        // No mostrar mensaje de éxito, redirigir directamente
       } else {
         // ❌ Error al enviar código
         const errorMessage = result.error || result.message || 'Error al enviar el código de verificación';
@@ -72,58 +71,6 @@ export default function ForgotPassword({
     onSwitchToLogin?.();
   };
 
-  const handleResendEmail = () => {
-    setIsSent(false);
-    const currentEmail = email;
-    setEmail('');
-    // No llamar onEmailSent aquí porque el usuario debe volver a enviar el código
-    // onEmailSent se llamará cuando se envíe el código nuevamente
-  };
-
-  if (isSent) {
-    return (
-      <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-page-title mb-2 text-texto-fondo-oscuro">
-              Email Enviado
-            </h2>
-            <p className="mb-6 text-texto-fondo-oscuro">
-              Hemos enviado un enlace de recuperación a <strong>{email}</strong>
-            </p>
-            <p className="text-sm mb-6" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
-              Hemos enviado un código de verificación a <strong>{email}</strong>. 
-              Por favor revisa tu bandeja de entrada e ingresa el código para continuar.
-            </p>
-            <div className="space-y-3">
-              <button
-                onClick={handleBackToLogin}
-                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors bg-botones-principales"
-                style={{ backgroundColor: colors.botonesPrincipales }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
-              >
-                Volver a Iniciar Sesión
-              </button>
-              <button
-                onClick={handleResendEmail}
-                className="w-full py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-texto-fondo-oscuro"
-                style={{ borderColor: colorsWithOpacity.bordeSecundario }}
-              >
-                Reenviar Email
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
@@ -131,7 +78,7 @@ export default function ForgotPassword({
           Recuperar Contraseña
         </h2>
         <p className="text-center mb-6 text-sm text-texto-fondo-oscuro">
-          Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
+          Ingresa tu correo electrónico y te enviaremos un código de verificación para restablecer tu contraseña
         </p>
         
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -178,7 +125,7 @@ export default function ForgotPassword({
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
           >
-            {isLoading ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
+            {isLoading ? 'Enviando código...' : 'Enviar Código de Verificación'}
           </button>
         </form>
 
