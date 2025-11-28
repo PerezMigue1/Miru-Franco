@@ -322,6 +322,48 @@ export const api = {
     );
   },
 
+  // ✅ Enviar código OTP para recuperación de contraseña
+  async sendPasswordRecoveryOTP(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<{ success: boolean; message?: string; error?: string }>(
+        '/api/usuarios/enviar-codigo-recuperacion',
+        { email },
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error: unknown) {
+      console.error('Error enviando código de recuperación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al enviar el código de verificación';
+      return {
+        success: false,
+        error: errorMessage,
+        message: errorMessage,
+      };
+    }
+  },
+
+  // ✅ Verificar código OTP para recuperación de contraseña
+  async verifyPasswordRecoveryOTP(email: string, codigo: string): Promise<{ success: boolean; token?: string; message?: string; error?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<{ success: boolean; token?: string; message?: string; error?: string }>(
+        '/api/usuarios/verificar-codigo-recuperacion',
+        { email, codigo },
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error: unknown) {
+      console.error('Error verificando código de recuperación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al verificar el código';
+      return {
+        success: false,
+        error: errorMessage,
+        message: errorMessage,
+      };
+    }
+  },
+
   // Verificar si un correo ya está registrado (validación en tiempo real)
   async verificarCorreoExistente(email: string): Promise<{ existe: boolean; message?: string }> {
     const BACKEND_BASE = getBackendBaseUrl();

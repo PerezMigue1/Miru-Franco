@@ -5,16 +5,18 @@ import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
-  onEmailSent?: () => void;
+  onEmailSent?: (email: string) => void; // Ahora pasa el email
   onSwitchToSMS?: () => void;
   onSwitchToSecurityQuestions?: () => void;
+  onCodeSent?: (email: string) => void; // Nuevo callback para cuando se envía código OTP
 }
 
 export default function ForgotPassword({ 
   onSwitchToLogin,
   onEmailSent,
   onSwitchToSMS,
-  onSwitchToSecurityQuestions
+  onSwitchToSecurityQuestions,
+  onCodeSent
 }: ForgotPasswordProps) {
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ email?: string }>({});
@@ -40,14 +42,26 @@ export default function ForgotPassword({
     if (!validateForm()) return;
     
     setIsLoading(true);
+    setErrors({}); // Limpiar errores previos
     
     try {
       const { api } = await import('../../services');
-      await api.forgotPassword(email, 'email');
-      setIsSent(true);
+      // ✅ Enviar código OTP para recuperación de contraseña
+      const result = await api.sendPasswordRecoveryOTP(email);
+      
+      if (result.success) {
+        // ✅ Código enviado exitosamente
+        setIsSent(true);
+        onCodeSent?.(email); // Pasar email al callback
+        onEmailSent?.(email);
+      } else {
+        // ❌ Error al enviar código
+        const errorMessage = result.error || result.message || 'Error al enviar el código de verificación';
+        setErrors({ email: errorMessage });
+      }
     } catch (error: unknown) {
-      console.error('Error enviando email:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al enviar el email';
+      console.error('Error enviando código de recuperación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al enviar el código de verificación';
       setErrors({ email: errorMessage });
     } finally {
       setIsLoading(false);
@@ -81,7 +95,8 @@ export default function ForgotPassword({
               Hemos enviado un enlace de recuperación a <strong>{email}</strong>
             </p>
             <p className="text-sm mb-6" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
-              Por favor revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.
+              Hemos enviado un código de verificación a <strong>{email}</strong>. 
+              Por favor revisa tu bandeja de entrada e ingresa el código para continuar.
             </p>
             <div className="space-y-3">
               <button
