@@ -202,6 +202,8 @@ export const api = {
     };
   },
 
+  // ❌ DEPRECADO: Este método usa GET /api/pregunta-seguridad (solo para registro)
+  // Para recuperación de contraseña, usar getUserSecurityQuestion
   async getSecurityQuestions(email: string): Promise<SecurityQuestionsResponse> {
     // Opción 1: Usar /api/pregunta-seguridad?email=... (GET)
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
@@ -218,6 +220,41 @@ export const api = {
     
     // Si no hay datos, retornar array vacío
     return { questions: [] };
+  },
+
+  // ✅ NUEVO: Obtener pregunta de seguridad del usuario para recuperación de contraseña
+  // Usa POST /api/usuarios/pregunta-seguridad según GUIA_FRONTEND_RECUPERACION_PASSWORD.md
+  async getUserSecurityQuestion(email: string): Promise<{ success: boolean; pregunta?: string; message?: string; error?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<{ success: boolean; pregunta?: string; message?: string; error?: string }>(
+        '/api/usuarios/pregunta-seguridad',
+        { email },
+        BACKEND_BASE
+      );
+      
+      if (data.success && data.pregunta) {
+        return {
+          success: true,
+          pregunta: data.pregunta,
+        };
+      } else {
+        // Usuario no tiene pregunta (puede ser usuario de Google)
+        return {
+          success: false,
+          message: data.message || 'No se encontró pregunta de seguridad',
+          error: data.error,
+        };
+      }
+    } catch (error: unknown) {
+      console.error('Error obteniendo pregunta de seguridad del usuario:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al obtener la pregunta de seguridad';
+      return {
+        success: false,
+        message: errorMessage,
+        error: errorMessage,
+      };
+    }
   },
 
   async verifySecurityQuestions(email: string, answers: Record<string, string>): Promise<{ success?: boolean; token?: string; error?: string }> {

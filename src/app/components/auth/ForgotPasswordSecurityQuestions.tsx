@@ -71,33 +71,40 @@ export default function ForgotPasswordSecurityQuestions({
     if (!validateEmail()) return;
     
     setIsLoading(true);
+    setErrors({}); // Limpiar errores previos
     
     try {
       const { api } = await import('../../services');
-      const result = await api.getSecurityQuestions(email);
+      // ✅ Usar el nuevo método según GUIA_FRONTEND_RECUPERACION_PASSWORD.md
+      const result = await api.getUserSecurityQuestion(email);
       
-      if (result.questions && result.questions.length > 0) {
-        // Mostrar solo la pregunta asociada al usuario (primera del backend)
-        const q = result.questions[0] as { _id: string; pregunta?: string; question?: string };
+      if (result.success && result.pregunta) {
+        // ✅ Usuario tiene pregunta de seguridad
         const selectedQuestion = [{
-          id: `q1`,
-          question: q.pregunta || q.question || '',
+          id: 'q1',
+          question: result.pregunta,
           answer: '',
         }];
         setQuestions(selectedQuestion);
         setQuestionsLoaded(true);
         setUserAnswers({});
+        setErrors({}); // Limpiar errores
       } else {
-        // Sin pregunta asociada, tomar una por defecto para no bloquear el flujo
-        const fallback = predefinedQuestions[0];
-        const selectedQuestion = [{ id: 'q1', question: fallback, answer: '' }];
-        setQuestions(selectedQuestion);
-        setQuestionsLoaded(true);
-        setUserAnswers({});
+        // ❌ Usuario no tiene pregunta (puede ser usuario de Google)
+        const errorMessage = result.message || result.error || 'No se encontró pregunta de seguridad';
+        
+        // Verificar si es un usuario de Google
+        if (errorMessage.toLowerCase().includes('google') || errorMessage.toLowerCase().includes('cuenta de google')) {
+          setErrors({ 
+            email: `${errorMessage}. Por favor, usa "Continuar con Google" para iniciar sesión.` 
+          });
+        } else {
+          setErrors({ email: errorMessage });
+        }
       }
     } catch (error: unknown) {
-      console.error('Error cargando preguntas:', error);
-      const msg = error instanceof Error ? error.message : 'No se encontró una cuenta con este email';
+      console.error('Error cargando pregunta de seguridad:', error);
+      const msg = error instanceof Error ? error.message : 'Error al obtener la pregunta de seguridad';
       setErrors({ email: msg });
     } finally {
       setIsLoading(false);
@@ -266,9 +273,27 @@ export default function ForgotPasswordSecurityQuestions({
               disabled={isLoading}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.email}
-              </p>
+              <div className="mt-1">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {errors.email}
+                </p>
+                {errors.email.toLowerCase().includes('google') && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        // Redirigir a login con Google
+                        const { api } = await import('../../services');
+                        api.loginWithGoogle();
+                      }}
+                      className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+                      style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                    >
+                      Continuar con Google
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
