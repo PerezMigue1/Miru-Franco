@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { validatePassword } from '../../utils/security';
 
 interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
@@ -26,12 +27,14 @@ export default function ResetPassword({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
+    // ✅ Usar validación centralizada de seguridad
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'La contraseña debe contener mayúsculas, minúsculas y números';
+    } else {
+      const validation = validatePassword(formData.password);
+      if (!validation.valid) {
+        newErrors.password = validation.message || 'La contraseña no cumple con los requisitos';
+      }
     }
     
     if (!formData.confirmPassword) {

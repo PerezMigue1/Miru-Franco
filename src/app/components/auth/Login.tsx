@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { colors, colorsWithOpacity } from '../../utils/colors';
+import { handleSecurityError } from '../../utils/security';
 import ActivateAccount from './ActivateAccount';
 
 interface LoginProps {
@@ -84,9 +85,11 @@ export default function Login({
           setShowActivation(true);
           // No mostrar error general cuando se muestra la pantalla de activación
           setErrors({});
-        } else {
-          setErrors({ general: errorMessage });
-        }
+      } else {
+        // ✅ Usar utilidad de seguridad para manejar errores (no revelar detalles)
+        const securityError = handleSecurityError(new Error(errorMessage));
+        setErrors({ general: securityError.message });
+      }
       } else {
         // Login exitoso
         setShowActivation(false); // Asegurar que no se muestre la pantalla de activación
@@ -94,10 +97,14 @@ export default function Login({
       }
     } catch (error: unknown) {
       console.error('Error en login:', error);
+      
+      // ✅ Usar utilidad de seguridad para manejar errores (ya importada arriba)
+      const securityError = handleSecurityError(error);
+      
+      // Verificar si el error es sobre cuenta no verificada
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
       const lowerError = errorMessage.toLowerCase();
       
-      // Verificar si el error es sobre cuenta no verificada
       const cuentaNoVerificada = lowerError.includes('no está activada') ||
           lowerError.includes('no está activado') ||
           lowerError.includes('no está verificada') ||
@@ -120,7 +127,8 @@ export default function Login({
         // No mostrar error general cuando se muestra la pantalla de activación
         setErrors({});
       } else {
-        setErrors({ general: errorMessage });
+        // ✅ Usar mensaje de seguridad (no revelar detalles)
+        setErrors({ general: securityError.message });
       }
     } finally {
       setIsLoading(false);

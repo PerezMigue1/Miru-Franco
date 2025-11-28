@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { saveToken } from '../utils/security';
 
 export interface LoginResponse {
   success: boolean;
@@ -78,11 +79,12 @@ export interface ResendOTPResponse {
   error?: string;
 }
 
-// Helper para guardar datos de autenticacion
+// Helper para guardar datos de autenticacion (usando utilidades de seguridad)
 const saveAuthData = (data: { token?: string; user?: unknown }) => {
   if (typeof window !== 'undefined') {
     if (data.token) {
-      localStorage.setItem('token', data.token);
+      // ✅ Usar utilidad de seguridad para guardar token
+      saveToken(data.token);
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }

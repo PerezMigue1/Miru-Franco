@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { validatePassword, sanitizeInput, sanitizeEmail } from '../../utils/security';
 import ActivateAccount from './ActivateAccount';
 
 interface RegisterProps {
@@ -102,16 +103,23 @@ export default function Register({
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
     
+    // ✅ Sanitizar entrada de usuario
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre completo es requerido';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    } else {
+      const sanitizedName = sanitizeInput(formData.name);
+      if (sanitizedName.length < 2) {
+        newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+      }
     }
     
     if (!formData.email) {
       newErrors.email = 'El correo electrónico es requerido';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'El correo electrónico no es válido';
+    } else {
+      const sanitizedEmail = sanitizeEmail(formData.email);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+        newErrors.email = 'El correo electrónico no es válido';
+      }
     }
     
     if (!formData.phone) {
@@ -120,12 +128,14 @@ export default function Register({
       newErrors.phone = 'El teléfono no es válido';
     }
     
+    // ✅ Usar validación centralizada de seguridad
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'La contraseña debe contener mayúsculas, minúsculas y números';
+    } else {
+      const validation = validatePassword(formData.password);
+      if (!validation.valid) {
+        newErrors.password = validation.message || 'La contraseña no cumple con los requisitos';
+      }
     }
     
     if (!formData.confirmPassword) {

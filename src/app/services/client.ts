@@ -1,6 +1,7 @@
 // Cliente API centralizado con manejo de errores y tokens
 
 import { getApiBaseUrl } from './config';
+import { removeToken } from '../utils/security';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -65,11 +66,18 @@ class ApiClient {
         if (response.status === 401) {
           // Token inválido o expirado
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('token');
+            removeToken();
             // Redirigir al login solo si estamos en el cliente
             window.location.href = '/';
           }
           throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+        }
+        
+        // ✅ Manejar error 429 (Rate Limiting)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const waitTime = retryAfter ? parseInt(retryAfter) : 60;
+          throw new Error(`Demasiados intentos. Espera ${waitTime} segundos antes de intentar de nuevo.`);
         }
 
         const errorText = await response.text();
