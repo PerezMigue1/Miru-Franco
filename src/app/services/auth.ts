@@ -103,8 +103,21 @@ export const api = {
     try {
       console.log('[Auth] Intentando login para:', email);
       const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
+      console.log('[Auth] Respuesta completa del backend:', JSON.stringify(data, null, 2));
       console.log('[Auth] Respuesta del backend:', { success: data.success, hasToken: !!data.token, hasUser: !!data.user });
+      
+      // Verificar si la respuesta tiene el formato correcto
+      if (!data) {
+        console.error('[Auth] La respuesta del backend está vacía');
+        throw new Error('Error: No se recibió respuesta del servidor');
+      }
+      
       saveAuthData(data);
+      
+      // Verificar que el token se guardó
+      const tokenVerificado = localStorage.getItem('token') || localStorage.getItem('authToken');
+      console.log('[Auth] Token verificado después de guardar:', tokenVerificado ? 'Sí' : 'No');
+      
       return data;
     } catch (error: unknown) {
       // Si el error es sobre cuenta no verificada, devolver un objeto con requiereVerificacion
