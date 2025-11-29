@@ -9,9 +9,10 @@ import ForgotPasswordOTP from './ForgotPasswordOTP';
 import ForgotPasswordSMS from './ForgotPasswordSMS';
 import ForgotPasswordSecurityQuestions from './ForgotPasswordSecurityQuestions';
 import ResetPassword from './ResetPassword';
+import EnlaceEnviado from './EnlaceEnviado';
 
 
-type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-otp' | 'forgot-sms' | 'forgot-security' | 'reset-password';
+type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-otp' | 'forgot-sms' | 'forgot-security' | 'reset-password' | 'enlace-enviado';
 
 interface AuthContainerProps {
   initialView?: AuthView;
@@ -50,9 +51,9 @@ export default function AuthContainer({
   };
 
   const handleEmailSent = (email: string) => {
-    // Cuando se envía el código OTP, cambiar a la vista de verificación
+    // Cuando se envía el enlace de recuperación, mostrar pantalla de éxito
     setRecoveryEmail(email);
-    setCurrentView('forgot-otp');
+    setCurrentView('enlace-enviado');
   };
 
   const handleOTPCodeSent = (email: string) => {
@@ -158,6 +159,13 @@ export default function AuthContainer({
           onSwitchToLogin={() => setCurrentView('login')}
           onPasswordReset={handlePasswordReset}
           identifier={recoveryIdentifier}
+        />
+      )}
+
+      {currentView === 'enlace-enviado' && (
+        <EnlaceEnviado
+          email={recoveryEmail}
+          onSwitchToLogin={handleSwitchToLogin}
         />
       )}
     </div>

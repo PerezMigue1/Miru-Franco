@@ -21,7 +21,6 @@ export default function ForgotPassword({
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ email?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [enlaceEnviado, setEnlaceEnviado] = useState(false);
   
   // Funcion para navegar usando router
   const handleSwitchToLogin = () => {
@@ -60,9 +59,8 @@ export default function ForgotPassword({
       const result = await api.solicitarEnlaceRecuperacion(email);
       
       if (result.success) {
-        setEnlaceEnviado(true);
-        // NO llamar a onEmailSent porque el enlace NO requiere código OTP
-        // El usuario solo necesita revisar su correo
+        // Llamar a onEmailSent para cambiar a la pantalla de éxito
+        onEmailSent?.(email);
       } else {
         const errorMessage = result.error || result.message || 'Error al solicitar el enlace';
         setErrors({ general: errorMessage });
@@ -90,28 +88,7 @@ export default function ForgotPassword({
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
         </p>
         
-        {enlaceEnviado && (
-          <div className="mb-4 p-4 rounded-lg border" style={{ 
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            borderColor: 'rgba(34, 197, 94, 0.3)'
-          }}>
-            <div className="text-center">
-              <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-3">
-                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-base font-semibold text-green-600 dark:text-green-400 mb-2">
-                ✅ Enlace enviado exitosamente
-              </p>
-              <p className="text-sm text-green-600 dark:text-green-400">
-                Si el email existe, recibirás un enlace de recuperación en tu correo. Revisa tu bandeja de entrada y spam.
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {errors.general && !enlaceEnviado && (
+        {errors.general && (
           <div className="mb-4 p-4 rounded-lg border" style={{ 
             backgroundColor: 'rgba(239, 68, 68, 0.1)',
             borderColor: 'rgba(239, 68, 68, 0.3)'
@@ -149,7 +126,7 @@ export default function ForgotPassword({
                 borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
               }}
               placeholder="tu@email.com"
-              disabled={isLoading || enlaceEnviado}
+              disabled={isLoading}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -160,7 +137,7 @@ export default function ForgotPassword({
 
           <button
             type="submit"
-            disabled={isLoading || enlaceEnviado}
+            disabled={isLoading}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
