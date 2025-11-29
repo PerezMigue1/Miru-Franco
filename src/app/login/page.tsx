@@ -8,7 +8,15 @@ export default function LoginPage() {
 
   const handleAuthSuccess = () => {
     console.log('Usuario autenticado exitosamente');
-    router.push('/home');
+    // Verificar token antes de redirigir
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    if (token) {
+      console.log('Token encontrado, redirigiendo a /home');
+      router.push('/home');
+    } else {
+      console.error('No se encontró token después del login');
+      alert('Error: No se pudo guardar la sesión. Por favor intenta nuevamente.');
+    }
   };
 
   return (

@@ -84,10 +84,15 @@ const saveAuthData = (data: { token?: string; user?: unknown }) => {
   if (typeof window !== 'undefined') {
     if (data.token) {
       // ✅ Usar utilidad de seguridad para guardar token
+      console.log('[Auth] Guardando token...');
       saveToken(data.token);
+      console.log('[Auth] Token guardado:', localStorage.getItem('token') ? 'Sí' : 'No');
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('[Auth] Datos de usuario guardados');
       }
+    } else {
+      console.warn('[Auth] No se recibió token en la respuesta');
     }
   }
 };
@@ -96,7 +101,9 @@ export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     try {
+      console.log('[Auth] Intentando login para:', email);
       const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
+      console.log('[Auth] Respuesta del backend:', { success: data.success, hasToken: !!data.token, hasUser: !!data.user });
       saveAuthData(data);
       return data;
     } catch (error: unknown) {
