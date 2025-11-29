@@ -39,6 +39,21 @@ export interface ResetPasswordResponse {
   error?: string;
 }
 
+export interface SolicitarEnlaceResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface ValidarTokenResponse {
+  success: boolean;
+  valid?: boolean;
+  email?: string;
+  nombre?: string;
+  error?: string;
+  message?: string;
+}
+
 export interface SMSResponse {
   success?: boolean;
   message?: string;
@@ -190,6 +205,49 @@ export const api = {
       success: true,
       message: 'Por favor, usa el método de preguntas de seguridad para recuperar tu contraseña'
     };
+  },
+
+  // ✅ Solicitar enlace de recuperación de contraseña
+  async solicitarEnlaceRecuperacion(email: string): Promise<SolicitarEnlaceResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<SolicitarEnlaceResponse>(
+        '/api/usuarios/solicitar-enlace-recuperacion',
+        { email },
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error: unknown) {
+      console.error('Error solicitando enlace de recuperación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al solicitar el enlace de recuperación';
+      return {
+        success: false,
+        error: errorMessage,
+        message: errorMessage,
+      };
+    }
+  },
+
+  // ✅ Validar token de recuperación
+  async validarTokenRecuperacion(email: string, token: string): Promise<ValidarTokenResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<ValidarTokenResponse>(
+        '/api/usuarios/validar-token-recuperacion',
+        { email, token },
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error: unknown) {
+      console.error('Error validando token de recuperación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Token inválido o expirado';
+      return {
+        success: false,
+        valid: false,
+        error: errorMessage,
+        message: errorMessage,
+      };
+    }
   },
 
   async resetPassword(token: string | null, email: string | null, nuevaPassword: string): Promise<ResetPasswordResponse> {

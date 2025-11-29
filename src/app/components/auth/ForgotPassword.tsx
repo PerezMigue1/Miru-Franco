@@ -21,8 +21,10 @@ export default function ForgotPassword({
 }: ForgotPasswordProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [errors, setErrors] = useState<{ email?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [metodo, setMetodo] = useState<'otp' | 'enlace'>('otp');
+  const [enlaceEnviado, setEnlaceEnviado] = useState(false);
   
   // Funcion para navegar usando router
   const handleSwitchToLogin = () => {
@@ -56,23 +58,37 @@ export default function ForgotPassword({
     
     try {
       const { api } = await import('../../services');
-      // ✅ Enviar código OTP para recuperación de contraseña
-      const result = await api.sendPasswordRecoveryOTP(email);
       
-      if (result.success) {
-        // ✅ Código enviado exitosamente - redirigir automáticamente a verificación OTP
-        onCodeSent?.(email); // Pasar email al callback para cambiar a vista OTP
-        onEmailSent?.(email);
-        // No mostrar mensaje de éxito, redirigir directamente
+      if (metodo === 'enlace') {
+        // ✅ Solicitar enlace de recuperación
+        const result = await api.solicitarEnlaceRecuperacion(email);
+        
+        if (result.success) {
+          setEnlaceEnviado(true);
+          setErrors({ general: '✅ Si el email existe, recibirás un enlace de recuperación en tu correo.' });
+        } else {
+          const errorMessage = result.error || result.message || 'Error al solicitar el enlace';
+          setErrors({ general: errorMessage });
+        }
       } else {
-        // ❌ Error al enviar código
-        const errorMessage = result.error || result.message || 'Error al enviar el código de verificación';
-        setErrors({ email: errorMessage });
+        // ✅ Enviar código OTP para recuperación de contraseña
+        const result = await api.sendPasswordRecoveryOTP(email);
+        
+        if (result.success) {
+          // ✅ Código enviado exitosamente - redirigir automáticamente a verificación OTP
+          onCodeSent?.(email); // Pasar email al callback para cambiar a vista OTP
+          onEmailSent?.(email);
+          // No mostrar mensaje de éxito, redirigir directamente
+        } else {
+          // ❌ Error al enviar código
+          const errorMessage = result.error || result.message || 'Error al enviar el código de verificación';
+          setErrors({ email: errorMessage });
+        }
       }
     } catch (error: unknown) {
-      console.error('Error enviando código de recuperación:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al enviar el código de verificación';
-      setErrors({ email: errorMessage });
+      console.error('Error en recuperación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al procesar la solicitud';
+      setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -88,9 +104,77 @@ export default function ForgotPassword({
         <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
           Recuperar Contraseña
         </h2>
-        <p className="text-center mb-6 text-sm text-texto-fondo-oscuro">
-          Ingresa tu correo electrónico y te enviaremos un código de verificación para restablecer tu contraseña
+        <p className="text-center mb-4 text-sm text-texto-fondo-oscuro">
+          Elige cómo quieres recuperar tu contraseña
         </p>
+        
+        {/* Selector de método */}
+        <div className="mb-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setMetodo('otp');
+              setEnlaceEnviado(false);
+              setErrors({});
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg border font-medium transition-colors text-sm ${
+              metodo === 'otp'
+                ? 'bg-botones-principales text-white'
+                : 'text-texto-fondo-oscuro'
+            }`}
+            style={{
+              backgroundColor: metodo === 'otp' ? colors.botonesPrincipales : 'transparent',
+              borderColor: colorsWithOpacity.bordeVisible,
+              color: metodo === 'otp' ? '#fff' : colors.textoFondoOscuro
+            }}
+            disabled={isLoading}
+          >
+            Código OTP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMetodo('enlace');
+              setEnlaceEnviado(false);
+              setErrors({});
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg border font-medium transition-colors text-sm ${
+              metodo === 'enlace'
+                ? 'bg-botones-principales text-white'
+                : 'text-texto-fondo-oscuro'
+            }`}
+            style={{
+              backgroundColor: metodo === 'enlace' ? colors.botonesPrincipales : 'transparent',
+              borderColor: colorsWithOpacity.bordeVisible,
+              color: metodo === 'enlace' ? '#fff' : colors.textoFondoOscuro
+            }}
+            disabled={isLoading}
+          >
+            Enlace por Email
+          </button>
+        </div>
+        
+        {enlaceEnviado && (
+          <div className="mb-4 p-4 rounded-lg border" style={{ 
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderColor: 'rgba(34, 197, 94, 0.3)'
+          }}>
+            <p className="text-sm text-center text-green-600 dark:text-green-400">
+              ✅ Si el email existe, recibirás un enlace de recuperación en tu correo. Revisa tu bandeja de entrada y spam.
+            </p>
+          </div>
+        )}
+        
+        {errors.general && !enlaceEnviado && (
+          <div className="mb-4 p-4 rounded-lg border" style={{ 
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderColor: 'rgba(239, 68, 68, 0.3)'
+          }}>
+            <p className="text-sm text-center text-red-600 dark:text-red-400">
+              {errors.general}
+            </p>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -130,13 +214,16 @@ export default function ForgotPassword({
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || enlaceEnviado}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
           >
-            {isLoading ? 'Enviando código...' : 'Enviar Código de Verificación'}
+            {isLoading 
+              ? (metodo === 'enlace' ? 'Enviando enlace...' : 'Enviando código...')
+              : (metodo === 'enlace' ? 'Enviar Enlace de Recuperación' : 'Enviar Código de Verificación')
+            }
           </button>
         </form>
 

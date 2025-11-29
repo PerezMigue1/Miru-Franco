@@ -7,12 +7,16 @@ interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
   onPasswordReset?: () => void;
   identifier?: string; // email o teléfono
+  token?: string; // Token de la URL (para enlace de recuperación)
+  email?: string; // Email de la URL (para enlace de recuperación)
 }
 
 export default function ResetPassword({ 
   onSwitchToLogin,
   onPasswordReset,
-  identifier
+  identifier,
+  token: tokenFromProps,
+  email: emailFromProps
 }: ResetPasswordProps) {
   const [formData, setFormData] = useState({
     password: '',
@@ -26,27 +30,71 @@ export default function ResetPassword({
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [tokenValidado, setTokenValidado] = useState(false);
+  const [validandoToken, setValidandoToken] = useState(false);
+  const [nombreUsuario, setNombreUsuario] = useState<string>('');
 
-  // Timer para mostrar tiempo restante del token (10 minutos)
+  // Validar token si viene de la URL (enlace de recuperación)
   useEffect(() => {
-    const expires = localStorage.getItem('resetPasswordExpires');
-    if (expires) {
-      const interval = setInterval(() => {
-        const remaining = Math.max(0, parseInt(expires) - Date.now());
-        setTimeRemaining(Math.floor(remaining / 1000));
+    if (tokenFromProps && emailFromProps) {
+      validarTokenRecuperacion(emailFromProps, tokenFromProps);
+    } else {
+      // Si no viene de URL, usar el flujo normal (OTP o preguntas de seguridad)
+      const expires = localStorage.getItem('resetPasswordExpires');
+      if (expires) {
+        const interval = setInterval(() => {
+          const remaining = Math.max(0, parseInt(expires) - Date.now());
+          setTimeRemaining(Math.floor(remaining / 1000));
+          
+          if (remaining <= 0) {
+            setErrors({ general: 'El token ha expirado. Por favor inicia el proceso nuevamente.' });
+            // Limpiar tokens temporales
+            localStorage.removeItem('resetPasswordToken');
+            localStorage.removeItem('resetPasswordEmail');
+            localStorage.removeItem('resetPasswordExpires');
+          }
+        }, 1000);
         
-        if (remaining <= 0) {
-          setErrors({ general: 'El token ha expirado. Por favor inicia el proceso nuevamente.' });
-          // Limpiar tokens temporales
-          localStorage.removeItem('resetPasswordToken');
-          localStorage.removeItem('resetPasswordEmail');
-          localStorage.removeItem('resetPasswordExpires');
-        }
-      }, 1000);
-      
-      return () => clearInterval(interval);
+        return () => clearInterval(interval);
+      } else {
+        // Si no hay token ni en URL ni en localStorage, el token ya está validado (flujo normal)
+        // Esto permite que el formulario se muestre para OTP o preguntas de seguridad
+        setTokenValidado(true);
+      }
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenFromProps, emailFromProps]);
+
+  const validarTokenRecuperacion = async (email: string, token: string) => {
+    setValidandoToken(true);
+    setErrors({});
+    
+    try {
+      const { api } = await import('../../services');
+      const result = await api.validarTokenRecuperacion(email, token);
+      
+      if (result.success && result.valid) {
+        setTokenValidado(true);
+        if (result.nombre) {
+          setNombreUsuario(result.nombre);
+        }
+        // Guardar token para usarlo después
+        localStorage.setItem('resetPasswordToken', token);
+        localStorage.setItem('resetPasswordEmail', email);
+        // El token del enlace expira en 60 minutos según el backend
+        localStorage.setItem('resetPasswordExpires', String(Date.now() + 60 * 60 * 1000));
+      } else {
+        setErrors({ 
+          general: result.error || result.message || 'Token inválido, expirado o ya utilizado' 
+        });
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al validar el token';
+      setErrors({ general: errorMessage });
+    } finally {
+      setValidandoToken(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -175,6 +223,54 @@ export default function ResetPassword({
     }
   };
 
+  // Si viene token de URL y aún no está validado, mostrar loading
+  if (tokenFromProps && !tokenValidado) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+          <div className="text-center">
+            {validandoToken ? (
+              <>
+                <div className="mx-auto w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
+                  Validando enlace...
+                </h2>
+                <p className="text-sm" style={{ color: '#F2F1ED' }}>
+                  Por favor espera mientras validamos tu enlace de recuperación
+                </p>
+              </>
+            ) : errors.general ? (
+              <>
+                <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
+                  Enlace Inválido
+                </h2>
+                <p className="mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+                  {errors.general}
+                </p>
+                {onSwitchToLogin && (
+                  <button
+                    onClick={onSwitchToLogin}
+                    className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
+                    style={{ backgroundColor: '#710014' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+                  >
+                    Ir a Iniciar Sesión
+                  </button>
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isSuccess) {
     return (
       <div className="w-full max-w-md mx-auto">
@@ -214,9 +310,15 @@ export default function ResetPassword({
         <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
           Nueva Contraseña
         </h2>
-        <p className="text-center mb-4 text-sm" style={{ color: '#F2F1ED' }}>
-          Ingresa tu nueva contraseña
-        </p>
+        {nombreUsuario ? (
+          <p className="text-center mb-4 text-sm" style={{ color: '#F2F1ED' }}>
+            Hola <strong>{nombreUsuario}</strong>, ingresa tu nueva contraseña
+          </p>
+        ) : (
+          <p className="text-center mb-4 text-sm" style={{ color: '#F2F1ED' }}>
+            Ingresa tu nueva contraseña
+          </p>
+        )}
         <div className="mb-4 p-3 rounded-lg bg-blue-900/20 border border-blue-700/50">
           <p className="text-xs text-center" style={{ color: '#F2F1ED' }}>
             ⚠️ La nueva contraseña debe ser diferente a la contraseña anterior
