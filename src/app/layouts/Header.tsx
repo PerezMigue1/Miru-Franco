@@ -13,18 +13,28 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const notificationsCount = 0; // Cambia este valor cuando tengas notificaciones
 
-  const handleLogout = () => {
-    // Limpiar datos de autenticación del localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-    
+  const handleLogout = async () => {
     // Cerrar el menú de usuario
     setIsUserMenuOpen(false);
     
-    // Redirigir al login
-    router.push('/');
+    try {
+      // Llamar al endpoint de logout para revocar el token
+      const { api } = await import('../services');
+      await api.logout();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // Continuar con el logout local aunque falle el servidor
+    } finally {
+      // Limpiar datos de autenticación del localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
+      
+      // Redirigir al login
+      router.push('/');
+    }
   };
 
   return (

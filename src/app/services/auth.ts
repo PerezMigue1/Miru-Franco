@@ -381,5 +381,58 @@ export const api = {
       return { existe: false, message: 'Error al verificar el correo' };
     }
   },
+
+  // ✅ Cerrar sesión (revoca token)
+  async logout(): Promise<{ success: boolean; message?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<{ success: boolean; message?: string }>(
+        '/api/auth/logout',
+        {},
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // Aún así retornar éxito para limpiar el token local
+      return { success: true, message: 'Sesión cerrada' };
+    }
+  },
+
+  // ✅ Renovar token
+  async refreshToken(): Promise<{ success: boolean; token?: string; error?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.post<{ success: boolean; token?: string; error?: string }>(
+        '/api/auth/refresh',
+        {},
+        BACKEND_BASE
+      );
+      if (data.success && data.token) {
+        saveToken(data.token);
+      }
+      return data;
+    } catch (error) {
+      console.error('Error renovando token:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al renovar token';
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  // ✅ Obtener perfil del usuario (incluye rol)
+  async getProfile(): Promise<{ success: boolean; data?: { id: string; nombre: string; email: string; rol?: string }; error?: string }> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    try {
+      const data = await apiClient.get<{ success: boolean; data?: { id: string; nombre: string; email: string; rol?: string }; error?: string }>(
+        '/api/auth/me',
+        BACKEND_BASE
+      );
+      return data;
+    } catch (error) {
+      console.error('Error al obtener perfil:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al obtener perfil';
+      return { success: false, error: errorMessage };
+    }
+  },
 };
 
