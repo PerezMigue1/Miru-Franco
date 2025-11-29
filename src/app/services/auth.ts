@@ -116,8 +116,11 @@ export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     try {
-      const emailLimpio = email.trim().toLowerCase();
+      // Limpiar y normalizar email: trim, lowercase, y asegurar que no tenga caracteres especiales problemáticos
+      const emailLimpio = email.trim().toLowerCase().replace(/[^\w@.-]/g, '');
       console.log('[Auth] Intentando login para:', emailLimpio);
+      console.log('[Auth] Email original:', email);
+      console.log('[Auth] Email limpio:', emailLimpio);
       console.log('[Auth] Payload enviado:', { 
         email: emailLimpio, 
         passwordLength: password.length,
@@ -264,10 +267,13 @@ export const api = {
 
   async resetPassword(token: string | null, email: string | null, nuevaPassword: string): Promise<ResetPasswordResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
-    const payload = { token, email, nuevaPassword };
+    // Limpiar y normalizar email para evitar falsos positivos de SQL injection
+    const emailLimpio = email ? email.trim().toLowerCase().replace(/[^\w@.-]/g, '') : null;
+    const payload = { token, email: emailLimpio, nuevaPassword };
     console.log('[resetPassword] Enviando:', { 
       token: token ? `${token.substring(0, 10)}...` : null, 
-      email, 
+      email: emailLimpio,
+      emailOriginal: email,
       nuevaPassword: nuevaPassword ? `${nuevaPassword.substring(0, 3)}...` : null,
       nuevaPasswordLength: nuevaPassword?.length 
     });
