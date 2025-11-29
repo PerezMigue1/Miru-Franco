@@ -116,8 +116,14 @@ export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     try {
-      console.log('[Auth] Intentando login para:', email);
-      const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
+      const emailLimpio = email.trim().toLowerCase();
+      console.log('[Auth] Intentando login para:', emailLimpio);
+      console.log('[Auth] Payload enviado:', { 
+        email: emailLimpio, 
+        passwordLength: password.length,
+        passwordPrefix: password.substring(0, 3) + '...'
+      });
+      const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email: emailLimpio, password }, BACKEND_BASE);
       console.log('[Auth] Respuesta completa del backend:', JSON.stringify(data, null, 2));
       console.log('[Auth] Respuesta del backend:', { success: data.success, hasToken: !!data.token, hasUser: !!data.user, error: data.error });
       

@@ -166,7 +166,14 @@ export default function ResetPassword({
       const expiresFromLocalStorage = localStorage.getItem('resetPasswordExpires');
       
       const token = tokenFromUrl || tokenFromStorage || tokenFromLocalStorage;
-      const email = identifier || emailFromLocalStorage;
+      const email = emailFromProps || identifier || emailFromLocalStorage;
+      
+      console.log('[ResetPassword] Datos para cambio:', {
+        token: token ? `${token.substring(0, 10)}...` : null,
+        email: email,
+        tieneToken: !!token,
+        tieneEmail: !!email
+      });
       
       // Verificar si el token expiró
       if (expiresFromLocalStorage && Date.now() > parseInt(expiresFromLocalStorage)) {
@@ -189,6 +196,8 @@ export default function ResetPassword({
       }
       
       console.log('✅ Contraseña cambiada exitosamente');
+      console.log('[ResetPassword] Email usado para cambio:', email);
+      console.log('[ResetPassword] Resultado del cambio:', result);
       
       // ✅ Limpiar TODOS los tokens después de cambiar la contraseña
       // Esto incluye tokens de autenticación y tokens temporales de recuperación
@@ -209,7 +218,7 @@ export default function ResetPassword({
       
       setIsSuccess(true);
       
-      // Esperar un momento antes de redirigir para que el usuario vea el mensaje de éxito
+      // Esperar un momento antes de redirigir al login cuando se complete el cambio de contraseña
       setTimeout(() => {
         onPasswordReset?.();
       }, 2000);

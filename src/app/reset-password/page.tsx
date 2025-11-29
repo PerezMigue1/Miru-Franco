@@ -11,6 +11,11 @@ function ResetPasswordContent() {
   const email = searchParams.get('email');
 
   const handlePasswordReset = () => {
+    // Guardar el email en sessionStorage para mostrarlo en el login
+    if (email && typeof window !== 'undefined') {
+      sessionStorage.setItem('lastResetEmail', email);
+    }
+    
     // Limpiar cualquier parámetro de la URL antes de redirigir
     router.push('/login?passwordChanged=true');
     // Forzar recarga para limpiar cualquier estado residual

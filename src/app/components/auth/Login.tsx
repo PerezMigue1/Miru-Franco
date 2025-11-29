@@ -87,8 +87,10 @@ export default function Login({
     
     try {
       const { api } = await import('../../services');
-      console.log('[Login] Intentando login con email:', email);
-      const result = await api.login(email, password);
+      const emailLimpio = email.trim().toLowerCase();
+      console.log('[Login] Intentando login con email:', emailLimpio);
+      console.log('[Login] Longitud de contraseña:', password.length);
+      const result = await api.login(emailLimpio, password);
       console.log('[Login] Resultado del login:', { success: result.success, error: result.error, requiereVerificacion: result.requiereVerificacion });
       
       if (!result.success) {
