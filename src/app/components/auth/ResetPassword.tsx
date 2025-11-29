@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { validatePassword } from '../../utils/security';
+import { validatePassword, removeToken } from '../../utils/security';
 
 interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
@@ -21,6 +21,8 @@ export default function ResetPassword({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
@@ -49,7 +51,7 @@ export default function ResetPassword({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // ✅ Usar validación centralizada de seguridad
+    // ✅ Usar validación centralizada de seguridad completa
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
     } else {
@@ -57,6 +59,9 @@ export default function ResetPassword({
       if (!validation.valid) {
         // Mostrar el primer error o todos los errores
         newErrors.password = validation.errors?.[0] || validation.message || 'La contraseña no cumple con los requisitos';
+        setPasswordErrors(validation.errors || []);
+      } else {
+        setPasswordErrors([]);
       }
     }
     
@@ -78,6 +83,19 @@ export default function ResetPassword({
         delete newErrors[field];
         return newErrors;
       });
+    }
+    
+    // Validación en tiempo real de contraseña
+    if (field === 'password') {
+      const validation = validatePassword(value);
+      if (!validation.valid && validation.errors) {
+        setPasswordErrors(validation.errors);
+      } else {
+        setPasswordErrors([]);
+      }
+      
+      // Actualizar indicador de fortaleza
+      setPasswordStrength(validation.strength || null);
     }
   };
 
@@ -117,10 +135,14 @@ export default function ResetPassword({
       
       await api.resetPassword(token, email, formData.password);
       
-      // Limpiar tokens temporales después de éxito
+      // ✅ Limpiar TODOS los tokens después de cambiar la contraseña
+      // Esto incluye tokens de autenticación y tokens temporales de recuperación
+      removeToken(); // Limpia token y authToken
       localStorage.removeItem('resetPasswordToken');
       localStorage.removeItem('resetPasswordEmail');
       localStorage.removeItem('resetPasswordExpires');
+      localStorage.removeItem('user'); // Limpiar datos del usuario también
+      sessionStorage.clear(); // Limpiar toda la sesión
       
       setIsSuccess(true);
       onPasswordReset?.();
@@ -135,7 +157,19 @@ export default function ResetPassword({
         localStorage.removeItem('resetPasswordExpires');
       }
       
-      setErrors({ general: errorMessage });
+      // Verificar si el error es porque la contraseña es la misma que la anterior
+      const lowerError = errorMessage.toLowerCase();
+      if (lowerError.includes('misma') || 
+          lowerError.includes('anterior') || 
+          lowerError.includes('ya utilizada') ||
+          lowerError.includes('igual a la anterior')) {
+        setErrors({ 
+          password: 'La nueva contraseña debe ser diferente a la contraseña anterior',
+          general: 'La nueva contraseña debe ser diferente a la contraseña anterior'
+        });
+      } else {
+        setErrors({ general: errorMessage });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -180,9 +214,14 @@ export default function ResetPassword({
         <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
           Nueva Contraseña
         </h2>
-        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+        <p className="text-center mb-4 text-sm" style={{ color: '#F2F1ED' }}>
           Ingresa tu nueva contraseña
         </p>
+        <div className="mb-4 p-3 rounded-lg bg-blue-900/20 border border-blue-700/50">
+          <p className="text-xs text-center" style={{ color: '#F2F1ED' }}>
+            ⚠️ La nueva contraseña debe ser diferente a la contraseña anterior
+          </p>
+        </div>
         
         {timeRemaining !== null && timeRemaining > 0 && (
           <div className="mb-4 p-3 rounded-lg bg-yellow-900/20 border border-yellow-700/50">
@@ -243,9 +282,54 @@ export default function ResetPassword({
                 {errors.password}
               </p>
             )}
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Mínimo 8 caracteres, con mayúsculas, minúsculas y números
-            </p>
+            {passwordErrors.length > 0 && (
+              <div className="mt-1 space-y-1">
+                {passwordErrors.map((error, i) => (
+                  <p key={i} className="text-xs text-red-600 dark:text-red-400">
+                    • {error}
+                  </p>
+                ))}
+              </div>
+            )}
+            {passwordErrors.length === 0 && formData.password && (
+              <div className="mt-1">
+                <p className="text-xs text-green-600 dark:text-green-400 mb-1">
+                  ✓ Contraseña válida
+                </p>
+                {passwordStrength && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs" style={{ color: '#F2F1ED' }}>Fortaleza:</span>
+                    <div className="flex-1 h-2 bg-gray-300 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${
+                          passwordStrength === 'strong'
+                            ? 'bg-green-500 w-full'
+                            : passwordStrength === 'medium'
+                            ? 'bg-yellow-500 w-2/3'
+                            : 'bg-red-500 w-1/3'
+                        }`}
+                      />
+                    </div>
+                    <span
+                      className={`text-xs font-medium ${
+                        passwordStrength === 'strong'
+                          ? 'text-green-600'
+                          : passwordStrength === 'medium'
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      }`}
+                    >
+                      {passwordStrength === 'strong' ? 'Fuerte' : passwordStrength === 'medium' ? 'Media' : 'Débil'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            {passwordErrors.length === 0 && !formData.password && (
+              <p className="mt-1 text-xs" style={{ color: 'rgba(242,241,237,0.7)' }}>
+                Mínimo 8 caracteres, con mayúsculas, minúsculas, números y caracteres especiales
+              </p>
+            )}
           </div>
 
           <div>
