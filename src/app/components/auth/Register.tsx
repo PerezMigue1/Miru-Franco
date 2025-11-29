@@ -379,6 +379,12 @@ export default function Register({
   };
 
   const handleSubmit = async (skipValidation = false) => {
+    // ✅ Prevenir doble submit - verificar ANTES de cualquier otra lógica
+    if (isLoading) {
+      console.warn('⚠️ Submit ya en proceso, ignorando...');
+      return;
+    }
+    
     if (!skipValidation) {
       // Primero validar y obtener los errores
       const validationErrors: Record<string, string> = {};
