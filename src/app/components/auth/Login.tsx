@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import { handleSecurityError } from '../../utils/security';
 import ActivateAccount from './ActivateAccount';
@@ -16,6 +17,7 @@ export default function Login({
   onSwitchToRecovery,
   onLoginSuccess 
 }: LoginProps) {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +32,23 @@ export default function Login({
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const [formDisabled, setFormDisabled] = useState(false);
+  
+  // Funciones para navegar usando router
+  const handleSwitchToRegister = () => {
+    if (onSwitchToRegister) {
+      onSwitchToRegister();
+    } else {
+      router.push('/register');
+    }
+  };
+  
+  const handleSwitchToRecovery = () => {
+    if (onSwitchToRecovery) {
+      onSwitchToRecovery();
+    } else {
+      router.push('/forgot-password');
+    }
+  };
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -373,7 +392,7 @@ export default function Login({
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={onSwitchToRecovery}
+              onClick={handleSwitchToRecovery}
               className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
               disabled={isLoading || formDisabled}
             >
@@ -465,23 +484,21 @@ export default function Login({
           )}
         </button>
 
-        {onSwitchToRegister && (
-          <div className="mt-6 text-center">
-            <p className="text-sm text-texto-fondo-oscuro">
-              ¿No tienes una cuenta?{' '}
-              <button
-                onClick={onSwitchToRegister}
-                className="font-medium hover:underline text-enlaces-textos-interactivos"
-                style={{ color: colors.enlacesTextosInteractivos }}
-                onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-                onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
-                disabled={isLoading}
-              >
-                Regístrate
-              </button>
-            </p>
-          </div>
-        )}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-texto-fondo-oscuro">
+            ¿No tienes una cuenta?{' '}
+            <button
+              onClick={handleSwitchToRegister}
+              className="font-medium hover:underline text-enlaces-textos-interactivos"
+              style={{ color: colors.enlacesTextosInteractivos }}
+              onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
+              onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+              disabled={isLoading}
+            >
+              Regístrate
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

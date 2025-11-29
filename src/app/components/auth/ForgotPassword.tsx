@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ForgotPasswordProps {
@@ -18,9 +19,19 @@ export default function ForgotPassword({
   onSwitchToSecurityQuestions,
   onCodeSent
 }: ForgotPasswordProps) {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ email?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Funcion para navegar usando router
+  const handleSwitchToLogin = () => {
+    if (onSwitchToLogin) {
+      onSwitchToLogin();
+    } else {
+      router.push('/login');
+    }
+  };
 
   const validateForm = () => {
     const newErrors: { email?: string } = {};

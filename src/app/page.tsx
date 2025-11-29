@@ -1,20 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthContainer from './components/auth/AuthContainer';
 
 export default function Home() {
   const router = useRouter();
 
-  const handleAuthSuccess = () => {
-    console.log('Usuario autenticado exitosamente');
-    router.push('/home');
-  };
+  useEffect(() => {
+    // Redirigir a login por defecto
+    router.push('/login');
+  }, [router]);
 
   return (
-    <AuthContainer 
-      initialView="login"
-      onAuthSuccess={handleAuthSuccess}
-    />
+    <div className="min-h-screen flex items-center justify-center bg-fondo-general">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-menu-texto-principal mx-auto mb-4"></div>
+        <p className="text-texto-fondo-oscuro">Redirigiendo...</p>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Login from './Login';
 import Register from './Register';
 import ForgotPassword from './ForgotPassword';
@@ -21,9 +22,23 @@ export default function AuthContainer({
   initialView = 'login',
   onAuthSuccess 
 }: AuthContainerProps) {
+  const router = useRouter();
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [recoveryIdentifier, setRecoveryIdentifier] = useState<string>('');
   const [recoveryEmail, setRecoveryEmail] = useState<string>('');
+  
+  // Funciones para navegar usando router cuando no hay callback
+  const handleSwitchToRegister = () => {
+    router.push('/register');
+  };
+  
+  const handleSwitchToLogin = () => {
+    router.push('/login');
+  };
+  
+  const handleSwitchToRecovery = () => {
+    router.push('/forgot-password');
+  };
 
   const handleLoginSuccess = () => {
     onAuthSuccess?.();
@@ -86,22 +101,22 @@ export default function AuthContainer({
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-fondo-general">
       {currentView === 'login' && (
         <Login
-          onSwitchToRegister={() => setCurrentView('register')}
-          onSwitchToRecovery={() => setCurrentView('forgot-email')}
+          onSwitchToRegister={handleSwitchToRegister}
+          onSwitchToRecovery={handleSwitchToRecovery}
           onLoginSuccess={handleLoginSuccess}
         />
       )}
 
       {currentView === 'register' && (
         <Register
-          onSwitchToLogin={() => setCurrentView('login')}
+          onSwitchToLogin={handleSwitchToLogin}
           onRegisterSuccess={handleRegisterSuccess}
         />
       )}
 
       {currentView === 'forgot-email' && (
         <ForgotPassword
-          onSwitchToLogin={() => setCurrentView('login')}
+          onSwitchToLogin={handleSwitchToLogin}
           onEmailSent={handleEmailSent}
           onCodeSent={handleOTPCodeSent}
           onSwitchToSMS={() => setCurrentView('forgot-sms')}

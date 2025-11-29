@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { validatePassword, sanitizeInput, sanitizeEmail } from '../../utils/security';
 import ActivateAccount from './ActivateAccount';
 
@@ -13,7 +14,17 @@ export default function Register({
   onSwitchToLogin,
   onRegisterSuccess 
 }: RegisterProps) {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Funcion para navegar usando router
+  const handleSwitchToLogin = () => {
+    if (onSwitchToLogin) {
+      onSwitchToLogin();
+    } else {
+      router.push('/login');
+    }
+  };
   const [formData, setFormData] = useState({
     // Paso 1: Información básica
     name: '',
@@ -1422,23 +1433,21 @@ export default function Register({
           </div>
         </form>
 
-        {onSwitchToLogin && (
-          <div className="mt-6 text-center">
-            <p className="text-sm" style={{ color: '#F2F1ED' }}>
-              ¿Ya tienes una cuenta?{' '}
-              <button
-                onClick={onSwitchToLogin}
-                className="font-medium hover:underline"
-                style={{ color: '#243B5A' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#A64B63'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
-                disabled={isLoading}
-              >
-                Inicia Sesión
-              </button>
-            </p>
-          </div>
-        )}
+        <div className="mt-6 text-center">
+          <p className="text-sm" style={{ color: '#F2F1ED' }}>
+            ¿Ya tienes una cuenta?{' '}
+            <button
+              onClick={handleSwitchToLogin}
+              className="font-medium hover:underline"
+              style={{ color: '#243B5A' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#A64B63'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
+              disabled={isLoading}
+            >
+              Inicia Sesión
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
