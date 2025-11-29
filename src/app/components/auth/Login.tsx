@@ -26,6 +26,10 @@ export default function Login({
   const [isResending, setIsResending] = useState(false);
   // Guardar credenciales para reintentar login después de verificar
   const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null);
+  // Manejo de bloqueo por fuerza bruta
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+  const [formDisabled, setFormDisabled] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -86,9 +90,32 @@ export default function Login({
           // No mostrar error general cuando se muestra la pantalla de activación
           setErrors({});
       } else {
-        // ✅ Usar utilidad de seguridad para manejar errores (no revelar detalles)
-        const securityError = handleSecurityError(new Error(errorMessage));
-        setErrors({ general: securityError.message });
+        // ✅ Manejar bloqueo por fuerza bruta
+        if (lowerError.includes('bloqueada') || lowerError.includes('bloqueado')) {
+          const match = errorMessage.match(/(\d+)\s*minutos?/i);
+          const minutos = match ? parseInt(match[1]) : 15;
+          const blockedUntilTime = Date.now() + (minutos * 60 * 1000);
+          
+          setIsBlocked(true);
+          setBlockedUntil(blockedUntilTime);
+          setFormDisabled(true);
+          
+          setErrors({ 
+            general: `Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en ${minutos} minutos.` 
+          });
+          
+          // Habilitar formulario después del tiempo de bloqueo
+          setTimeout(() => {
+            setFormDisabled(false);
+            setIsBlocked(false);
+            setBlockedUntil(null);
+            setErrors({});
+          }, minutos * 60 * 1000);
+        } else {
+          // ✅ Usar utilidad de seguridad para manejar errores (no revelar detalles)
+          const securityError = handleSecurityError(new Error(errorMessage));
+          setErrors({ general: securityError.message });
+        }
       }
       } else {
         // Login exitoso
@@ -127,8 +154,34 @@ export default function Login({
         // No mostrar error general cuando se muestra la pantalla de activación
         setErrors({});
       } else {
-        // ✅ Usar mensaje de seguridad (no revelar detalles)
-        setErrors({ general: securityError.message });
+        // ✅ Manejar bloqueo por fuerza bruta en catch
+        const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+        const lowerError = errorMessage.toLowerCase();
+        
+        if (lowerError.includes('bloqueada') || lowerError.includes('bloqueado')) {
+          const match = errorMessage.match(/(\d+)\s*minutos?/i);
+          const minutos = match ? parseInt(match[1]) : 15;
+          const blockedUntilTime = Date.now() + (minutos * 60 * 1000);
+          
+          setIsBlocked(true);
+          setBlockedUntil(blockedUntilTime);
+          setFormDisabled(true);
+          
+          setErrors({ 
+            general: `Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en ${minutos} minutos.` 
+          });
+          
+          // Habilitar formulario después del tiempo de bloqueo
+          setTimeout(() => {
+            setFormDisabled(false);
+            setIsBlocked(false);
+            setBlockedUntil(null);
+            setErrors({});
+          }, minutos * 60 * 1000);
+        } else {
+          // ✅ Usar mensaje de seguridad (no revelar detalles)
+          setErrors({ general: securityError.message });
+        }
       }
     } finally {
       setIsLoading(false);
@@ -252,7 +305,7 @@ export default function Login({
                 borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
               }}
               placeholder="tu@email.com"
-              disabled={isLoading}
+              disabled={isLoading || formDisabled}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -288,7 +341,7 @@ export default function Login({
                   borderColor: errors.password ? colors.danger : colorsWithOpacity.bordeVisible
               }}
                 placeholder="••••••••"
-                disabled={isLoading}
+                disabled={isLoading || formDisabled}
               />
               <button
                 type="button"
@@ -320,7 +373,7 @@ export default function Login({
               type="button"
               onClick={onSwitchToRecovery}
               className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
-              disabled={isLoading}
+              disabled={isLoading || formDisabled}
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -353,7 +406,7 @@ export default function Login({
 
           <button
             type="submit"
-            disabled={isLoading || isGoogleLoading}
+            disabled={isLoading || isGoogleLoading || formDisabled}
             className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
