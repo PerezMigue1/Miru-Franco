@@ -61,7 +61,8 @@ export default function ForgotPassword({
       
       if (result.success) {
         setEnlaceEnviado(true);
-        onEmailSent?.(email);
+        // NO llamar a onEmailSent porque el enlace NO requiere código OTP
+        // El usuario solo necesita revisar su correo
       } else {
         const errorMessage = result.error || result.message || 'Error al solicitar el enlace';
         setErrors({ general: errorMessage });
@@ -94,9 +95,19 @@ export default function ForgotPassword({
             backgroundColor: 'rgba(34, 197, 94, 0.1)',
             borderColor: 'rgba(34, 197, 94, 0.3)'
           }}>
-            <p className="text-sm text-center text-green-600 dark:text-green-400">
-              ✅ Si el email existe, recibirás un enlace de recuperación en tu correo. Revisa tu bandeja de entrada y spam.
-            </p>
+            <div className="text-center">
+              <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-base font-semibold text-green-600 dark:text-green-400 mb-2">
+                ✅ Enlace enviado exitosamente
+              </p>
+              <p className="text-sm text-green-600 dark:text-green-400">
+                Si el email existe, recibirás un enlace de recuperación en tu correo. Revisa tu bandeja de entrada y spam.
+              </p>
+            </div>
           </div>
         )}
         
@@ -138,7 +149,7 @@ export default function ForgotPassword({
                 borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
               }}
               placeholder="tu@email.com"
-              disabled={isLoading}
+              disabled={isLoading || enlaceEnviado}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
