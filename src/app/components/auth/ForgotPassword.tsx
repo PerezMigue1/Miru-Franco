@@ -170,17 +170,15 @@ export default function ForgotPassword({
           </div>
         )}
 
-        {onSwitchToLogin && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={onSwitchToLogin}
-              className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
-              disabled={isLoading}
-            >
-              ← Volver a Iniciar Sesión
-            </button>
-          </div>
-        )}
+        <div className="mt-6 text-center">
+          <button
+            onClick={handleSwitchToLogin}
+            className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
+            disabled={isLoading}
+          >
+            ← Volver a Iniciar Sesión
+          </button>
+        </div>
       </div>
     </div>
   );
