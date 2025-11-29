@@ -1,7 +1,7 @@
 // Cliente API centralizado con manejo de errores y tokens
 
-import { getApiBaseUrl } from './config';
-import { removeToken } from '../utils/security';
+import { getApiBaseUrl, getBackendBaseUrl } from './config';
+import { removeToken, getToken, saveToken } from '../utils/security';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -47,10 +47,47 @@ class ApiClient {
     };
 
     // Agregar token si existe y no se omite
+    let token: string | null = null;
     if (!skipAuth) {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      token = getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        
+        // Verificar si necesita renovación (cada 10 minutos)
+        try {
+          const tokenData = JSON.parse(atob(token.split('.')[1]));
+          const now = Math.floor(Date.now() / 1000);
+          const lastActivity = tokenData.lastActivity || tokenData.iat;
+          const timeSinceActivity = now - lastActivity;
+          
+          // Si han pasado más de 10 minutos, renovar token
+          if (timeSinceActivity > 10 * 60) {
+            try {
+              const BACKEND_BASE = getBackendBaseUrl();
+              const refreshResponse = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                if (refreshData.token) {
+                  saveToken(refreshData.token);
+                  token = refreshData.token;
+                  headers['Authorization'] = `Bearer ${token}`;
+                }
+              }
+            } catch (refreshError) {
+              // Si falla la renovación, continuar con el token actual
+              console.warn('Error renovando token:', refreshError);
+            }
+          }
+        } catch (error) {
+          // Ignorar errores de decodificación del token
+        }
       }
     }
 
@@ -64,13 +101,66 @@ class ApiClient {
       if (!response.ok) {
         // ✅ Manejar error 401 (No autorizado) según guía
         if (response.status === 401) {
-          // Token inválido o expirado
+          const errorText = await response.text();
+          let errorData;
+          
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          
+          const message = errorData.message || errorData.error || '';
+          const lowerMessage = message.toLowerCase();
+          
           if (typeof window !== 'undefined') {
             removeToken();
-            // Redirigir al login solo si estamos en el cliente
-            window.location.href = '/';
+            
+            // Manejar diferentes tipos de expiración
+            if (lowerMessage.includes('inactividad') || lowerMessage.includes('expirada')) {
+              // Sesión expirada por inactividad
+              alert('Tu sesión expiró por inactividad. Por favor inicia sesión nuevamente.');
+              window.location.href = '/?reason=inactivity';
+            } else if (lowerMessage.includes('revocado')) {
+              // Token revocado (logout desde otro dispositivo)
+              alert('Tu sesión fue cerrada desde otro dispositivo.');
+              window.location.href = '/?reason=revoked';
+            } else if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmado')) {
+              // Usuario no ha verificado correo
+              const email = errorData.email || '';
+              window.location.href = `/verificar-email?email=${encodeURIComponent(email)}`;
+            } else {
+              // Error genérico de autenticación
+              window.location.href = '/';
+            }
           }
-          throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+          
+          throw new Error(message || 'No autorizado. Por favor, inicia sesión nuevamente.');
+        }
+        
+        // ✅ Manejar error 403 (Prohibido - cuenta bloqueada o sin permisos)
+        if (response.status === 403) {
+          const errorText = await response.text();
+          let errorData;
+          
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          
+          const message = errorData.message || errorData.error || 'Acceso denegado';
+          const lowerMessage = message.toLowerCase();
+          
+          if (lowerMessage.includes('bloqueada')) {
+            // Cuenta bloqueada por fuerza bruta
+            throw new Error(message);
+          } else if (lowerMessage.includes('permisos')) {
+            // Sin permisos (RBAC)
+            throw new Error('No tienes permisos para realizar esta acción');
+          }
+          
+          throw new Error(message);
         }
         
         // ✅ Manejar error 429 (Rate Limiting)
