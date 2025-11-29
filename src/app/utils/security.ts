@@ -2,29 +2,194 @@
 
 /**
  * Valida una contraseña según los requisitos de seguridad
+ * Implementa todas las validaciones del backend según GUIA_VALIDACION_CONTRASENA_BACKEND_VS_FRONTEND.md
+ * 
+ * Validaciones:
  * - Mínimo 8 caracteres
  * - Al menos una letra mayúscula
  * - Al menos una letra minúscula
  * - Al menos un número
+ * - Al menos un carácter especial
+ * - No datos personales
+ * - No patrones simples
+ * - No contraseñas comunes
  */
-export const validatePassword = (password: string): { valid: boolean; message?: string } => {
-  if (password.length < 8) {
-    return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
+export interface PasswordValidationResult {
+  valid: boolean;
+  message?: string;
+  errors?: string[];
+  strength?: 'weak' | 'medium' | 'strong';
+}
+
+export const validatePassword = (
+  password: string,
+  userData?: {
+    nombre?: string;
+    email?: string;
+    telefono?: string;
+    fechaNacimiento?: string;
+    direccion?: {
+      calle?: string;
+      colonia?: string;
+    };
+    preguntaSeguridad?: {
+      respuesta?: string;
+    };
   }
-  
+): PasswordValidationResult => {
+  const errors: string[] = [];
+
+  // 1. Longitud mínima
+  if (password.length < 8) {
+    errors.push('La contraseña debe tener al menos 8 caracteres');
+  }
+
+  // 2. Combinación de caracteres
   if (!/[A-Z]/.test(password)) {
-    return { valid: false, message: 'La contraseña debe incluir al menos una letra mayúscula' };
+    errors.push('Debe incluir al menos una letra mayúscula');
   }
   
   if (!/[a-z]/.test(password)) {
-    return { valid: false, message: 'La contraseña debe incluir al menos una letra minúscula' };
+    errors.push('Debe incluir al menos una letra minúscula');
   }
   
   if (!/[0-9]/.test(password)) {
-    return { valid: false, message: 'La contraseña debe incluir al menos un número' };
+    errors.push('Debe incluir al menos un número');
   }
   
-  return { valid: true };
+  // Caracteres especiales
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push('Debe incluir al menos un carácter especial (!@#$%^&*()_+-=[]{}|;:\'",.<>?/)');
+  }
+
+  // 3. No datos personales (solo si se proporcionan)
+  if (userData) {
+    const passwordLower = password.toLowerCase();
+    
+    if (userData.nombre) {
+      const nombreLower = userData.nombre.toLowerCase();
+      if (passwordLower.includes(nombreLower)) {
+        errors.push('La contraseña no puede contener tu nombre');
+      }
+    }
+    
+    if (userData.email) {
+      const emailPart = userData.email.split('@')[0].toLowerCase();
+      if (passwordLower.includes(emailPart)) {
+        errors.push('La contraseña no puede contener tu email');
+      }
+    }
+    
+    if (userData.telefono) {
+      const telefonoClean = userData.telefono.replace(/\D/g, '');
+      if (telefonoClean && password.includes(telefonoClean)) {
+        errors.push('La contraseña no puede contener tu teléfono');
+      }
+    }
+    
+    if (userData.fechaNacimiento) {
+      const fecha = new Date(userData.fechaNacimiento);
+      const año = fecha.getFullYear().toString();
+      const dia = fecha.getDate().toString();
+      if (password.includes(año) || password.includes(dia)) {
+        errors.push('La contraseña no puede contener tu fecha de nacimiento');
+      }
+    }
+    
+    if (userData.direccion) {
+      if (userData.direccion.calle) {
+        const calleLower = userData.direccion.calle.toLowerCase();
+        if (passwordLower.includes(calleLower)) {
+          errors.push('La contraseña no puede contener tu dirección');
+        }
+      }
+      if (userData.direccion.colonia) {
+        const coloniaLower = userData.direccion.colonia.toLowerCase();
+        if (passwordLower.includes(coloniaLower)) {
+          errors.push('La contraseña no puede contener tu dirección');
+        }
+      }
+    }
+    
+    if (userData.preguntaSeguridad?.respuesta) {
+      const respuestaLower = userData.preguntaSeguridad.respuesta.toLowerCase();
+      if (passwordLower.includes(respuestaLower)) {
+        errors.push('La contraseña no puede contener la respuesta de tu pregunta de seguridad');
+      }
+    }
+  }
+
+  // 4. No patrones simples
+  const passwordLower = password.toLowerCase();
+  
+  // Secuencias de teclado
+  const keyboardPatterns = ['qwerty', 'asdfgh', 'zxcvbn', '123456', '654321'];
+  if (keyboardPatterns.some(pattern => passwordLower.includes(pattern))) {
+    errors.push('La contraseña no puede seguir patrones simples de teclado');
+  }
+  
+  // Letras consecutivas
+  if (/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(password)) {
+    errors.push('La contraseña no puede contener letras consecutivas');
+  }
+  
+  // Números consecutivos
+  if (/012|123|234|345|456|567|678|789|987|876|765|654|543|432|321|210/.test(password)) {
+    errors.push('La contraseña no puede contener números consecutivos');
+  }
+  
+  // Mismo carácter repetido 3+ veces
+  if (/(.)\1{2,}/.test(password)) {
+    errors.push('La contraseña no puede tener el mismo carácter repetido 3 o más veces');
+  }
+  
+  // Solo números o solo letras
+  if (/^\d+$/.test(password)) {
+    errors.push('La contraseña no puede contener solo números');
+  }
+  if (/^[a-zA-Z]+$/.test(password)) {
+    errors.push('La contraseña no puede contener solo letras');
+  }
+
+  // 5. No contraseñas comunes
+  const commonPasswords = [
+    'password', 'password123', '12345678', '123456789', '1234567890',
+    'qwerty', 'qwerty123', 'abc123', 'monkey', '1234567',
+    'letmein', 'trustno1', 'dragon', 'baseball', 'iloveyou',
+    'master', 'sunshine', 'ashley', 'bailey', 'passw0rd',
+    'shadow', '123123', '654321', 'superman', 'qazwsx',
+    'michael', 'football', 'welcome', 'jesus', 'ninja',
+    'mustang', 'password1', '123qwe', 'admin', 'root'
+  ];
+  
+  if (commonPasswords.includes(passwordLower)) {
+    errors.push('Esta contraseña es muy común, elige otra más segura');
+  }
+
+  // Calcular fortaleza
+  let strength: 'weak' | 'medium' | 'strong' = 'weak';
+  if (errors.length === 0) {
+    const hasLength = password.length >= 12;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    const criteriaMet = [hasLength, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+    
+    if (criteriaMet >= 5 && password.length >= 12) {
+      strength = 'strong';
+    } else if (criteriaMet >= 4) {
+      strength = 'medium';
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    message: errors.length > 0 ? errors[0] : undefined,
+    errors: errors.length > 0 ? errors : undefined,
+    strength,
+  };
 };
 
 /**

@@ -56,6 +56,7 @@ export default function Register({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [securityQuestions, setSecurityQuestions] = useState<Array<{_id?: string, pregunta: string}>>([]);
   const [selectedQuestionText, setSelectedQuestionText] = useState('');
@@ -140,13 +141,26 @@ export default function Register({
       newErrors.phone = 'El teléfono no es válido';
     }
     
-    // ✅ Usar validación centralizada de seguridad
+    // ✅ Usar validación centralizada de seguridad con todos los datos del usuario
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
     } else {
-      const validation = validatePassword(formData.password);
+      const validation = validatePassword(formData.password, {
+        nombre: formData.name,
+        email: formData.email,
+        telefono: formData.phone,
+        fechaNacimiento: formData.birthDate,
+        direccion: {
+          calle: formData.street,
+          colonia: formData.colony,
+        },
+        preguntaSeguridad: {
+          respuesta: securityAnswer,
+        },
+      });
       if (!validation.valid) {
-        newErrors.password = validation.message || 'La contraseña no cumple con los requisitos';
+        // Mostrar el primer error o todos los errores
+        newErrors.password = validation.errors?.[0] || validation.message || 'La contraseña no cumple con los requisitos';
       }
     }
     
@@ -248,27 +262,30 @@ export default function Register({
       });
     }
     
-    // Validación en tiempo real de contraseña
+    // Validación en tiempo real de contraseña con todos los datos del usuario
     if (field === 'password' && typeof value === 'string') {
-      const validation = validatePassword(value);
-      if (!validation.valid) {
-        const errorsList: string[] = [];
-        if (value.length < 8) {
-          errorsList.push('La contraseña debe tener al menos 8 caracteres');
-        }
-        if (!/[A-Z]/.test(value)) {
-          errorsList.push('Debe incluir al menos una letra mayúscula');
-        }
-        if (!/[a-z]/.test(value)) {
-          errorsList.push('Debe incluir al menos una letra minúscula');
-        }
-        if (!/[0-9]/.test(value)) {
-          errorsList.push('Debe incluir al menos un número');
-        }
-        setPasswordErrors(errorsList);
+      const validation = validatePassword(value, {
+        nombre: formData.name,
+        email: formData.email,
+        telefono: formData.phone,
+        fechaNacimiento: formData.birthDate,
+        direccion: {
+          calle: formData.street,
+          colonia: formData.colony,
+        },
+        preguntaSeguridad: {
+          respuesta: securityAnswer,
+        },
+      });
+      
+      if (!validation.valid && validation.errors) {
+        setPasswordErrors(validation.errors);
       } else {
         setPasswordErrors([]);
       }
+      
+      // Actualizar indicador de fortaleza
+      setPasswordStrength(validation.strength || null);
     }
     
     // Validación en tiempo real del correo
@@ -713,9 +730,38 @@ export default function Register({
           </div>
         )}
         {passwordErrors.length === 0 && formData.password && (
-          <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-            ✓ Contraseña válida
-          </p>
+          <div className="mt-1">
+            <p className="text-xs text-green-600 dark:text-green-400 mb-1">
+              ✓ Contraseña válida
+            </p>
+            {passwordStrength && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs" style={{ color: '#F2F1ED' }}>Fortaleza:</span>
+                <div className="flex-1 h-2 bg-gray-300 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      passwordStrength === 'strong'
+                        ? 'bg-green-500 w-full'
+                        : passwordStrength === 'medium'
+                        ? 'bg-yellow-500 w-2/3'
+                        : 'bg-red-500 w-1/3'
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-xs font-medium ${
+                    passwordStrength === 'strong'
+                      ? 'text-green-600'
+                      : passwordStrength === 'medium'
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {passwordStrength === 'strong' ? 'Fuerte' : passwordStrength === 'medium' ? 'Media' : 'Débil'}
+                </span>
+              </div>
+            )}
+          </div>
         )}
         {passwordErrors.length === 0 && !formData.password && (
           <p className="mt-1 text-xs"

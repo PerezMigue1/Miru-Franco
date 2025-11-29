@@ -55,7 +55,8 @@ export default function ResetPassword({
     } else {
       const validation = validatePassword(formData.password);
       if (!validation.valid) {
-        newErrors.password = validation.message || 'La contraseña no cumple con los requisitos';
+        // Mostrar el primer error o todos los errores
+        newErrors.password = validation.errors?.[0] || validation.message || 'La contraseña no cumple con los requisitos';
       }
     }
     
