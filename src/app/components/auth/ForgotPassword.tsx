@@ -46,11 +46,17 @@ export default function ForgotPassword({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevenir recarga de página
     
     if (!validateForm()) return;
     
     setIsLoading(true);
-    setErrors({}); // Limpiar errores previos
+    // NO limpiar todos los errores, solo el general para mantener errores de campos
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.general;
+      return newErrors;
+    });
     
     try {
       const { api } = await import('../../services');
@@ -99,7 +105,7 @@ export default function ForgotPassword({
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label 
               htmlFor="email" 

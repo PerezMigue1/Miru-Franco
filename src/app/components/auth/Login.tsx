@@ -65,7 +65,8 @@ export default function Login({
       newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     }
     
-    setErrors(newErrors);
+    // NO borrar errores generales, solo actualizar errores de campos
+    setErrors(prev => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -98,21 +99,25 @@ export default function Login({
         console.error('[Login] Error en login:', errorMessage);
         const lowerError = errorMessage.toLowerCase();
         
+        // Verificar si el usuario viene de un cambio de contraseña exitoso
+        // Si viene de un cambio de contraseña, ya verificó su identidad, no pedir OTP
+        const vieneDeCambioPassword = typeof window !== 'undefined' && 
+          new URLSearchParams(window.location.search).get('passwordChanged') === 'true';
+        
         // Detectar si la cuenta no está verificada/activada
-        const cuentaNoVerificada = result.requiereVerificacion || 
-            lowerError.includes('no está activada') ||
-            lowerError.includes('no está activado') ||
-            lowerError.includes('no está verificada') ||
-            lowerError.includes('no está verificado') ||
-            lowerError.includes('no está confirmada') ||
-            lowerError.includes('no está confirmado') ||
-            lowerError.includes('revisa tu correo') ||
-            lowerError.includes('cuenta no activada') ||
-            lowerError.includes('activar tu cuenta') ||
-            lowerError.includes('activada') ||
-            lowerError.includes('activar') ||
-            lowerError.includes('confirmada') ||
-            lowerError.includes('verificar');
+        // PERO solo si NO viene de un cambio de contraseña exitoso
+        const cuentaNoVerificada = !vieneDeCambioPassword && (
+          result.requiereVerificacion || 
+          lowerError.includes('no está activada') ||
+          lowerError.includes('no está activado') ||
+          lowerError.includes('no está verificada') ||
+          lowerError.includes('no está verificado') ||
+          lowerError.includes('no está confirmada') ||
+          lowerError.includes('no está confirmado') ||
+          lowerError.includes('revisa tu correo') ||
+          lowerError.includes('cuenta no activada') ||
+          lowerError.includes('activar tu cuenta')
+        );
         
         if (cuentaNoVerificada) {
           // Guardar credenciales para reintentar login después de verificar
@@ -120,7 +125,11 @@ export default function Login({
           // Mostrar automáticamente la pantalla de activación
           setShowActivation(true);
           // No mostrar error general cuando se muestra la pantalla de activación
-          setErrors({});
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.general;
+            return newErrors;
+          });
       } else {
         // ✅ Manejar bloqueo por fuerza bruta
         if (lowerError.includes('bloqueada') || lowerError.includes('bloqueado')) {
@@ -132,21 +141,31 @@ export default function Login({
           setBlockedUntil(blockedUntilTime);
           setFormDisabled(true);
           
-          setErrors({ 
+          // NO borrar los datos del formulario, solo mostrar el error
+          setErrors(prev => ({ 
+            ...prev,
             general: `Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en ${minutos} minutos.` 
-          });
+          }));
           
           // Habilitar formulario después del tiempo de bloqueo
           setTimeout(() => {
             setFormDisabled(false);
             setIsBlocked(false);
             setBlockedUntil(null);
-            setErrors({});
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.general;
+              return newErrors;
+            });
           }, minutos * 60 * 1000);
         } else {
           // ✅ Usar utilidad de seguridad para manejar errores (no revelar detalles)
           const securityError = handleSecurityError(new Error(errorMessage));
-          setErrors({ general: securityError.message });
+          // NO borrar los datos del formulario, solo mostrar el error
+          setErrors(prev => ({ 
+            ...prev,
+            general: securityError.message 
+          }));
         }
       }
       } else {
@@ -176,23 +195,27 @@ export default function Login({
       // ✅ Usar utilidad de seguridad para manejar errores (ya importada arriba)
       const securityError = handleSecurityError(error);
       
+      // Verificar si el usuario viene de un cambio de contraseña exitoso
+      // Si viene de un cambio de contraseña, ya verificó su identidad, no pedir OTP
+      const vieneDeCambioPassword = typeof window !== 'undefined' && 
+        new URLSearchParams(window.location.search).get('passwordChanged') === 'true';
+      
       // Verificar si el error es sobre cuenta no verificada
+      // PERO solo si NO viene de un cambio de contraseña exitoso
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
       const lowerError = errorMessage.toLowerCase();
       
-      const cuentaNoVerificada = lowerError.includes('no está activada') ||
-          lowerError.includes('no está activado') ||
-          lowerError.includes('no está verificada') ||
-          lowerError.includes('no está verificado') ||
-          lowerError.includes('no está confirmada') ||
-          lowerError.includes('no está confirmado') ||
-          lowerError.includes('revisa tu correo') ||
-          lowerError.includes('cuenta no activada') ||
-          lowerError.includes('activar tu cuenta') ||
-          lowerError.includes('activada') ||
-          lowerError.includes('activar') ||
-          lowerError.includes('confirmada') ||
-          lowerError.includes('verificar');
+      const cuentaNoVerificada = !vieneDeCambioPassword && (
+        lowerError.includes('no está activada') ||
+        lowerError.includes('no está activado') ||
+        lowerError.includes('no está verificada') ||
+        lowerError.includes('no está verificado') ||
+        lowerError.includes('no está confirmada') ||
+        lowerError.includes('no está confirmado') ||
+        lowerError.includes('revisa tu correo') ||
+        lowerError.includes('cuenta no activada') ||
+        lowerError.includes('activar tu cuenta')
+      );
       
       if (cuentaNoVerificada) {
         // Guardar credenciales para reintentar login después de verificar
@@ -200,7 +223,11 @@ export default function Login({
         // Mostrar automáticamente la pantalla de activación
         setShowActivation(true);
         // No mostrar error general cuando se muestra la pantalla de activación
-        setErrors({});
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.general;
+          return newErrors;
+        });
       } else {
         // ✅ Manejar bloqueo por fuerza bruta en catch
         const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
@@ -215,20 +242,29 @@ export default function Login({
           setBlockedUntil(blockedUntilTime);
           setFormDisabled(true);
           
-          setErrors({ 
+          setErrors(prev => ({ 
+            ...prev,
             general: `Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en ${minutos} minutos.` 
-          });
+          }));
           
           // Habilitar formulario después del tiempo de bloqueo
           setTimeout(() => {
             setFormDisabled(false);
             setIsBlocked(false);
             setBlockedUntil(null);
-            setErrors({});
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.general;
+              return newErrors;
+            });
           }, minutos * 60 * 1000);
         } else {
           // ✅ Usar mensaje de seguridad (no revelar detalles)
-          setErrors({ general: securityError.message });
+          // NO borrar los datos del formulario, solo mostrar el error
+          setErrors(prev => ({ 
+            ...prev,
+            general: securityError.message 
+          }));
         }
       }
     } finally {
@@ -255,7 +291,12 @@ export default function Login({
     }
 
     setIsResending(true);
-    setErrors({});
+    // NO borrar todos los errores, solo el general
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.general;
+      return newErrors;
+    });
 
     try {
       const { api } = await import('../../services');
@@ -295,7 +336,11 @@ export default function Login({
             if (result.success) {
               // Limpiar credenciales pendientes
               setPendingCredentials(null);
-              setErrors({});
+              setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.general;
+              return newErrors;
+            });
               onLoginSuccess?.();
             } else {
               setErrors({ general: result.error || 'Error al iniciar sesión. Por favor, intenta nuevamente.' });

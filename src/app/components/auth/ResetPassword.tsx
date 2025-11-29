@@ -149,6 +149,7 @@ export default function ResetPassword({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevenir recarga de página
     
     if (!validateForm()) return;
     
@@ -239,12 +240,18 @@ export default function ResetPassword({
           lowerError.includes('anterior') || 
           lowerError.includes('ya utilizada') ||
           lowerError.includes('igual a la anterior')) {
-        setErrors({ 
+        // NO borrar los datos del formulario, solo mostrar el error
+        setErrors(prev => ({ 
+          ...prev,
           password: 'La nueva contraseña debe ser diferente a la contraseña anterior',
-          general: 'La nueva contraseña debe ser diferente a la contraseña anterior'
-        });
+          general: '⚠️ La nueva contraseña debe ser diferente a la contraseña anterior'
+        }));
       } else {
-        setErrors({ general: errorMessage });
+        // NO borrar los datos del formulario, solo mostrar el error
+        setErrors(prev => ({ 
+          ...prev,
+          general: errorMessage 
+        }));
       }
     } finally {
       setIsLoading(false);
@@ -364,7 +371,7 @@ export default function ResetPassword({
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label 
               htmlFor="password" 
