@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ActivateAccountProps {
@@ -21,7 +21,6 @@ export default function ActivateAccount({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const emailEnviadoRef = useRef<string | null>(null);
 
   // Validación del código OTP
   const validarOTP = (codigo: string): string => {
@@ -105,6 +104,12 @@ export default function ActivateAccount({
   };
 
   const handleReenviarOTP = async (esAutomatico = false) => {
+    // ✅ Prevenir doble envío
+    if (isResending) {
+      console.warn('⚠️ Reenvío ya en proceso, ignorando...');
+      return;
+    }
+    
     setIsResending(true);
     setError('');
     // Solo limpiar mensaje si no es automático
@@ -139,15 +144,10 @@ export default function ActivateAccount({
     }
   };
 
-  // Enviar código automáticamente cuando el componente se monta o cuando cambia el email
-  useEffect(() => {
-    // Solo enviar si hay un email válido y no se ha enviado para este email antes
-    if (email && emailEnviadoRef.current !== email) {
-      emailEnviadoRef.current = email;
-      handleReenviarOTP(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [email]); // Ejecutar cuando cambia el email
+  // ✅ REMOVIDO: No enviar código automáticamente porque ya se envía durante el registro
+  // El código OTP se envía automáticamente cuando el usuario se registra,
+  // por lo que no es necesario enviarlo nuevamente cuando se monta este componente.
+  // El usuario puede hacer clic en "Reenviar código" si necesita otro código.
 
   // Función para obtener clase CSS del input
   const getInputClassName = (): string => {
