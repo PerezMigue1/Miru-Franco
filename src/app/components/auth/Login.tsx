@@ -72,10 +72,18 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // ✅ Prevenir recarga de página
+    e.stopPropagation();
+    
     if (!validateForm()) return;
     
     setIsLoading(true);
-    setErrors({}); // Limpiar errores previos
+    // ✅ Limpiar solo errores generales, mantener errores de campos si existen
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.general;
+      return newErrors;
+    });
     
     try {
       const { api } = await import('../../services');
@@ -315,7 +323,36 @@ export default function Login({
           Iniciar Sesión
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* ✅ Mensaje de error en la parte superior */}
+        {errors.general && (
+          <div className="mb-4 p-4 rounded-lg border" style={{ 
+            backgroundColor: errors.general.includes('✅') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+            borderColor: errors.general.includes('✅') ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+          }}>
+            <p className={`text-sm text-center font-medium ${
+              errors.general.includes('✅') 
+                ? 'text-green-600 dark:text-green-400' 
+                : 'text-red-600 dark:text-red-400'
+            }`}>
+              {errors.general}
+            </p>
+            {errors.general.toLowerCase().includes('activada') || 
+             errors.general.toLowerCase().includes('activar') ||
+             errors.general.toLowerCase().includes('confirmada') ? (
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={isResending || !email}
+                className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed block mx-auto"
+                style={{ color: colors.enlacesTextosInteractivos }}
+              >
+                {isResending ? 'Enviando...' : 'Reenviar código de activación'}
+              </button>
+            ) : null}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label 
               htmlFor="email" 
@@ -416,30 +453,7 @@ export default function Login({
             </button>
           </div>
 
-          {errors.general && (
-            <div className="text-center">
-              <p className={`text-sm ${
-                errors.general.includes('✅') 
-                  ? 'text-green-600 dark:text-green-400' 
-                  : 'text-red-600 dark:text-red-400'
-              }`}>
-                {errors.general}
-              </p>
-              {errors.general.toLowerCase().includes('activada') || 
-               errors.general.toLowerCase().includes('activar') ||
-               errors.general.toLowerCase().includes('confirmada') ? (
-                <button
-                  type="button"
-                  onClick={handleResendCode}
-                  disabled={isResending || !email}
-                  className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ color: colors.enlacesTextosInteractivos }}
-                >
-                  {isResending ? 'Enviando...' : 'Reenviar código de activación'}
-                </button>
-              ) : null}
-            </div>
-          )}
+          {/* ✅ Errores de campos específicos ya se muestran debajo de cada campo */}
 
           <button
             type="submit"

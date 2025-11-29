@@ -127,10 +127,10 @@ export default function ForgotPasswordSecurityQuestions({
       
       const result = await api.verifySecurityQuestions(email, answersObject);
       if (result.success && result.token) {
-        // Guardar token con expiración de 15 minutos
+        // Guardar token con expiración de 10 minutos
         localStorage.setItem('resetPasswordToken', result.token);
         localStorage.setItem('resetPasswordEmail', email);
-        localStorage.setItem('resetPasswordExpires', String(Date.now() + 15 * 60 * 1000));
+        localStorage.setItem('resetPasswordExpires', String(Date.now() + 10 * 60 * 1000));
         
         onQuestionsVerified?.(email, result.token);
       } else {

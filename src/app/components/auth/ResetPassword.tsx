@@ -27,7 +27,7 @@ export default function ResetPassword({
   const [isSuccess, setIsSuccess] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
-  // Timer para mostrar tiempo restante del token (15 minutos)
+  // Timer para mostrar tiempo restante del token (10 minutos)
   useEffect(() => {
     const expires = localStorage.getItem('resetPasswordExpires');
     if (expires) {
