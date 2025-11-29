@@ -44,6 +44,7 @@ export default function Register({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [securityQuestions, setSecurityQuestions] = useState<Array<{_id?: string, pregunta: string}>>([]);
   const [selectedQuestionText, setSelectedQuestionText] = useState('');
@@ -234,6 +235,29 @@ export default function Register({
         delete newErrors[field];
         return newErrors;
       });
+    }
+    
+    // Validación en tiempo real de contraseña
+    if (field === 'password' && typeof value === 'string') {
+      const validation = validatePassword(value);
+      if (!validation.valid) {
+        const errorsList: string[] = [];
+        if (value.length < 8) {
+          errorsList.push('La contraseña debe tener al menos 8 caracteres');
+        }
+        if (!/[A-Z]/.test(value)) {
+          errorsList.push('Debe incluir al menos una letra mayúscula');
+        }
+        if (!/[a-z]/.test(value)) {
+          errorsList.push('Debe incluir al menos una letra minúscula');
+        }
+        if (!/[0-9]/.test(value)) {
+          errorsList.push('Debe incluir al menos un número');
+        }
+        setPasswordErrors(errorsList);
+      } else {
+        setPasswordErrors([]);
+      }
     }
     
     // Validación en tiempo real del correo
@@ -662,10 +686,26 @@ export default function Register({
             {errors.password}
           </p>
         )}
-        <p className="mt-1 text-xs"
-        style={{ color: 'rgba(242,241,237,0.7)' }}>
-          Mínimo 8 caracteres, con mayúsculas, minúsculas y números
-        </p>
+        {passwordErrors.length > 0 && (
+          <div className="mt-1 space-y-1">
+            {passwordErrors.map((error, i) => (
+              <p key={i} className="text-xs text-red-600 dark:text-red-400">
+                • {error}
+              </p>
+            ))}
+          </div>
+        )}
+        {passwordErrors.length === 0 && formData.password && (
+          <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+            ✓ Contraseña válida
+          </p>
+        )}
+        {passwordErrors.length === 0 && !formData.password && (
+          <p className="mt-1 text-xs"
+          style={{ color: 'rgba(242,241,237,0.7)' }}>
+            Mínimo 8 caracteres, con mayúsculas, minúsculas y números
+          </p>
+        )}
       </div>
 
       <div>
