@@ -47,9 +47,12 @@ export default function AuthContainer({
   };
 
   const handleOTPCodeVerified = (email: string, token: string) => {
-    // Cuando se verifica el código OTP, guardar token y cambiar a reset-password
+    // Cuando se verifica el código OTP, guardar token con expiración de 15 minutos
     setRecoveryIdentifier(email);
-    sessionStorage.setItem('resetToken', token);
+    localStorage.setItem('resetPasswordToken', token);
+    localStorage.setItem('resetPasswordEmail', email);
+    localStorage.setItem('resetPasswordExpires', String(Date.now() + 15 * 60 * 1000));
+    sessionStorage.setItem('resetToken', token); // Para compatibilidad
     setCurrentView('reset-password');
   };
 
@@ -62,10 +65,12 @@ export default function AuthContainer({
 
   const handleSecurityQuestionsVerified = (email: string, token?: string) => {
     setRecoveryIdentifier(email);
-    // Si hay token, guardarlo en localStorage temporalmente o en la URL
+    // Si hay token, guardarlo con expiración de 15 minutos
     if (token) {
-      // Guardar token en sessionStorage para que ResetPassword lo pueda obtener
-      sessionStorage.setItem('resetToken', token);
+      localStorage.setItem('resetPasswordToken', token);
+      localStorage.setItem('resetPasswordEmail', email);
+      localStorage.setItem('resetPasswordExpires', String(Date.now() + 15 * 60 * 1000));
+      sessionStorage.setItem('resetToken', token); // Para compatibilidad
     }
     setCurrentView('reset-password');
   };

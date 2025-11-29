@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { validatePassword } from '../../utils/security';
 
 interface ResetPasswordProps {
@@ -23,6 +23,28 @@ export default function ResetPassword({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+
+  // Timer para mostrar tiempo restante del token (15 minutos)
+  useEffect(() => {
+    const expires = localStorage.getItem('resetPasswordExpires');
+    if (expires) {
+      const interval = setInterval(() => {
+        const remaining = Math.max(0, parseInt(expires) - Date.now());
+        setTimeRemaining(Math.floor(remaining / 1000));
+        
+        if (remaining <= 0) {
+          setErrors({ general: 'El token ha expirado. Por favor inicia el proceso nuevamente.' });
+          // Limpiar tokens temporales
+          localStorage.removeItem('resetPasswordToken');
+          localStorage.removeItem('resetPasswordEmail');
+          localStorage.removeItem('resetPasswordExpires');
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -68,20 +90,50 @@ export default function ResetPassword({
     try {
       const { api } = await import('../../services');
       const urlParams = new URLSearchParams(window.location.search);
-      // Obtener token de la URL o de sessionStorage (flujo interno)
+      
+      // Obtener token de la URL, sessionStorage o localStorage
       const tokenFromUrl = urlParams.get('token');
       const tokenFromStorage = sessionStorage.getItem('resetToken');
-      const token = tokenFromUrl || tokenFromStorage;
+      const tokenFromLocalStorage = localStorage.getItem('resetPasswordToken');
+      const emailFromLocalStorage = localStorage.getItem('resetPasswordEmail');
+      const expiresFromLocalStorage = localStorage.getItem('resetPasswordExpires');
+      
+      const token = tokenFromUrl || tokenFromStorage || tokenFromLocalStorage;
+      const email = identifier || emailFromLocalStorage;
+      
+      // Verificar si el token expiró
+      if (expiresFromLocalStorage && Date.now() > parseInt(expiresFromLocalStorage)) {
+        localStorage.removeItem('resetPasswordToken');
+        localStorage.removeItem('resetPasswordEmail');
+        localStorage.removeItem('resetPasswordExpires');
+        setErrors({ general: 'El token ha expirado. Por favor inicia el proceso nuevamente.' });
+        return;
+      }
+      
       if (tokenFromStorage) {
         sessionStorage.removeItem('resetToken'); // Limpiar después de usarlo
       }
       
-      await api.resetPassword(token, identifier || null, formData.password);
+      await api.resetPassword(token, email, formData.password);
+      
+      // Limpiar tokens temporales después de éxito
+      localStorage.removeItem('resetPasswordToken');
+      localStorage.removeItem('resetPasswordEmail');
+      localStorage.removeItem('resetPasswordExpires');
+      
       setIsSuccess(true);
       onPasswordReset?.();
     } catch (error) {
       console.error('Error restableciendo contraseña:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al restablecer la contraseña. Intenta nuevamente.';
+      
+      // Verificar si el error es por token expirado
+      if (errorMessage.toLowerCase().includes('expirado')) {
+        localStorage.removeItem('resetPasswordToken');
+        localStorage.removeItem('resetPasswordEmail');
+        localStorage.removeItem('resetPasswordExpires');
+      }
+      
       setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
@@ -130,6 +182,14 @@ export default function ResetPassword({
         <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
           Ingresa tu nueva contraseña
         </p>
+        
+        {timeRemaining !== null && timeRemaining > 0 && (
+          <div className="mb-4 p-3 rounded-lg bg-yellow-900/20 border border-yellow-700/50">
+            <p className="text-sm text-center" style={{ color: '#F2F1ED' }}>
+              ⏱️ Tiempo restante: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+            </p>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
