@@ -119,12 +119,18 @@ export const api = {
       console.log('[Auth] Intentando login para:', email);
       const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email, password }, BACKEND_BASE);
       console.log('[Auth] Respuesta completa del backend:', JSON.stringify(data, null, 2));
-      console.log('[Auth] Respuesta del backend:', { success: data.success, hasToken: !!data.token, hasUser: !!data.user });
+      console.log('[Auth] Respuesta del backend:', { success: data.success, hasToken: !!data.token, hasUser: !!data.user, error: data.error });
       
       // Verificar si la respuesta tiene el formato correcto
       if (!data) {
         console.error('[Auth] La respuesta del backend está vacía');
         throw new Error('Error: No se recibió respuesta del servidor');
+      }
+      
+      // Si el login falla, loggear el error específico
+      if (!data.success) {
+        console.error('[Auth] Login fallido - Error:', data.error);
+        console.error('[Auth] Login fallido - Requiere verificación:', data.requiereVerificacion);
       }
       
       saveAuthData(data);

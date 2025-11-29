@@ -87,10 +87,13 @@ export default function Login({
     
     try {
       const { api } = await import('../../services');
+      console.log('[Login] Intentando login con email:', email);
       const result = await api.login(email, password);
+      console.log('[Login] Resultado del login:', { success: result.success, error: result.error, requiereVerificacion: result.requiereVerificacion });
       
       if (!result.success) {
         const errorMessage = result.error || 'Error al iniciar sesión';
+        console.error('[Login] Error en login:', errorMessage);
         const lowerError = errorMessage.toLowerCase();
         
         // Detectar si la cuenta no está verificada/activada
@@ -322,6 +325,18 @@ export default function Login({
         <h2 className="text-page-title text-center mb-6 text-texto-fondo-oscuro">
           Iniciar Sesión
         </h2>
+        
+        {/* Mensaje de éxito si se cambió la contraseña */}
+        {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('passwordChanged') === 'true' && (
+          <div className="mb-4 p-4 rounded-lg border" style={{ 
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderColor: 'rgba(34, 197, 94, 0.3)'
+          }}>
+            <p className="text-sm text-center text-green-600 dark:text-green-400 font-medium">
+              ✅ Contraseña cambiada exitosamente. Inicia sesión con tu nueva contraseña.
+            </p>
+          </div>
+        )}
         
         {/* ✅ Mensaje de error en la parte superior */}
         {errors.general && (

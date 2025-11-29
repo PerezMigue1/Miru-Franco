@@ -181,7 +181,14 @@ export default function ResetPassword({
         sessionStorage.removeItem('resetToken'); // Limpiar después de usarlo
       }
       
-      await api.resetPassword(token, email, formData.password);
+      const result = await api.resetPassword(token, email, formData.password);
+      
+      // Verificar que el cambio fue exitoso
+      if (!result.success) {
+        throw new Error(result.error || result.message || 'Error al cambiar la contraseña');
+      }
+      
+      console.log('✅ Contraseña cambiada exitosamente');
       
       // ✅ Limpiar TODOS los tokens después de cambiar la contraseña
       // Esto incluye tokens de autenticación y tokens temporales de recuperación
@@ -192,8 +199,20 @@ export default function ResetPassword({
       localStorage.removeItem('user'); // Limpiar datos del usuario también
       sessionStorage.clear(); // Limpiar toda la sesión
       
+      // Limpiar también los parámetros de la URL si vienen de ahí
+      if (typeof window !== 'undefined' && (tokenFromProps || emailFromProps)) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('token');
+        url.searchParams.delete('email');
+        window.history.replaceState({}, '', url.toString());
+      }
+      
       setIsSuccess(true);
-      onPasswordReset?.();
+      
+      // Esperar un momento antes de redirigir para que el usuario vea el mensaje de éxito
+      setTimeout(() => {
+        onPasswordReset?.();
+      }, 2000);
     } catch (error) {
       console.error('Error restableciendo contraseña:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al restablecer la contraseña. Intenta nuevamente.';
@@ -284,8 +303,11 @@ export default function ResetPassword({
             <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
               Contraseña Restablecida
             </h2>
-            <p className="mb-6" style={{ color: '#F2F1ED' }}>
-              Tu contraseña ha sido restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.
+            <p className="mb-4" style={{ color: '#F2F1ED' }}>
+              Tu contraseña ha sido restablecida exitosamente.
+            </p>
+            <p className="mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+              <strong>Importante:</strong> Usa tu <strong>nueva contraseña</strong> para iniciar sesión. La contraseña anterior ya no funciona.
             </p>
             {onSwitchToLogin && (
               <button

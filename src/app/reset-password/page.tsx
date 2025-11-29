@@ -11,7 +11,14 @@ function ResetPasswordContent() {
   const email = searchParams.get('email');
 
   const handlePasswordReset = () => {
+    // Limpiar cualquier parámetro de la URL antes de redirigir
     router.push('/login?passwordChanged=true');
+    // Forzar recarga para limpiar cualquier estado residual
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login?passwordChanged=true';
+      }
+    }, 100);
   };
 
   const handleSwitchToLogin = () => {

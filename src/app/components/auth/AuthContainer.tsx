@@ -118,7 +118,6 @@ export default function AuthContainer({
         <ForgotPassword
           onSwitchToLogin={handleSwitchToLogin}
           onEmailSent={handleEmailSent}
-          onCodeSent={handleOTPCodeSent}
           onSwitchToSMS={() => setCurrentView('forgot-sms')}
           onSwitchToSecurityQuestions={() => setCurrentView('forgot-security')}
         />
