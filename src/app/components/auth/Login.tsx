@@ -190,10 +190,12 @@ export default function Login({
 
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
-    // ✅ CORRECTO: Redirección directa del navegador (según guía GUIA_FRONTEND_GOOGLE_OAUTH.md)
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://miru-franco.onrender.com';
-    const redirectUrl = `${API_URL}/api/auth/google`;
-    window.location.href = redirectUrl;
+    // ✅ Usar configuracion centralizada segun GUIA_ACTUALIZAR_FRONTEND_SIN_ROMPER.md
+    import('../../services/config').then(({ getBackendBaseUrl }) => {
+      const BACKEND_BASE = getBackendBaseUrl();
+      const redirectUrl = `${BACKEND_BASE}/api/auth/google`;
+      window.location.href = redirectUrl;
+    });
     // Nota: No necesitamos manejar errores aquí porque la redirección es inmediata
     // El usuario será redirigido a Google para autenticarse
   };

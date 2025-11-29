@@ -1,10 +1,14 @@
 // Configuracion centralizada de la API
+// Segun GUIA_ACTUALIZAR_FRONTEND_SIN_ROMPER.md
 
 // Función para obtener la URL base del backend (ejecutada en runtime)
 export const getBackendBase = (): string => {
-  // En el cliente (navegador), usar process.env.NEXT_PUBLIC_API_URL
-  // En el servidor, también usar process.env.NEXT_PUBLIC_API_URL
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://miru-franco.onrender.com';
+  // En Next.js, usar process.env.NEXT_PUBLIC_API_URL
+  // Fallback: produccion -> miru-franco.onrender.com, desarrollo -> localhost:3001
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+    (process.env.NODE_ENV === 'production'
+      ? 'https://miru-franco.onrender.com'
+      : 'http://localhost:3001');
   
   // Si la URL incluye /api/auth, removerlo
   if (apiUrl.includes('/api/auth')) {
@@ -19,6 +23,11 @@ export const getBackendBase = (): string => {
   // Si termina con /, removerlo
   return apiUrl.replace(/\/$/, '');
 };
+
+// Exportar API_URL simple para compatibilidad con la guia
+// Uso: import API_URL from '../services/config';
+export const API_URL = getBackendBase();
+export default API_URL;
 
 // Funciones que se ejecutan en runtime (no en build time)
 // Esto asegura que las variables de entorno se lean correctamente en Vercel
