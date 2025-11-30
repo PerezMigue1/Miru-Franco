@@ -212,10 +212,13 @@ export default function ActivateAccount({
           className="text-center mb-6 text-sm"
           style={{ color: colorsWithOpacity.textoFondoOscuro80 }}
         >
-          Hemos enviado un código de verificación a:
+          {metodoVerificacion === 'sms' 
+            ? 'Hemos enviado un código de verificación a tu teléfono:'
+            : 'Hemos enviado un código de verificación a:'
+          }
           <br />
           <span className="font-semibold" style={{ color: colors.textoFondoOscuro }}>
-            {email}
+            {metodoVerificacion === 'sms' ? 'Tu teléfono registrado' : email}
           </span>
         </p>
 
