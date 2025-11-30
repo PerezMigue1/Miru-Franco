@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { colors, colorsWithOpacity } from '../../utils/colors';
+import Notification from '../ui/Notification';
 
 interface ActivateAccountProps {
   email: string;
@@ -265,15 +266,11 @@ export default function ActivateAccount({
         </div>
 
         {mensaje && (
-          <div 
-            className={`mt-4 p-3 rounded-lg text-sm text-center ${
-              mensaje.includes('✅') ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
-            }`}
-            style={{ 
-              color: mensaje.includes('✅') ? colors.success : colors.danger 
-            }}
-          >
-            {mensaje}
+          <div className="mt-4">
+            <Notification
+              type={mensaje.includes('✅') ? 'success' : 'error'}
+              message={mensaje.replace('✅ ', '')}
+            />
           </div>
         )}
 

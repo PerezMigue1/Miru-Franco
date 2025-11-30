@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
+import Notification from '../ui/Notification';
 
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
@@ -95,13 +96,11 @@ export default function ForgotPassword({
         </p>
         
         {errors.general && (
-          <div className="mb-4 p-4 rounded-lg border" style={{ 
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderColor: 'rgba(239, 68, 68, 0.3)'
-          }}>
-            <p className="text-sm text-center text-red-600 dark:text-red-400">
-              {errors.general}
-            </p>
+          <div className="mb-4">
+            <Notification
+              type="error"
+              message={errors.general}
+            />
           </div>
         )}
         

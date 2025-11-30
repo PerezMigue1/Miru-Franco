@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { validatePassword, sanitizeInput, sanitizeEmail } from '../../utils/security';
 import ActivateAccount from './ActivateAccount';
+import Notification from '../ui/Notification';
 
 interface RegisterProps {
   onSwitchToLogin?: () => void;
@@ -870,8 +871,11 @@ export default function Register({
             <p style={{ color: '#161616' }}>Cargando preguntas...</p>
           </div>
         ) : securityQuestions.length === 0 && errors.general ? (
-          <div className="w-full px-4 py-3 rounded-lg border" style={{ backgroundColor: '#f2f1ed', borderColor: '#590C0C' }}>
-            <p className="text-sm" style={{ color: '#590C0C' }}>{errors.general}</p>
+          <div className="mt-4">
+            <Notification
+              type="error"
+              message={errors.general}
+            />
           </div>
         ) : (
           <>
@@ -1377,20 +1381,12 @@ export default function Register({
       {/* Notificación de éxito */}
       {registerSuccess && (
         <div 
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-6 rounded-lg shadow-xl animate-slide-down"
-          style={{ 
-            backgroundColor: '#6E7D57', 
-            border: '1px solid #6E7D57',
-            minWidth: '350px',
-            maxWidth: '90%'
-          }}
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 min-w-[350px] max-w-[90%] animate-slide-down"
         >
-          <p className="text-sm font-medium text-center text-white mb-2">
-            ¡Registro exitoso!
-          </p>
-          <p className="text-xs text-center text-white opacity-90">
-            Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión.
-          </p>
+          <Notification
+            type="success"
+            message="Cliente registrada exitosamente"
+          />
         </div>
       )}
 
@@ -1441,9 +1437,12 @@ export default function Register({
           {currentStep === 3 && renderStep3()}
 
           {errors.general && (
-            <p className="text-sm text-red-600 dark:text-red-400 text-center">
-              {errors.general}
-            </p>
+            <div className="mb-4">
+              <Notification
+                type="error"
+                message={errors.general}
+              />
+            </div>
           )}
 
           <div className="flex gap-3 pt-4">

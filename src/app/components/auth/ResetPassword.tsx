@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { validatePassword, removeToken } from '../../utils/security';
+import Notification from '../ui/Notification';
 
 interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
@@ -276,17 +277,12 @@ export default function ResetPassword({
               </>
             ) : errors.general ? (
               <>
-                <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <div className="mb-4">
+                  <Notification
+                    type="error"
+                    message={errors.general}
+                  />
                 </div>
-                <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
-                  Enlace Inválido
-                </h2>
-                <p className="mb-6 text-sm" style={{ color: '#F2F1ED' }}>
-                  {errors.general}
-                </p>
                 {onSwitchToLogin && (
                   <button
                     onClick={onSwitchToLogin}
@@ -311,20 +307,12 @@ export default function ResetPassword({
       <div className="w-full max-w-md mx-auto">
         <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <div className="mb-4">
+              <Notification
+                type="success"
+                message="Contraseña restablecida exitosamente. Usa tu nueva contraseña para iniciar sesión."
+              />
             </div>
-            <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
-              Contraseña Restablecida
-            </h2>
-            <p className="mb-4" style={{ color: '#F2F1ED' }}>
-              Tu contraseña ha sido restablecida exitosamente.
-            </p>
-            <p className="mb-6 text-sm" style={{ color: '#F2F1ED' }}>
-              <strong>Importante:</strong> Usa tu <strong>nueva contraseña</strong> para iniciar sesión. La contraseña anterior ya no funciona.
-            </p>
             {onSwitchToLogin && (
               <button
                 onClick={onSwitchToLogin}
@@ -525,9 +513,12 @@ export default function ResetPassword({
           </div>
 
           {errors.general && (
-            <p className="text-sm text-red-600 dark:text-red-400">
-              {errors.general}
-            </p>
+            <div className="mb-4">
+              <Notification
+                type="error"
+                message={errors.general}
+              />
+            </div>
           )}
 
           <button

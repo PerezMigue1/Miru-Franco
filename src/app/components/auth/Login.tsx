@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import { handleSecurityError } from '../../utils/security';
+import Notification from '../ui/Notification';
 import ActivateAccount from './ActivateAccount';
 
 interface LoginProps {
@@ -450,29 +451,21 @@ export default function Login({
         
         {/* Mensaje de éxito si se cambió la contraseña */}
         {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('passwordChanged') === 'true' && (
-          <div className="mb-4 p-4 rounded-lg border" style={{ 
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            borderColor: 'rgba(34, 197, 94, 0.3)'
-          }}>
-            <p className="text-sm text-center text-green-600 dark:text-green-400 font-medium">
-              ✅ Contraseña cambiada exitosamente. Inicia sesión con tu nueva contraseña.
-            </p>
+          <div className="mb-4">
+            <Notification
+              type="success"
+              message="Contraseña cambiada exitosamente. Inicia sesión con tu nueva contraseña."
+            />
           </div>
         )}
         
         {/* ✅ Mensaje de error en la parte superior */}
         {errors.general && (
-          <div className="mb-4 p-4 rounded-lg border" style={{ 
-            backgroundColor: errors.general.includes('✅') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-            borderColor: errors.general.includes('✅') ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'
-          }}>
-            <p className={`text-sm text-center font-medium ${
-              errors.general.includes('✅') 
-                ? 'text-green-600 dark:text-green-400' 
-                : 'text-red-600 dark:text-red-400'
-            }`}>
-              {errors.general}
-            </p>
+          <div className="mb-4">
+            <Notification
+              type={errors.general.includes('✅') ? 'success' : 'error'}
+              message={errors.general.replace('✅ ', '')}
+            />
             {errors.general.toLowerCase().includes('activada') || 
              errors.general.toLowerCase().includes('activar') ||
              errors.general.toLowerCase().includes('confirmada') ? (
