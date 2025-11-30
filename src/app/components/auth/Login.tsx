@@ -90,6 +90,11 @@ export default function Login({
       }
     }
     
+    // Prevenir navegación del formulario
+    if (e.currentTarget) {
+      e.currentTarget.setAttribute('action', 'javascript:void(0)');
+    }
+    
     // Obtener valores directamente de los inputs usando refs
     const emailValue = emailRef.current?.value || email;
     const passwordValue = passwordRef.current?.value || password;
