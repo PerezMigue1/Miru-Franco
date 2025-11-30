@@ -504,25 +504,13 @@ export default function Register({
       if (response.success) {
         setErrors({}); // Limpiar errores
         
-        // ✅ Manejar fallback automático de SMS a Email
-        let metodoFinal = (response as any).metodo || formData.metodoVerificacion;
-        
-        // Si el backend indica que hubo un error con SMS pero el usuario fue creado
-        if (formData.metodoVerificacion === 'sms' && 
-            (response.message?.toLowerCase().includes('no se pudo enviar el sms') ||
-             response.message?.toLowerCase().includes('sms de activación') ||
-             (response as any).smsError)) {
-          // Fallback automático a email
-          metodoFinal = 'email';
-          setErrors({ 
-            general: 'Tu cuenta se creó exitosamente. El código se enviará por email ya que el SMS no está disponible temporalmente.' 
-          });
-        }
+        // ✅ Obtener método usado del backend (puede ser 'sms' o 'email')
+        const metodoFinal = (response as any).metodo || formData.metodoVerificacion;
         
         // Si requiere verificación OTP, mostrar pantalla de activación
         if (response.requiereVerificacion || response.message?.toLowerCase().includes('código') || response.message?.toLowerCase().includes('activar')) {
           setEmailForActivation(formData.email);
-          // ✅ Usar el método final (puede ser email si SMS falló)
+          // ✅ Usar el método que el backend indica (puede ser 'sms' o 'email' según configuración)
           setMetodoVerificacion(metodoFinal);
           setShowActivation(true);
         } else {
@@ -556,10 +544,11 @@ export default function Register({
       const errorMessage = error instanceof Error ? error.message : 'Error al crear la cuenta';
       
       // ✅ Manejo especial para errores de SMS - Fallback automático a Email
+      // Según GUIA_CONFIGURAR_SMS.md: En producción lanza error si SMS no está configurado
       if (errorMessage.toLowerCase().includes('sms') || 
-          errorMessage.toLowerCase().includes('twilio') ||
-          errorMessage.toLowerCase().includes('no se pudo enviar el sms') ||
-          errorMessage.toLowerCase().includes('sms de activación')) {
+          errorMessage.toLowerCase().includes('no se pudo enviar') ||
+          errorMessage.toLowerCase().includes('sms de activación') ||
+          errorMessage.toLowerCase().includes('no está configurado')) {
         // El usuario probablemente fue creado, intentar mostrar pantalla de activación con email
         setErrors({ 
           general: 'Tu cuenta se creó exitosamente. El código se enviará por email ya que el SMS no está disponible temporalmente. Puedes solicitar un reenvío si es necesario.' 

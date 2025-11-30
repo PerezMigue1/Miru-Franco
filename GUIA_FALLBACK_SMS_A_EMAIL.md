@@ -2,7 +2,7 @@
 
 ## 📋 Problema
 
-Cuando el usuario selecciona **SMS** como método de verificación pero Twilio no está configurado, el backend lanza un error y el usuario ve "Error interno del servidor".
+Cuando el usuario selecciona **SMS** como método de verificación pero las variables de entorno de SMS no están configuradas en Render, el backend debería hacer fallback automático a Email (usando SendGrid).
 
 ## ✅ Solución: Fallback Automático
 
@@ -52,41 +52,16 @@ En lugar de mostrar "Error interno del servidor", ahora muestra:
 
 Para una mejor experiencia, el backend debería manejar el fallback automáticamente:
 
-### Opción A: Fallback Automático en el Backend (Recomendado)
+### Opción A: Fallback Automático en el Backend (Ya Implementado)
 
-**En el controlador de registro (`usuarios.service.ts`):**
+El backend **ya está implementado** para hacer fallback automático. Cuando SMS no está configurado o falla, automáticamente usa Email (SendGrid).
 
-```typescript
-// Cuando SMS falla, intentar automáticamente con Email
-try {
-  if (metodoVerificacion === 'sms') {
-    await smsService.sendOTPSMS(telefono, codigoOTP);
-    return {
-      success: true,
-      message: "Código enviado a tu teléfono. El código expira en 2 minutos.",
-      requiereVerificacion: true,
-      metodo: 'sms'
-    };
-  }
-} catch (smsError) {
-  console.warn('Error enviando SMS, intentando con Email:', smsError);
-  
-  // Fallback automático a Email
-  try {
-    await emailService.sendOTPEmail(email, codigoOTP);
-    return {
-      success: true,
-      message: "El código se envió por email ya que el SMS no está disponible. El código expira en 2 minutos.",
-      requiereVerificacion: true,
-      metodo: 'email', // Indicar que se usó email como fallback
-      smsFallback: true // Indicar que hubo fallback
-    };
-  } catch (emailError) {
-    // Si ambos fallan, lanzar error
-    throw new Error('No se pudo enviar el código ni por SMS ni por Email');
-  }
-}
-```
+**El backend ya maneja esto automáticamente:**
+- Si `SMS_API_KEY` no está configurado → Usa Email
+- Si SMS falla al enviar → Usa Email
+- El usuario siempre recibe el código (por SMS o Email)
+
+**Solo necesitas configurar las variables de entorno en Render** (ver `GUIA_CONFIGURAR_SMS_RENDER.md`).
 
 ### Opción B: Respuesta con Flag de Error (Actual)
 

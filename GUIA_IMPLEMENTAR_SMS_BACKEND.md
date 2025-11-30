@@ -1,5 +1,7 @@
 # 📱 Guía: Implementar Envío de SMS en el Backend
 
+> **⚠️ NOTA:** Esta guía es para Twilio. Si estás usando **SendGrid**, consulta `GUIA_CONFIGURAR_SENDGRID_SMS.md` en su lugar.
+
 ## 🔴 Problema Actual
 
 El frontend está enviando `metodoVerificacion: 'sms'` pero el código no llega porque el backend **no está implementado para enviar SMS**.
