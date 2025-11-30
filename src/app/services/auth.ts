@@ -25,6 +25,7 @@ export interface RegisterResponse {
   error?: string;
   message?: string;
   requiereVerificacion?: boolean; // Indica si se requiere verificación OTP
+  metodo?: 'email' | 'sms'; // ✅ NUEVO: Método de verificación usado
 }
 
 export interface ForgotPasswordResponse {
@@ -94,6 +95,7 @@ export interface ResendOTPResponse {
   message?: string;
   error?: string;
   retryAfter?: number;
+  metodo?: 'email' | 'sms'; // ✅ NUEVO: Método usado para el reenvío
 }
 
 // Helper para guardar datos de autenticacion (usando utilidades de seguridad)
@@ -414,11 +416,14 @@ export const api = {
   },
 
   // Reenviar código OTP
-  async resendOTPCode(email: string): Promise<ResendOTPResponse> {
+  async resendOTPCode(email: string, metodoVerificacion?: 'email' | 'sms'): Promise<ResendOTPResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
     return apiClient.post<ResendOTPResponse>(
       '/api/usuarios/reenviar-codigo',
-      { email },
+      { 
+        email,
+        metodoVerificacion: metodoVerificacion || 'email' // ✅ NUEVO: Incluir método de verificación
+      },
       BACKEND_BASE
     );
   },

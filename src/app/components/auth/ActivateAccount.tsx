@@ -6,6 +6,7 @@ import Notification from '../ui/Notification';
 
 interface ActivateAccountProps {
   email: string;
+  metodoVerificacion?: 'email' | 'sms'; // ✅ NUEVO: Método de verificación usado
   onActivationSuccess?: () => void;
   onBackToRegister?: () => void;
   onSkipToLogin?: () => void;
@@ -13,6 +14,7 @@ interface ActivateAccountProps {
 
 export default function ActivateAccount({ 
   email, 
+  metodoVerificacion = 'email', // ✅ Default a email si no se especifica
   onActivationSuccess,
   onBackToRegister,
   onSkipToLogin
@@ -124,14 +126,23 @@ export default function ActivateAccount({
 
     try {
       const { api } = await import('../../services');
-      const result = await api.resendOTPCode(email);
+      const result = await api.resendOTPCode(email, metodoVerificacion);
+      
+      // ✅ Actualizar método si el backend lo devuelve
+      const metodoUsado = result.metodo || metodoVerificacion;
       
       if (result.success) {
         if (esAutomatico) {
-          // Si es automático, mostrar mensaje más discreto
-          setMensaje('✅ Código de verificación enviado. Revisa tu correo.');
+          // Si es automático, mostrar mensaje más discreto según el método
+          setMensaje(metodoUsado === 'sms' 
+            ? '✅ Código de verificación enviado. Revisa tus mensajes SMS.'
+            : '✅ Código de verificación enviado. Revisa tu correo.'
+          );
         } else {
-          setMensaje('✅ Código reenviado correctamente. Revisa tu correo.');
+          setMensaje(metodoUsado === 'sms'
+            ? '✅ Código reenviado correctamente. Revisa tus mensajes SMS.'
+            : '✅ Código reenviado correctamente. Revisa tu correo.'
+          );
         }
         setError('');
         setCodigoOTP(''); // Limpiar el código anterior
@@ -321,10 +332,17 @@ export default function ActivateAccount({
 
         <div className="mt-6 text-center">
           <p className="text-xs" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
-            El código expira en 2 minutos. Si no lo recibes, verifica tu carpeta de spam.
+            El código expira en 2 minutos. 
+            {metodoVerificacion === 'sms' 
+              ? ' Si no lo recibes, verifica que tu teléfono esté correcto.'
+              : ' Si no lo recibes, verifica tu carpeta de spam.'
+            }
           </p>
           <p className="text-xs mt-2" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
-            Puedes verificar tu correo más tarde desde el inicio de sesión.
+            {metodoVerificacion === 'sms'
+              ? 'Puedes solicitar un nuevo código si es necesario.'
+              : 'Puedes verificar tu correo más tarde desde el inicio de sesión.'
+            }
           </p>
         </div>
       </div>
