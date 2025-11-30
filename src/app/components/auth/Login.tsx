@@ -603,11 +603,6 @@ export default function Login({
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
-            onClick={(e) => {
-              // Prevenir cualquier comportamiento por defecto del botón
-              e.preventDefault();
-              e.stopPropagation();
-            }}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
