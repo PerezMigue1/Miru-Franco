@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import { handleSecurityError } from '../../utils/security';
@@ -112,10 +112,11 @@ export default function Login({
     
     try {
       const { api } = await import('../../services');
-      const emailLimpio = email.trim().toLowerCase();
+      const emailLimpio = (emailRef.current?.value || email).trim().toLowerCase();
+      const passwordValue = passwordRef.current?.value || password;
       console.log('[Login] Intentando login con email:', emailLimpio);
-      console.log('[Login] Longitud de contraseña:', password.length);
-      const result = await api.login(emailLimpio, password);
+      console.log('[Login] Longitud de contraseña:', passwordValue.length);
+      const result = await api.login(emailLimpio, passwordValue);
       console.log('[Login] Resultado del login:', { success: result.success, error: result.error, requiereVerificacion: result.requiereVerificacion });
       
       if (!result.success) {
@@ -441,10 +442,13 @@ export default function Login({
           onSubmit={handleSubmit} 
           className="space-y-5" 
           noValidate
+          autoComplete="off"
+          action="javascript:void(0)"
+          method="post"
           onReset={(e) => {
-            // Prevenir reset del formulario
             e.preventDefault();
             e.stopPropagation();
+            return false;
           }}
         >
           <div>
