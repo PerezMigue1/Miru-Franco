@@ -186,6 +186,7 @@ export const api = {
     password: string;
     telefono: string;
     fechaNacimiento: string;
+    metodoVerificacion?: 'email' | 'sms'; // ✅ NUEVO: Método de verificación
     preguntaSeguridad: {
       pregunta: string;
       respuesta: string;

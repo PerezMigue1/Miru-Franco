@@ -504,11 +504,26 @@ export default function Register({
       if (response.success) {
         setErrors({}); // Limpiar errores
         
+        // ✅ Manejar fallback automático de SMS a Email
+        let metodoFinal = (response as any).metodo || formData.metodoVerificacion;
+        
+        // Si el backend indica que hubo un error con SMS pero el usuario fue creado
+        if (formData.metodoVerificacion === 'sms' && 
+            (response.message?.toLowerCase().includes('no se pudo enviar el sms') ||
+             response.message?.toLowerCase().includes('sms de activación') ||
+             (response as any).smsError)) {
+          // Fallback automático a email
+          metodoFinal = 'email';
+          setErrors({ 
+            general: 'Tu cuenta se creó exitosamente. El código se enviará por email ya que el SMS no está disponible temporalmente.' 
+          });
+        }
+        
         // Si requiere verificación OTP, mostrar pantalla de activación
         if (response.requiereVerificacion || response.message?.toLowerCase().includes('código') || response.message?.toLowerCase().includes('activar')) {
           setEmailForActivation(formData.email);
-          // ✅ Guardar el método usado (del response o del formData)
-          setMetodoVerificacion((response as any).metodo || formData.metodoVerificacion);
+          // ✅ Usar el método final (puede ser email si SMS falló)
+          setMetodoVerificacion(metodoFinal);
           setShowActivation(true);
         } else {
           // Si no requiere verificación y hay token, guardarlo y redirigir a home
@@ -540,8 +555,24 @@ export default function Register({
       console.error('Error en registro:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al crear la cuenta';
       
-      // Si el mensaje contiene "Faltan campos obligatorios", mostrar un mensaje más útil
-      if (errorMessage.toLowerCase().includes('faltan campos') || errorMessage.toLowerCase().includes('campos obligatorios')) {
+      // ✅ Manejo especial para errores de SMS - Fallback automático a Email
+      if (errorMessage.toLowerCase().includes('sms') || 
+          errorMessage.toLowerCase().includes('twilio') ||
+          errorMessage.toLowerCase().includes('no se pudo enviar el sms') ||
+          errorMessage.toLowerCase().includes('sms de activación')) {
+        // El usuario probablemente fue creado, intentar mostrar pantalla de activación con email
+        setErrors({ 
+          general: 'Tu cuenta se creó exitosamente. El código se enviará por email ya que el SMS no está disponible temporalmente. Puedes solicitar un reenvío si es necesario.' 
+        });
+        // Mostrar pantalla de activación con método email como fallback
+        if (formData.email) {
+          setEmailForActivation(formData.email);
+          setMetodoVerificacion('email'); // Cambiar a email como fallback automático
+          setShowActivation(true);
+          setIsLoading(false);
+          return; // Salir temprano para no mostrar error adicional
+        }
+      } else if (errorMessage.toLowerCase().includes('faltan campos') || errorMessage.toLowerCase().includes('campos obligatorios')) {
         setErrors({ 
           general: 'Por favor, verifica que todos los campos obligatorios estén completos. Si el problema persiste, recarga la página e intenta nuevamente.' 
         });
