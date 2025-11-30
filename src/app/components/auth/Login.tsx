@@ -75,24 +75,21 @@ export default function Login({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     // ✅ Prevenir recarga de página y reset del formulario - DEBE SER LO PRIMERO
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Prevenir cualquier comportamiento por defecto del formulario
-    const nativeEvent = e.nativeEvent as Event;
-    if (nativeEvent) {
-      nativeEvent.preventDefault?.();
-      nativeEvent.stopPropagation?.();
-      if (typeof nativeEvent.stopImmediatePropagation === 'function') {
-        nativeEvent.stopImmediatePropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Prevenir cualquier comportamiento por defecto del formulario
+      const nativeEvent = e.nativeEvent as Event;
+      if (nativeEvent) {
+        nativeEvent.preventDefault?.();
+        nativeEvent.stopPropagation?.();
+        if (typeof nativeEvent.stopImmediatePropagation === 'function') {
+          nativeEvent.stopImmediatePropagation();
+        }
       }
-    }
-    
-    // Prevenir navegación del formulario
-    if (e.currentTarget) {
-      e.currentTarget.setAttribute('action', 'javascript:void(0)');
     }
     
     // Obtener valores directamente de los inputs usando refs
@@ -104,7 +101,7 @@ export default function Login({
     if (passwordValue !== password) setPassword(passwordValue);
     
     if (!validateForm()) {
-      return;
+      return false;
     }
     
     setIsLoading(true);
@@ -117,11 +114,13 @@ export default function Login({
     
     try {
       const { api } = await import('../../services');
-      const emailLimpio = (emailRef.current?.value || email).trim().toLowerCase();
-      const passwordValue = passwordRef.current?.value || password;
+      // Obtener valores directamente de los inputs para evitar problemas de estado
+      const emailInput = emailRef.current?.value || email;
+      const passwordInput = passwordRef.current?.value || password;
+      const emailLimpio = emailInput.trim().toLowerCase();
       console.log('[Login] Intentando login con email:', emailLimpio);
-      console.log('[Login] Longitud de contraseña:', passwordValue.length);
-      const result = await api.login(emailLimpio, passwordValue);
+      console.log('[Login] Longitud de contraseña:', passwordInput.length);
+      const result = await api.login(emailLimpio, passwordInput);
       console.log('[Login] Resultado del login:', { success: result.success, error: result.error, requiereVerificacion: result.requiereVerificacion });
       
       if (!result.success) {
@@ -443,19 +442,7 @@ export default function Login({
           </div>
         )}
         
-        <form 
-          onSubmit={handleSubmit} 
-          className="space-y-5" 
-          noValidate
-          autoComplete="off"
-          action="javascript:void(0)"
-          method="post"
-          onReset={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-          }}
-        >
+        <div className="space-y-5">
           <div>
             <label 
               htmlFor="email" 
@@ -561,7 +548,12 @@ export default function Login({
           {/* ✅ Errores de campos específicos ya se muestran debajo de cada campo */}
 
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSubmit();
+            }}
             disabled={isLoading || isGoogleLoading || formDisabled}
             className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
             style={{ backgroundColor: colors.botonesPrincipales }}
@@ -570,7 +562,7 @@ export default function Login({
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
-        </form>
+        </div>
 
         {/* Divider */}
         <div className="my-6 flex items-center">
