@@ -35,42 +35,8 @@ export default function Login({
   const [formDisabled, setFormDisabled] = useState(false);
   
   // Usar refs para guardar valores y evitar que se borren
-  const emailRef = useRef(email);
-  const passwordRef = useRef(password);
-  
-  // Mantener los refs actualizados
-  useEffect(() => {
-    emailRef.current = email;
-  }, [email]);
-  
-  useEffect(() => {
-    passwordRef.current = password;
-  }, [password]);
-  
-  // Protección: restaurar valores si se borran accidentalmente
-  // Solo ejecutar en el cliente y evitar loops infinitos
-  useEffect(() => {
-    // Solo ejecutar en el cliente
-    if (typeof window === 'undefined') return;
-    
-    // Solo restaurar si el valor actual está vacío pero el ref tiene un valor
-    // Y evitar loops infinitos verificando que realmente cambió
-    if (email === '' && emailRef.current && emailRef.current !== '') {
-      // Usar requestAnimationFrame para evitar problemas de sincronización en producción
-      requestAnimationFrame(() => {
-        if (email === '') { // Verificar nuevamente antes de restaurar
-          setEmail(emailRef.current);
-        }
-      });
-    }
-    if (password === '' && passwordRef.current && passwordRef.current !== '') {
-      requestAnimationFrame(() => {
-        if (password === '') { // Verificar nuevamente antes de restaurar
-          setPassword(passwordRef.current);
-        }
-      });
-    }
-  }, [email, password]);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   
   // Funciones para navegar usando router
   const handleSwitchToRegister = () => {
@@ -124,18 +90,17 @@ export default function Login({
       }
     }
     
+    // Obtener valores directamente de los inputs usando refs
+    const emailValue = emailRef.current?.value || email;
+    const passwordValue = passwordRef.current?.value || password;
+    
+    // Actualizar estado con los valores de los inputs
+    if (emailValue !== email) setEmail(emailValue);
+    if (passwordValue !== password) setPassword(passwordValue);
+    
     if (!validateForm()) {
-      // NO hacer return sin asegurar que los valores se mantengan
       return;
     }
-    
-    // Guardar valores antes de cualquier operación - usar refs como respaldo
-    const emailGuardado = email || emailRef.current;
-    const passwordGuardado = password || passwordRef.current;
-    
-    // Asegurar que los refs tengan los valores actuales
-    if (email) emailRef.current = email;
-    if (password) passwordRef.current = password;
     
     setIsLoading(true);
     // ✅ Limpiar solo errores generales, mantener errores de campos si existen
@@ -328,33 +293,12 @@ export default function Login({
       }
     } finally {
       setIsLoading(false);
-      // Asegurar que los valores no se hayan borrado (por si acaso)
-      // Usar los refs como respaldo - solo restaurar si realmente se borraron
-      const emailActual = email || emailRef.current;
-      const passwordActual = password || passwordRef.current;
-      
-      if (!email && emailGuardado) {
-        console.log('[Login] Restaurando email en finally:', emailGuardado);
-        setEmail(emailGuardado);
-        emailRef.current = emailGuardado;
-      } else if (!email && emailRef.current) {
-        console.log('[Login] Restaurando email desde ref en finally');
-        setEmail(emailRef.current);
-      } else if (email) {
-        // Asegurar que el ref tenga el valor actual
-        emailRef.current = email;
+      // Asegurar que los valores se mantengan desde los inputs
+      if (emailRef.current && emailRef.current.value !== email) {
+        setEmail(emailRef.current.value);
       }
-      
-      if (!password && passwordGuardado) {
-        console.log('[Login] Restaurando password en finally');
-        setPassword(passwordGuardado);
-        passwordRef.current = passwordGuardado;
-      } else if (!password && passwordRef.current) {
-        console.log('[Login] Restaurando password desde ref en finally');
-        setPassword(passwordRef.current);
-      } else if (password) {
-        // Asegurar que el ref tenga el valor actual
-        passwordRef.current = password;
+      if (passwordRef.current && passwordRef.current.value !== password) {
+        setPassword(passwordRef.current.value);
       }
     }
   };
@@ -517,7 +461,6 @@ export default function Login({
               onChange={(e) => {
                 const nuevoEmail = e.target.value;
                 setEmail(nuevoEmail);
-                emailRef.current = nuevoEmail; // Actualizar ref inmediatamente
                 if (errors.email) {
                   setErrors(prev => {
                     const newErrors = { ...prev };
@@ -555,7 +498,6 @@ export default function Login({
                 onChange={(e) => {
                   const nuevaPassword = e.target.value;
                   setPassword(nuevaPassword);
-                  passwordRef.current = nuevaPassword; // Actualizar ref inmediatamente
                   if (errors.password) {
                     setErrors(prev => {
                       const newErrors = { ...prev };
