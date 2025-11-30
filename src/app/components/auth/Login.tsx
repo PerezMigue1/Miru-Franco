@@ -46,12 +46,16 @@ export default function Login({
     passwordRef.current = password;
   }, [password]);
   
-  // Protección: restaurar valores si se borran accidentalmente
+  // Protección: restaurar valores si se borran accidentalmente (solo si realmente se borraron)
   useEffect(() => {
-    if (!email && emailRef.current) {
+    // Solo restaurar si el valor actual está vacío pero el ref tiene un valor
+    // Y evitar loops infinitos verificando que realmente cambió
+    if (email === '' && emailRef.current && emailRef.current !== '') {
+      console.log('[Login] Restaurando email desde ref:', emailRef.current);
       setEmail(emailRef.current);
     }
-    if (!password && passwordRef.current) {
+    if (password === '' && passwordRef.current && passwordRef.current !== '') {
+      console.log('[Login] Restaurando password desde ref');
       setPassword(passwordRef.current);
     }
   }, [email, password]);
@@ -93,17 +97,33 @@ export default function Login({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    // ✅ Prevenir recarga de página y reset del formulario - DEBE SER LO PRIMERO
     e.preventDefault();
-    
-    // ✅ Prevenir recarga de página y reset del formulario
     e.stopPropagation();
     
-    if (!validateForm()) return;
+    // Prevenir cualquier comportamiento por defecto del formulario
+    const nativeEvent = e.nativeEvent as Event;
+    if (nativeEvent) {
+      nativeEvent.preventDefault?.();
+      nativeEvent.stopPropagation?.();
+      if (typeof nativeEvent.stopImmediatePropagation === 'function') {
+        nativeEvent.stopImmediatePropagation();
+      }
+    }
     
-    // Guardar valores antes de cualquier operación
-    const emailGuardado = email;
-    const passwordGuardado = password;
+    if (!validateForm()) {
+      // NO hacer return sin asegurar que los valores se mantengan
+      return;
+    }
+    
+    // Guardar valores antes de cualquier operación - usar refs como respaldo
+    const emailGuardado = email || emailRef.current;
+    const passwordGuardado = password || passwordRef.current;
+    
+    // Asegurar que los refs tengan los valores actuales
+    if (email) emailRef.current = email;
+    if (password) passwordRef.current = password;
     
     setIsLoading(true);
     // ✅ Limpiar solo errores generales, mantener errores de campos si existen
@@ -297,20 +317,32 @@ export default function Login({
     } finally {
       setIsLoading(false);
       // Asegurar que los valores no se hayan borrado (por si acaso)
-      // Usar los refs como respaldo
-      if (!email) {
-        if (emailGuardado) {
-          setEmail(emailGuardado);
-        } else if (emailRef.current) {
-          setEmail(emailRef.current);
-        }
+      // Usar los refs como respaldo - solo restaurar si realmente se borraron
+      const emailActual = email || emailRef.current;
+      const passwordActual = password || passwordRef.current;
+      
+      if (!email && emailGuardado) {
+        console.log('[Login] Restaurando email en finally:', emailGuardado);
+        setEmail(emailGuardado);
+        emailRef.current = emailGuardado;
+      } else if (!email && emailRef.current) {
+        console.log('[Login] Restaurando email desde ref en finally');
+        setEmail(emailRef.current);
+      } else if (email) {
+        // Asegurar que el ref tenga el valor actual
+        emailRef.current = email;
       }
-      if (!password) {
-        if (passwordGuardado) {
-          setPassword(passwordGuardado);
-        } else if (passwordRef.current) {
-          setPassword(passwordRef.current);
-        }
+      
+      if (!password && passwordGuardado) {
+        console.log('[Login] Restaurando password en finally');
+        setPassword(passwordGuardado);
+        passwordRef.current = passwordGuardado;
+      } else if (!password && passwordRef.current) {
+        console.log('[Login] Restaurando password desde ref en finally');
+        setPassword(passwordRef.current);
+      } else if (password) {
+        // Asegurar que el ref tenga el valor actual
+        passwordRef.current = password;
       }
     }
   };
@@ -571,6 +603,11 @@ export default function Login({
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+            onClick={(e) => {
+              // Prevenir cualquier comportamiento por defecto del botón
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
