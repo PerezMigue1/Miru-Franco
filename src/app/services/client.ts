@@ -113,7 +113,18 @@ class ApiClient {
           const message = errorData.message || errorData.error || '';
           const lowerMessage = message.toLowerCase();
           
-          if (typeof window !== 'undefined') {
+          // ✅ NO redirigir automáticamente si estamos en la página de login o registro
+          // Solo redirigir si realmente hay un problema de sesión expirada o token inválido
+          // NO redirigir cuando el usuario está intentando hacer login con credenciales incorrectas
+          const isLoginPage = typeof window !== 'undefined' && (
+            window.location.pathname === '/login' ||
+            window.location.pathname === '/register' ||
+            window.location.pathname === '/forgot-password' ||
+            window.location.pathname === '/reset-password' ||
+            window.location.pathname.includes('/auth')
+          );
+          
+          if (typeof window !== 'undefined' && !isLoginPage) {
             removeToken();
             
             // Manejar diferentes tipos de expiración
@@ -130,8 +141,15 @@ class ApiClient {
               const email = errorData.email || '';
               window.location.href = `/verificar-email?email=${encodeURIComponent(email)}`;
             } else {
-              // Error genérico de autenticación
+              // Error genérico de autenticación - solo redirigir si NO estamos en páginas de autenticación
               window.location.href = '/';
+            }
+          } else if (typeof window !== 'undefined' && isLoginPage) {
+            // Si estamos en la página de login, solo limpiar el token si existe
+            // pero NO redirigir - dejar que el componente Login maneje el error
+            const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+            if (token) {
+              removeToken();
             }
           }
           
