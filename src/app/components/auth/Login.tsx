@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import { handleSecurityError } from '../../utils/security';
@@ -32,6 +32,29 @@ export default function Login({
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const [formDisabled, setFormDisabled] = useState(false);
+  
+  // Usar refs para guardar valores y evitar que se borren
+  const emailRef = useRef(email);
+  const passwordRef = useRef(password);
+  
+  // Mantener los refs actualizados
+  useEffect(() => {
+    emailRef.current = email;
+  }, [email]);
+  
+  useEffect(() => {
+    passwordRef.current = password;
+  }, [password]);
+  
+  // Protección: restaurar valores si se borran accidentalmente
+  useEffect(() => {
+    if (!email && emailRef.current) {
+      setEmail(emailRef.current);
+    }
+    if (!password && passwordRef.current) {
+      setPassword(passwordRef.current);
+    }
+  }, [email, password]);
   
   // Funciones para navegar usando router
   const handleSwitchToRegister = () => {
@@ -73,10 +96,15 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ✅ Prevenir recarga de página
+    // ✅ Prevenir recarga de página y reset del formulario
     e.stopPropagation();
+    e.stopImmediatePropagation?.();
     
     if (!validateForm()) return;
+    
+    // Guardar valores antes de cualquier operación
+    const emailGuardado = email;
+    const passwordGuardado = password;
     
     setIsLoading(true);
     // ✅ Limpiar solo errores generales, mantener errores de campos si existen
@@ -269,6 +297,22 @@ export default function Login({
       }
     } finally {
       setIsLoading(false);
+      // Asegurar que los valores no se hayan borrado (por si acaso)
+      // Usar los refs como respaldo
+      if (!email) {
+        if (emailGuardado) {
+          setEmail(emailGuardado);
+        } else if (emailRef.current) {
+          setEmail(emailRef.current);
+        }
+      }
+      if (!password) {
+        if (passwordGuardado) {
+          setPassword(passwordGuardado);
+        } else if (passwordRef.current) {
+          setPassword(passwordRef.current);
+        }
+      }
     }
   };
 
@@ -427,7 +471,9 @@ export default function Login({
               id="email"
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value);
+                const nuevoEmail = e.target.value;
+                setEmail(nuevoEmail);
+                emailRef.current = nuevoEmail; // Actualizar ref inmediatamente
                 if (errors.email) {
                   setErrors(prev => {
                     const newErrors = { ...prev };
@@ -463,7 +509,9 @@ export default function Login({
                 id="password"
                 value={password}
                 onChange={(e) => {
-                  setPassword(e.target.value);
+                  const nuevaPassword = e.target.value;
+                  setPassword(nuevaPassword);
+                  passwordRef.current = nuevaPassword; // Actualizar ref inmediatamente
                   if (errors.password) {
                     setErrors(prev => {
                       const newErrors = { ...prev };
