@@ -98,7 +98,6 @@ export default function Login({
     
     // ✅ Prevenir recarga de página y reset del formulario
     e.stopPropagation();
-    e.stopImmediatePropagation?.();
     
     if (!validateForm()) return;
     
