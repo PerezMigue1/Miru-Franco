@@ -197,10 +197,11 @@ export default function Login({
               lowerError.includes('no existe') ||
               lowerError.includes('no encontrado') ||
               lowerError.includes('no registrado')) {
-            setErrors({ 
+            setErrors(prev => ({ 
+              ...prev,
               email: 'El correo electrónico no está registrado o es incorrecto',
               general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-            });
+            }));
           } 
           // Detectar si el error es sobre contraseña incorrecta
           else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
