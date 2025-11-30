@@ -22,9 +22,11 @@ export default function ForgotPasswordOTP({
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos en segundos
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const emailEnviadoRef = useRef<string | null>(null);
 
-  // Contador regresivo
+  // Contador regresivo para expiración del código
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setTimeout(() => {
@@ -33,6 +35,21 @@ export default function ForgotPasswordOTP({
       return () => clearTimeout(timer);
     }
   }, [timeLeft]);
+
+  // Contador regresivo para rate limiting
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCountdown(null);
+      setRetryAfter(null);
+      setError('');
+      setMensaje('');
+    }
+  }, [countdown]);
 
   // Validación del código OTP
   const validarOTP = (codigo: string): string => {
@@ -103,9 +120,16 @@ export default function ForgotPasswordOTP({
   };
 
   const handleReenviarOTP = async () => {
+    // Prevenir envío si hay rate limiting activo
+    if (countdown !== null) {
+      return;
+    }
+    
     setIsResending(true);
     setError('');
     setMensaje('');
+    setRetryAfter(null);
+    setCountdown(null);
 
     try {
       const { api } = await import('../../services');
@@ -119,11 +143,21 @@ export default function ForgotPasswordOTP({
         setMensaje(result.error || 'Error al reenviar el código');
         setError('No se pudo reenviar el código. Intenta nuevamente.');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setMensaje('❌ Error de conexión al reenviar el código');
-      setError('No se pudo conectar con el servidor');
-      console.error('Error reenviando código de recuperación:', errorMessage);
+    } catch (err: unknown) {
+      // ✅ Manejar error 429 (Rate Limiting)
+      const error = err as Error & { status?: number; retryAfter?: number };
+      if (error.status === 429) {
+        const retrySeconds = error.retryAfter || 60;
+        setRetryAfter(retrySeconds);
+        setCountdown(retrySeconds);
+        setMensaje(`Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.`);
+        setError('');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        setMensaje('❌ Error de conexión al reenviar el código');
+        setError('No se pudo conectar con el servidor');
+        console.error('Error reenviando código de recuperación:', errorMessage);
+      }
     } finally {
       setIsResending(false);
     }
@@ -192,12 +226,29 @@ export default function ForgotPasswordOTP({
               </p>
               <button
                 onClick={handleReenviarOTP}
-                disabled={isResending}
-                className="text-sm font-medium transition-colors text-texto-fondo-oscuro hover:opacity-80"
+                disabled={isResending || countdown !== null}
+                className="text-sm font-medium transition-colors text-texto-fondo-oscuro hover:opacity-80 disabled:opacity-50"
                 style={{ color: colors.botonesPrincipales }}
               >
-                {isResending ? 'Reenviando...' : 'Reenviar código'}
+                {isResending 
+                  ? 'Reenviando...' 
+                  : countdown !== null 
+                    ? `Espera ${countdown}s` 
+                    : 'Reenviar código'
+                }
               </button>
+              
+              {/* Mostrar contador regresivo si hay rate limiting */}
+              {countdown !== null && countdown > 0 && (
+                <div className="mt-3 p-3 rounded-lg border" style={{ 
+                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                  borderColor: colors.warning
+                }}>
+                  <p className="text-sm text-center" style={{ color: colors.warning }}>
+                    ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -221,14 +272,33 @@ export default function ForgotPasswordOTP({
           </button>
 
           {timeLeft > 0 && (
-            <button
-              onClick={handleReenviarOTP}
-              disabled={isResending}
-              className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro disabled:opacity-50"
-              style={{ borderColor: colorsWithOpacity.bordeSecundario }}
-            >
-              {isResending ? 'Reenviando...' : 'Reenviar código'}
-            </button>
+            <>
+              <button
+                onClick={handleReenviarOTP}
+                disabled={isResending || countdown !== null}
+                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro disabled:opacity-50"
+                style={{ borderColor: colorsWithOpacity.bordeSecundario }}
+              >
+                {isResending 
+                  ? 'Reenviando...' 
+                  : countdown !== null 
+                    ? `Espera ${countdown}s` 
+                    : 'Reenviar código'
+                }
+              </button>
+              
+              {/* Mostrar contador regresivo si hay rate limiting */}
+              {countdown !== null && countdown > 0 && (
+                <div className="mt-3 p-3 rounded-lg border" style={{ 
+                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                  borderColor: colors.warning
+                }}>
+                  <p className="text-sm text-center" style={{ color: colors.warning }}>
+                    ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           {onBack && (

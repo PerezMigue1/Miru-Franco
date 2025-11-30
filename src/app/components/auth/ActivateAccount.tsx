@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import Notification from '../ui/Notification';
 
@@ -22,6 +22,8 @@ export default function ActivateAccount({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   // Validación del código OTP
   const validarOTP = (codigo: string): string => {
@@ -105,14 +107,16 @@ export default function ActivateAccount({
   };
 
   const handleReenviarOTP = async (esAutomatico = false) => {
-    // ✅ Prevenir doble envío
-    if (isResending) {
-      console.warn('⚠️ Reenvío ya en proceso, ignorando...');
+    // ✅ Prevenir doble envío o si hay rate limiting activo
+    if (isResending || countdown !== null) {
+      console.warn('⚠️ Reenvío ya en proceso o rate limiting activo, ignorando...');
       return;
     }
     
     setIsResending(true);
     setError('');
+    setRetryAfter(null);
+    setCountdown(null);
     // Solo limpiar mensaje si no es automático
     if (!esAutomatico) {
       setMensaje('');
@@ -134,16 +138,40 @@ export default function ActivateAccount({
       } else {
         setMensaje(result.error || 'Error al reenviar el código');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      if (!esAutomatico) {
-        setMensaje('❌ Error de conexión al reenviar el código');
+    } catch (err: unknown) {
+      // ✅ Manejar error 429 (Rate Limiting)
+      const error = err as Error & { status?: number; retryAfter?: number };
+      if (error.status === 429) {
+        const retrySeconds = error.retryAfter || 60;
+        setRetryAfter(retrySeconds);
+        setCountdown(retrySeconds);
+        setMensaje(`Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.`);
+        setError('');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        if (!esAutomatico) {
+          setMensaje('❌ Error de conexión al reenviar el código');
+        }
+        console.error('Error reenviando OTP:', errorMessage);
       }
-      console.error('Error reenviando OTP:', errorMessage);
     } finally {
       setIsResending(false);
     }
   };
+
+  // Contador regresivo para rate limiting
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCountdown(null);
+      setRetryAfter(null);
+      setError('');
+    }
+  }, [countdown]);
 
   // ✅ REMOVIDO: No enviar código automáticamente porque ya se envía durante el registro
   // El código OTP se envía automáticamente cuando el usuario se registra,
@@ -228,9 +256,9 @@ export default function ActivateAccount({
 
         <button
           onClick={() => handleReenviarOTP(false)}
-          disabled={isResending}
+          disabled={isResending || countdown !== null}
           className={`w-full py-2 rounded-lg font-medium transition-all mb-4 ${
-            isResending
+            isResending || countdown !== null
               ? 'opacity-50 cursor-not-allowed'
               : 'hover:opacity-80'
           }`}
@@ -240,8 +268,25 @@ export default function ActivateAccount({
             border: `1px solid ${colors.enlacesTextosInteractivos}`
           }}
         >
-          {isResending ? 'Enviando...' : 'Reenviar código'}
+          {isResending 
+            ? 'Enviando...' 
+            : countdown !== null 
+              ? `Espera ${countdown}s` 
+              : 'Reenviar código'
+          }
         </button>
+        
+        {/* Mostrar contador regresivo si hay rate limiting */}
+        {countdown !== null && countdown > 0 && (
+          <div className="mb-4 p-3 rounded-lg border" style={{ 
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            borderColor: colors.warning
+          }}>
+            <p className="text-sm text-center" style={{ color: colors.warning }}>
+              ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+            </p>
+          </div>
+        )}
 
         <div className="mt-4 space-y-2">
           {onBackToRegister && (

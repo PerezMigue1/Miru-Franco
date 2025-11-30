@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ForgotPasswordSecurityQuestionsProps {
   onSwitchToLogin?: () => void;
@@ -27,6 +27,26 @@ export default function ForgotPasswordSecurityQuestions({
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<{ email?: string; answers?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  
+  // Contador regresivo para rate limiting
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCountdown(null);
+      setRetryAfter(null);
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.email;
+        return newErrors;
+      });
+    }
+  }, [countdown]);
 
   const predefinedQuestions = [
     '¿Cuál era el nombre de tu primera mascota?',
@@ -70,7 +90,14 @@ export default function ForgotPasswordSecurityQuestions({
     
     if (!validateEmail()) return;
     
+    // Prevenir envío si hay rate limiting activo
+    if (countdown !== null) {
+      return;
+    }
+    
     setIsLoading(true);
+    setRetryAfter(null);
+    setCountdown(null);
     setErrors({}); // Limpiar errores previos
     
     try {
@@ -108,12 +135,23 @@ export default function ForgotPasswordSecurityQuestions({
         }
       }
     } catch (error: unknown) {
-      console.error('Error cargando pregunta de seguridad:', error);
-      // Por seguridad, no revelar detalles del error
-      // Mensaje genérico que no revela si el email existe
-      setErrors({ 
-        email: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.' 
-      });
+      // ✅ Manejar error 429 (Rate Limiting)
+      const err = error as Error & { status?: number; retryAfter?: number };
+      if (err.status === 429) {
+        const retrySeconds = err.retryAfter || 60;
+        setRetryAfter(retrySeconds);
+        setCountdown(retrySeconds);
+        setErrors({ 
+          email: `Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.` 
+        });
+      } else {
+        console.error('Error cargando pregunta de seguridad:', error);
+        // Por seguridad, no revelar detalles del error
+        // Mensaje genérico que no revela si el email existe
+        setErrors({ 
+          email: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.' 
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -312,14 +350,31 @@ export default function ForgotPasswordSecurityQuestions({
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || countdown !== null}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
           >
-            {isLoading ? 'Cargando...' : 'Cargar Preguntas'}
+            {isLoading 
+              ? 'Cargando...' 
+              : countdown !== null 
+                ? `Espera ${countdown}s` 
+                : 'Cargar Preguntas'
+            }
           </button>
+          
+          {/* Mostrar contador regresivo si hay rate limiting */}
+          {countdown !== null && countdown > 0 && (
+            <div className="mt-4 p-3 rounded-lg border" style={{ 
+              backgroundColor: 'rgba(255, 193, 7, 0.1)',
+              borderColor: '#FFC107'
+            }}>
+              <p className="text-sm text-center" style={{ color: '#FFC107' }}>
+                ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+              </p>
+            </div>
+          )}
         </form>
 
         {(onSwitchToEmail || onSwitchToSMS) && (

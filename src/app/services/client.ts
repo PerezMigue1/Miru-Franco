@@ -183,9 +183,25 @@ class ApiClient {
         
         // ✅ Manejar error 429 (Rate Limiting)
         if (response.status === 429) {
-          const retryAfter = response.headers.get('Retry-After');
-          const waitTime = retryAfter ? parseInt(retryAfter) : 60;
-          throw new Error(`Demasiados intentos. Espera ${waitTime} segundos antes de intentar de nuevo.`);
+          const errorText = await response.text();
+          let errorData;
+          
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          
+          // Extraer retryAfter del cuerpo de la respuesta o del header
+          const retryAfter = errorData.retryAfter || response.headers.get('Retry-After');
+          const waitTime = retryAfter ? parseInt(String(retryAfter)) : 60;
+          
+          // Crear error personalizado con retryAfter
+          const error = new Error(errorData.message || `Demasiados intentos. Espera ${waitTime} segundos antes de intentar de nuevo.`) as Error & { status?: number; retryAfter?: number; data?: unknown };
+          error.status = 429;
+          error.retryAfter = waitTime;
+          error.data = errorData;
+          throw error;
         }
 
         const errorText = await response.text();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import Notification from '../ui/Notification';
@@ -22,6 +22,26 @@ export default function ForgotPassword({
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ email?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  
+  // Contador regresivo para rate limiting
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCountdown(null);
+      setRetryAfter(null);
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.general;
+        return newErrors;
+      });
+    }
+  }, [countdown]);
   
   // Funcion para navegar usando router
   const handleSwitchToLogin = () => {
@@ -51,7 +71,14 @@ export default function ForgotPassword({
     
     if (!validateForm()) return;
     
+    // Prevenir envío si hay rate limiting activo
+    if (countdown !== null) {
+      return;
+    }
+    
     setIsLoading(true);
+    setRetryAfter(null);
+    setCountdown(null);
     // NO limpiar todos los errores, solo el general para mantener errores de campos
     setErrors(prev => {
       const newErrors = { ...prev };
@@ -73,9 +100,20 @@ export default function ForgotPassword({
         setErrors({ general: errorMessage });
       }
     } catch (error: unknown) {
-      console.error('Error en recuperación:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al procesar la solicitud';
-      setErrors({ general: errorMessage });
+      // ✅ Manejar error 429 (Rate Limiting)
+      const err = error as Error & { status?: number; retryAfter?: number };
+      if (err.status === 429) {
+        const retrySeconds = err.retryAfter || 60;
+        setRetryAfter(retrySeconds);
+        setCountdown(retrySeconds);
+        setErrors({ 
+          general: `Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.` 
+        });
+      } else {
+        console.error('Error en recuperación:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Error al procesar la solicitud';
+        setErrors({ general: errorMessage });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -142,7 +180,7 @@ export default function ForgotPassword({
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || countdown !== null}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
             style={{ backgroundColor: colors.botonesPrincipales }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
@@ -150,9 +188,23 @@ export default function ForgotPassword({
           >
             {isLoading 
               ? 'Enviando enlace...'
-              : 'Enviar Enlace de Recuperación'
+              : countdown !== null 
+                ? `Espera ${countdown}s`
+                : 'Enviar Enlace de Recuperación'
             }
           </button>
+          
+          {/* Mostrar contador regresivo si hay rate limiting */}
+          {countdown !== null && countdown > 0 && (
+            <div className="mt-4 p-3 rounded-lg border" style={{ 
+              backgroundColor: 'rgba(255, 193, 7, 0.1)',
+              borderColor: colors.warning
+            }}>
+              <p className="text-sm text-center" style={{ color: colors.warning }}>
+                ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+              </p>
+            </div>
+          )}
         </form>
 
         {(onSwitchToSMS || onSwitchToSecurityQuestions) && (

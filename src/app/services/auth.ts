@@ -43,6 +43,7 @@ export interface SolicitarEnlaceResponse {
   success: boolean;
   message?: string;
   error?: string;
+  retryAfter?: number;
 }
 
 export interface ValidarTokenResponse {
@@ -92,6 +93,7 @@ export interface ResendOTPResponse {
   success: boolean;
   message?: string;
   error?: string;
+  retryAfter?: number;
 }
 
 // Helper para guardar datos de autenticacion (usando utilidades de seguridad)

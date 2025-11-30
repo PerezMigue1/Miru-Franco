@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
 import { handleSecurityError } from '../../utils/security';
@@ -33,10 +33,31 @@ export default function Login({
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const [formDisabled, setFormDisabled] = useState(false);
+  // Manejo de rate limiting para reenvío de código
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
   
   // Usar refs para guardar valores y evitar que se borren
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  
+  // Contador regresivo para rate limiting
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCountdown(null);
+      setRetryAfter(null);
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.general;
+        return newErrors;
+      });
+    }
+  }, [countdown]);
   
   // Funciones para navegar usando router
   const handleSwitchToRegister = () => {
@@ -352,7 +373,14 @@ export default function Login({
       return;
     }
 
+    // Prevenir envío si hay rate limiting activo
+    if (countdown !== null) {
+      return;
+    }
+
     setIsResending(true);
+    setRetryAfter(null);
+    setCountdown(null);
     // NO borrar todos los errores, solo el general
     setErrors(prev => {
       const newErrors = { ...prev };
@@ -370,8 +398,19 @@ export default function Login({
         setErrors({ general: result.error || 'Error al reenviar el código' });
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al reenviar el código';
-      setErrors({ general: errorMessage });
+      // ✅ Manejar error 429 (Rate Limiting)
+      const err = error as Error & { status?: number; retryAfter?: number };
+      if (err.status === 429) {
+        const retrySeconds = err.retryAfter || 60;
+        setRetryAfter(retrySeconds);
+        setCountdown(retrySeconds);
+        setErrors({ 
+          general: `Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.` 
+        });
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Error al reenviar el código';
+        setErrors({ general: errorMessage });
+      }
     } finally {
       setIsResending(false);
     }
@@ -455,15 +494,34 @@ export default function Login({
             {errors.general.toLowerCase().includes('activada') || 
              errors.general.toLowerCase().includes('activar') ||
              errors.general.toLowerCase().includes('confirmada') ? (
-              <button
-                type="button"
-                onClick={handleResendCode}
-                disabled={isResending || !email}
-                className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed block mx-auto"
-                style={{ color: colors.enlacesTextosInteractivos }}
-              >
-                {isResending ? 'Enviando...' : 'Reenviar código de activación'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={isResending || !email || countdown !== null}
+                  className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed block mx-auto"
+                  style={{ color: colors.enlacesTextosInteractivos }}
+                >
+                  {isResending 
+                    ? 'Enviando...' 
+                    : countdown !== null 
+                      ? `Espera ${countdown}s` 
+                      : 'Reenviar código de activación'
+                  }
+                </button>
+                
+                {/* Mostrar contador regresivo si hay rate limiting */}
+                {countdown !== null && countdown > 0 && (
+                  <div className="mt-3 p-3 rounded-lg border mx-auto max-w-md" style={{ 
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderColor: colors.warning
+                  }}>
+                    <p className="text-sm text-center" style={{ color: colors.warning }}>
+                      ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+                    </p>
+                  </div>
+                )}
+              </>
             ) : null}
           </div>
         )}
