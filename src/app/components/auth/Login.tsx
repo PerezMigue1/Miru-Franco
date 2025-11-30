@@ -482,7 +482,16 @@ export default function Login({
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <form 
+          onSubmit={handleSubmit} 
+          className="space-y-5" 
+          noValidate
+          onReset={(e) => {
+            // Prevenir reset del formulario
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           <div>
             <label 
               htmlFor="email" 
