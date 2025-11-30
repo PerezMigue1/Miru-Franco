@@ -188,13 +188,40 @@ export default function Login({
             });
           }, minutos * 60 * 1000);
         } else {
-          // ✅ Usar utilidad de seguridad para manejar errores (no revelar detalles)
-          const securityError = handleSecurityError(new Error(errorMessage));
-          // NO borrar los datos del formulario, solo mostrar el error
-          setErrors(prev => ({ 
-            ...prev,
-            general: securityError.message 
-          }));
+          // Detectar errores específicos de email o contraseña
+          const lowerError = errorMessage.toLowerCase();
+          
+          // Detectar si el error es sobre email incorrecto o no encontrado
+          if (lowerError.includes('correo') || lowerError.includes('email') || 
+              lowerError.includes('usuario no encontrado') || 
+              lowerError.includes('no existe') ||
+              lowerError.includes('no encontrado') ||
+              lowerError.includes('no registrado')) {
+            setErrors({ 
+              email: 'El correo electrónico no está registrado o es incorrecto',
+              general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
+            });
+          } 
+          // Detectar si el error es sobre contraseña incorrecta
+          else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
+                   lowerError.includes('credenciales') || 
+                   lowerError.includes('incorrecta') ||
+                   lowerError.includes('inválida') ||
+                   lowerError.includes('inválidas')) {
+            setErrors(prev => ({ 
+              ...prev,
+              password: 'La contraseña es incorrecta',
+              general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
+            }));
+          } 
+          // Para otros errores, mostrar mensaje general pero mantener los campos
+          else {
+            const securityError = handleSecurityError(new Error(errorMessage));
+            setErrors(prev => ({ 
+              ...prev,
+              general: securityError.message 
+            }));
+          }
         }
       }
       } else {
@@ -258,36 +285,34 @@ export default function Login({
           return newErrors;
         });
       } else {
-        // ✅ Manejar bloqueo por fuerza bruta en catch
-        const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
-        const lowerError = errorMessage.toLowerCase();
-        
-        if (lowerError.includes('bloqueada') || lowerError.includes('bloqueado')) {
-          const match = errorMessage.match(/(\d+)\s*minutos?/i);
-          const minutos = match ? parseInt(match[1]) : 15;
-          const blockedUntilTime = Date.now() + (minutos * 60 * 1000);
-          
-          setIsBlocked(true);
-          setBlockedUntil(blockedUntilTime);
-          setFormDisabled(true);
-          
+        // Detectar errores específicos de email o contraseña
+        if (lowerError.includes('correo') || lowerError.includes('email') || 
+            lowerError.includes('usuario no encontrado') || 
+            lowerError.includes('no existe') ||
+            lowerError.includes('no encontrado') ||
+            lowerError.includes('no registrado')) {
+          // Mantener los valores de los campos y mostrar error específico
           setErrors(prev => ({ 
             ...prev,
-            general: `Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en ${minutos} minutos.` 
+            email: 'El correo electrónico no está registrado o es incorrecto',
+            general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
           }));
-          
-          // Habilitar formulario después del tiempo de bloqueo
-          setTimeout(() => {
-            setFormDisabled(false);
-            setIsBlocked(false);
-            setBlockedUntil(null);
-            setErrors(prev => {
-              const newErrors = { ...prev };
-              delete newErrors.general;
-              return newErrors;
-            });
-          }, minutos * 60 * 1000);
-        } else {
+        } 
+        // Detectar si el error es sobre contraseña incorrecta
+        else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
+                 lowerError.includes('credenciales') || 
+                 lowerError.includes('incorrecta') ||
+                 lowerError.includes('inválida') ||
+                 lowerError.includes('inválidas')) {
+          // Mantener los valores de los campos y mostrar error específico
+          setErrors(prev => ({ 
+            ...prev,
+            password: 'La contraseña es incorrecta',
+            general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
+          }));
+        } 
+        // Para otros errores, mostrar mensaje general pero mantener los campos
+        else {
           // ✅ Usar mensaje de seguridad (no revelar detalles)
           // NO borrar los datos del formulario, solo mostrar el error
           setErrors(prev => ({ 
@@ -299,10 +324,10 @@ export default function Login({
     } finally {
       setIsLoading(false);
       // Asegurar que los valores se mantengan desde los inputs
-      if (emailRef.current && emailRef.current.value !== email) {
+      if (emailRef.current && emailRef.current.value) {
         setEmail(emailRef.current.value);
       }
-      if (passwordRef.current && passwordRef.current.value !== password) {
+      if (passwordRef.current && passwordRef.current.value) {
         setPassword(passwordRef.current.value);
       }
     }
@@ -490,10 +515,12 @@ export default function Login({
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
+                ref={passwordRef}
                 value={password}
                 onChange={(e) => {
                   const nuevaPassword = e.target.value;
                   setPassword(nuevaPassword);
+                  // Limpiar error de password cuando el usuario empieza a escribir
                   if (errors.password) {
                     setErrors(prev => {
                       const newErrors = { ...prev };
