@@ -48,16 +48,24 @@ export default function Login({
   }, [password]);
   
   // Protección: restaurar valores si se borran accidentalmente (solo si realmente se borraron)
+  // Usar useRef para evitar loops infinitos
+  const restoringRef = useRef(false);
   useEffect(() => {
     // Solo restaurar si el valor actual está vacío pero el ref tiene un valor
-    // Y evitar loops infinitos verificando que realmente cambió
+    // Y evitar loops infinitos verificando que realmente cambió y no estamos restaurando
+    if (restoringRef.current) return;
+    
     if (email === '' && emailRef.current && emailRef.current !== '') {
+      restoringRef.current = true;
       console.log('[Login] Restaurando email desde ref:', emailRef.current);
       setEmail(emailRef.current);
+      setTimeout(() => { restoringRef.current = false; }, 0);
     }
     if (password === '' && passwordRef.current && passwordRef.current !== '') {
+      restoringRef.current = true;
       console.log('[Login] Restaurando password desde ref');
       setPassword(passwordRef.current);
+      setTimeout(() => { restoringRef.current = false; }, 0);
     }
   }, [email, password]);
   
