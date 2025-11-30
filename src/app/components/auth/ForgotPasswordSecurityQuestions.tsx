@@ -90,22 +90,30 @@ export default function ForgotPasswordSecurityQuestions({
         setUserAnswers({});
         setErrors({}); // Limpiar errores
       } else {
-        // ❌ Usuario no tiene pregunta (puede ser usuario de Google)
-        const errorMessage = result.message || result.error || 'No se encontró pregunta de seguridad';
+        // ❌ Por seguridad, no revelar si el email existe o no
+        // Solo mostrar mensaje genérico
+        const errorMessage = result.message || result.error || '';
         
-        // Verificar si es un usuario de Google
-        if (errorMessage.toLowerCase().includes('google') || errorMessage.toLowerCase().includes('cuenta de google')) {
+        // Verificar si es un usuario de Google (este caso sí se puede revelar porque es específico)
+        if (errorMessage && (errorMessage.toLowerCase().includes('google') || errorMessage.toLowerCase().includes('cuenta de google'))) {
           setErrors({ 
             email: `${errorMessage}. Por favor, usa "Continuar con Google" para iniciar sesión.` 
           });
         } else {
-          setErrors({ email: errorMessage });
+          // Mensaje genérico que no revela si el email existe
+          // Si el email existe y tiene pregunta, se mostrará. Si no, no se muestra nada (por seguridad)
+          setErrors({ 
+            email: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.' 
+          });
         }
       }
     } catch (error: unknown) {
       console.error('Error cargando pregunta de seguridad:', error);
-      const msg = error instanceof Error ? error.message : 'Error al obtener la pregunta de seguridad';
-      setErrors({ email: msg });
+      // Por seguridad, no revelar detalles del error
+      // Mensaje genérico que no revela si el email existe
+      setErrors({ 
+        email: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.' 
+      });
     } finally {
       setIsLoading(false);
     }

@@ -337,10 +337,11 @@ export const api = {
           pregunta: data.pregunta,
         };
       } else {
-        // Usuario no tiene pregunta (puede ser usuario de Google)
+        // Por seguridad, no revelar si el email existe o no
+        // El backend debería devolver siempre un mensaje genérico
         return {
           success: false,
-          message: data.message || 'No se encontró pregunta de seguridad',
+          message: data.message || 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
           error: data.error,
         };
       }
