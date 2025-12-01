@@ -12,37 +12,37 @@ export default function MenuHorizontal() {
     { 
       name: 'L\'Oréal', 
       href: '/marcas/loreal',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/04/LOr%C3%A9al-Logo.png'
+      logo: '/images/logos/loreal.png'
     },
     { 
       name: 'Kerastase', 
       href: '/marcas/kerastase',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/04/Kerastase-Logo.png'
+      logo: '/images/logos/kerastase.png'
     },
     { 
       name: 'Revlon', 
       href: '/marcas/revlon',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/04/Revlon-Logo.png'
+      logo: '/images/logos/revlon.png'
     },
     { 
       name: 'Schwarzkopf', 
       href: '/marcas/schwarzkopf',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/05/Schwarzkopf-Logo.png'
+      logo: '/images/logos/schwarzkopf.png'
     },
     { 
       name: 'Wella', 
       href: '/marcas/wella',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/05/Wella-Logo.png'
+      logo: '/images/logos/wella.png'
     },
     { 
       name: 'Matrix', 
       href: '/marcas/matrix',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/05/Matrix-Logo.png'
+      logo: '/images/logos/matrix.png'
     },
     { 
       name: 'Pantene', 
       href: '/marcas/pantene',
-      logo: 'https://logos-world.net/wp-content/uploads/2020/05/Pantene-Logo.png'
+      logo: '/images/logos/pantene.png'
     },
   ];
 
