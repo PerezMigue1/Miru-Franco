@@ -399,10 +399,8 @@ export const api = {
   async loginWithGoogle(): Promise<GoogleLoginResponse> {
     // Redirige a la URL de autenticación de Google en el backend
     // El backend debería manejar la autenticación OAuth y redirigir de vuelta
-    // prompt=select_account fuerza a Google a mostrar siempre el selector de cuenta,
-    // incluso si el usuario solo tiene una cuenta
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
-    const redirectUrl = `${BACKEND_BASE}/api/auth/google?prompt=select_account`;
+    const redirectUrl = `${BACKEND_BASE}/api/auth/google`;
     window.location.href = redirectUrl;
     // Nota: Este método no retorna inmediatamente ya que redirige
     return { success: false, error: 'Redirecting to Google' };

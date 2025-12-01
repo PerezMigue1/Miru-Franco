@@ -358,11 +358,9 @@ export default function Login({
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
     // ✅ Usar configuracion centralizada segun GUIA_ACTUALIZAR_FRONTEND_SIN_ROMPER.md
-    // prompt=select_account fuerza a Google a mostrar siempre el selector de cuenta,
-    // incluso si el usuario solo tiene una cuenta
     import('../../services/config').then(({ getBackendBaseUrl }) => {
       const BACKEND_BASE = getBackendBaseUrl();
-      const redirectUrl = `${BACKEND_BASE}/api/auth/google?prompt=select_account`;
+      const redirectUrl = `${BACKEND_BASE}/api/auth/google`;
       window.location.href = redirectUrl;
     });
     // Nota: No necesitamos manejar errores aquí porque la redirección es inmediata
