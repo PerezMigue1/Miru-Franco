@@ -101,7 +101,7 @@ export default function ActivateAccount({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setMensaje('❌ Error de conexión al verificar el código');
-      setError('No se pudo conectar con el servidor');
+      setError('No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta de nuevo.');
       console.error('Error verificando OTP:', errorMessage);
     } finally {
       setIsLoading(false);

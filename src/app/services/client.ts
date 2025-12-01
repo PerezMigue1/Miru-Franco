@@ -146,10 +146,10 @@ class ApiClient {
               // Redirigir al login según la guía
               window.location.href = '/login';
             } else if (lowerMessage.includes('revocado') || 
-                       lowerMessage.includes('sesión cerrada') ||
                        lowerMessage.includes('token revocado') ||
                        lowerMessage.includes('nueva sesión') ||
-                       lowerMessage.includes('otro dispositivo')) {
+                       lowerMessage.includes('otro dispositivo') ||
+                       lowerMessage.includes('cerrada desde otro dispositivo')) {
               // Token revocado por nueva sesión en otro dispositivo
               // Según requerimiento: cuando se inicia sesión en segundo dispositivo,
               // se cierra automáticamente la sesión del primer dispositivo
@@ -264,9 +264,7 @@ class ApiClient {
       // Mejorar mensaje de error para "Failed to fetch" (problemas de CORS o conexión)
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         const enhancedError = new Error(
-          `No se pudo conectar con el servidor en ${url}. ` +
-          `Posibles causas: CORS no configurado, backend no disponible, o URL incorrecta. ` +
-          `Verifica que el backend esté corriendo y que CORS permita solicitudes desde el frontend.`
+          'No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet e intenta de nuevo más tarde.'
         ) as Error & { originalError?: Error; url?: string; isNetworkError?: boolean };
         enhancedError.originalError = error;
         enhancedError.url = url;
