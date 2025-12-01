@@ -23,7 +23,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",                            // solo cargar recursos del mismo origen
-      "script-src 'self'",                             // sin inline scripts para mejorar seguridad
+      // Nota: Next.js genera algunos scripts inline necesarios para el hydrate.
+      // Para que la app funcione correctamente en Vercel sin romper nada,
+      // permitimos 'unsafe-inline'. SecurityHeaders lo marca como warning,
+      // pero para eliminarlo habría que pasar a una CSP con nonce/hashes.
+      "script-src 'self' 'unsafe-inline'",             // scripts propios (y los inline que genera Next)
       "style-src 'self' 'unsafe-inline'",              // estilos propios + inline (Tailwind, etc.)
       "img-src 'self' data: https:",                   // imágenes locales + data URIs + https externos
       "font-src 'self' data:",                         // fuentes locales + data URIs
