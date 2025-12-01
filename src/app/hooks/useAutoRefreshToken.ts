@@ -6,7 +6,7 @@ import { getBackendBaseUrl } from '../services/config';
 
 /**
  * Hook para renovar automáticamente el token y detectar cuando se inicia sesión en otro dispositivo
- * Verifica cada 2 minutos si el token sigue siendo válido
+ * Verifica cada 30 segundos si el token sigue siendo válido
  * Si se detecta una nueva sesión en otro dispositivo, cierra automáticamente esta sesión
  */
 export function useAutoRefreshToken() {
@@ -75,9 +75,9 @@ export function useAutoRefreshToken() {
       }
     };
     
-    // Verificar cada 2 minutos (120000 ms) para detectar rápidamente nuevas sesiones
-    // Esto permite detectar cuando se inicia sesión en otro dispositivo
-    intervalRef.current = setInterval(checkTokenStatus, 2 * 60 * 1000);
+    // Verificar cada 30 segundos para detectar rápidamente nuevas sesiones
+    // Aumenta la frecuencia para que el cierre de sesión por otro dispositivo se note casi en tiempo real
+    intervalRef.current = setInterval(checkTokenStatus, 30 * 1000);
     
     // Verificar inmediatamente al montar el componente
     checkTokenStatus();
