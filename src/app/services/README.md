@@ -72,6 +72,7 @@ await api.refreshToken();
 ### Antes
 
 ```typescript
+// ❌ NO HACER - URL hardcodeada
 const response = await fetch('http://localhost:3001/api/usuarios/login', {
   method: 'POST',
   // ...
