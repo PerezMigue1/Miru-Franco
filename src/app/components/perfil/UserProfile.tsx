@@ -13,10 +13,11 @@ import { api } from '../../services/auth';
 
 interface UserInfo {
   id?: string;
-  nombre?: string;
-  email?: string;
-  rol?: string;
-  desde?: string;
+  nombre: string;
+  email: string;
+  rol: string;        // etiqueta que mostramos (Cliente, Administrador, etc.)
+  rolRaw?: string;    // valor real del backend: 'usuario', 'admin', etc.
+  desde: string;      // año o fecha legible
 }
 
 export default function UserProfile() {
@@ -35,13 +36,18 @@ export default function UserProfile() {
         // 1) Intentar obtener perfil desde el backend (incluye rol)
         const result = await api.getProfile();
         if (result.success && result.data) {
+          const rawRole = result.data.rol || 'usuario';
+          const displayRole = rawRole === 'admin' ? 'Administrador' : 'Cliente';
+          const createdAt = result.data.creadoEn ? new Date(result.data.creadoEn) : undefined;
+          const desde = createdAt ? String(createdAt.getFullYear()) : '2023';
+
           setUser({
             id: result.data.id,
             nombre: result.data.nombre || 'Usuario',
             email: result.data.email || 'usuario@ejemplo.com',
-            rol: result.data.rol || 'Cliente',
-            // Si el backend no envia fecha de alta, dejamos un valor generico
-            desde: '2023',
+            rol: displayRole,
+            rolRaw: rawRole,
+            desde,
           });
           return;
         }
@@ -55,11 +61,14 @@ export default function UserProfile() {
         if (storedUser) {
           try {
             const parsed = JSON.parse(storedUser);
+            const rawRole = parsed.rol || parsed.role || 'usuario';
+            const displayRole = rawRole === 'admin' ? 'Administrador' : 'Cliente';
             setUser({
               id: parsed.id || parsed._id,
               nombre: parsed.nombre || parsed.name || 'Usuario',
               email: parsed.email || 'usuario@ejemplo.com',
-              rol: parsed.rol || parsed.role || 'Cliente',
+              rol: displayRole,
+              rolRaw: rawRole,
               desde: parsed.desde || '2023',
             });
           } catch {

@@ -542,8 +542,12 @@ export const api = {
     }
   },
 
-  // ✅ Obtener perfil del usuario (incluye rol)
-  async getProfile(): Promise<{ success: boolean; data?: { id: string; nombre: string; email: string; rol?: string }; error?: string }> {
+  // ✅ Obtener perfil del usuario (incluye rol y otros campos basicos)
+  async getProfile(): Promise<{
+    success: boolean;
+    data?: { id: string; nombre?: string; email?: string; rol?: string; creadoEn?: string | Date; telefono?: string };
+    error?: string;
+  }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
       const data = await apiClient.get<{ success: boolean; data?: { id: string; nombre: string; email: string; rol?: string }; error?: string }>(
