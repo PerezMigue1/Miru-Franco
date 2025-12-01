@@ -1,7 +1,7 @@
 // Cliente API centralizado con manejo de errores y tokens
 
 import { getApiBaseUrl, getBackendBaseUrl } from './config';
-import { removeToken, getToken, saveToken } from '../utils/security';
+import { getToken, saveToken, clearAuthData } from '../utils/security';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -85,7 +85,7 @@ class ApiClient {
               console.warn('Error renovando token:', refreshError);
             }
           }
-        } catch (error) {
+        } catch {
           // Ignorar errores de decodificación del token
         }
       }
@@ -125,31 +125,37 @@ class ApiClient {
           );
           
           if (typeof window !== 'undefined' && !isLoginPage) {
-            removeToken();
-            
-            // Manejar diferentes tipos de expiración
-            if (lowerMessage.includes('inactividad') || lowerMessage.includes('expirada')) {
-              // Sesión expirada por inactividad
-              alert('Tu sesión expiró por inactividad. Por favor inicia sesión nuevamente.');
-              window.location.href = '/?reason=inactivity';
+            // ✅ Manejar error 401 según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
+            // Verificar si es por inactividad
+            if (lowerMessage.includes('inactividad') || lowerMessage.includes('sesión expirada')) {
+              // Sesión expirada por inactividad - limpiar todo y redirigir
+              clearAuthData(); // Limpiar token y usuario
+              
+              // Mostrar mensaje según la guía
+              alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+              
+              // Redirigir al login según la guía
+              window.location.href = '/login';
             } else if (lowerMessage.includes('revocado')) {
               // Token revocado (logout desde otro dispositivo)
+              clearAuthData();
               alert('Tu sesión fue cerrada desde otro dispositivo.');
-              window.location.href = '/?reason=revoked';
+              window.location.href = '/login';
             } else if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmado')) {
               // Usuario no ha verificado correo
               const email = errorData.email || '';
               window.location.href = `/verificar-email?email=${encodeURIComponent(email)}`;
             } else {
-              // Error genérico de autenticación - solo redirigir si NO estamos en páginas de autenticación
-              window.location.href = '/';
+              // Error genérico de autenticación - limpiar y redirigir al login
+              clearAuthData();
+              window.location.href = '/login';
             }
           } else if (typeof window !== 'undefined' && isLoginPage) {
             // Si estamos en la página de login, solo limpiar el token si existe
             // pero NO redirigir - dejar que el componente Login maneje el error
             const token = localStorage.getItem('token') || localStorage.getItem('authToken');
             if (token) {
-              removeToken();
+              clearAuthData();
             }
           }
           

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { getToken } from '../utils/security';
+import { getToken, clearAuthData } from '../utils/security';
 import { getBackendBaseUrl } from '../services/config';
 
 /**
@@ -35,13 +35,11 @@ export function useAutoRefreshToken() {
           }
         } else {
           // Token inválido, limpiar y redirigir
-          localStorage.removeItem('token');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
+          clearAuthData();
           
           // Solo redirigir si estamos en una página protegida
           if (window.location.pathname !== '/' && !window.location.pathname.includes('/auth')) {
-            window.location.href = '/';
+            window.location.href = '/login';
           }
         }
       } catch (error) {

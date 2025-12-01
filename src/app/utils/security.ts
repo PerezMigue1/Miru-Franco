@@ -291,6 +291,18 @@ export const removeToken = (): void => {
 };
 
 /**
+ * Limpia todos los datos de autenticación (token y usuario)
+ * Según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
+ */
+export const clearAuthData = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+  }
+};
+
+/**
  * Obtiene token actual
  */
 export const getToken = (): string | null => {
