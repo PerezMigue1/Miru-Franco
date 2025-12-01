@@ -23,7 +23,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",                            // solo cargar recursos del mismo origen
-      "script-src 'self' 'unsafe-inline'",             // scripts propios (añade CDNs si usas)
+      "script-src 'self'",                             // sin inline scripts para mejorar seguridad
       "style-src 'self' 'unsafe-inline'",              // estilos propios + inline (Tailwind, etc.)
       "img-src 'self' data: https:",                   // imágenes locales + data URIs + https externos
       "font-src 'self' data:",                         // fuentes locales + data URIs
