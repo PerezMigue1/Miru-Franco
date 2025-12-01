@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import PublicLayout from '../../components/layouts/PublicLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -9,12 +7,8 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../components/ui/Table';
 import { colors } from '../../utils/colors';
-import { clearAuthData } from '../../utils/security';
 
 export default function PerfilClientePage() {
-  const router = useRouter();
-  const [logoutAllLoading, setLogoutAllLoading] = useState(false);
-
   const citas = [
     { id: 1, servicio: 'Corte', fecha: '2024-01-20', hora: '10:00', estado: 'confirmada' },
     { id: 2, servicio: 'Alaciado', fecha: '2024-01-25', hora: '14:00', estado: 'pendiente' },
@@ -24,33 +18,6 @@ export default function PerfilClientePage() {
     { id: 1, servicio: 'Corte', fecha: '2024-01-10', especialista: 'Mildred', precio: '$350' },
     { id: 2, servicio: 'Nanoplastía', fecha: '2023-12-15', especialista: 'Mildred', precio: '$1,200' },
   ];
-
-  const handleLogoutAllSessions = async () => {
-    setLogoutAllLoading(true);
-    try {
-      const { api } = await import('../../services');
-      const result = await api.logoutAll();
-
-      // Limpiar datos locales de sesion
-      clearAuthData();
-
-      if (typeof window !== 'undefined') {
-        alert(result.message || 'Todas tus sesiones han sido cerradas correctamente');
-      }
-
-      router.push('/login');
-    } catch (error) {
-      console.error('Error al cerrar todas las sesiones:', error);
-      // Incluso si hay error, limpiar localmente y redirigir
-      clearAuthData();
-      if (typeof window !== 'undefined') {
-        alert('Se cerró la sesión en este dispositivo, pero hubo un error al cerrar todas las sesiones.');
-      }
-      router.push('/login');
-    } finally {
-      setLogoutAllLoading(false);
-    }
-  };
 
   return (
     <PublicLayout>
@@ -150,14 +117,6 @@ export default function PerfilClientePage() {
                   <Button fullWidth variant="outline">Ver Productos</Button>
                   <Button fullWidth variant="outline">Ver Promociones</Button>
                   <Button fullWidth variant="outline">Contactar Soporte</Button>
-                  <Button
-                    fullWidth
-                    variant="danger"
-                    disabled={logoutAllLoading}
-                    onClick={handleLogoutAllSessions}
-                  >
-                    {logoutAllLoading ? 'Cerrando todas las sesiones...' : 'Cerrar todas las sesiones'}
-                  </Button>
                 </div>
               </Card>
 
