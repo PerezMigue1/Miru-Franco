@@ -6,14 +6,12 @@ import { colors, colorsWithOpacity } from '../../utils/colors';
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
   onEmailSent?: () => void;
-  onSwitchToSMS?: () => void;
   onSwitchToSecurityQuestions?: () => void;
 }
 
 export default function ForgotPassword({ 
   onSwitchToLogin,
   onEmailSent,
-  onSwitchToSMS,
   onSwitchToSecurityQuestions
 }: ForgotPasswordProps) {
   const [email, setEmail] = useState('');
@@ -154,33 +152,25 @@ export default function ForgotPassword({
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
-          <p className="text-center text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
-            Otras opciones de recuperación:
-          </p>
-          <div className="space-y-2 mt-4">
-            {onSwitchToSMS && (
-              <button
-                onClick={onSwitchToSMS}
-                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                style={{ borderColor: colorsWithOpacity.bordeSecundario, color: colors.textoFondoOscuro }}
-                disabled={isLoading}
-              >
-                Recuperar por SMS
-              </button>
-            )}
-            {onSwitchToSecurityQuestions && (
-              <button
-                onClick={onSwitchToSecurityQuestions}
-                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                style={{ borderColor: colorsWithOpacity.bordeSecundario, color: colors.textoFondoOscuro }}
-                disabled={isLoading}
-              >
-                Recuperar por Preguntas de Seguridad
-              </button>
-            )}
+        {onSwitchToSecurityQuestions && (
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+            <p className="text-center text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+              Otras opciones de recuperación:
+            </p>
+            <div className="space-y-2 mt-4">
+              {onSwitchToSecurityQuestions && (
+                <button
+                  onClick={onSwitchToSecurityQuestions}
+                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
+                  style={{ borderColor: colorsWithOpacity.bordeSecundario, color: colors.textoFondoOscuro }}
+                  disabled={isLoading}
+                >
+                  Recuperar por Preguntas de Seguridad
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {onSwitchToLogin && (
           <div className="mt-6 text-center">

@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 interface ForgotPasswordSecurityQuestionsProps {
   onSwitchToLogin?: () => void;
   onSwitchToEmail?: () => void;
-  onSwitchToSMS?: () => void;
   onQuestionsVerified?: (email: string, token?: string) => void;
 }
 
@@ -18,7 +17,6 @@ interface SecurityQuestion {
 export default function ForgotPasswordSecurityQuestions({ 
   onSwitchToLogin,
   onSwitchToEmail,
-  onSwitchToSMS,
   onQuestionsVerified
 }: ForgotPasswordSecurityQuestionsProps) {
   const [email, setEmail] = useState('');
@@ -377,7 +375,7 @@ export default function ForgotPasswordSecurityQuestions({
           )}
         </form>
 
-        {(onSwitchToEmail || onSwitchToSMS) && (
+        {onSwitchToEmail && (
           <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
             <p className="text-center text-sm mb-4" style={{ color: '#F2F1ED' }}>
               Otras opciones de recuperación:
@@ -391,16 +389,6 @@ export default function ForgotPasswordSecurityQuestions({
                   disabled={isLoading}
                 >
                   Recuperar por Email
-                </button>
-              )}
-              {onSwitchToSMS && (
-                <button
-                  onClick={onSwitchToSMS}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
-                  disabled={isLoading}
-                >
-                  Recuperar por SMS
                 </button>
               )}
             </div>

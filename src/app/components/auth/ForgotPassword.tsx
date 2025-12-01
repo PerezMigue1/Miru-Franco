@@ -8,14 +8,12 @@ import Notification from '../ui/Notification';
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
   onEmailSent?: (email: string) => void;
-  onSwitchToSMS?: () => void;
   onSwitchToSecurityQuestions?: () => void;
 }
 
 export default function ForgotPassword({ 
   onSwitchToLogin,
   onEmailSent,
-  onSwitchToSMS,
   onSwitchToSecurityQuestions
 }: ForgotPasswordProps) {
   const router = useRouter();
@@ -207,22 +205,12 @@ export default function ForgotPassword({
           )}
         </form>
 
-        {(onSwitchToSMS || onSwitchToSecurityQuestions) && (
+        {onSwitchToSecurityQuestions && (
           <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
             <p className="text-center text-sm mb-4 text-texto-fondo-oscuro">
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2">
-              {onSwitchToSMS && (
-                <button
-                  onClick={onSwitchToSMS}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
-                  style={{ borderColor: colorsWithOpacity.bordeSecundario }}
-                  disabled={isLoading}
-                >
-                  Recuperar por SMS
-                </button>
-              )}
               {onSwitchToSecurityQuestions && (
                 <button
                   onClick={onSwitchToSecurityQuestions}

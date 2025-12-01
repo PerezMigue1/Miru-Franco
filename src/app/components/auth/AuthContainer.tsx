@@ -6,13 +6,12 @@ import Login from './Login';
 import Register from './Register';
 import ForgotPassword from './ForgotPassword';
 import ForgotPasswordOTP from './ForgotPasswordOTP';
-import ForgotPasswordSMS from './ForgotPasswordSMS';
 import ForgotPasswordSecurityQuestions from './ForgotPasswordSecurityQuestions';
 import ResetPassword from './ResetPassword';
 import EnlaceEnviado from './EnlaceEnviado';
 
 
-type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-otp' | 'forgot-sms' | 'forgot-security' | 'reset-password' | 'enlace-enviado';
+type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-otp' | 'forgot-security' | 'reset-password' | 'enlace-enviado';
 
 interface AuthContainerProps {
   initialView?: AuthView;
@@ -74,11 +73,6 @@ export default function AuthContainer({
 
   // handleEmailConfirmed se eliminará hasta integrar el flujo por email directo
 
-  const handleSMSCodeVerified = (phone: string) => {
-    setRecoveryIdentifier(phone);
-    setCurrentView('reset-password');
-  };
-
   const handleSecurityQuestionsVerified = (email: string, token?: string) => {
     setRecoveryIdentifier(email);
     // Si hay token, guardarlo con expiración de 10 minutos
@@ -119,7 +113,6 @@ export default function AuthContainer({
         <ForgotPassword
           onSwitchToLogin={handleSwitchToLogin}
           onEmailSent={handleEmailSent}
-          onSwitchToSMS={() => setCurrentView('forgot-sms')}
           onSwitchToSecurityQuestions={() => setCurrentView('forgot-security')}
         />
       )}
@@ -136,20 +129,10 @@ export default function AuthContainer({
         />
       )}
 
-      {currentView === 'forgot-sms' && (
-        <ForgotPasswordSMS
-          onSwitchToLogin={() => setCurrentView('login')}
-          onSwitchToEmail={() => setCurrentView('forgot-email')}
-          onSwitchToSecurityQuestions={() => setCurrentView('forgot-security')}
-          onCodeVerified={handleSMSCodeVerified}
-        />
-      )}
-
       {currentView === 'forgot-security' && (
         <ForgotPasswordSecurityQuestions
           onSwitchToLogin={() => setCurrentView('login')}
           onSwitchToEmail={() => setCurrentView('forgot-email')}
-          onSwitchToSMS={() => setCurrentView('forgot-sms')}
           onQuestionsVerified={handleSecurityQuestionsVerified}
         />
       )}
