@@ -19,6 +19,11 @@ export default function Header() {
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     setLoading(true);
+
+    // Marcar que el logout fue iniciado manualmente desde el frontend
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('manualLogout', 'true');
+    }
     
     try {
       const { api } = await import('../services');
@@ -26,16 +31,25 @@ export default function Header() {
       
       if (result.success) {
         clearAuthData();
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('manualLogout');
+        }
         router.push('/login');
       } else {
         // Incluso si falla, limpiar localmente
         clearAuthData();
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('manualLogout');
+        }
         router.push('/login');
       }
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       // Limpiar localmente incluso si falla
       clearAuthData();
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('manualLogout');
+      }
       router.push('/login');
     } finally {
       setLoading(false);

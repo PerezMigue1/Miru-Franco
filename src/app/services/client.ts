@@ -112,6 +112,10 @@ class ApiClient {
           
           const message = errorData.message || errorData.error || '';
           const lowerMessage = message.toLowerCase();
+
+          // Bandera para saber si el logout fue iniciado manualmente desde el frontend
+          const isManualLogout = typeof window !== 'undefined' &&
+            localStorage.getItem('manualLogout') === 'true';
           
           // ✅ NO redirigir automáticamente si estamos en la página de login o registro
           // Solo redirigir si realmente hay un problema de sesión expirada o token inválido
@@ -131,8 +135,13 @@ class ApiClient {
               // Sesión expirada por inactividad - limpiar todo y redirigir
               clearAuthData(); // Limpiar token y usuario
               
-              // Mostrar mensaje según la guía
-              alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+              // Si el logout fue manual, no mostrar mensaje de inactividad
+              if (isManualLogout) {
+                localStorage.removeItem('manualLogout');
+              } else {
+                // Mostrar mensaje según la guía
+                alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+              }
               
               // Redirigir al login según la guía
               window.location.href = '/login';
