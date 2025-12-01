@@ -3,6 +3,9 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { colors, colorsWithOpacity } from '../../utils/colors';
+import { apiClient } from '../../services/client';
+import { getBackendBaseUrl } from '../../services/config';
+import { saveToken } from '../../utils/security';
 
 function AuthCallbackContent() {
   const searchParams = useSearchParams();
@@ -11,75 +14,107 @@ function AuthCallbackContent() {
   const [message, setMessage] = useState('Autenticando con Google...');
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const success = searchParams.get('success');
-    const error = searchParams.get('error');
-    const errorCode = searchParams.get('code');
-    const errorId = searchParams.get('id');
+    const handleCallback = async () => {
+      // ✅ Según GUIA_ACTUALIZAR_FRONTEND_OAUTH_SEGURO.md
+      // Ahora leemos 'code' en lugar de 'token'
+      const code = searchParams.get('code');
+      const errorParam = searchParams.get('error');
+      const errorId = searchParams.get('id');
 
-    // Detectar errores de Vercel (404: NOT_FOUND, DEPLOYMENT_NOT_FOUND)
-    if (errorCode === '404' || errorId?.includes('DEPLOYMENT_NOT_FOUND')) {
-      setStatus('error');
-      setMessage('Error de configuración: La URL de callback no coincide con el deployment. Por favor, verifica la configuración de Google OAuth en el backend.');
-      setTimeout(() => {
-        router.push('/?error=callback_config_error');
-      }, 3000);
-      return;
-    }
-
-    if (success === 'true' && token) {
-      // ✅ Guardar token según guía GUIA_FRONTEND_GOOGLE_OAUTH.md
-      try {
-        localStorage.setItem('token', token);
-        // También guardar como 'authToken' para compatibilidad con la guía
-        localStorage.setItem('authToken', token);
-        
-        // Intentar obtener datos del usuario del token o hacer una petición al backend
-        // Por ahora solo guardamos el token
-        setStatus('success');
-        setMessage('¡Autenticación exitosa! Redirigiendo...');
-        
-        // Esperar un momento para mostrar el mensaje de éxito
-        setTimeout(() => {
-          router.push('/home');
-        }, 1500);
-      } catch (err) {
-        console.error('Error guardando token:', err);
+      // Detectar errores de Vercel (404: NOT_FOUND, DEPLOYMENT_NOT_FOUND)
+      if (errorId?.includes('DEPLOYMENT_NOT_FOUND')) {
         setStatus('error');
-        setMessage('Error al guardar la sesión');
+        setMessage('Error de configuración: La URL de callback no coincide con el deployment. Por favor, verifica la configuración de Google OAuth en el backend.');
         setTimeout(() => {
-          router.push('/?error=auth_failed');
+          router.push('/?error=callback_config_error');
+        }, 3000);
+        return;
+      }
+
+      // Si hay error de OAuth (ej: usuario canceló)
+      if (errorParam) {
+        setStatus('error');
+        let errorMessage = 'Error en la autenticación. Por favor intenta de nuevo.';
+        switch (errorParam) {
+          case 'authentication_failed':
+            errorMessage = 'No se pudo completar la autenticación';
+            break;
+          case 'access_denied':
+            errorMessage = 'Autorización cancelada';
+            break;
+          case 'callback_config_error':
+            errorMessage = 'Error de configuración: La URL de callback no está correctamente configurada. Por favor, contacta al administrador.';
+            break;
+          default:
+            errorMessage = `Error: ${errorParam}`;
+        }
+        setMessage(errorMessage);
+        setTimeout(() => {
+          router.push('/?error=google_auth_failed');
+        }, 3000);
+        return;
+      }
+
+      // Si hay código, intercambiarlo por token
+      if (code) {
+        try {
+          setMessage('Intercambiando código por token...');
+          const BACKEND_BASE = getBackendBaseUrl();
+          
+          // ✅ Intercambiar código por token según la guía
+          const data = await apiClient.post<{ 
+            success: boolean; 
+            token?: string; 
+            user?: unknown;
+            message?: string;
+            error?: string;
+          }>('/api/auth/exchange-code', { code }, BACKEND_BASE);
+          
+          if (data.success && data.token) {
+            // Guardar token usando utilidad de seguridad
+            saveToken(data.token);
+            
+            // Opcional: Guardar información del usuario si viene en la respuesta
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
+            }
+            
+            setStatus('success');
+            setMessage('¡Autenticación exitosa! Redirigiendo...');
+            
+            // Esperar un momento para mostrar el mensaje de éxito
+            setTimeout(() => {
+              router.push('/home');
+            }, 1500);
+          } else {
+            setStatus('error');
+            setMessage(data.message || data.error || 'Error al obtener token');
+            setTimeout(() => {
+              router.push('/?error=auth_failed');
+            }, 3000);
+          }
+        } catch (error: unknown) {
+          console.error('Error intercambiando código:', error);
+          setStatus('error');
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : 'Error al intercambiar código por token';
+          setMessage(errorMessage);
+          setTimeout(() => {
+            router.push('/?error=auth_failed');
+          }, 3000);
+        }
+      } else {
+        // No hay código ni error, redirigir al login
+        setStatus('error');
+        setMessage('Código de autenticación no proporcionado');
+        setTimeout(() => {
+          router.push('/');
         }, 2000);
       }
-    } else if (error) {
-      console.error('Error en autenticación de Google:', error);
-      setStatus('error');
-      
-      let errorMessage = 'Error al autenticar con Google';
-      switch (error) {
-        case 'authentication_failed':
-          errorMessage = 'No se pudo completar la autenticación';
-          break;
-        case 'access_denied':
-          errorMessage = 'Autorización cancelada';
-          break;
-        case 'callback_config_error':
-          errorMessage = 'Error de configuración: La URL de callback no está correctamente configurada. Por favor, contacta al administrador.';
-          break;
-        default:
-          errorMessage = `Error: ${error}`;
-      }
-      
-      setMessage(errorMessage);
-      setTimeout(() => {
-        router.push('/?error=google_auth_failed');
-      }, 2000);
-    } else {
-      // No hay token ni error, redirigir al login
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
-    }
+    };
+
+    handleCallback();
   }, [searchParams, router]);
 
   return (
