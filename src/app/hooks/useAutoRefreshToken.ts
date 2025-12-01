@@ -26,6 +26,7 @@ export function useAutoRefreshToken() {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
         });
         
         if (response.ok) {
@@ -58,12 +59,15 @@ export function useAutoRefreshToken() {
                              window.location.pathname.includes('/register');
           
           if (!isLoginPage) {
-            // Detectar si es por nueva sesión en otro dispositivo
+            // Detectar si es por nueva sesión en otro dispositivo (solo mensajes claros)
             if (lowerMessage.includes('revocado') || 
                 lowerMessage.includes('nueva sesión') ||
                 lowerMessage.includes('otro dispositivo') ||
-                lowerMessage.includes('sesión cerrada')) {
+                lowerMessage.includes('cerrada desde otro dispositivo')) {
               alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada automáticamente.');
+            } else if (lowerMessage.includes('inactividad') || lowerMessage.includes('expirada')) {
+              // Sesión expirada por inactividad
+              alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
             }
             
             window.location.href = '/login';

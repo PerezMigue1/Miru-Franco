@@ -70,6 +70,7 @@ class ApiClient {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json',
                 },
+                credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
               });
               
               if (refreshResponse.ok) {
@@ -95,6 +96,7 @@ class ApiClient {
       const response = await fetch(url, {
         ...fetchOptions,
         headers,
+        credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
       });
 
       // Manejar errores HTTP

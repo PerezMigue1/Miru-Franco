@@ -322,7 +322,11 @@ export const fetchWithRetry = async (
   delay = 1000
 ): Promise<Response> => {
   try {
-    const response = await fetch(url, options);
+    // ⚠️ OBLIGATORIO: El backend tiene credentials: true, siempre incluir credentials
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+    });
     
     if (response.status === 429) {
       // Rate limited
