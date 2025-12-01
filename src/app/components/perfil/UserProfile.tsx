@@ -9,8 +9,10 @@ import Badge from '../ui/Badge';
 import Table, { TableRow, TableCell } from '../ui/Table';
 import { colors } from '../../utils/colors';
 import { clearAuthData } from '../../utils/security';
+import { api } from '../../services/auth';
 
 interface UserInfo {
+  id?: string;
   nombre?: string;
   email?: string;
   rol?: string;
@@ -28,22 +30,46 @@ export default function UserProfile() {
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser);
+    const loadProfile = async () => {
+      try {
+        // 1) Intentar obtener perfil desde el backend (incluye rol)
+        const result = await api.getProfile();
+        if (result.success && result.data) {
           setUser({
-            nombre: parsed.nombre || parsed.name || 'Usuario',
-            email: parsed.email || 'usuario@ejemplo.com',
-            rol: parsed.rol || parsed.role || 'Cliente',
-            desde: parsed.desde || '2023',
+            id: result.data.id,
+            nombre: result.data.nombre || 'Usuario',
+            email: result.data.email || 'usuario@ejemplo.com',
+            rol: result.data.rol || 'Cliente',
+            // Si el backend no envia fecha de alta, dejamos un valor generico
+            desde: '2023',
           });
-        } catch {
-          // ignorar errores de parseo, dejamos valores por defecto
+          return;
+        }
+      } catch (error) {
+        console.warn('[UserProfile] Error obteniendo perfil desde backend, usando localStorage si existe', error);
+      }
+
+      // 2) Fallback a localStorage.user si el backend falla o no devuelve datos
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            setUser({
+              id: parsed.id || parsed._id,
+              nombre: parsed.nombre || parsed.name || 'Usuario',
+              email: parsed.email || 'usuario@ejemplo.com',
+              rol: parsed.rol || parsed.role || 'Cliente',
+              desde: parsed.desde || '2023',
+            });
+          } catch {
+            // ignorar errores de parseo, dejamos valores por defecto
+          }
         }
       }
-    }
+    };
+
+    loadProfile();
   }, []);
 
   const handleLogoutAllSessions = async () => {
