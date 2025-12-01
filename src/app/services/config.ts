@@ -3,20 +3,12 @@
 
 // Función para obtener la URL base del backend (ejecutada en runtime)
 export const getBackendBase = (): string => {
-  // Usar variables de entorno (requeridas)
+  // En Next.js, usar process.env.NEXT_PUBLIC_API_URL
+  // Fallback: produccion -> miru-franco.onrender.com, desarrollo -> localhost:3001
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
     (process.env.NODE_ENV === 'production'
-      ? process.env.NEXT_PUBLIC_PRODUCTION_URL
-      : process.env.NEXT_PUBLIC_DEVELOPMENT_URL);
-  
-  // Si no hay URL configurada, lanzar error
-  if (!apiUrl) {
-    throw new Error(
-      'NEXT_PUBLIC_API_URL no está configurada. ' +
-      'Por favor configura la variable de entorno NEXT_PUBLIC_API_URL en tu archivo .env.local'
-    );
-  }
+      ? 'https://miru-franco.onrender.com'
+      : 'http://localhost:3001');
   
   // Si la URL incluye /api/auth, removerlo
   if (apiUrl.includes('/api/auth')) {

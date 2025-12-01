@@ -6,20 +6,20 @@ import { colors } from '../../utils/colors';
 export default function Carousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Imágenes - usar rutas locales o variables de entorno
+  // Imágenes de ejemplo - reemplaza con tus imágenes reales
   const slides = [
     {
-      image: '/images/carousel/slide1.jpg',
+      image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1920&h=1080&fit=crop',
       title: 'Bienvenido a Miru Franco',
       subtitle: 'A solo minutos encuentras productos de calidad profesional. Descubre la magia del cuidado capilar con experiencias auténticas y personalizadas.',
     },
     {
-      image: '/images/carousel/slide2.jpg',
+      image: 'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=1920&h=1080&fit=crop',
       title: 'Productos Premium',
       subtitle: 'Líneas especializadas para cada tipo de cabello. Ingredientes naturales que nutren y protegen tu melena.',
     },
     {
-      image: '/images/carousel/slide3.jpg',
+      image: 'https://images.unsplash.com/photo-1560067174-c5a3a8f39060?w=1920&h=1080&fit=crop',
       title: 'Servicios Profesionales',
       subtitle: 'Equipo experto dedicado a realzar tu belleza. Transformamos tu look con técnicas modernas y tradicionales.',
     },
