@@ -157,9 +157,15 @@ export default function Header() {
                     style={{ borderColor: colorsWithOpacity.bordeVisible }}
                   >
                     <div className="py-2">
-                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          router.push('/perfil');
+                        }}
+                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                      >
                         Mi Perfil
-                      </a>
+                      </button>
                       <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
                         Configuración
                       </a>
