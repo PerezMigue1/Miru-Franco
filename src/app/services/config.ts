@@ -2,13 +2,27 @@
 // Segun GUIA_ACTUALIZAR_FRONTEND_SIN_ROMPER.md
 
 // Función para obtener la URL base del backend (ejecutada en runtime)
+// Según GUIA_FRONTEND_HTTPS_CONTRASENAS.md - Usar solo variables de entorno
 export const getBackendBase = (): string => {
-  // En Next.js, usar process.env.NEXT_PUBLIC_API_URL
-  // Fallback: produccion -> miru-franco.onrender.com, desarrollo -> localhost:3001
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-    (process.env.NODE_ENV === 'production'
-      ? 'https://miru-franco.onrender.com'
-      : 'http://localhost:3001');
+  // Usar variable de entorno (requerida)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  // Si no hay URL configurada, lanzar error
+  if (!apiUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL no está configurada. ' +
+      'Por favor configura la variable de entorno NEXT_PUBLIC_API_URL en tu archivo .env.local. ' +
+      'Ejemplo: NEXT_PUBLIC_API_URL=https://miru-franco.onrender.com'
+    );
+  }
+  
+  // Verificar que use HTTPS en producción
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+    console.warn(
+      '[API Config] ADVERTENCIA: El frontend está en HTTPS pero la URL del API usa HTTP. ' +
+      'Esto causará errores de Mixed Content. Usa HTTPS para la URL del API.'
+    );
+  }
   
   // Si la URL incluye /api/auth, removerlo
   if (apiUrl.includes('/api/auth')) {
