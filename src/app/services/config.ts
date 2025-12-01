@@ -12,7 +12,7 @@ export const getBackendBase = (): string => {
     throw new Error(
       'NEXT_PUBLIC_API_URL no está configurada. ' +
       'Por favor configura la variable de entorno NEXT_PUBLIC_API_URL en tu archivo .env.local. ' +
-      'Ejemplo: NEXT_PUBLIC_API_URL=https://miru-franco.onrender.com'
+      'Ejemplo: NEXT_PUBLIC_API_URL=https://tu-backend.com'
     );
   }
   
