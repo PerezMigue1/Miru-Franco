@@ -135,10 +135,31 @@ export default function UserProfile() {
               Información Personal
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Nombre Completo" defaultValue={user.nombre} fullWidth />
-              <Input label="Email" type="email" defaultValue={user.email} fullWidth />
-              <Input label="Rol" defaultValue={user.rol || 'Cliente'} fullWidth />
-              <Input label="Cliente desde" defaultValue={user.desde || '2023'} fullWidth />
+              <Input
+                label="Nombre Completo"
+                value={user.nombre}
+                readOnly
+                fullWidth
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={user.email}
+                readOnly
+                fullWidth
+              />
+              <Input
+                label="Rol"
+                value={user.rol || 'Cliente'}
+                readOnly
+                fullWidth
+              />
+              <Input
+                label="Cliente desde"
+                value={user.desde || '2023'}
+                readOnly
+                fullWidth
+              />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button>Guardar Cambios</Button>
