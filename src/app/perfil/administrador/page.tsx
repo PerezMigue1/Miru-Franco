@@ -1,13 +1,44 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ModuleLayout from '../../components/layouts/ModuleLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import { colors } from '../../utils/colors';
+import { clearAuthData } from '../../utils/security';
 
 export default function PerfilAdministradorPage() {
+  const router = useRouter();
+  const [logoutAllLoading, setLogoutAllLoading] = useState(false);
+
+  const handleLogoutAllSessions = async () => {
+    setLogoutAllLoading(true);
+    try {
+      const { api } = await import('../../services');
+      const result = await api.logoutAll();
+
+      clearAuthData();
+
+      if (typeof window !== 'undefined') {
+        alert(result.message || 'Todas tus sesiones han sido cerradas correctamente');
+      }
+
+      router.push('/login');
+    } catch (error) {
+      console.error('Error al cerrar todas las sesiones (admin):', error);
+      clearAuthData();
+      if (typeof window !== 'undefined') {
+        alert('Se cerró la sesión en este dispositivo, pero hubo un error al cerrar todas las sesiones.');
+      }
+      router.push('/login');
+    } finally {
+      setLogoutAllLoading(false);
+    }
+  };
+
   return (
     <ModuleLayout>
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
@@ -126,6 +157,14 @@ export default function PerfilAdministradorPage() {
                   <Input label="Nueva Contraseña" type="password" fullWidth />
                   <Input label="Confirmar Contraseña" type="password" fullWidth />
                   <Button fullWidth>Cambiar Contraseña</Button>
+                  <Button
+                    fullWidth
+                    variant="danger"
+                    disabled={logoutAllLoading}
+                    onClick={handleLogoutAllSessions}
+                  >
+                    {logoutAllLoading ? 'Cerrando todas las sesiones...' : 'Cerrar todas las sesiones'}
+                  </Button>
                 </div>
               </Card>
             </div>
