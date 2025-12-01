@@ -138,11 +138,14 @@ class ApiClient {
               window.location.href = '/login';
             } else if (lowerMessage.includes('revocado') || 
                        lowerMessage.includes('sesión cerrada') ||
-                       lowerMessage.includes('token revocado')) {
-              // Token revocado (logout global desde otro dispositivo o logout individual)
-              // Según GUIA_FRONTEND_LOGOUT_GLOBAL.md
+                       lowerMessage.includes('token revocado') ||
+                       lowerMessage.includes('nueva sesión') ||
+                       lowerMessage.includes('otro dispositivo')) {
+              // Token revocado por nueva sesión en otro dispositivo
+              // Según requerimiento: cuando se inicia sesión en segundo dispositivo,
+              // se cierra automáticamente la sesión del primer dispositivo
               clearAuthData();
-              alert('Tu sesión fue cerrada. Por favor inicia sesión nuevamente.');
+              alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada. Por favor inicia sesión nuevamente si deseas continuar.');
               window.location.href = '/login';
             } else if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmado')) {
               // Usuario no ha verificado correo

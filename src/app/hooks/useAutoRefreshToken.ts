@@ -5,8 +5,9 @@ import { getToken, clearAuthData } from '../utils/security';
 import { getBackendBaseUrl } from '../services/config';
 
 /**
- * Hook para renovar automáticamente el token cada 10 minutos
- * según la guía de actualización del frontend
+ * Hook para renovar automáticamente el token y detectar cuando se inicia sesión en otro dispositivo
+ * Verifica cada 2 minutos si el token sigue siendo válido
+ * Si se detecta una nueva sesión en otro dispositivo, cierra automáticamente esta sesión
  */
 export function useAutoRefreshToken() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -15,7 +16,8 @@ export function useAutoRefreshToken() {
     const token = getToken();
     if (!token) return;
     
-    const refreshToken = async () => {
+    // Función para verificar el estado del token
+    const checkTokenStatus = async () => {
       try {
         const BACKEND_BASE = getBackendBaseUrl();
         const response = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
@@ -29,27 +31,56 @@ export function useAutoRefreshToken() {
         if (response.ok) {
           const data = await response.json();
           if (data.token) {
-            // Guardar nuevo token
+            // Guardar nuevo token si se renueva
             localStorage.setItem('token', data.token);
             localStorage.setItem('authToken', data.token);
           }
         } else {
-          // Token inválido, limpiar y redirigir
+          // Token inválido - verificar si es por nueva sesión en otro dispositivo
+          const errorText = await response.text();
+          let errorData;
+          
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          
+          const message = errorData.message || errorData.error || '';
+          const lowerMessage = message.toLowerCase();
+          
           clearAuthData();
           
           // Solo redirigir si estamos en una página protegida
-          if (window.location.pathname !== '/' && !window.location.pathname.includes('/auth')) {
+          const isLoginPage = window.location.pathname === '/' || 
+                             window.location.pathname.includes('/auth') ||
+                             window.location.pathname.includes('/login') ||
+                             window.location.pathname.includes('/register');
+          
+          if (!isLoginPage) {
+            // Detectar si es por nueva sesión en otro dispositivo
+            if (lowerMessage.includes('revocado') || 
+                lowerMessage.includes('nueva sesión') ||
+                lowerMessage.includes('otro dispositivo') ||
+                lowerMessage.includes('sesión cerrada')) {
+              alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada automáticamente.');
+            }
+            
             window.location.href = '/login';
           }
         }
       } catch (error) {
-        console.error('Error renovando token:', error);
+        console.error('Error verificando token:', error);
         // No hacer nada si falla, el interceptor del cliente API manejará el error
       }
     };
     
-    // Renovar cada 10 minutos (600000 ms)
-    intervalRef.current = setInterval(refreshToken, 10 * 60 * 1000);
+    // Verificar cada 2 minutos (120000 ms) para detectar rápidamente nuevas sesiones
+    // Esto permite detectar cuando se inicia sesión en otro dispositivo
+    intervalRef.current = setInterval(checkTokenStatus, 2 * 60 * 1000);
+    
+    // Verificar inmediatamente al montar el componente
+    checkTokenStatus();
     
     return () => {
       if (intervalRef.current) {
