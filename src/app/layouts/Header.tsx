@@ -6,34 +6,71 @@ import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
 import { colors, colorsWithOpacity } from '../utils/colors';
+import { clearAuthData } from '../utils/security';
 
 export default function Header() {
   const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogoutAllConfirm, setShowLogoutAllConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
   const notificationsCount = 0; // Cambia este valor cuando tengas notificaciones
 
+  // ✅ Logout individual (solo este dispositivo)
+  // Según GUIA_FRONTEND_LOGOUT_GLOBAL.md
   const handleLogout = async () => {
-    // Cerrar el menú de usuario
+    setIsUserMenuOpen(false);
+    setLoading(true);
+    
+    try {
+      const { api } = await import('../services');
+      const result = await api.logout(false);
+      
+      if (result.success) {
+        clearAuthData();
+        router.push('/login');
+      } else {
+        // Incluso si falla, limpiar localmente
+        clearAuthData();
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // Limpiar localmente incluso si falla
+      clearAuthData();
+      router.push('/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Logout global (todas las sesiones)
+  // Según GUIA_FRONTEND_LOGOUT_GLOBAL.md
+  const handleLogoutAll = async () => {
+    setLoading(true);
+    setShowLogoutAllConfirm(false);
     setIsUserMenuOpen(false);
     
     try {
-      // Llamar al endpoint de logout para revocar el token
       const { api } = await import('../services');
-      await api.logout();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      // Continuar con el logout local aunque falle el servidor
-    } finally {
-      // Limpiar datos de autenticación del localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-      }
+      const result = await api.logoutAll();
       
-      // Redirigir al login
-      router.push('/');
+      if (result.success) {
+        alert('Todas tus sesiones han sido cerradas');
+        clearAuthData();
+        router.push('/login');
+      } else {
+        // Incluso si falla, limpiar localmente
+        clearAuthData();
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Error al cerrar todas las sesiones:', error);
+      // Limpiar localmente incluso si falla
+      clearAuthData();
+      router.push('/login');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,12 +181,65 @@ export default function Header() {
                       <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
                         Configuración
                       </a>
+                      <hr className="my-2" style={{ borderColor: colorsWithOpacity.bordeVisible }} />
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                        disabled={loading}
+                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro disabled:opacity-50"
                       >
-                        Cerrar Sesión
+                        {loading ? 'Cerrando...' : 'Cerrar Sesión'}
                       </button>
+                      <button
+                        onClick={() => {
+                          setShowLogoutAllConfirm(true);
+                          setIsUserMenuOpen(false);
+                        }}
+                        disabled={loading}
+                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-red-600 disabled:opacity-50"
+                        style={{ color: '#dc3545' }}
+                      >
+                        Cerrar Todas las Sesiones
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal de confirmación para logout global */}
+                {showLogoutAllConfirm && (
+                  <div 
+                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+                    onClick={() => setShowLogoutAllConfirm(false)}
+                  >
+                    <div 
+                      className="bg-header-footer rounded-lg shadow-xl p-6 max-w-md w-11/12"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ borderColor: colorsWithOpacity.bordeVisible, border: '1px solid' }}
+                    >
+                      <h3 className="text-lg font-semibold mb-2 text-texto-fondo-oscuro">
+                        ¿Cerrar todas las sesiones?
+                      </h3>
+                      <p className="text-sm mb-4 text-texto-fondo-oscuro" style={{ opacity: 0.8 }}>
+                        Esto cerrará tu sesión en todos los dispositivos donde hayas iniciado sesión
+                        (laptop, teléfono, tablet, etc.)
+                      </p>
+                      <div className="flex gap-3 justify-end">
+                        <button
+                          onClick={() => setShowLogoutAllConfirm(false)}
+                          disabled={loading}
+                          className="px-4 py-2 rounded hover:opacity-80 transition-opacity text-texto-fondo-oscuro disabled:opacity-50"
+                          style={{ border: `1px solid ${colorsWithOpacity.bordeVisible}` }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleLogoutAll}
+                          disabled={loading}
+                          className="px-4 py-2 rounded hover:opacity-80 transition-opacity text-white disabled:opacity-50"
+                          style={{ backgroundColor: '#dc3545' }}
+                        >
+                          {loading ? 'Cerrando...' : 'Sí, cerrar todas'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

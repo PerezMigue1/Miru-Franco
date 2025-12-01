@@ -487,21 +487,39 @@ export const api = {
     }
   },
 
-  // ✅ Cerrar sesión (revoca token)
-  async logout(): Promise<{ success: boolean; message?: string }> {
+  // ✅ Cerrar sesión (revoca token) - Logout individual
+  // Según GUIA_FRONTEND_LOGOUT_GLOBAL.md
+  async logout(logoutAll: boolean = false): Promise<{ success: boolean; message?: string }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
-      const data = await apiClient.post<{ success: boolean; message?: string }>(
-        '/api/auth/logout',
-        {},
-        BACKEND_BASE
-      );
-      return data;
+      if (logoutAll) {
+        // Logout global: cerrar todas las sesiones
+        const data = await apiClient.post<{ success: boolean; message?: string }>(
+          '/api/auth/logout-all',
+          {},
+          BACKEND_BASE
+        );
+        return data;
+      } else {
+        // Logout individual: solo esta sesión
+        const data = await apiClient.post<{ success: boolean; message?: string }>(
+          '/api/auth/logout',
+          { logoutAll: false },
+          BACKEND_BASE
+        );
+        return data;
+      }
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       // Aún así retornar éxito para limpiar el token local
-      return { success: true, message: 'Sesión cerrada' };
+      return { success: true, message: logoutAll ? 'Todas las sesiones cerradas' : 'Sesión cerrada' };
     }
+  },
+
+  // ✅ Cerrar todas las sesiones (logout global)
+  // Según GUIA_FRONTEND_LOGOUT_GLOBAL.md
+  async logoutAll(): Promise<{ success: boolean; message?: string }> {
+    return this.logout(true);
   },
 
   // ✅ Renovar token
