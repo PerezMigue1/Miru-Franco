@@ -35,7 +35,6 @@ export default function Register({
     confirmPassword: '',
     birthDate: '',
     securityQuestion: '',
-    metodoVerificacion: 'email' as 'email' | 'sms', // ✅ NUEVO: Método de verificación
     
     // Paso 2: Dirección
     street: '',
@@ -67,7 +66,6 @@ export default function Register({
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
   const [emailForActivation, setEmailForActivation] = useState('');
-  const [metodoVerificacion, setMetodoVerificacion] = useState<'email' | 'sms'>('email'); // ✅ Método usado para verificación
   const [verificandoCorreo, setVerificandoCorreo] = useState(false);
   const [correoExiste, setCorreoExiste] = useState(false);
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -142,20 +140,6 @@ export default function Register({
       newErrors.phone = 'El teléfono es requerido';
     } else if (!/^\+?[\d\s-()]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
       newErrors.phone = 'El teléfono no es válido';
-    }
-    
-    // ✅ Validar teléfono si se selecciona SMS
-    if (formData.metodoVerificacion === 'sms') {
-      if (!formData.phone || formData.phone.trim() === '') {
-        newErrors.phone = 'El teléfono es requerido para recibir códigos por SMS';
-      } else {
-        // Validar formato de teléfono internacional (opcional pero recomendado)
-        const telefonoLimpio = formData.phone.replace(/\s/g, '');
-        const telefonoRegex = /^\+?[1-9]\d{1,14}$/;
-        if (!telefonoRegex.test(telefonoLimpio)) {
-          newErrors.phone = 'Formato de teléfono inválido. Debe incluir código de país (ej: +521234567890)';
-        }
-      }
     }
     
     // ✅ Usar validación centralizada de seguridad con todos los datos del usuario
@@ -467,7 +451,6 @@ export default function Register({
         password: formData.password,
         telefono: formData.phone,
         fechaNacimiento: formData.birthDate,
-        metodoVerificacion: formData.metodoVerificacion, // ✅ NUEVO: Incluir método de verificación
         preguntaSeguridad: {
           pregunta: selectedQuestionText || '', // Texto completo de la pregunta
           respuesta: securityAnswer || '' // Respuesta del usuario
@@ -504,14 +487,9 @@ export default function Register({
       if (response.success) {
         setErrors({}); // Limpiar errores
         
-        // ✅ Obtener método usado del backend (puede ser 'sms' o 'email')
-        const metodoFinal = (response as any).metodo || formData.metodoVerificacion;
-        
         // Si requiere verificación OTP, mostrar pantalla de activación
         if (response.requiereVerificacion || response.message?.toLowerCase().includes('código') || response.message?.toLowerCase().includes('activar')) {
           setEmailForActivation(formData.email);
-          // ✅ Usar el método que el backend indica (puede ser 'sms' o 'email' según configuración)
-          setMetodoVerificacion(metodoFinal);
           setShowActivation(true);
         } else {
           // Si no requiere verificación y hay token, guardarlo y redirigir a home
@@ -543,25 +521,7 @@ export default function Register({
       console.error('Error en registro:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al crear la cuenta';
       
-      // ✅ Manejo especial para errores de SMS - Fallback automático a Email
-      // Según GUIA_CONFIGURAR_SMS.md: En producción lanza error si SMS no está configurado
-      if (errorMessage.toLowerCase().includes('sms') || 
-          errorMessage.toLowerCase().includes('no se pudo enviar') ||
-          errorMessage.toLowerCase().includes('sms de activación') ||
-          errorMessage.toLowerCase().includes('no está configurado')) {
-        // El usuario probablemente fue creado, intentar mostrar pantalla de activación con email
-        setErrors({ 
-          general: 'Tu cuenta se creó exitosamente. El código se enviará por email ya que el SMS no está disponible temporalmente. Puedes solicitar un reenvío si es necesario.' 
-        });
-        // Mostrar pantalla de activación con método email como fallback
-        if (formData.email) {
-          setEmailForActivation(formData.email);
-          setMetodoVerificacion('email'); // Cambiar a email como fallback automático
-          setShowActivation(true);
-          setIsLoading(false);
-          return; // Salir temprano para no mostrar error adicional
-        }
-      } else if (errorMessage.toLowerCase().includes('faltan campos') || errorMessage.toLowerCase().includes('campos obligatorios')) {
+      if (errorMessage.toLowerCase().includes('faltan campos') || errorMessage.toLowerCase().includes('campos obligatorios')) {
         setErrors({ 
           general: 'Por favor, verifica que todos los campos obligatorios estén completos. Si el problema persiste, recarga la página e intenta nuevamente.' 
         });
@@ -707,80 +667,6 @@ export default function Register({
             {errors.phone}
           </p>
         )}
-      </div>
-
-      {/* ✅ NUEVO: Selector de método de verificación */}
-      <div>
-        <label 
-          className="block text-sm font-medium mb-2"
-          style={{ color: '#F2F1ED' }}
-        >
-          ¿Cómo quieres recibir tu código de verificación?
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          {/* Opción Email */}
-          <label
-            className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
-              formData.metodoVerificacion === 'email'
-                ? 'border-botones-principales bg-opacity-10'
-                : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400'
-            }`}
-            style={{
-              borderColor: formData.metodoVerificacion === 'email' ? '#710014' : 'rgba(255,255,255,0.2)',
-              backgroundColor: formData.metodoVerificacion === 'email' ? 'rgba(113, 0, 20, 0.1)' : 'transparent'
-            }}
-          >
-            <input
-              type="radio"
-              name="metodoVerificacion"
-              value="email"
-              checked={formData.metodoVerificacion === 'email'}
-              onChange={(e) => handleChange('metodoVerificacion', e.target.value)}
-              className="sr-only"
-              disabled={isLoading}
-            />
-            <div className="text-2xl mb-2">📧</div>
-            <div className="font-semibold text-sm" style={{ color: '#F2F1ED' }}>Email</div>
-            <div className="text-xs mt-1 text-center" style={{ color: 'rgba(242, 241, 237, 0.7)' }}>
-              {formData.email || 'tu@email.com'}
-            </div>
-          </label>
-
-          {/* Opción SMS */}
-          <label
-            className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
-              formData.metodoVerificacion === 'sms'
-                ? 'border-botones-principales bg-opacity-10'
-                : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400'
-            } ${!formData.phone ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{
-              borderColor: formData.metodoVerificacion === 'sms' ? '#710014' : 'rgba(255,255,255,0.2)',
-              backgroundColor: formData.metodoVerificacion === 'sms' ? 'rgba(113, 0, 20, 0.1)' : 'transparent'
-            }}
-            title={!formData.phone ? 'Teléfono requerido para SMS' : ''}
-          >
-            <input
-              type="radio"
-              name="metodoVerificacion"
-              value="sms"
-              checked={formData.metodoVerificacion === 'sms'}
-              onChange={(e) => handleChange('metodoVerificacion', e.target.value)}
-              className="sr-only"
-              disabled={isLoading || !formData.phone}
-            />
-            <div className="text-2xl mb-2">📱</div>
-            <div className="font-semibold text-sm" style={{ color: '#F2F1ED' }}>SMS</div>
-            <div className="text-xs mt-1 text-center" style={{ color: 'rgba(242, 241, 237, 0.7)' }}>
-              {formData.phone || 'Teléfono requerido'}
-            </div>
-          </label>
-        </div>
-        <p className="mt-2 text-xs" style={{ color: 'rgba(242, 241, 237, 0.7)' }}>
-          {formData.metodoVerificacion === 'sms' 
-            ? `Se enviará un código a tu teléfono: ${formData.phone || 'No especificado'}`
-            : `Se enviará un código a tu correo: ${formData.email || 'No especificado'}`
-          }
-        </p>
       </div>
 
       <div>
@@ -1461,7 +1347,6 @@ export default function Register({
     return (
       <ActivateAccount
         email={emailForActivation}
-        metodoVerificacion={metodoVerificacion}
         onActivationSuccess={() => {
           setShowActivation(false);
           setRegisterSuccess(true);
