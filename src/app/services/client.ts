@@ -133,7 +133,11 @@ class ApiClient {
           if (typeof window !== 'undefined' && !isLoginPage) {
             // ✅ Manejar error 401 según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
             // Verificar si es por inactividad
-            if (lowerMessage.includes('inactividad') || lowerMessage.includes('sesión expirada')) {
+            // NO mostrar mensaje de inactividad si el login fue reciente (menos de 10 segundos)
+            const lastLoginTime = typeof window !== 'undefined' ? localStorage.getItem('lastLoginTime') : null;
+            const isRecentLogin = lastLoginTime && (Date.now() - parseInt(lastLoginTime)) < 10000; // 10 segundos
+            
+            if ((lowerMessage.includes('inactividad') || lowerMessage.includes('sesión expirada')) && !isRecentLogin) {
               // Sesión expirada por inactividad - limpiar todo y redirigir
               clearAuthData(); // Limpiar token y usuario
               

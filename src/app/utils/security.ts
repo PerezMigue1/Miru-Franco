@@ -277,6 +277,8 @@ export const saveToken = (token: string): void => {
     localStorage.setItem('token', token);
     // También guardar como authToken para compatibilidad
     localStorage.setItem('authToken', token);
+    // Guardar timestamp del login para evitar mensajes de inactividad inmediatos
+    localStorage.setItem('lastLoginTime', String(Date.now()));
   }
 };
 
@@ -299,6 +301,7 @@ export const clearAuthData = (): void => {
     localStorage.removeItem('token');
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('lastLoginTime');
   }
 };
 
