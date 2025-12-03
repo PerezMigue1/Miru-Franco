@@ -38,13 +38,13 @@ const nextConfig: NextConfig = {
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
           // 4) Content-Security-Policy (CSP)
-          // Next.js requiere 'unsafe-inline' para scripts inline de hidratación
-          // Todos los demás headers de seguridad están configurados para obtener A+
+          // Usamos hashes SHA256 para permitir scripts inline de Next.js sin 'unsafe-inline'
+          // Esto permite obtener A+ en securityheaders.com
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://vercel.live",
+              "script-src 'self' 'strict-dynamic' 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-13ceWtDG9coxSJpvNmROZnRM0mFzVwiyqqsLIbUBWAc=' 'sha256-808+W18z9Dtj13mDRW7dcRSo2OTagO15WCx3ZshKDoo=' 'sha256-YfQGCCZqclfcA29ZZS09vE6q0Hi90HJJ9oR44bavIxQ=' 'sha256-tn7xe1bCkVzTD45JAucdbqtfHmV0ujDhn/cWoVU5hsg=' 'sha256-Q4/E7Og5LmC1pNfjMYG15V4a4xPIk0ePyp9AWa9YCDI=' https://vercel.live",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: https:",
