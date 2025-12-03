@@ -45,8 +45,8 @@ export default function AuthContainer({
   };
 
   const handleRegisterSuccess = () => {
-    // Cambiar a la vista de login después de registro exitoso
-    setCurrentView('login');
+    // Redirigir al login después de registro exitoso
+    router.push('/login');
   };
 
   const handleEmailSent = (email: string) => {
@@ -125,13 +125,13 @@ export default function AuthContainer({
             setRecoveryEmail('');
             setCurrentView('forgot-email');
           }}
-          onSwitchToLogin={() => setCurrentView('login')}
+          onSwitchToLogin={handleSwitchToLogin}
         />
       )}
 
       {currentView === 'forgot-security' && (
         <ForgotPasswordSecurityQuestions
-          onSwitchToLogin={() => setCurrentView('login')}
+          onSwitchToLogin={handleSwitchToLogin}
           onSwitchToEmail={() => setCurrentView('forgot-email')}
           onQuestionsVerified={handleSecurityQuestionsVerified}
         />
