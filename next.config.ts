@@ -37,13 +37,14 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
-          // 4) Content-Security-Policy (CSP) usando 'strict-dynamic' para A+
-          // 'strict-dynamic' permite que scripts confiables carguen otros scripts
+          // 4) Content-Security-Policy (CSP)
+          // Next.js requiere 'unsafe-inline' para scripts inline de hidratación
+          // Todos los demás headers de seguridad están configurados para obtener A+
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'strict-dynamic' https://vercel.live",
+              "script-src 'self' 'unsafe-inline' https://vercel.live",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: https:",
