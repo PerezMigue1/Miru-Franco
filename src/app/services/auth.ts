@@ -330,32 +330,57 @@ export const api = {
   async getUserSecurityQuestion(email: string): Promise<{ success: boolean; pregunta?: string; message?: string; error?: string }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
-      const data = await apiClient.post<{ success: boolean; pregunta?: string; message?: string; error?: string }>(
+      const data = await apiClient.post<{ success?: boolean; pregunta?: string; question?: string; message?: string; error?: string }>(
         '/api/usuarios/pregunta-seguridad',
         { email },
         BACKEND_BASE
       );
       
-      if (data.success && data.pregunta) {
+      console.log('Respuesta del backend para pregunta de seguridad:', data);
+      
+      // Manejar diferentes formatos de respuesta del backend
+      const pregunta = data.pregunta || data.question;
+      const success = data.success !== false && !!pregunta;
+      
+      if (success && pregunta) {
         return {
           success: true,
-          pregunta: data.pregunta,
+          pregunta: pregunta,
         };
       } else {
         // Por seguridad, no revelar si el email existe o no
         // El backend debería devolver siempre un mensaje genérico
+        const errorMsg = data.error || data.message;
         return {
           success: false,
-          message: data.message || 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
-          error: data.error,
+          message: errorMsg || 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
+          error: errorMsg,
         };
       }
     } catch (error: unknown) {
       console.error('Error obteniendo pregunta de seguridad del usuario:', error);
+      
+      // Manejar errores HTTP específicos
+      const err = error as Error & { status?: number; response?: { data?: { message?: string } } };
+      if (err.status === 404) {
+        return {
+          success: false,
+          message: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
+          error: 'Usuario no encontrado o sin pregunta de seguridad',
+        };
+      } else if (err.status === 400) {
+        const errorMessage = err.response?.data?.message || err.message || 'Error al obtener la pregunta de seguridad';
+        return {
+          success: false,
+          message: errorMessage,
+          error: errorMessage,
+        };
+      }
+      
       const errorMessage = error instanceof Error ? error.message : 'Error al obtener la pregunta de seguridad';
       return {
         success: false,
-        message: errorMessage,
+        message: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
         error: errorMessage,
       };
     }

@@ -103,8 +103,11 @@ export default function ForgotPasswordSecurityQuestions({
       // ✅ Usar el nuevo método según GUIA_FRONTEND_RECUPERACION_PASSWORD.md
       const result = await api.getUserSecurityQuestion(email);
       
+      console.log('Resultado de getUserSecurityQuestion:', result);
+      
       if (result.success && result.pregunta) {
         // ✅ Usuario tiene pregunta de seguridad
+        console.log('Pregunta de seguridad obtenida:', result.pregunta);
         const selectedQuestion = [{
           id: 'q1',
           question: result.pregunta,
@@ -118,6 +121,7 @@ export default function ForgotPasswordSecurityQuestions({
         // ❌ Por seguridad, no revelar si el email existe o no
         // Solo mostrar mensaje genérico
         const errorMessage = result.message || result.error || '';
+        console.warn('No se pudo obtener la pregunta de seguridad:', errorMessage);
         
         // Verificar si es un usuario de Google (este caso sí se puede revelar porque es específico)
         if (errorMessage && (errorMessage.toLowerCase().includes('google') || errorMessage.toLowerCase().includes('cuenta de google'))) {
