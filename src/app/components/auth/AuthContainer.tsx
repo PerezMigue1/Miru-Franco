@@ -86,9 +86,9 @@ export default function AuthContainer({
   };
 
   const handlePasswordReset = () => {
-    // Después de restablecer la contraseña, ir al login
+    // Después de restablecer la contraseña, redirigir al login
     setTimeout(() => {
-      setCurrentView('login');
+      router.push('/login');
     }, 2000);
   };
 
@@ -139,7 +139,7 @@ export default function AuthContainer({
 
       {currentView === 'reset-password' && (
         <ResetPassword
-          onSwitchToLogin={() => setCurrentView('login')}
+          onSwitchToLogin={handleSwitchToLogin}
           onPasswordReset={handlePasswordReset}
           identifier={recoveryIdentifier}
         />
