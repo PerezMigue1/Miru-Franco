@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { validatePassword, sanitizeInput, sanitizeEmail } from '../../utils/security';
+import { validatePassword, sanitizeInput, sanitizeEmail, hasDangerousCharacters } from '../../utils/security';
 import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
 
@@ -117,13 +117,18 @@ export default function Register({
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
     
-    // ✅ Sanitizar entrada de usuario
+    // ✅ Validar entrada de usuario - NO permitir caracteres peligrosos
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre completo es requerido';
     } else {
-      const sanitizedName = sanitizeInput(formData.name);
-      if (sanitizedName.length < 2) {
-        newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+      // Verificar caracteres peligrosos ANTES de sanitizar
+      if (hasDangerousCharacters(formData.name)) {
+        newErrors.name = 'El nombre no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
+      } else {
+        const sanitizedName = sanitizeInput(formData.name);
+        if (sanitizedName.length < 2) {
+          newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+        }
       }
     }
     
@@ -191,8 +196,13 @@ export default function Register({
     
     if (!securityAnswer.trim()) {
       newErrors.securityAnswer = 'La respuesta a la pregunta de seguridad es requerida';
-    } else if (securityAnswer.trim().length < 2) {
-      newErrors.securityAnswer = 'La respuesta debe tener al menos 2 caracteres';
+    } else {
+      // Verificar caracteres peligrosos
+      if (hasDangerousCharacters(securityAnswer)) {
+        newErrors.securityAnswer = 'La respuesta no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
+      } else if (securityAnswer.trim().length < 2) {
+        newErrors.securityAnswer = 'La respuesta debe tener al menos 2 caracteres';
+      }
     }
     
     setErrors(newErrors);
@@ -204,20 +214,31 @@ export default function Register({
     
     if (!formData.street.trim()) {
       newErrors.street = 'La calle es requerida';
+    } else if (hasDangerousCharacters(formData.street)) {
+      newErrors.street = 'La calle no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
     }
     
     if (!formData.number.trim()) {
       newErrors.number = 'El número es requerido';
+    } else if (hasDangerousCharacters(formData.number)) {
+      newErrors.number = 'El número no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
     }
     
     if (!formData.colony.trim()) {
       newErrors.colony = 'La colonia es requerida';
+    } else if (hasDangerousCharacters(formData.colony)) {
+      newErrors.colony = 'La colonia no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
     }
     
     if (!formData.postalCode) {
       newErrors.postalCode = 'El código postal es requerido';
     } else if (!/^\d{5}$/.test(formData.postalCode)) {
       newErrors.postalCode = 'El código postal debe tener 5 dígitos';
+    }
+    
+    // Validar referencia si existe (campo opcional)
+    if (formData.reference && formData.reference.trim() && hasDangerousCharacters(formData.reference)) {
+      newErrors.reference = 'La referencia no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
     }
     
     setErrors(newErrors);
@@ -236,6 +257,8 @@ export default function Register({
       newErrors.hasAllergies = 'Debes indicar si tienes alergias a productos';
     } else if (formData.hasAllergies === true && !formData.allergies.trim()) {
       newErrors.allergies = 'Especifica tus alergias';
+    } else if (formData.hasAllergies === true && formData.allergies.trim() && hasDangerousCharacters(formData.allergies)) {
+      newErrors.allergies = 'Las alergias no pueden contener caracteres especiales peligrosos (<, >, script, etc.)';
     }
     
     // hasChemicalTreatments es obligatorio (debe ser true o false, no null)
@@ -243,6 +266,8 @@ export default function Register({
       newErrors.hasChemicalTreatments = 'Debes indicar si has tenido tratamientos químicos previos';
     } else if (formData.hasChemicalTreatments === true && !formData.chemicalTreatments.trim()) {
       newErrors.chemicalTreatments = 'Especifica los tratamientos';
+    } else if (formData.hasChemicalTreatments === true && formData.chemicalTreatments.trim() && hasDangerousCharacters(formData.chemicalTreatments)) {
+      newErrors.chemicalTreatments = 'Los tratamientos no pueden contener caracteres especiales peligrosos (<, >, script, etc.)';
     }
     
     if (!formData.acceptTerms) {
@@ -255,7 +280,32 @@ export default function Register({
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
+    
+    // ✅ Validar caracteres peligrosos en tiempo real para campos de texto
+    if (typeof value === 'string') {
+      const textFieldsToValidate = ['name', 'street', 'colony', 'number', 'reference', 'allergies', 'chemicalTreatments'];
+      if (textFieldsToValidate.includes(field)) {
+        if (value.trim() && hasDangerousCharacters(value)) {
+          // Mostrar error pero permitir que el usuario vea lo que escribió
+          setErrors(prev => ({
+            ...prev,
+            [field]: 'No se permiten caracteres especiales peligrosos (<, >, script, etc.)'
+          }));
+        } else {
+          // Limpiar error si ya no hay caracteres peligrosos
+          if (errors[field] && errors[field].includes('caracteres especiales peligrosos')) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors[field];
+              return newErrors;
+            });
+          }
+        }
+      }
+    }
+    
+    // Limpiar error del campo si ya no hay errores (para otros tipos de errores)
+    if (errors[field] && !errors[field].includes('caracteres especiales peligrosos')) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
@@ -415,12 +465,16 @@ export default function Register({
         validationErrors.hasAllergies = 'Debes indicar si tienes alergias a productos';
       } else if (formData.hasAllergies === true && !formData.allergies.trim()) {
         validationErrors.allergies = 'Especifica tus alergias';
+      } else if (formData.hasAllergies === true && formData.allergies.trim() && hasDangerousCharacters(formData.allergies)) {
+        validationErrors.allergies = 'Las alergias no pueden contener caracteres especiales peligrosos (<, >, script, etc.)';
       }
       
       if (formData.hasChemicalTreatments === null) {
         validationErrors.hasChemicalTreatments = 'Debes indicar si has tenido tratamientos químicos previos';
       } else if (formData.hasChemicalTreatments === true && !formData.chemicalTreatments.trim()) {
         validationErrors.chemicalTreatments = 'Especifica los tratamientos';
+      } else if (formData.hasChemicalTreatments === true && formData.chemicalTreatments.trim() && hasDangerousCharacters(formData.chemicalTreatments)) {
+        validationErrors.chemicalTreatments = 'Los tratamientos no pueden contener caracteres especiales peligrosos (<, >, script, etc.)';
       }
       
       if (!formData.acceptTerms) {
@@ -949,13 +1003,31 @@ export default function Register({
             id="securityAnswer"
             value={securityAnswer}
             onChange={(e) => {
-              setSecurityAnswer(e.target.value);
-              if (errors.securityAnswer) {
-                setErrors(prev => {
-                  const newErrors = { ...prev };
-                  delete newErrors.securityAnswer;
-                  return newErrors;
-                });
+              const value = e.target.value;
+              setSecurityAnswer(value);
+              
+              // ✅ Validar caracteres peligrosos en tiempo real
+              if (value.trim() && hasDangerousCharacters(value)) {
+                setErrors(prev => ({
+                  ...prev,
+                  securityAnswer: 'La respuesta no puede contener caracteres especiales peligrosos (<, >, script, etc.)'
+                }));
+              } else {
+                // Limpiar error si ya no hay caracteres peligrosos
+                if (errors.securityAnswer && errors.securityAnswer.includes('caracteres especiales peligrosos')) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.securityAnswer;
+                    return newErrors;
+                  });
+                } else if (errors.securityAnswer && value.trim().length >= 2) {
+                  // Limpiar otros errores si el campo es válido
+                  setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.securityAnswer;
+                    return newErrors;
+                  });
+                }
               }
             }}
             className={`w-full px-4 py-3 rounded-lg border ${

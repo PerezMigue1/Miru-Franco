@@ -193,6 +193,39 @@ export const validatePassword = (
 };
 
 /**
+ * Detecta si un texto contiene caracteres peligrosos para XSS
+ * 
+ * @param {string} input - Texto a validar
+ * @returns {boolean} - true si contiene caracteres peligrosos
+ */
+export const hasDangerousCharacters = (input: string): boolean => {
+  if (!input || typeof input !== 'string') {
+    return false;
+  }
+  
+  // Detectar caracteres HTML/script peligrosos
+  const dangerousPatterns = [
+    /<script/gi,           // <script
+    /<\/script>/gi,        // </script>
+    /<iframe/gi,           // <iframe
+    /<img/gi,              // <img
+    /onerror/gi,           // onerror
+    /onload/gi,            // onload
+    /onclick/gi,           // onclick
+    /onmouseover/gi,       // onmouseover
+    /javascript:/gi,       // javascript:
+    /<svg/gi,              // <svg
+    /<style/gi,            // <style
+    /<link/gi,             // <link
+    /<meta/gi,             // <meta
+    /<object/gi,           // <object
+    /<embed/gi,            // <embed
+  ];
+  
+  return dangerousPatterns.some(pattern => pattern.test(input));
+};
+
+/**
  * Sanitiza entrada de usuario para prevenir XSS
  * 
  * ⚠️ IMPORTANTE DE SEGURIDAD:

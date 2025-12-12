@@ -63,9 +63,10 @@
 
 5. Desarrollo Seguro
 
-⚠️ -Protección contra XSS
+✅ -Protección contra XSS (Frontend)
     -Ingresar <script>alert(1)</script> en campos de texto. No debe ejecutarse.
-    -NOTA: El frontend sanitiza antes de enviar, pero el BACKEND también debe sanitizar todos los campos de texto recibidos para prevenir inyecciones directas (peticiones HTTP bypass del frontend).
+    -✅ VERIFICADO: Frontend sanitiza correctamente todos los campos antes de enviar (nombre, referencia, tratamientos, etc.)
+    -⚠️ PENDIENTE: El BACKEND también debe sanitizar todos los campos de texto recibidos para prevenir inyecciones directas (peticiones HTTP bypass del frontend).
 
 ⚠️ -Protección contra CSRF
     -Revisar peticiones POST sensibles y confirmar presencia de token CSRF.
@@ -89,9 +90,10 @@
 ✅ -Pruebas de inyección SQL / NoSQL
     -Usar Burp Suite o OWASP ZAP para buscar parámetros vulnerables. Ninguno debe permitir ejecución de código.
 
-⚠️ -Pruebas de XSS
+✅ -Pruebas de XSS (Frontend)
     -Escanear con OWASP ZAP o introducir scripts en formularios. No deben ejecutarse en la interfaz.
-    -VERIFICAR: Enviar petición POST directa al backend con <script>alert(1)</script> en campos de registro. El backend debe sanitizar antes de guardar.
+    -✅ VERIFICADO: Frontend sanitiza scripts antes de enviar. Payload muestra caracteres escapados (&lt;script&gt; → &lt;script&gt;)
+    -⚠️ PENDIENTE: Verificar que el backend también sanitiza. Enviar petición POST directa al backend con <script>alert(1)</script> en campos de registro. El backend debe sanitizar antes de guardar.
 
 ✅ -Validación de tokens de sesión
     -Revisar que los JWT expiren al cerrar sesión. Verificar invalidación inmediata.
