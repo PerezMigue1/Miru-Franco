@@ -1,8 +1,9 @@
 ✅ Lista de Cotejo de Seguridad para Módulo de Usuario
 
 1. Registro de Uusuario
-✅ -Validación de datos de entrada
+⚠️ -Validación de datos de entrada
     -Intentar enviar datos malformados (ej. <script>, SQL injection). El sistema debe rechazarlos y sanitizarlos.
+    -NOTA: Frontend sanitiza antes de enviar. El BACKEND debe validar y sanitizar TODOS los campos recibidos para prevenir XSS por peticiones directas.
 
 ✅ -Verificación de correo electrónico
     -No debería poder iniciar sesión sin validar el correo.
@@ -62,8 +63,9 @@
 
 5. Desarrollo Seguro
 
-✅ -Protección contra XSS
+⚠️ -Protección contra XSS
     -Ingresar <script>alert(1)</script> en campos de texto. No debe ejecutarse.
+    -NOTA: El frontend sanitiza antes de enviar, pero el BACKEND también debe sanitizar todos los campos de texto recibidos para prevenir inyecciones directas (peticiones HTTP bypass del frontend).
 
 ⚠️ -Protección contra CSRF
     -Revisar peticiones POST sensibles y confirmar presencia de token CSRF.
@@ -87,8 +89,9 @@
 ✅ -Pruebas de inyección SQL / NoSQL
     -Usar Burp Suite o OWASP ZAP para buscar parámetros vulnerables. Ninguno debe permitir ejecución de código.
 
-✅ -Pruebas de XSS
+⚠️ -Pruebas de XSS
     -Escanear con OWASP ZAP o introducir scripts en formularios. No deben ejecutarse en la interfaz.
+    -VERIFICAR: Enviar petición POST directa al backend con <script>alert(1)</script> en campos de registro. El backend debe sanitizar antes de guardar.
 
 ✅ -Validación de tokens de sesión
     -Revisar que los JWT expiren al cerrar sesión. Verificar invalidación inmediata.
