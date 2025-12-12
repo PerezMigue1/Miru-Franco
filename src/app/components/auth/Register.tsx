@@ -444,23 +444,27 @@ export default function Register({
     try {
       const { api } = await import('../../services');
       
+      // ✅ Sanitizar todos los campos de texto antes de enviar al backend para prevenir XSS
+      // IMPORTANTE: Esta sanitización del frontend NO es suficiente por sí sola.
+      // El BACKEND también DEBE sanitizar todos los campos recibidos para prevenir XSS
+      // cuando se reciben peticiones directas (bypass del frontend, Postman, curl, etc.)
       // Preparar datos para enviar según la estructura del backend
       const registerData = {
-        nombre: formData.name,
-        email: formData.email,
-        password: formData.password,
-        telefono: formData.phone,
-        fechaNacimiento: formData.birthDate,
+        nombre: sanitizeInput(formData.name),
+        email: sanitizeEmail(formData.email), // Email solo se normaliza, no escapa HTML
+        password: formData.password, // Las contraseñas no se sanitizan (se hashean en el backend)
+        telefono: formData.phone.replace(/[^\d\s\-\+\(\)]/g, ''), // Solo números y caracteres permitidos
+        fechaNacimiento: formData.birthDate, // Las fechas no necesitan sanitización
         preguntaSeguridad: {
-          pregunta: selectedQuestionText || '', // Texto completo de la pregunta
-          respuesta: securityAnswer || '' // Respuesta del usuario
+          pregunta: sanitizeInput(selectedQuestionText || ''), // Texto completo de la pregunta
+          respuesta: sanitizeInput(securityAnswer || '') // Respuesta del usuario
         },
         direccion: {
-          calle: formData.street || '',
-          numero: formData.number || '',
-          colonia: formData.colony || '',
-          codigoPostal: formData.postalCode || '',
-          referencia: formData.reference || '',
+          calle: sanitizeInput(formData.street || ''),
+          numero: sanitizeInput(formData.number || ''),
+          colonia: sanitizeInput(formData.colony || ''),
+          codigoPostal: formData.postalCode.replace(/\D/g, ''), // Solo números
+          referencia: sanitizeInput(formData.reference || ''),
         },
         perfilCapilar: {
           tipoCabello: formData.hairType === 'lacio' ? 'liso' : 
@@ -468,17 +472,25 @@ export default function Register({
                       formData.hairType === 'rizado' ? 'rizado' : 
                       formData.hairType || 'liso', // Fallback a 'liso' si está vacío
           tieneAlergias: formData.hasAllergies === true, // Boolean: true o false (no null)
-          alergias: formData.hasAllergies === true ? formData.allergies : undefined,
+          alergias: formData.hasAllergies === true ? sanitizeInput(formData.allergies) : undefined,
           tratamientosQuimicos: formData.hasChemicalTreatments === true, // Boolean: true o false (no null)
-          tratamientos: formData.hasChemicalTreatments === true ? formData.chemicalTreatments : undefined,
+          tratamientos: formData.hasChemicalTreatments === true ? sanitizeInput(formData.chemicalTreatments) : undefined,
         },
         aceptaAvisoPrivacidad: formData.acceptTerms, // El backend espera aceptaAvisoPrivacidad
         recibePromociones: formData.receivePromotions,
       };
       
-      // Log para debug (solo en desarrollo)
+      // ✅ Log seguro: solo en desarrollo y sin datos sensibles
       if (process.env.NODE_ENV === 'development') {
-        console.log('Datos a enviar al backend:', JSON.stringify(registerData, null, 2));
+        // ❌ NO loguear datos completos (pueden contener información sensible)
+        // Solo loguear estructura sin valores sensibles
+        console.log('Datos de registro preparados:', {
+          hasNombre: !!registerData.nombre,
+          hasEmail: !!registerData.email,
+          hasPassword: !!registerData.password,
+          passwordLength: registerData.password?.length || 0,
+          // ❌ NUNCA loguear: contraseñas, emails, nombres completos, ni JSON.stringify
+        });
       }
       
       const response = await api.register(registerData);

@@ -194,6 +194,15 @@ export const validatePassword = (
 
 /**
  * Sanitiza entrada de usuario para prevenir XSS
+ * 
+ * ⚠️ IMPORTANTE DE SEGURIDAD:
+ * Esta función sanitiza en el frontend, pero el BACKEND también debe sanitizar
+ * todos los campos de texto recibidos. La sanitización del frontend protege
+ * contra usuarios maliciosos que usan la interfaz, pero NO protege contra
+ * peticiones directas al backend (Postman, curl, scripts automatizados).
+ * 
+ * El backend debe implementar sanitización similar en todas las rutas que
+ * reciben datos del usuario, especialmente en /api/usuarios/registrar
  */
 export const sanitizeInput = (input: string): string => {
   if (typeof input !== 'string') {

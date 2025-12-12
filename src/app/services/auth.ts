@@ -103,15 +103,20 @@ const saveAuthData = (data: { token?: string; user?: unknown }) => {
   if (typeof window !== 'undefined') {
     if (data.token) {
       // ✅ Usar utilidad de seguridad para guardar token
-      console.log('[Auth] Guardando token...');
+      // ✅ Solo loguear en desarrollo y sin información sensible
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Guardando token...');
+      }
       saveToken(data.token);
-      console.log('[Auth] Token guardado:', localStorage.getItem('token') ? 'Sí' : 'No');
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        console.log('[Auth] Datos de usuario guardados');
+        // ❌ NO loguear datos de usuario (puede contener información sensible)
       }
+      // ❌ NUNCA loguear si el token se guardó o su valor
     } else {
-      console.warn('[Auth] No se recibió token en la respuesta');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Auth] No se recibió token en la respuesta');
+      }
     }
   }
 };
@@ -122,17 +127,31 @@ export const api = {
     try {
       // Limpiar y normalizar email: trim, lowercase, y asegurar que no tenga caracteres especiales problemáticos
       const emailLimpio = email.trim().toLowerCase().replace(/[^\w@.-]/g, '');
-      console.log('[Auth] Intentando login para:', emailLimpio);
-      console.log('[Auth] Email original:', email);
-      console.log('[Auth] Email limpio:', emailLimpio);
-      console.log('[Auth] Payload enviado:', { 
-        email: emailLimpio, 
-        passwordLength: password.length,
-        passwordPrefix: password.substring(0, 3) + '...'
-      });
+      
+      // ✅ Logs seguros: solo en desarrollo y sin datos sensibles
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Intentando login');
+        // ✅ Log seguro: solo longitud, nunca el contenido de la contraseña
+        console.log('[Auth] Payload enviado:', { 
+          emailLength: emailLimpio.length,
+          passwordLength: password.length,
+          // ❌ NUNCA loguear: email, contraseña, tokens, ni siquiera parciales
+        });
+      }
+      
       const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email: emailLimpio, password }, BACKEND_BASE);
-      console.log('[Auth] Respuesta completa del backend:', JSON.stringify(data, null, 2));
-      console.log('[Auth] Respuesta del backend:', { success: data.success, hasToken: !!data.token, hasUser: !!data.user, error: data.error });
+      
+      // ✅ NO loguear respuesta completa (puede contener tokens)
+      // Solo loguear información no sensible en desarrollo
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Respuesta del backend:', { 
+          success: data.success, 
+          hasToken: !!data.token, 
+          hasUser: !!data.user, 
+          error: data.error 
+          // ❌ NUNCA loguear: token, user completo, ni JSON.stringify de respuesta
+        });
+      }
       
       // Verificar si la respuesta tiene el formato correcto
       if (!data) {
@@ -148,9 +167,13 @@ export const api = {
       
       saveAuthData(data);
       
-      // Verificar que el token se guardó
-      const tokenVerificado = localStorage.getItem('token') || localStorage.getItem('authToken');
-      console.log('[Auth] Token verificado después de guardar:', tokenVerificado ? 'Sí' : 'No');
+      // ✅ NO verificar ni loguear tokens (información sensible)
+      // Solo verificar en desarrollo y sin mostrar el token
+      if (process.env.NODE_ENV === 'development') {
+        const tokenVerificado = localStorage.getItem('token') || localStorage.getItem('authToken');
+        console.log('[Auth] Token guardado:', tokenVerificado ? 'Sí' : 'No');
+        // ❌ NUNCA loguear el token mismo
+      }
       
       return data;
     } catch (error: unknown) {
@@ -275,13 +298,16 @@ export const api = {
     // Limpiar y normalizar email para evitar falsos positivos de SQL injection
     const emailLimpio = email ? email.trim().toLowerCase().replace(/[^\w@.-]/g, '') : null;
     const payload = { token, email: emailLimpio, nuevaPassword };
-    console.log('[resetPassword] Enviando:', { 
-      token: token ? `${token.substring(0, 10)}...` : null, 
-      email: emailLimpio,
-      emailOriginal: email,
-      nuevaPassword: nuevaPassword ? `${nuevaPassword.substring(0, 3)}...` : null,
-      nuevaPasswordLength: nuevaPassword?.length 
-    });
+    
+    // ✅ Log seguro: solo en desarrollo y sin datos sensibles
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[resetPassword] Enviando cambio de contraseña:', { 
+        hasToken: !!token, 
+        emailLength: emailLimpio?.length || 0,
+        nuevaPasswordLength: nuevaPassword?.length 
+        // ❌ NUNCA loguear: token (ni parcial), email, contraseña (ni parcial)
+      });
+    }
     return apiClient.post<ResetPasswordResponse>(
       '/api/usuarios/cambiar-password',
       payload,
