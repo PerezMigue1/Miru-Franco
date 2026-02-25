@@ -71,11 +71,13 @@ export function TableRow({ children, onClick, className = '' }: TableRowProps) {
 interface TableCellProps {
   children: ReactNode;
   className?: string;
+  colSpan?: number;
 }
 
-export function TableCell({ children, className = '' }: TableCellProps) {
+export function TableCell({ children, className = '', colSpan }: TableCellProps) {
   return (
     <td
+      colSpan={colSpan}
       className={`px-6 py-4 whitespace-nowrap text-sm ${className}`}
       style={{ color: colors.menuTextoPrincipal }}
     >

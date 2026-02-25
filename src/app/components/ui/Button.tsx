@@ -4,7 +4,7 @@ import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { colors } from '../../utils/colors';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'outline';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'outline' | 'chip';
   size?: 'sm' | 'md' | 'lg';
   children: ReactNode;
   fullWidth?: boolean;
@@ -22,6 +22,7 @@ export default function Button({
   
   const variants = {
     primary: {
+      // Volvemos al estilo global original de primario (vino)
       bg: colors.botonesPrincipales,
       text: colors.textoFondoOscuro,
       hover: colors.hover,
@@ -29,28 +30,35 @@ export default function Button({
     secondary: {
       bg: colors.tarjetasPaneles,
       text: colors.textoFondoOscuro,
-      hover: colors.fondosSuaves,
+      hover: colors.hover,
     },
     danger: {
       bg: colors.danger,
       text: colors.textoFondoOscuro,
-      hover: '#7A0F0F',
+      hover: colors.hover,
     },
     success: {
       bg: colors.success,
       text: colors.textoFondoOscuro,
-      hover: '#7E8F65',
+      hover: colors.hover,
     },
     warning: {
       bg: colors.warning,
       text: colors.textoFondoOscuro,
-      hover: '#E5A015',
+      hover: colors.hover,
     },
     outline: {
       bg: 'transparent',
       text: colors.menuTextoPrincipal,
+      // Rosa sólido de la paleta para hover (chips como "Maquillaje")
       hover: colors.hover,
       border: colors.menuTextoPrincipal,
+    },
+    // Variante específica para chips de categorías (fondo rosa sólido siempre)
+    chip: {
+      bg: colors.hover,
+      text: colors.textoFondoOscuro,
+      hover: colors.hover,
     },
   };
 

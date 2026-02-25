@@ -1,7 +1,7 @@
 'use client';
 
 import { TextareaHTMLAttributes } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
+import { colors } from '../../utils/colors';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -38,15 +38,15 @@ export default function Textarea({
         `}
         style={{
           backgroundColor: colors.textoFondoOscuro,
-          borderColor: error ? colors.danger : colorsWithOpacity.bordeVisible,
+          borderColor: error ? colors.danger : colors.encabezadosAlterno,
           color: colors.menuTextoPrincipal,
         }}
         onFocus={(e) => {
           e.currentTarget.style.borderColor = colors.hover;
-          e.currentTarget.style.boxShadow = `0 0 0 3px ${colorsWithOpacity.hover20}`;
+          e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.hover}`;
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = error ? colors.danger : colorsWithOpacity.bordeVisible;
+          e.currentTarget.style.borderColor = error ? colors.danger : colors.encabezadosAlterno;
           e.currentTarget.style.boxShadow = 'none';
         }}
         {...props}

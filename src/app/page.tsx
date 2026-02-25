@@ -7,8 +7,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirigir a login por defecto
-    router.push('/login');
+    // Primera entrada al sitio: ir al home
+    router.push('/home');
   }, [router]);
 
   return (

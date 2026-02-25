@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { colors, colorsWithOpacity } from '../utils/colors';
+import { colors } from '../utils/colors';
 
 interface MenuHamburguesaProps {
   onClose: () => void;
@@ -13,8 +13,8 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
   
   const menuItems = [
     { name: 'Inicio', href: '/home', icon: '🏠' },
-    { name: 'Productos', href: '/productos', icon: '💇‍♀️' },
-    { name: 'Servicios', href: '/servicios', icon: '✨' },
+    { name: 'Tienda en línea', href: '/cliente/tienda-online', icon: '🛒' },
+    { name: 'Servicios', href: '/cliente/servicios-citas', icon: '✨' },
     { name: 'Tratamientos', href: '/tratamientos', icon: '💆‍♀️' },
     { name: 'Promociones', href: '/promociones', icon: '🎁' },
     { name: 'Sobre Nosotros', href: '/sobre-nosotros', icon: '👥' },
@@ -50,7 +50,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
                     isActive ? '' : 'hover:opacity-80'
                   }`}
                   style={{ 
-                    backgroundColor: isActive ? colorsWithOpacity.hover15 : 'transparent',
+                    backgroundColor: isActive ? colors.hover : 'transparent',
                   }}
                 >
                   <span className="text-xl">{item.icon}</span>
@@ -79,7 +79,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
                     isActive ? '' : 'hover:opacity-80'
                   }`}
                   style={{ 
-                    backgroundColor: isActive ? colorsWithOpacity.hover15 : 'transparent',
+                    backgroundColor: isActive ? colors.hover : 'transparent',
                   }}
                 >
                   <span className="font-medium">{marca.name}</span>

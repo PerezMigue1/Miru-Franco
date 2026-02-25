@@ -6,6 +6,8 @@ import { getToken, saveToken, clearAuthData } from '../utils/security';
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
   endpoint?: string;
+  /** Si es true, en 403 no se redirige a /403; se lanza el error para que la página lo muestre */
+  skip403Redirect?: boolean;
 }
 
 class ApiClient {
@@ -13,7 +15,7 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    const { skipAuth = false, endpoint: customEndpoint, ...fetchOptions } = options;
+    const { skipAuth = false, endpoint: customEndpoint, skip403Redirect = false, ...fetchOptions } = options;
     
     // Calcular API_BASE en runtime para evitar problemas con builds cacheados
     // Usar getApiBaseUrl() que calcula en runtime en lugar de la constante
@@ -93,7 +95,12 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(url, {
+      // En el navegador, usar URL relativa cuando sea mismo origen para que el proxy de Next.js aplique
+      let fetchUrl = url;
+      if (typeof window !== 'undefined' && url.startsWith(window.location.origin)) {
+        fetchUrl = url.slice(window.location.origin.length) || '/';
+      }
+      const response = await fetch(fetchUrl, {
         ...fetchOptions,
         headers,
         credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
@@ -103,25 +110,17 @@ class ApiClient {
       if (!response.ok) {
         // ✅ Manejar error 401 (No autorizado) según guía
         if (response.status === 401) {
-          const errorText = await response.text();
-          let errorData;
-          
+          let errorText = await response.text();
+          let errorData: { message?: string; error?: string; email?: string };
           try {
             errorData = JSON.parse(errorText);
           } catch {
             errorData = { message: errorText };
           }
-          
           const message = errorData.message || errorData.error || '';
-          const lowerMessage = message.toLowerCase();
+          let lowerMessage = message.toLowerCase();
 
-          // Bandera para saber si el logout fue iniciado manualmente desde el frontend
-          const isManualLogout = typeof window !== 'undefined' &&
-            localStorage.getItem('manualLogout') === 'true';
-          
-          // ✅ NO redirigir automáticamente si estamos en la página de login o registro
-          // Solo redirigir si realmente hay un problema de sesión expirada o token inválido
-          // NO redirigir cuando el usuario está intentando hacer login con credenciales incorrectas
+          // ✅ NO redirigir si estamos en la página de login o registro
           const isLoginPage = typeof window !== 'undefined' && (
             window.location.pathname === '/login' ||
             window.location.pathname === '/register' ||
@@ -129,7 +128,45 @@ class ApiClient {
             window.location.pathname === '/reset-password' ||
             window.location.pathname.includes('/auth')
           );
-          
+
+          // ✅ Intentar renovar token y reintentar la petición UNA vez antes de echar al usuario (evita "acceso denegado" al admin tras un cambio)
+          if (typeof window !== 'undefined' && !isLoginPage && token) {
+            try {
+              const BACKEND_BASE = getBackendBaseUrl();
+              const refreshRes = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                credentials: 'include',
+              });
+              if (refreshRes.ok) {
+                const refreshData = await refreshRes.json() as { token?: string };
+                if (refreshData.token) {
+                  saveToken(refreshData.token);
+                  const newHeaders = { ...headers, 'Authorization': `Bearer ${refreshData.token}` };
+                  const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers: newHeaders, credentials: 'include' });
+                  if (retryRes.ok) {
+                    return (await retryRes.json()) as T;
+                  }
+                  if (retryRes.status === 401) {
+                    errorText = await retryRes.text();
+                    try {
+                      errorData = JSON.parse(errorText);
+                    } catch {
+                      errorData = { message: errorText };
+                    }
+                    lowerMessage = (errorData.message || errorData.error || '').toLowerCase();
+                  }
+                }
+              }
+            } catch {
+              // Si falla el refresh, seguir con el manejo normal de 401
+            }
+          }
+
+          // Bandera para saber si el logout fue iniciado manualmente desde el frontend
+          const isManualLogout = typeof window !== 'undefined' &&
+            localStorage.getItem('manualLogout') === 'true';
+
           if (typeof window !== 'undefined' && !isLoginPage) {
             // ✅ Manejar error 401 según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
             // Verificar si es por inactividad
@@ -149,27 +186,25 @@ class ApiClient {
                 alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
               }
               
-              // Redirigir al login según la guía
-              window.location.href = '/login';
-            } else if (lowerMessage.includes('revocado') || 
-                       lowerMessage.includes('token revocado') ||
-                       lowerMessage.includes('nueva sesión') ||
-                       lowerMessage.includes('otro dispositivo') ||
-                       lowerMessage.includes('cerrada desde otro dispositivo')) {
-              // Token revocado por nueva sesión en otro dispositivo
-              // Según requerimiento: cuando se inicia sesión en segundo dispositivo,
-              // se cierra automáticamente la sesión del primer dispositivo
+              // replace para que "atrás" lleve a la página anterior, no a la protegida
+              window.location.replace('/login');
+            } else if (
+              lowerMessage.includes('otro dispositivo') ||
+              lowerMessage.includes('cerrada desde otro dispositivo') ||
+              lowerMessage.includes('nueva sesión en otro dispositivo')
+            ) {
+              // Solo cuando el backend indica EXPLÍCITAMENTE sesión en otro dispositivo (evitar confundir con token expirado)
               clearAuthData();
               alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada. Por favor inicia sesión nuevamente si deseas continuar.');
-              window.location.href = '/login';
+              window.location.replace('/login');
             } else if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmado')) {
               // Usuario no ha verificado correo
               const email = errorData.email || '';
-              window.location.href = `/verificar-email?email=${encodeURIComponent(email)}`;
+              window.location.replace(`/verificar-email?email=${encodeURIComponent(email)}`);
             } else {
-              // Error genérico de autenticación - limpiar y redirigir al login
+              // Error genérico de autenticación - limpiar y redirigir al login (replace para no apilar historial)
               clearAuthData();
-              window.location.href = '/login';
+              window.location.replace('/login');
             }
           } else if (typeof window !== 'undefined' && isLoginPage) {
             // Si estamos en la página de login, solo limpiar el token si existe
@@ -187,27 +222,76 @@ class ApiClient {
         if (response.status === 403) {
           const errorText = await response.text();
           let errorData;
-          
           try {
             errorData = JSON.parse(errorText);
           } catch {
             errorData = { message: errorText };
           }
-          
           const message = errorData.message || errorData.error || 'Acceso denegado';
           const lowerMessage = message.toLowerCase();
-          
-          if (lowerMessage.includes('bloqueada')) {
-            // Cuenta bloqueada por fuerza bruta
-            throw new Error(message);
-          } else if (lowerMessage.includes('permisos')) {
-            // Sin permisos (RBAC)
-            throw new Error('No tienes permisos para realizar esta acción');
+          const finalMessage = lowerMessage.includes('permisos') ? 'No tienes permisos para realizar esta acción' : message;
+          // No redirigir si la petición pidió mostrar el error en la misma página (ej. cambio de rol/estado en admin)
+          if (skip403Redirect) {
+            throw new Error(finalMessage);
           }
-          
-          throw new Error(message);
+          if (typeof window !== 'undefined') {
+            window.location.replace('/403');
+            throw new Error(finalMessage);
+          }
+          throw new Error(finalMessage);
         }
         
+        // ✅ Manejar error 500 (Error interno del servidor)
+        if (response.status === 500) {
+          const isAuthPage = typeof window !== 'undefined' && (
+            window.location.pathname === '/login' ||
+            window.location.pathname === '/register' ||
+            window.location.pathname.includes('/auth')
+          );
+          // En login/registro no redirigir a /500: mostrar el error en el formulario
+          if (typeof window !== 'undefined' && !isAuthPage) {
+            window.location.replace('/500');
+          }
+          throw new Error('Error del servidor. Comprueba que el backend esté en marcha (ej. http://localhost:3001) e intenta de nuevo.');
+        }
+        
+        // ✅ Manejar error 400 (Bad Request) - el cliente lanza error; las pantallas pueden redirigir a /400 si lo desean
+        if (response.status === 400) {
+          const errorText = await response.text();
+          let errorData: { message?: string | string[]; error?: string; errors?: Record<string, string> };
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          let message: string = typeof errorData.message === 'string'
+            ? errorData.message
+            : Array.isArray(errorData.message)
+              ? errorData.message.join(' | ')
+              : (errorData.error || 'Solicitud incorrecta. Revisa los datos enviados.');
+          if (message === 'Bad Request' && errorData.errors && Object.keys(errorData.errors).length > 0) {
+            message = Object.entries(errorData.errors).map(([k, v]) => `${k}: ${v}`).join(' | ');
+          }
+          const err = new Error(message) as Error & { status?: number; data?: unknown; validationErrors?: Record<string, string> };
+          err.status = 400;
+          err.data = errorData;
+          err.validationErrors = errorData.errors || (typeof errorData.message === 'object' && Array.isArray(errorData.message) ? { general: errorData.message.join('; ') } : {});
+          throw err;
+        }
+        
+        // ✅ Manejar error 409 (Conflict - ej. email ya registrado)
+        if (response.status === 409) {
+          const errorText = await response.text();
+          let errorData: { message?: string; error?: string };
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          const message = errorData.message || errorData.error || 'El correo ya está registrado. Usa otro email.';
+          throw new Error(message);
+        }
+
         // ✅ Manejar error 429 (Rate Limiting)
         if (response.status === 429) {
           const errorText = await response.text();
@@ -305,6 +389,16 @@ class ApiClient {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
       endpoint: url,
+    });
+  }
+
+  async patch<T>(endpoint: string, body?: unknown, customBase?: string, requestOptions?: { skip403Redirect?: boolean }): Promise<T> {
+    const url = customBase ? `${customBase}${endpoint}` : undefined;
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+      endpoint: url,
+      ...requestOptions,
     });
   }
 

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { colors, colorsWithOpacity } from '../utils/colors';
+import { colors } from '../utils/colors';
 
 export default function MenuHorizontal() {
   const pathname = usePathname();
@@ -61,11 +61,11 @@ export default function MenuHorizontal() {
                     : 'hover:opacity-90'
                 }`}
                 style={{ 
-                  backgroundColor: isActive ? colorsWithOpacity.hover15 : 'transparent',
+                  backgroundColor: isActive ? colors.hover : 'transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = colorsWithOpacity.hover20;
+                    e.currentTarget.style.backgroundColor = colors.hover;
                   }
                 }}
                 onMouseLeave={(e) => {

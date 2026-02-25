@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // En desarrollo: proxy /api/* al backend para evitar CORS (peticiones van a mismo origen)
+  async rewrites() {
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        { source: '/api/:path*', destination: 'http://localhost:3001/api/:path*' },
+      ];
+    }
+    return [];
+  },
   images: {
     remotePatterns: [
       {
@@ -12,6 +21,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
         pathname: '/**',
       },
     ],
@@ -39,7 +53,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.vercel.app https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://backend-miru-franco.vercel.app https://*.vercel.app https://*.onrender.com; frame-src 'self' https://vercel.live; frame-ancestors 'none';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.vercel.app https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' http://localhost:3000 http://localhost:3001 https://backend-miru-franco.vercel.app https://*.vercel.app https://*.onrender.com; frame-src 'self' https://vercel.live; frame-ancestors 'none';",
           },
           {
             key: 'X-XSS-Protection',

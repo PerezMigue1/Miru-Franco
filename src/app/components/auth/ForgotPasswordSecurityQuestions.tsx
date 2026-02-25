@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { colors } from '../../utils/colors';
 
 interface ForgotPasswordSecurityQuestionsProps {
   onSwitchToLogin?: () => void;
@@ -253,7 +254,7 @@ export default function ForgotPasswordSecurityQuestions({
               disabled={isLoading}
               className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
             >
               {isLoading ? 'Verificando...' : 'Verificar Respuestas'}
@@ -355,7 +356,7 @@ export default function ForgotPasswordSecurityQuestions({
             disabled={isLoading || countdown !== null}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
           >
             {isLoading 

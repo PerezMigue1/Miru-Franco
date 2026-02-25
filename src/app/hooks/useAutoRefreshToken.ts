@@ -13,17 +13,24 @@ export function useAutoRefreshToken() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    
     // Función para verificar el estado del token
     const checkTokenStatus = async () => {
+      // Leer el token actual en cada ejecución: si el usuario cerró sesión, no hay token y no hacemos nada
+      const currentToken = getToken();
+      if (!currentToken) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
+
       try {
         const BACKEND_BASE = getBackendBaseUrl();
         const response = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json',
           },
           credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
@@ -37,39 +44,58 @@ export function useAutoRefreshToken() {
             localStorage.setItem('authToken', data.token);
           }
         } else {
-          // Token inválido - verificar si es por nueva sesión en otro dispositivo
+          // Solo cerrar sesión si el backend indica EXPLÍCITAMENTE que el token es inválido/expirado/revocado.
+          // No cerrar en 500, 404, ni en 401 genérico (ej. "token aún válido, no renovar") para evitar
+          // echar al admin cuando el refresh falla por error temporal o lógica del backend.
           const errorText = await response.text();
-          let errorData;
-          
+          let errorData: { message?: string; error?: string } = {};
           try {
             errorData = JSON.parse(errorText);
           } catch {
             errorData = { message: errorText };
           }
-          
           const message = errorData.message || errorData.error || '';
           const lowerMessage = message.toLowerCase();
-          
-          clearAuthData();
-          
-          // Solo redirigir si estamos en una página protegida
-          const isLoginPage = window.location.pathname === '/' || 
-                             window.location.pathname.includes('/auth') ||
-                             window.location.pathname.includes('/login') ||
-                             window.location.pathname.includes('/register');
-          
-          if (!isLoginPage) {
-            // Detectar si es por nueva sesión en otro dispositivo (solo mensajes claros)
-            if (lowerMessage.includes('revocado') || 
-                lowerMessage.includes('nueva sesión') ||
-                lowerMessage.includes('otro dispositivo') ||
-                lowerMessage.includes('cerrada desde otro dispositivo')) {
-              alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada automáticamente.');
-            } else if (lowerMessage.includes('inactividad') || lowerMessage.includes('expirada')) {
-              // Sesión expirada por inactividad
-              alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+
+          const tokenRealmenteInvalido =
+            response.status === 401 &&
+            (lowerMessage.includes('expirado') ||
+              lowerMessage.includes('inválido') ||
+              lowerMessage.includes('invalid') ||
+              lowerMessage.includes('revocado') ||
+              lowerMessage.includes('otro dispositivo') ||
+              lowerMessage.includes('cerrada desde otro dispositivo') ||
+              lowerMessage.includes('nueva sesión en otro dispositivo') ||
+              lowerMessage.includes('inactividad') ||
+              lowerMessage.includes('sesión expirada'));
+
+          if (!tokenRealmenteInvalido) {
+            // Error temporal o mensaje que no indica sesión inválida: no cerrar sesión
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('[useAutoRefreshToken] Refresh no OK, pero no se considera sesión inválida:', response.status, lowerMessage.slice(0, 80));
             }
-            
+            return;
+          }
+
+          clearAuthData();
+          const isLoginPage =
+            window.location.pathname === '/' ||
+            window.location.pathname.includes('/auth') ||
+            window.location.pathname.includes('/login') ||
+            window.location.pathname.includes('/register');
+
+          if (!isLoginPage) {
+            const esOtroDispositivo =
+              lowerMessage.includes('otro dispositivo') ||
+              lowerMessage.includes('cerrada desde otro dispositivo') ||
+              lowerMessage.includes('nueva sesión en otro dispositivo');
+            if (esOtroDispositivo) {
+              alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada automáticamente.');
+            } else if (lowerMessage.includes('inactividad') || lowerMessage.includes('sesión expirada')) {
+              alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+            } else {
+              alert('Tu sesión ha expirado o ya no es válida. Por favor inicia sesión nuevamente.');
+            }
             window.location.href = '/login';
           }
         }
@@ -78,14 +104,15 @@ export function useAutoRefreshToken() {
         // No hacer nada si falla, el interceptor del cliente API manejará el error
       }
     };
-    
+
+    // Solo activar el intervalo si hay token (evita usar un token antiguo tras cerrar sesión)
+    const token = getToken();
+    if (!token) return;
+
     // Verificar cada 30 segundos para detectar rápidamente nuevas sesiones
-    // Aumenta la frecuencia para que el cierre de sesión por otro dispositivo se note casi en tiempo real
     intervalRef.current = setInterval(checkTokenStatus, 30 * 1000);
-    
-    // Verificar inmediatamente al montar el componente
     checkTokenStatus();
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

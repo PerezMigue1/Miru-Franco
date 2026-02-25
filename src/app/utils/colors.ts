@@ -1,8 +1,11 @@
 /**
  * Paleta de Colores - Miru Franco Web
- * 
+ *
  * Centraliza todos los colores del proyecto para fácil mantenimiento.
  * Si necesitas cambiar un color, solo actualiza este archivo.
+ *
+ * Hover: El color de hover para elementos interactivos (botones, enlaces, áreas clicables)
+ * debe ser ÚNICAMENTE colors.hover (#A64B63, rosa). No uses otros colores para hover.
  */
 
 export const colors = {
@@ -24,6 +27,7 @@ export const colors = {
   success: '#6E7D57',
   
   // Elementos interactivos
+  /** Color de hover estándar para todos los elementos interactivos (botones, enlaces, cards, etc.). Es el único que debe usarse. */
   hover: '#A64B63',
   botonesPrincipales: '#710014',
   enlacesTextosInteractivos: '#4A7BA7',
@@ -53,8 +57,6 @@ export const socialColors = {
  * Helper para obtener colores con opacidad
  */
 export const colorsWithOpacity = {
-  hover20: 'rgba(166, 75, 99, 0.2)',
-  hover15: 'rgba(166, 75, 99, 0.15)',
   textoFondoOscuro70: 'rgba(242, 241, 237, 0.7)',
   textoFondoOscuro80: 'rgba(242, 241, 237, 0.8)',
   textoFondoOscuro10: 'rgba(242, 241, 237, 0.1)',

@@ -5,9 +5,23 @@ import { saveToken } from '../utils/security';
 export interface LoginResponse {
   success: boolean;
   user?: {
-    _id: string;
+    _id?: string;
+    id?: string;
+    nombre?: string;
+    name?: string;
     email: string;
-    name: string;
+    rol?: string;
+    role?: string;
+  };
+  /** Backend puede enviar el usuario como "usuario" en lugar de "user" */
+  usuario?: {
+    _id?: string;
+    id?: string;
+    nombre?: string;
+    name?: string;
+    email: string;
+    rol?: string;
+    role?: string;
   };
   token?: string;
   error?: string;
@@ -99,7 +113,7 @@ export interface ResendOTPResponse {
 }
 
 // Helper para guardar datos de autenticacion (usando utilidades de seguridad)
-const saveAuthData = (data: { token?: string; user?: unknown }) => {
+const saveAuthData = (data: { token?: string; user?: unknown; usuario?: unknown }) => {
   if (typeof window !== 'undefined') {
     if (data.token) {
       // ✅ Usar utilidad de seguridad para guardar token
@@ -108,11 +122,10 @@ const saveAuthData = (data: { token?: string; user?: unknown }) => {
         console.log('[Auth] Guardando token...');
       }
       saveToken(data.token);
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-        // ❌ NO loguear datos de usuario (puede contener información sensible)
+      const userData = data.user ?? data.usuario;
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
       }
-      // ❌ NUNCA loguear si el token se guardó o su valor
     } else {
       if (process.env.NODE_ENV === 'development') {
         console.warn('[Auth] No se recibió token en la respuesta');
@@ -147,7 +160,7 @@ export const api = {
         console.log('[Auth] Respuesta del backend:', { 
           success: data.success, 
           hasToken: !!data.token, 
-          hasUser: !!data.user, 
+          hasUser: !!(data.user ?? data.usuario), 
           error: data.error 
           // ❌ NUNCA loguear: token, user completo, ni JSON.stringify de respuesta
         });

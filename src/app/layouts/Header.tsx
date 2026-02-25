@@ -1,19 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
 import { colors, colorsWithOpacity } from '../utils/colors';
-import { clearAuthData } from '../utils/security';
+import { clearAuthData, getToken } from '../utils/security';
+import { useCart } from '../context/CartContext';
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
+  const { totalItems } = useCart();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string>('Usuario');
   const notificationsCount = 0; // Cambia este valor cuando tengas notificaciones
+
+  // Actualizar estado de sesión al montar y al cambiar de ruta (p. ej. tras login)
+  useEffect(() => {
+    const token = getToken();
+    setIsLoggedIn(!!(token && token.trim()));
+    if (typeof window !== 'undefined' && token) {
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) {
+          const user = JSON.parse(raw) as { nombre?: string; name?: string };
+          const name = user?.nombre || user?.name || 'Usuario';
+          setUserName(name);
+        }
+      } catch {
+        setUserName('Usuario');
+      }
+    }
+  }, [pathname]);
 
   // ✅ Logout individual (solo este dispositivo)
   const handleLogout = async () => {
@@ -115,8 +139,37 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Derecha: Notificaciones + Usuario */}
+            {/* Derecha: Tienda + Carrito + Notificaciones + Usuario */}
             <div className="flex items-center gap-4">
+              {/* Tienda en línea */}
+              <Link
+                href="/cliente/tienda-online"
+                className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
+                style={{ backgroundColor: colors.hover }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Tienda
+              </Link>
+              {/* Carrito */}
+              <Link
+                href="/cliente/tienda-online/carrito"
+                className="relative p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                aria-label="Carrito"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {totalItems > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
+                  >
+                    {totalItems > 99 ? '99+' : totalItems}
+                  </span>
+                )}
+              </Link>
               {/* Notificaciones */}
               <div className="relative">
                 <button
@@ -136,51 +189,63 @@ export default function Header() {
                 </button>
               </div>
 
-              {/* Usuario */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="text-base font-medium">Usuario</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {isUserMenuOpen && (
-                  <div 
-                    className="absolute right-0 mt-2 rounded-lg shadow-lg border min-w-[200px] bg-header-footer"
-                    style={{ borderColor: colorsWithOpacity.bordeVisible }}
+              {/* Usuario: Iniciar sesión si no está logueado, menú con perfil y cerrar sesión si sí */}
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                   >
-                    <div className="py-2">
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          router.push('/perfil');
-                        }}
-                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
-                      >
-                        Mi Perfil
-                      </button>
-                      <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
-                        Configuración
-                      </a>
-                      <hr className="my-2" style={{ borderColor: colorsWithOpacity.bordeVisible }} />
-                      <button
-                        onClick={handleLogout}
-                        disabled={loading}
-                        className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro disabled:opacity-50"
-                      >
-                        {loading ? 'Cerrando...' : 'Cerrar Sesión'}
-                      </button>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-base font-medium max-w-[120px] truncate">{userName}</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isUserMenuOpen && (
+                    <div 
+                      className="absolute right-0 mt-2 rounded-lg shadow-lg border min-w-[200px] bg-header-footer"
+                      style={{ borderColor: colorsWithOpacity.bordeVisible }}
+                    >
+                      <div className="py-2">
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            router.push('/perfil');
+                          }}
+                          className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                        >
+                          Mi Perfil
+                        </button>
+                        <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
+                          Configuración
+                        </a>
+                        <hr className="my-2" style={{ borderColor: colorsWithOpacity.bordeVisible }} />
+                        <button
+                          onClick={handleLogout}
+                          disabled={loading}
+                          className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro disabled:opacity-50"
+                        >
+                          {loading ? 'Cerrando...' : 'Cerrar Sesión'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
+                  style={{ backgroundColor: colors.hover }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Iniciar sesión
+                </Link>
+              )}
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { validatePassword, removeToken } from '../../utils/security';
+import { colors } from '../../utils/colors';
 import Notification from '../ui/Notification';
 
 interface ResetPasswordProps {
@@ -288,7 +289,7 @@ export default function ResetPassword({
                     onClick={onSwitchToLogin}
                     className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
                     style={{ backgroundColor: '#710014' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
                   >
                     Ir a Iniciar Sesión
@@ -318,7 +319,7 @@ export default function ResetPassword({
                 onClick={onSwitchToLogin}
                 className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
                 style={{ backgroundColor: '#710014' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
               >
                 Ir a Iniciar Sesión
@@ -526,7 +527,7 @@ export default function ResetPassword({
             disabled={isLoading}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
           >
             {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}

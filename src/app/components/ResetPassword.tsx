@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { colors } from '../utils/colors';
 
 interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
@@ -100,7 +101,7 @@ export default function ResetPassword({
                 onClick={onSwitchToLogin}
                 className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
                 style={{ backgroundColor: '#710014' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
               >
                 Ir a Iniciar Sesión

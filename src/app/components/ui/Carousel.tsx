@@ -69,7 +69,7 @@ export default function Carousel() {
                 <div 
                   className="max-w-4xl w-full rounded-xl p-8 md:p-12 text-center transform transition-all duration-1000"
                   style={{ backgroundColor: '#710014' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#A64B63'}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
                 >
                   <h2 className="text-elegant-display mb-4 uppercase" style={{ color: colors.fondosSuaves }}>
