@@ -169,7 +169,7 @@ function normalizarServicio(raw: ApiServicioRaw): Servicio {
         rol,
         avatarUrl,
       };
-    }).filter((e): e is ServicioEspecialistaUI => !!e) ?? undefined;
+    }).filter((e) => e != null) as ServicioEspecialistaUI[] | undefined;
 
   // Relaciones: productos asociados
   const productosRaw =
@@ -202,7 +202,7 @@ function normalizarServicio(raw: ApiServicioRaw): Servicio {
         productoMarca,
         productoCategoria,
       };
-    }).filter((p): p is ServicioProductoAsociadoUI => !!p) ?? undefined;
+    }).filter((p) => p != null) as ServicioProductoAsociadoUI[] | undefined;
 
   return {
     id,

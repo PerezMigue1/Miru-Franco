@@ -1,161 +1,317 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { colors } from '../../../../utils/colors';
+import Modal from '../../../../components/ui/Modal';
+import { getUsuarioById, updateUsuario, patchUsuarioEstado, type Usuario } from '../../../../services/usuarios';
+
+function formatearFecha(iso?: string | null): string {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch {
+    return '—';
+  }
+}
 
 export default function ClienteDetallePage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
-  
-  const cliente = {
-    id: parseInt(id),
-    nombre: 'María González',
-    telefono: '555-1234-5678',
-    email: 'maria@ejemplo.com',
-    direccion: 'Col. Juárez, Calle Principal #123',
-    estado: 'frecuente',
-    confiabilidad: 'alta',
-    servicios: 8,
-    ultimaVisita: '2024-01-15',
+
+  const [cliente, setCliente] = useState<Usuario | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [formNombre, setFormNombre] = useState('');
+  const [formTelefono, setFormTelefono] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    getUsuarioById(id)
+      .then((u) => {
+        if (!cancelled) {
+          setCliente(u);
+          setFormNombre(u.nombre);
+          setFormTelefono(u.telefono ?? '');
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar cliente');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const handleEliminar = async () => {
+    if (!cliente) return;
+    setSaving(true);
+    try {
+      await patchUsuarioEstado(cliente.id, false);
+      router.push('/admin/clientes-crm');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar');
+    } finally {
+      setSaving(false);
+      setShowDeleteModal(false);
+    }
   };
 
-  const servicios = [
-    { id: 1, servicio: 'Corte', fecha: '2024-01-15', especialista: 'Mildred', precio: '$350', estado: 'completado' },
-    { id: 2, servicio: 'Alaciado', fecha: '2023-12-20', especialista: 'Mildred', precio: '$800', estado: 'completado' },
-    { id: 3, servicio: 'Nanoplastía', fecha: '2023-11-15', especialista: 'Mildred', precio: '$1,200', estado: 'completado' },
-  ];
+  const handleGuardar = async () => {
+    if (!cliente) return;
+    setSaving(true);
+    try {
+      const actualizado = await updateUsuario(cliente.id, {
+        nombre: formNombre.trim(),
+        telefono: formTelefono.trim() || null,
+      });
+      setCliente(actualizado);
+      setShowEditModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  const observaciones = [
-    'Cliente satisfecha con todos los servicios',
-    'Prefiere horarios matutinos',
-    'Productos recomendados: Shampoo Avina, Acondicionador Tech Italy',
-  ];
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="container mx-auto px-4 py-12">
+          <p className="text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando cliente...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error || !cliente) {
+    return (
+      <AdminLayout>
+        <div className="container mx-auto px-4 py-12">
+          <p className="text-center" style={{ color: 'var(--danger)' }}>{error || 'Cliente no encontrado'}</p>
+          <div className="text-center mt-4">
+            <Button variant="outline" onClick={() => router.push('/admin/clientes-crm')}>
+              Volver al listado
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const servicios: { id: number; servicio: string; fecha: string; especialista: string; precio: string; estado: string }[] = [];
+  const observaciones: string[] = [];
 
   return (
     <AdminLayout>
-      <div className="container mx-auto px-4 py-12" >
+      <PageHeader
+        title={cliente.nombre}
+        subtitle="Perfil del cliente"
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowEditModal(true)}>Editar</Button>
+            <Button onClick={() => router.push('/admin/gestion-citas')}>Nueva Cita</Button>
+          </div>
+        }
+      />
+
+      <div className="container mx-auto px-4 pb-12">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <Card>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h1 className="text-hero mb-2" style={{ color: colors.menuTextoPrincipal }}>
-                      {cliente.nombre}
-                    </h1>
-                    <div className="flex gap-2">
-                      <Badge variant={cliente.estado === 'frecuente' ? 'success' : 'default'}>
-                        {cliente.estado}
-                      </Badge>
-                      <Badge variant={cliente.confiabilidad === 'alta' ? 'success' : 'warning'}>
-                        {cliente.confiabilidad}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline">Editar</Button>
-                    <Button>Nueva Cita</Button>
-                  </div>
+                <div className="flex items-center gap-2 mb-6">
+                  <Badge variant={cliente.activo ? 'success' : 'danger'}>
+                    {cliente.activo ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                  {cliente.confirmado !== false && (
+                    <Badge variant="success">Cuenta confirmada</Badge>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input label="Nombre Completo" defaultValue={cliente.nombre} fullWidth />
-                  <Input label="Teléfono" defaultValue={cliente.telefono} fullWidth />
-                  <Input label="Email" type="email" defaultValue={cliente.email} fullWidth />
-                  <Input label="Dirección" defaultValue={cliente.direccion} fullWidth />
-                </div>
-                <div className="mt-4">
-                  <Button>Guardar Cambios</Button>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Nombre completo</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.nombre}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.telefono || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Email</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.email}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Rol</label>
+                    <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.rol}</p>
+                  </div>
                 </div>
               </Card>
 
               <Card>
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Historial de Servicios
                 </h2>
-                <Table headers={['Servicio', 'Fecha', 'Especialista', 'Precio', 'Estado']}>
-                  {servicios.map((servicio) => (
-                    <TableRow key={servicio.id}>
-                      <TableCell>{servicio.servicio}</TableCell>
-                      <TableCell>{servicio.fecha}</TableCell>
-                      <TableCell>{servicio.especialista}</TableCell>
-                      <TableCell className="font-semibold">{servicio.precio}</TableCell>
-                      <TableCell>
-                        <Badge variant="success">{servicio.estado}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </Table>
+                {servicios.length > 0 ? (
+                  <Table headers={['Servicio', 'Fecha', 'Especialista', 'Precio', 'Estado']}>
+                    {servicios.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell>{s.servicio}</TableCell>
+                        <TableCell>{s.fecha}</TableCell>
+                        <TableCell>{s.especialista}</TableCell>
+                        <TableCell className="font-semibold">{s.precio}</TableCell>
+                        <TableCell><Badge variant="success">{s.estado}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                  </Table>
+                ) : (
+                  <p className="text-sm py-6" style={{ color: 'var(--encabezados-alterno)' }}>
+                    No hay historial de servicios registrado. Cuando exista un endpoint de citas/servicios, se mostrará aquí.
+                  </p>
+                )}
               </Card>
 
               <Card>
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Observaciones Importantes
                 </h2>
-                <div className="space-y-2">
-                  {observaciones.map((obs, index) => (
-                    <div key={index} className="p-3 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                      <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
-                        {obs}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                {observaciones.length > 0 ? (
+                  <div className="space-y-2">
+                    {observaciones.map((obs, index) => (
+                      <div key={index} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{obs}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
+                    No hay observaciones registradas.
+                  </p>
+                )}
                 <div className="mt-4">
-                  <Button variant="outline">Agregar Observación</Button>
+                  <Button variant="outline" disabled>Agregar Observación</Button>
                 </div>
               </Card>
             </div>
 
             <div className="space-y-6">
               <Card>
-                <h3 className="text-subtitle mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Resumen
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <span style={{ color: colors.encabezadosAlterno }}>Servicios Totales:</span>
-                    <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
-                      {cliente.servicios}
-                    </span>
-                  </div>
-                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <span style={{ color: colors.encabezadosAlterno }}>Última Visita:</span>
-                    <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
-                      {cliente.ultimaVisita}
-                    </span>
-                  </div>
-                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <span style={{ color: colors.encabezadosAlterno }}>Estado:</span>
-                    <Badge variant={cliente.estado === 'frecuente' ? 'success' : 'default'}>
-                      {cliente.estado}
+                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Estado:</span>
+                    <Badge variant={cliente.activo ? 'success' : 'danger'}>
+                      {cliente.activo ? 'Activo' : 'Inactivo'}
                     </Badge>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Última actividad:</span>
+                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                      {formatearFecha(cliente.ultimaActividad ?? cliente.creadoEn)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Cuenta creada:</span>
+                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                      {formatearFecha(cliente.creadoEn)}
+                    </span>
                   </div>
                 </div>
               </Card>
 
               <Card>
-                <h3 className="text-subtitle mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Acciones Rápidas
                 </h3>
                 <div className="space-y-2">
-                  <Button fullWidth>Agendar Nueva Cita</Button>
-                  <Button fullWidth variant="outline">Ver Facturas</Button>
-                  <Button fullWidth variant="outline">Ver Seguimientos</Button>
-                  <Button fullWidth variant="outline">Enviar Mensaje</Button>
+                  <Button fullWidth onClick={() => router.push('/admin/gestion-citas')}>
+                    Agendar Nueva Cita
+                  </Button>
+                  <Button fullWidth variant="outline" onClick={() => router.push('/admin/clientes-crm')}>
+                    Volver al listado
+                  </Button>
+                  {cliente.activo && (
+                    <Button fullWidth variant="danger" onClick={() => setShowDeleteModal(true)}>
+                      Eliminar cliente
+                    </Button>
+                  )}
                 </div>
               </Card>
             </div>
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Eliminar cliente"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={saving}>Cancelar</Button>
+            <Button variant="danger" onClick={handleEliminar} disabled={saving}>
+              {saving ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
+          ¿Eliminar a &quot;{cliente.nombre}&quot;? Se desactivará y no podrá iniciar sesión.
+        </p>
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Editar Cliente"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleGuardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4">
+          <Input
+            label="Nombre completo *"
+            value={formNombre}
+            onChange={(e) => setFormNombre(e.target.value)}
+            placeholder="Nombre y apellidos"
+            fullWidth
+          />
+          <Input
+            label="Teléfono"
+            value={formTelefono}
+            onChange={(e) => setFormTelefono(e.target.value)}
+            placeholder="555-0000"
+            fullWidth
+          />
+          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+            El email no se puede cambiar desde aquí.
+          </p>
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }
-

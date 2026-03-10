@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode, HTMLAttributes } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -25,18 +24,18 @@ export default function Card({
 
   const variants = {
     default: {
-      bg: colors.tarjetasPaneles,
+      bg: 'var(--tarjetas-paneles)',
       border: 'none',
       shadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
     },
     elevated: {
-      bg: colors.tarjetasPaneles,
+      bg: 'var(--tarjetas-paneles)',
       border: 'none',
       shadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
     },
     outlined: {
       bg: 'transparent',
-      border: `1px solid ${colorsWithOpacity.bordeVisible}`,
+      border: '1px solid var(--encabezados-alterno)',
       shadow: 'none',
     },
   };

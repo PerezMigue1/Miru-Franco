@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 import Notification from '../ui/Notification';
 
 interface ActivateAccountProps {
@@ -200,24 +199,24 @@ export default function ActivateAccount({
     <div className="w-full max-w-md mx-auto">
       <div 
         className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-8"
-        style={{ backgroundColor: colors.tarjetasPaneles }}
+        style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
       >
         <h2 
           className="text-2xl font-bold text-center mb-2"
-          style={{ color: colors.textoFondoOscuro }}
+          style={{ color: 'var(--texto-fondo-oscuro)' }}
         >
           Activa tu cuenta
         </h2>
         <p 
           className="text-center mb-6 text-sm"
-          style={{ color: colorsWithOpacity.textoFondoOscuro80 }}
+          style={{ color: 'var(--texto-fondo-oscuro-80)' }}
         >
           {metodoVerificacion === 'sms' 
             ? 'Hemos enviado un código de verificación a tu teléfono:'
             : 'Hemos enviado un código de verificación a:'
           }
           <br />
-          <span className="font-semibold" style={{ color: colors.textoFondoOscuro }}>
+          <span className="font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
             {metodoVerificacion === 'sms' ? 'Tu teléfono registrado' : email}
           </span>
         </p>
@@ -226,7 +225,7 @@ export default function ActivateAccount({
           <label 
             htmlFor="otp"
             className="block text-sm font-medium mb-2"
-            style={{ color: colors.textoFondoOscuro }}
+            style={{ color: 'var(--texto-fondo-oscuro)' }}
           >
             Código de verificación (6 dígitos)
           </label>
@@ -246,7 +245,7 @@ export default function ActivateAccount({
             disabled={isLoading}
           />
           {error && (
-            <p className="mt-1 text-sm" style={{ color: colors.danger }}>
+            <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
               {error}
             </p>
           )}
@@ -261,8 +260,8 @@ export default function ActivateAccount({
               : 'hover:opacity-90 active:scale-95'
           }`}
           style={{ 
-            backgroundColor: colors.botonesPrincipales,
-            color: colors.textoFondoOscuro
+            backgroundColor: 'var(--botones-principales)',
+            color: 'var(--texto-fondo-oscuro)'
           }}
         >
           {isLoading ? 'Verificando...' : 'Verificar código'}
@@ -278,8 +277,8 @@ export default function ActivateAccount({
           }`}
           style={{ 
             backgroundColor: 'transparent',
-            color: colors.enlacesTextosInteractivos,
-            border: `1px solid ${colors.enlacesTextosInteractivos}`
+            color: 'var(--enlaces-textos-interactivos)',
+            border: '1px solid var(--enlaces-textos-interactivos)'
           }}
         >
           {isResending 
@@ -294,9 +293,9 @@ export default function ActivateAccount({
         {countdown !== null && countdown > 0 && (
           <div className="mb-4 p-3 rounded-lg border" style={{ 
             backgroundColor: 'rgba(255, 193, 7, 0.1)',
-            borderColor: colors.warning
+            borderColor: 'var(--warning)'
           }}>
-            <p className="text-sm text-center" style={{ color: colors.warning }}>
+            <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
               ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
             </p>
           </div>
@@ -307,7 +306,7 @@ export default function ActivateAccount({
             <button
               onClick={onBackToRegister}
               className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity"
-              style={{ color: colors.enlacesTextosInteractivos }}
+              style={{ color: 'var(--enlaces-textos-interactivos)' }}
             >
               ← Volver
             </button>
@@ -317,7 +316,7 @@ export default function ActivateAccount({
             <button
               onClick={onSkipToLogin}
               className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity font-medium"
-              style={{ color: colors.enlacesTextosInteractivos }}
+              style={{ color: 'var(--enlaces-textos-interactivos)' }}
             >
               Ir al inicio de sesión →
             </button>
@@ -334,14 +333,14 @@ export default function ActivateAccount({
         )}
 
         <div className="mt-6 text-center">
-          <p className="text-xs" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+          <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
             El código expira en 2 minutos. 
             {metodoVerificacion === 'sms' 
               ? ' Si no lo recibes, verifica que tu teléfono esté correcto.'
               : ' Si no lo recibes, verifica tu carpeta de spam.'
             }
           </p>
-          <p className="text-xs mt-2" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+          <p className="text-xs mt-2" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
             {metodoVerificacion === 'sms'
               ? 'Puedes solicitar un nuevo código si es necesario.'
               : 'Puedes verificar tu correo más tarde desde el inicio de sesión.'

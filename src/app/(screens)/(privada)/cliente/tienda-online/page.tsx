@@ -8,7 +8,6 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
 import Badge from '../../../../components/ui/Badge';
-import { colors } from '../../../../utils/colors';
 import { getProductos, type Producto } from '../../../../services/productos';
 
 /** Parsea precio tipo "$350" o "350" a número */
@@ -169,14 +168,14 @@ export default function CatalogoProductosPage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <aside className="lg:w-72 flex-shrink-0">
-          <Card className="p-4 space-y-6" style={{ backgroundColor: colors.tarjetasPaneles }}>
-            <h3 className="text-subtitle font-semibold" style={{ color: colors.menuTextoPrincipal }}>
-              Filtros {categoriaSeleccionada !== 'Todas' && <span className="text-sm font-normal" style={{ color: colors.encabezadosAlterno }}>({categoriaSeleccionada})</span>}
+          <Card className="p-4 space-y-6" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
+            <h3 className="text-subtitle font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+              Filtros {categoriaSeleccionada !== 'Todas' && <span className="text-sm font-normal" style={{ color: 'var(--encabezados-alterno)' }}>({categoriaSeleccionada})</span>}
             </h3>
 
             {mostrarFiltro('precio') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Precio</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Precio</h4>
               <div className="flex gap-2 items-center">
                 <Input
                   type="number"
@@ -186,7 +185,7 @@ export default function CatalogoProductosPage() {
                   min={0}
                   className="w-24"
                 />
-                <span style={{ color: colors.encabezadosAlterno }}>–</span>
+                <span style={{ color: 'var(--encabezados-alterno)' }}>–</span>
                 <Input
                   type="number"
                   placeholder="Máx"
@@ -201,11 +200,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('descuento') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Descuentos</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Descuentos</h4>
               <ul className="space-y-1.5">
                 {OPCIONES_DESCUENTO.map((opt) => (
                   <li key={opt.min}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={descuentos.includes(opt.min)}
@@ -222,11 +221,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('marca') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Marca</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Marca</h4>
               <ul className="space-y-1.5 max-h-32 overflow-y-auto">
                 {marcasUnicas.length ? marcasUnicas.map((m) => (
                   <li key={m}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={marcas.includes(m)}
@@ -237,7 +236,7 @@ export default function CatalogoProductosPage() {
                     </label>
                   </li>
                 )) : (
-                  <li className="text-sm" style={{ color: colors.encabezadosAlterno }}>Sin marcas en catálogo</li>
+                  <li className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Sin marcas en catálogo</li>
                 )}
               </ul>
             </div>
@@ -245,11 +244,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('color') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Color</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Color</h4>
               <ul className="space-y-1.5 max-h-40 overflow-y-auto">
                 {OPCIONES_COLOR.map((c) => (
                   <li key={c}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={colores.includes(c)}
@@ -266,11 +265,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('acabado') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Acabado</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Acabado</h4>
               <ul className="space-y-1.5 max-h-32 overflow-y-auto">
                 {OPCIONES_ACABADO.map((a) => (
                   <li key={a}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={acabados.includes(a)}
@@ -287,11 +286,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('formatoLabial') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Formato de labial</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Formato de labial</h4>
               <ul className="space-y-1.5">
                 {OPCIONES_FORMATO_LABIAL.map((f) => (
                   <li key={f}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={formatosLabial.includes(f)}
@@ -308,11 +307,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('unidadesPack') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Unidades por pack</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Unidades por pack</h4>
               <ul className="space-y-1.5 flex flex-wrap gap-x-3 gap-y-1">
                 {OPCIONES_UNIDADES_PACK.map((u) => (
                   <li key={u}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={unidadesPack.includes(u)}
@@ -329,11 +328,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('tipoPiel') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Tipo de piel</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Tipo de piel</h4>
               <ul className="space-y-1.5 max-h-32 overflow-y-auto">
                 {OPCIONES_TIPO_PIEL.map((t) => (
                   <li key={t}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={tipoPiel.includes(t)}
@@ -350,11 +349,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('textura') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Textura</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Textura</h4>
               <ul className="space-y-1.5">
                 {OPCIONES_TEXTURA.map((t) => (
                   <li key={t}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={textura.includes(t)}
@@ -371,11 +370,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('spf') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Protección solar (SPF)</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Protección solar (SPF)</h4>
               <ul className="space-y-1.5">
                 {OPCIONES_SPF.map((s) => (
                   <li key={s}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={spf.includes(s)}
@@ -392,11 +391,11 @@ export default function CatalogoProductosPage() {
 
             {mostrarFiltro('otrasCaracteristicas') && (
             <div>
-              <h4 className="text-sm font-semibold mb-2" style={{ color: colors.encabezadosAlterno }}>Otras características</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Otras características</h4>
               <ul className="space-y-1.5 max-h-32 overflow-y-auto">
                 {caracteristicasUnicas.length ? caracteristicasUnicas.map((c) => (
                   <li key={c}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input
                         type="checkbox"
                         checked={otrasCaracteristicas.includes(c)}
@@ -407,7 +406,7 @@ export default function CatalogoProductosPage() {
                     </label>
                   </li>
                 )) : (
-                  <li className="text-sm" style={{ color: colors.encabezadosAlterno }}>Sin características en catálogo</li>
+                  <li className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Sin características en catálogo</li>
                 )}
               </ul>
             </div>
@@ -441,19 +440,19 @@ export default function CatalogoProductosPage() {
         <div className="flex-1 min-w-0">
       {loading && (
         <Card className="text-center py-12">
-          <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando productos...
           </p>
         </Card>
       )}
 
       {error && (
-        <Card className="text-center py-12 max-w-xl mx-auto" style={{ borderColor: colors.danger }}>
-          <p className="text-lead mb-4" style={{ color: colors.danger }}>
+        <Card className="text-center py-12 max-w-xl mx-auto" style={{ borderColor: 'var(--danger)' }}>
+          <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
             {error}
           </p>
           {error.includes('conectar') && (
-            <div className="text-sm mb-4 text-left" style={{ color: colors.encabezadosAlterno }}>
+            <div className="text-sm mb-4 text-left" style={{ color: 'var(--encabezados-alterno)' }}>
               <p className="mb-2">El frontend está intentando conectar a:</p>
               <code className="block mb-3 p-2 rounded break-all bg-black/10" title="Abre esta URL en otra pestaña para comprobar si el backend responde">
                 {errorUrl ?? '…'}
@@ -509,7 +508,7 @@ export default function CatalogoProductosPage() {
                 <div className="relative mb-4">
                   <div
                     className="w-full h-64 rounded-lg mb-4 flex items-center justify-center overflow-hidden bg-cover bg-center"
-                    style={{ backgroundColor: colors.fondosSuaves }}
+                    style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
                     {(producto.imagenes?.[0] ?? producto.imagen) ? (
                       <img
@@ -518,7 +517,7 @@ export default function CatalogoProductosPage() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <span style={{ color: colors.menuTextoPrincipal }}>Imagen del Producto</span>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>Imagen del Producto</span>
                     )}
                   </div>
                   <div className="absolute top-2 right-2 flex gap-2">
@@ -538,13 +537,13 @@ export default function CatalogoProductosPage() {
                 </div>
                 <h3
                   className="text-subtitle mb-2"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   {producto.nombre}
                 </h3>
                 <p
                   className="text-sm mb-3"
-                  style={{ color: colors.encabezadosAlterno }}
+                  style={{ color: 'var(--encabezados-alterno)' }}
                 >
                   {producto.descripcion}
                 </p>
@@ -553,14 +552,14 @@ export default function CatalogoProductosPage() {
                     {producto.precioOriginal && (
                       <p
                         className="text-sm line-through"
-                        style={{ color: colors.encabezadosAlterno }}
+                        style={{ color: 'var(--encabezados-alterno)' }}
                       >
                         {producto.precioOriginal}
                       </p>
                     )}
                     <p
                       className="text-xl font-bold"
-                      style={{ color: colors.menuTextoPrincipal }}
+                      style={{ color: 'var(--menu-texto-principal)' }}
                     >
                       {producto.precio}
                     </p>
@@ -583,7 +582,7 @@ export default function CatalogoProductosPage() {
 
       {!loading && !error && productosFiltrados.length === 0 && (
         <Card className="text-center py-12">
-          <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
             No se encontraron productos con los filtros seleccionados
           </p>
         </Card>

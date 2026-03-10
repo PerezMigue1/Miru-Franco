@@ -9,8 +9,6 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
-import { colors } from '../../../utils/colors';
-
 export default function EjecucionServiciosPage() {
   const servicios = [
     { id: 1, cliente: 'María González', servicio: 'Corte', especialista: 'Mildred', inicio: '10:00', fin: '10:45', estado: 'en_proceso', productos: ['Shampoo', 'Acondicionador'] },
@@ -34,20 +32,20 @@ export default function EjecucionServiciosPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Servicios Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>2</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Pendientes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>En Proceso</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>1</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Proceso</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>1</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Completados Hoy</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>5</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>5</p>
           </div>
         </Card>
       </div>
@@ -93,7 +91,7 @@ export default function EjecucionServiciosPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar Nuevo Servicio
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

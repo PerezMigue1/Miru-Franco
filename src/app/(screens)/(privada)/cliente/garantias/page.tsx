@@ -9,7 +9,6 @@ import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import Badge from '../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { colors } from '../../../../utils/colors';
 
 export default function GarantiasClientePage() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -24,16 +23,16 @@ export default function GarantiasClientePage() {
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Garantías y Soporte
             </h1>
-            <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
               Todos nuestros servicios tienen garantía de satisfacción. Estamos aquí para ayudarte.
             </p>
           </div>
 
           <Card className="mb-6">
-            <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Mis Casos
             </h2>
             <Table headers={['Tipo', 'Servicio', 'Fecha', 'Estado', 'Descripción']}>
@@ -60,10 +59,10 @@ export default function GarantiasClientePage() {
           {!mostrarFormulario ? (
             <Card>
               <div className="text-center">
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Necesitas Ayuda?
                 </h2>
-                <p className="mb-6" style={{ color: colors.encabezadosAlterno }}>
+                <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
                   Si tienes alguna queja, sugerencia o necesitas activar una garantía, 
                   por favor completa el siguiente formulario.
                 </p>
@@ -74,7 +73,7 @@ export default function GarantiasClientePage() {
             </Card>
           ) : (
             <Card>
-              <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Nuevo Caso
               </h2>
               <div className="space-y-4">

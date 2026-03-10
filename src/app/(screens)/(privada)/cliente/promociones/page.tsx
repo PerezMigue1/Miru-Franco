@@ -5,7 +5,7 @@ import PublicLayout from '../../../../components/layouts/PublicLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
-import { colors } from '../../../../utils/colors';
+import { showAlert } from '../../../../utils/toast';
 
 export default function PromocionesPage() {
   const router = useRouter();
@@ -20,10 +20,10 @@ export default function PromocionesPage() {
     <PublicLayout>
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="text-center mb-12">
-          <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Promociones Especiales
           </h1>
-          <p className="text-lead max-w-2xl mx-auto" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
             Aprovecha nuestras promociones y ofertas especiales
           </p>
         </div>
@@ -36,19 +36,19 @@ export default function PromocionesPage() {
                   <Badge variant="success">Activa</Badge>
                 </div>
               )}
-              <h3 className="text-subtitle mb-2" style={{ color: colors.textoFondoOscuro }}>
+              <h3 className="text-subtitle mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                 {promocion.titulo}
               </h3>
-              <p className="text-sm mb-4" style={{ color: colors.textoFondoOscuro }}>
+              <p className="text-sm mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                 {promocion.descripcion}
               </p>
-              <p className="text-xs mb-4" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                 Válida hasta: {promocion.fechaFin}
               </p>
               <Button 
                 fullWidth
                 onClick={() => {
-                  alert(`Promoción: ${promocion.titulo}\n${promocion.descripcion}\nVálida hasta: ${promocion.fechaFin}`);
+                  showAlert(`Promoción: ${promocion.titulo}\n${promocion.descripcion}\nVálida hasta: ${promocion.fechaFin}`);
                 }}
               >
                 Ver Detalles

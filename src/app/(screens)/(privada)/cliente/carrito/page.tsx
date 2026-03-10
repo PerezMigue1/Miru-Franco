@@ -8,7 +8,7 @@ import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Badge from '../../../../components/ui/Badge';
-import { colors } from '../../../../utils/colors';
+import { showAlert, showConfirm } from '../../../../utils/toast';
 
 interface CartItem {
   id: number;
@@ -84,8 +84,9 @@ export default function CarritoPage() {
     ));
   };
 
-  const eliminarItem = (id: number) => {
-    if (confirm('¿Estás seguro de eliminar este producto del carrito?')) {
+  const eliminarItem = async (id: number) => {
+    const ok = await showConfirm('¿Estás seguro de eliminar este producto del carrito?');
+    if (ok) {
       const nuevosItems = items.filter(item => item.id !== id);
       setItems(nuevosItems);
       if (nuevosItems.length === 0) {
@@ -94,8 +95,9 @@ export default function CarritoPage() {
     }
   };
 
-  const vaciarCarrito = () => {
-    if (confirm('¿Estás seguro de vaciar todo el carrito?')) {
+  const vaciarCarrito = async () => {
+    const ok = await showConfirm('¿Estás seguro de vaciar todo el carrito?');
+    if (ok) {
       setItems([]);
       localStorage.removeItem('carrito');
     }
@@ -112,25 +114,25 @@ export default function CarritoPage() {
   // Componente de Resumen
   const ResumenCompra = () => (
     <Card>
-      <h3 className="text-lg font-semibold mb-4" style={{ color: colors.menuTextoPrincipal }}>
+      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
         Resumen de Compra
       </h3>
       <div className="space-y-3 mb-4">
         <div className="flex justify-between text-sm">
-          <span style={{ color: colors.encabezadosAlterno }}>Productos ({itemsSeleccionados.length}):</span>
-          <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+          <span style={{ color: 'var(--encabezados-alterno)' }}>Productos ({itemsSeleccionados.length}):</span>
+          <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
             ${subtotal.toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span style={{ color: colors.encabezadosAlterno }}>Envío:</span>
-          <span className="font-semibold" style={{ color: envio === 0 ? colors.success : colors.menuTextoPrincipal }}>
+          <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+          <span className="font-semibold" style={{ color: envio === 0 ? 'var(--success)' : 'var(--menu-texto-principal)' }}>
             {envio === 0 ? 'Gratis' : `$${envio.toLocaleString()}`}
           </span>
         </div>
-        <div className="border-t pt-3 flex justify-between" style={{ borderColor: colors.fondosSuaves }}>
-          <span className="font-bold text-lg" style={{ color: colors.menuTextoPrincipal }}>Total:</span>
-          <span className="font-bold text-lg" style={{ color: colors.menuTextoPrincipal }}>
+        <div className="border-t pt-3 flex justify-between" style={{ borderColor: 'var(--fondos-suaves)' }}>
+          <span className="font-bold text-lg" style={{ color: 'var(--menu-texto-principal)' }}>Total:</span>
+          <span className="font-bold text-lg" style={{ color: 'var(--menu-texto-principal)' }}>
             ${total.toLocaleString()}
           </span>
         </div>
@@ -146,10 +148,10 @@ export default function CarritoPage() {
             <Card>
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🛒</div>
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Tu carrito está vacío
                 </h2>
-                <p className="mb-6" style={{ color: colors.encabezadosAlterno }}>
+                <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
                   Agrega productos para comenzar tu compra
                 </p>
                 <Button onClick={() => router.push('/cliente/tienda-online')}>
@@ -167,7 +169,7 @@ export default function CarritoPage() {
     <PublicLayout>
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-hero mb-8" style={{ color: colors.menuTextoPrincipal }}>
+          <h1 className="text-hero mb-8" style={{ color: 'var(--menu-texto-principal)' }}>
             Carrito de Compras
           </h1>
 
@@ -181,8 +183,8 @@ export default function CarritoPage() {
                       paso >= num ? 'text-white' : ''
                     }`}
                     style={{ 
-                      backgroundColor: paso >= num ? colors.botonesPrincipales : colors.fondosSuaves, 
-                      color: paso >= num ? colors.textoFondoOscuro : colors.menuTextoPrincipal 
+                      backgroundColor: paso >= num ? 'var(--botones-principales)' : 'var(--fondos-suaves)', 
+                      color: paso >= num ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' 
                     }}
                   >
                     {num}
@@ -190,7 +192,7 @@ export default function CarritoPage() {
                   {num < 5 && (
                     <div 
                       className={`w-16 h-1 mx-1`} 
-                      style={{ backgroundColor: paso > num ? colors.botonesPrincipales : colors.fondosSuaves }}
+                      style={{ backgroundColor: paso > num ? 'var(--botones-principales)' : 'var(--fondos-suaves)' }}
                     />
                   )}
                 </div>
@@ -212,7 +214,7 @@ export default function CarritoPage() {
                         onChange={seleccionarTodos}
                         className="w-5 h-5"
                       />
-                      <h2 className="text-page-title" style={{ color: colors.menuTextoPrincipal }}>
+                      <h2 className="text-page-title" style={{ color: 'var(--menu-texto-principal)' }}>
                         Selecciona los productos ({itemsSeleccionados.length} de {items.length})
                       </h2>
                     </div>
@@ -225,7 +227,7 @@ export default function CarritoPage() {
                       <div
                         key={item.id}
                         className="flex items-center gap-4 p-4 rounded-lg"
-                        style={{ backgroundColor: colors.fondosSuaves }}
+                        style={{ backgroundColor: 'var(--fondos-suaves)' }}
                       >
                         <input
                           type="checkbox"
@@ -235,14 +237,14 @@ export default function CarritoPage() {
                         />
                         <div className="text-4xl">{item.imagen || '📦'}</div>
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+                          <h3 className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                             {item.nombre}
                           </h3>
-                          <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
                             ${item.precio.toLocaleString()} c/u
                           </p>
                           <div className="flex items-center gap-3">
-                            <span className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                            <span className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                               Cantidad:
                             </span>
                             <div className="flex items-center gap-2">
@@ -257,7 +259,7 @@ export default function CarritoPage() {
                               </Button>
                               <span 
                                 className="font-semibold min-w-[30px] text-center"
-                                style={{ color: colors.menuTextoPrincipal }}
+                                style={{ color: 'var(--menu-texto-principal)' }}
                               >
                                 {item.cantidad}
                               </span>
@@ -274,7 +276,7 @@ export default function CarritoPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-lg mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                          <p className="font-bold text-lg mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                             ${(item.precio * item.cantidad).toLocaleString()}
                           </p>
                           <Button 
@@ -301,7 +303,7 @@ export default function CarritoPage() {
                       disabled={itemsSeleccionados.length === 0}
                       onClick={() => {
                         if (itemsSeleccionados.length === 0) {
-                          alert('Selecciona al menos un producto para continuar');
+                          showAlert('Selecciona al menos un producto para continuar');
                           return;
                         }
                         setPaso(2);
@@ -316,7 +318,7 @@ export default function CarritoPage() {
               {/* Paso 2: Forma de entrega */}
               {paso === 2 && (
                 <Card>
-                  <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                  <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                     ¿Cómo quieres recibir tu compra?
                   </h2>
                   <div className="space-y-4">
@@ -362,7 +364,7 @@ export default function CarritoPage() {
                       disabled={!direccion.trim() || !zona || !metodoEntrega}
                       onClick={() => {
                         if (!direccion.trim() || !zona || !metodoEntrega) {
-                          alert('Por favor completa todos los campos de entrega');
+                          showAlert('Por favor completa todos los campos de entrega');
                           return;
                         }
                         setPaso(3);
@@ -377,7 +379,7 @@ export default function CarritoPage() {
               {/* Paso 3: Cuándo quieres que llegue */}
               {paso === 3 && (
                 <Card>
-                  <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                  <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                     ¿Cuándo quieres recibir tu compra?
                   </h2>
                   <div className="space-y-4">
@@ -385,8 +387,8 @@ export default function CarritoPage() {
                       <div
                         className="p-4 rounded-lg cursor-pointer border-2 transition-all"
                         style={{
-                          backgroundColor: fechaEntrega === 'lo-antes-posible' ? colors.fondosSuaves : 'transparent',
-                          borderColor: fechaEntrega === 'lo-antes-posible' ? colors.botonesPrincipales : colors.fondosSuaves
+                          backgroundColor: fechaEntrega === 'lo-antes-posible' ? 'var(--fondos-suaves)' : 'transparent',
+                          borderColor: fechaEntrega === 'lo-antes-posible' ? 'var(--botones-principales)' : 'var(--fondos-suaves)'
                         }}
                         onClick={() => setFechaEntrega('lo-antes-posible')}
                       >
@@ -399,10 +401,10 @@ export default function CarritoPage() {
                             className="w-5 h-5"
                           />
                           <div className="flex-1">
-                            <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               Lo antes posible
                             </p>
-                            <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                               Coordinaremos la entrega en las próximas 24-48 horas
                             </p>
                           </div>
@@ -412,8 +414,8 @@ export default function CarritoPage() {
                       <div
                         className="p-4 rounded-lg cursor-pointer border-2 transition-all"
                         style={{
-                          backgroundColor: fechaEntrega === 'mañana' ? colors.fondosSuaves : 'transparent',
-                          borderColor: fechaEntrega === 'mañana' ? colors.botonesPrincipales : colors.fondosSuaves
+                          backgroundColor: fechaEntrega === 'mañana' ? 'var(--fondos-suaves)' : 'transparent',
+                          borderColor: fechaEntrega === 'mañana' ? 'var(--botones-principales)' : 'var(--fondos-suaves)'
                         }}
                         onClick={() => setFechaEntrega('mañana')}
                       >
@@ -426,10 +428,10 @@ export default function CarritoPage() {
                             className="w-5 h-5"
                           />
                           <div className="flex-1">
-                            <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               Mañana
                             </p>
-                            <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                               Entrega el día siguiente
                             </p>
                           </div>
@@ -439,8 +441,8 @@ export default function CarritoPage() {
                       <div
                         className="p-4 rounded-lg cursor-pointer border-2 transition-all"
                         style={{
-                          backgroundColor: fechaEntrega === 'esta-semana' ? colors.fondosSuaves : 'transparent',
-                          borderColor: fechaEntrega === 'esta-semana' ? colors.botonesPrincipales : colors.fondosSuaves
+                          backgroundColor: fechaEntrega === 'esta-semana' ? 'var(--fondos-suaves)' : 'transparent',
+                          borderColor: fechaEntrega === 'esta-semana' ? 'var(--botones-principales)' : 'var(--fondos-suaves)'
                         }}
                         onClick={() => setFechaEntrega('esta-semana')}
                       >
@@ -453,10 +455,10 @@ export default function CarritoPage() {
                             className="w-5 h-5"
                           />
                           <div className="flex-1">
-                            <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               Esta semana
                             </p>
-                            <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                               Entrega dentro de los próximos 7 días
                             </p>
                           </div>
@@ -466,8 +468,8 @@ export default function CarritoPage() {
                       <div
                         className="p-4 rounded-lg cursor-pointer border-2 transition-all"
                         style={{
-                          backgroundColor: fechaEntrega === 'fecha-personalizada' ? colors.fondosSuaves : 'transparent',
-                          borderColor: fechaEntrega === 'fecha-personalizada' ? colors.botonesPrincipales : colors.fondosSuaves
+                          backgroundColor: fechaEntrega === 'fecha-personalizada' ? 'var(--fondos-suaves)' : 'transparent',
+                          borderColor: fechaEntrega === 'fecha-personalizada' ? 'var(--botones-principales)' : 'var(--fondos-suaves)'
                         }}
                         onClick={() => setFechaEntrega('fecha-personalizada')}
                       >
@@ -480,10 +482,10 @@ export default function CarritoPage() {
                             className="w-5 h-5"
                           />
                           <div className="flex-1">
-                            <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               Elegir fecha específica
                             </p>
-                            <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                               Selecciona una fecha y horario personalizado
                             </p>
                           </div>
@@ -492,7 +494,7 @@ export default function CarritoPage() {
                     </div>
 
                     {fechaEntrega === 'fecha-personalizada' && (
-                      <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: colors.fondosSuaves }}>
+                      <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                         <Input 
                           label="Fecha de Entrega" 
                           type="date"
@@ -501,7 +503,7 @@ export default function CarritoPage() {
                           fullWidth 
                         />
                         <div>
-                          <p className="text-sm mb-2 font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                          <p className="text-sm mb-2 font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                             Horarios Disponibles:
                           </p>
                           <div className="grid grid-cols-2 gap-2">
@@ -512,8 +514,8 @@ export default function CarritoPage() {
                                 size="sm"
                                 onClick={() => setDatosPago({ ...datosPago, horario })}
                                 style={{
-                                  backgroundColor: datosPago.horario === horario ? colors.botonesPrincipales : 'transparent',
-                                  color: datosPago.horario === horario ? colors.textoFondoOscuro : colors.menuTextoPrincipal
+                                  backgroundColor: datosPago.horario === horario ? 'var(--botones-principales)' : 'transparent',
+                                  color: datosPago.horario === horario ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)'
                                 }}
                               >
                                 {horario}
@@ -524,8 +526,8 @@ export default function CarritoPage() {
                       </div>
                     )}
 
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                      <p className="text-xs" style={{ color: colors.encabezadosAlterno }}>
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                      <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                         💡 Esta opción es opcional. Si no seleccionas ninguna opción, coordinaremos la entrega contigo.
                       </p>
                     </div>
@@ -547,7 +549,7 @@ export default function CarritoPage() {
               {/* Paso 4: Opciones de pago */}
               {paso === 4 && (
                 <Card>
-                  <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                  <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                     ¿Cómo quieres pagar?
                   </h2>
                   <div className="space-y-4">
@@ -565,26 +567,26 @@ export default function CarritoPage() {
                     />
 
                     {metodoPago === 'transferencia' && (
-                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                        <h3 className="font-semibold mb-3" style={{ color: colors.menuTextoPrincipal }}>
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <h3 className="font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
                           Datos para Transferencia
                         </h3>
                         <div className="space-y-2 text-sm">
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Banco: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>BBVA Bancomer</span>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Banco: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>BBVA Bancomer</span>
                           </div>
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>CLABE: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>012 180 001234567890</span>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>CLABE: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>012 180 001234567890</span>
                           </div>
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Cuenta: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>0123456789</span>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Cuenta: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>0123456789</span>
                           </div>
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Titular: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>Mildred Franco</span>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Titular: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Mildred Franco</span>
                           </div>
                         </div>
                         <Input 
@@ -597,8 +599,8 @@ export default function CarritoPage() {
                     )}
 
                     {metodoPago === 'tarjeta' && (
-                      <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: colors.fondosSuaves }}>
-                        <h3 className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                      <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <h3 className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           Información de Tarjeta
                         </h3>
                         <Input label="Número de Tarjeta" placeholder="1234 5678 9012 3456" maxLength={19} fullWidth />
@@ -611,8 +613,8 @@ export default function CarritoPage() {
                     )}
 
                     {metodoPago === 'efectivo' && (
-                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                        <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                           💵 Pagarás en efectivo cuando recibas tu pedido. El mensajero traerá cambio.
                         </p>
                       </div>
@@ -627,7 +629,7 @@ export default function CarritoPage() {
                       disabled={!metodoPago}
                       onClick={() => {
                         if (!metodoPago) {
-                          alert('Por favor selecciona un método de pago');
+                          showAlert('Por favor selecciona un método de pago');
                           return;
                         }
                         setPaso(5);
@@ -644,48 +646,48 @@ export default function CarritoPage() {
                 <Card>
                   <div className="text-center">
                     <div className="text-6xl mb-4">✅</div>
-                    <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                    <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                       ¡Pedido Confirmado!
                     </h2>
                     <div className="space-y-4 mb-6 text-left max-w-md mx-auto">
-                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                        <h3 className="font-semibold mb-3" style={{ color: colors.menuTextoPrincipal }}>
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <h3 className="font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
                           Resumen del Pedido
                         </h3>
                         <div className="space-y-2 text-sm">
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Productos: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Productos: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               {itemsSeleccionados.length} artículo(s)
                             </span>
                           </div>
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Dirección: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>{direccion}</span>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Dirección: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{direccion}</span>
                           </div>
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Método de entrega: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Método de entrega: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               {metodoEntrega === 'domicilio' ? 'Entrega a Domicilio' : 'Recoger en Sucursal'}
                             </span>
                           </div>
                           {fechaEntrega && (
                             <div>
-                              <span style={{ color: colors.encabezadosAlterno }}>Fecha de entrega: </span>
-                              <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>{fechaEntrega}</span>
+                              <span style={{ color: 'var(--encabezados-alterno)' }}>Fecha de entrega: </span>
+                              <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{fechaEntrega}</span>
                             </div>
                           )}
                           <div>
-                            <span style={{ color: colors.encabezadosAlterno }}>Método de pago: </span>
-                            <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>Método de pago: </span>
+                            <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               {metodoPago === 'transferencia' ? 'Transferencia Bancaria' : 
                                metodoPago === 'tarjeta' ? 'Tarjeta' : 'Efectivo al Recibir'}
                             </span>
                           </div>
-                          <div className="border-t pt-2 mt-2" style={{ borderColor: colors.fondosSuaves }}>
+                          <div className="border-t pt-2 mt-2" style={{ borderColor: 'var(--fondos-suaves)' }}>
                             <div className="flex justify-between">
-                              <span style={{ color: colors.encabezadosAlterno }}>Total: </span>
-                              <span className="text-xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                              <span style={{ color: 'var(--encabezados-alterno)' }}>Total: </span>
+                              <span className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                                 ${total.toLocaleString()} MXN
                               </span>
                             </div>
@@ -693,7 +695,7 @@ export default function CarritoPage() {
                         </div>
                       </div>
                     </div>
-                    <p className="mb-6" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
                       {metodoPago === 'transferencia' 
                         ? 'Te enviaremos los datos bancarios por correo. Una vez confirmado el pago, procesaremos tu pedido.'
                         : metodoPago === 'tarjeta'

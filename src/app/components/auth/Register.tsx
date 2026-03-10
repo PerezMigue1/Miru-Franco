@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { validatePassword, sanitizeInput, sanitizeEmail, hasDangerousCharacters } from '../../utils/security';
-import { colors } from '../../utils/colors';
 import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
 
@@ -1397,7 +1396,7 @@ export default function Register({
               rel="noopener noreferrer" 
               className="hover:underline" 
               style={{ color: '#243B5A' }}
-              onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
               onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
               onClick={(e) => e.stopPropagation()}
             >
@@ -1548,7 +1547,7 @@ export default function Register({
                 disabled={isLoading}
                 className="flex-1 py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#710014' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
               >
                 Continuar
@@ -1559,7 +1558,7 @@ export default function Register({
                 disabled={isLoading}
                 className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#710014' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
               >
                 {isLoading ? 'Registrando...' : 'Finalizar registro'}
@@ -1575,7 +1574,7 @@ export default function Register({
               onClick={handleSwitchToLogin}
               className="font-medium hover:underline"
               style={{ color: '#243B5A' }}
-              onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
               onMouseLeave={(e) => e.currentTarget.style.color = '#243B5A'}
               disabled={isLoading}
             >

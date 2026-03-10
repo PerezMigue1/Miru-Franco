@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { colors } from '../utils/colors';
 
 interface ErrorScreenProps {
   codigo: number;
@@ -22,36 +21,36 @@ export default function ErrorScreen({ codigo, titulo, mensaje, icono }: ErrorScr
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-6"
-      style={{ backgroundColor: colors.fondoGeneral }}
+      style={{ backgroundColor: 'var(--fondo-general)' }}
     >
       <div
         className="w-full max-w-lg rounded-2xl p-8 sm:p-10 shadow-xl text-center"
         style={{
-          backgroundColor: colors.tarjetasPaneles,
-          border: `2px solid ${colors.fondosSuaves}`,
+          backgroundColor: 'var(--tarjetas-paneles)',
+          border: '2px solid var(--fondos-suaves)',
         }}
       >
         <div
           className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full flex items-center justify-center text-4xl sm:text-5xl mb-6"
-          style={{ backgroundColor: colors.headerFooter, color: colors.textoFondoOscuro }}
+          style={{ backgroundColor: 'var(--header-footer)', color: 'var(--texto-fondo-oscuro)' }}
         >
           {icono ?? '⚠'}
         </div>
         <p
           className="text-5xl sm:text-6xl font-bold mb-2"
-          style={{ color: colors.menuTextoPrincipal }}
+          style={{ color: 'var(--menu-texto-principal)' }}
         >
           {codigo}
         </p>
         <h1
           className="text-xl sm:text-2xl font-semibold mb-3"
-          style={{ color: colors.menuTextoPrincipal }}
+          style={{ color: 'var(--menu-texto-principal)' }}
         >
           {titulo}
         </h1>
         <p
           className="text-sm sm:text-base mb-8"
-          style={{ color: colors.encabezadosAlterno }}
+          style={{ color: 'var(--encabezados-alterno)' }}
         >
           {mensaje}
         </p>
@@ -59,7 +58,7 @@ export default function ErrorScreen({ codigo, titulo, mensaje, icono }: ErrorScr
         <div className="space-y-3">
           <p
             className="text-sm font-medium"
-            style={{ color: colors.menuTextoPrincipal }}
+            style={{ color: 'var(--menu-texto-principal)' }}
           >
             Volver a:
           </p>
@@ -70,8 +69,8 @@ export default function ErrorScreen({ codigo, titulo, mensaje, icono }: ErrorScr
                 href={href}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
                 style={{
-                  backgroundColor: colors.botonesPrincipales,
-                  color: colors.textoFondoOscuro,
+                  backgroundColor: 'var(--botones-principales)',
+                  color: 'var(--texto-fondo-oscuro)',
                 }}
               >
                 {label}

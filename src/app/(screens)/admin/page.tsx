@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import Card from '../../components/ui/Card';
-import { colors } from '../../utils/colors';
 import { getProductosParaDashboard } from '../../services/productos';
 
 function precioANumero(precio: string | undefined): number {
@@ -20,13 +19,30 @@ const GRUPOS_ACCESOS: { titulo: string; items: { label: string; href: string; ic
       { label: 'Inventario', href: '/admin/inventario', icon: '📦', description: 'Productos y stock' },
       { label: 'Venta local', href: '/admin/venta-local', icon: '🏪', description: 'Punto de venta' },
       { label: 'Venta online', href: '/admin/venta-online', icon: '🛒', description: 'Pedidos tienda' },
+      { label: 'Servicios', href: '/admin/servicios', icon: '💇‍♀️', description: 'Catálogo de servicios' },
     ],
   },
   {
     titulo: 'Clientes y agenda',
     items: [
       { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: '👥', description: 'Gestión de clientes' },
-      { label: 'Gestión de citas', href: '/admin/gestion-citas', icon: '📅', description: 'Agenda y citas' },
+      { label: 'Gestión de citas', href: '/admin/gestion-citas', icon: '📅', description: 'Agenda y citas (vista admin)' },
+    ],
+  },
+  {
+    titulo: 'Compras y logística',
+    items: [
+      { label: 'Compras a proveedores', href: '/admin/compras-proveedores', icon: '🛒', description: 'Órdenes de compra' },
+      { label: 'Control de caducidad', href: '/admin/control-caducidad', icon: '📆', description: 'Productos por vencer' },
+      { label: 'Entregas y envíos', href: '/admin/entregas-envios', icon: '📦', description: 'Envíos y entregas' },
+    ],
+  },
+  {
+    titulo: 'Atención al cliente',
+    items: [
+      { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios', icon: '↩️', description: 'Devoluciones' },
+      { label: 'Quejas y garantías', href: '/admin/quejas-garantias', icon: '🛡️', description: 'Garantías y quejas' },
+      { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos', icon: '📝', description: 'Cotizaciones' },
     ],
   },
   {
@@ -38,11 +54,19 @@ const GRUPOS_ACCESOS: { titulo: string; items: { label: string; href: string; ic
     ],
   },
   {
+    titulo: 'Marketing y personal',
+    items: [
+      { label: 'Marketing', href: '/admin/marketing', icon: '📢', description: 'Promociones y campañas' },
+      { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: '👤', description: 'Empleados y horarios' },
+    ],
+  },
+  {
     titulo: 'Configuración',
     items: [
       { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: '🔐', description: 'Permisos' },
-      { label: 'Proveedores', href: '/admin/proveedores', icon: '🚚', description: 'Compras' },
+      { label: 'Proveedores', href: '/admin/proveedores', icon: '🚚', description: 'Proveedores' },
       { label: 'Notificaciones', href: '/admin/notificaciones', icon: '🔔', description: 'Avisos' },
+      { label: 'Base de datos', href: '/admin/base-datos', icon: '🗄️', description: 'Importar, exportar y gestionar datos' },
     ],
   },
 ];
@@ -85,8 +109,8 @@ export default function AdminDashboardPage() {
         <header
           className="rounded-2xl mb-8 px-6 py-8"
           style={{
-            background: `linear-gradient(135deg, ${colors.headerFooter} 0%, ${colors.menuTextoPrincipal} 100%)`,
-            color: colors.textoFondoOscuro,
+            background: 'linear-gradient(135deg, var(--header-footer) 0%, var(--menu-texto-principal) 100%)',
+            color: 'var(--texto-fondo-oscuro)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
           }}
         >
@@ -100,13 +124,13 @@ export default function AdminDashboardPage() {
         {/* KPIs inventario */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+            <h2 className="text-xl font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
               Resumen de inventario
             </h2>
             <Link
               href="/admin/inventario"
               className="text-sm font-medium transition-opacity hover:opacity-80"
-              style={{ color: colors.hover }}
+              style={{ color: 'var(--hover)' }}
             >
               Ver inventario completo →
             </Link>
@@ -116,18 +140,18 @@ export default function AdminDashboardPage() {
               <div className="flex items-center gap-4">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                  style={{ backgroundColor: colors.fondosSuaves }}
+                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
                 >
                   📦
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
                     Total productos
                   </p>
                   {loading ? (
                     <div className="h-9 w-16 rounded bg-current opacity-20 animate-pulse mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold mt-0.5" style={{ color: colors.menuTextoPrincipal }}>
+                    <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>
                       {totalProductos}
                     </p>
                   )}
@@ -143,13 +167,13 @@ export default function AdminDashboardPage() {
                   ⚠️
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
                     Stock bajo (≤5)
                   </p>
                   {loading ? (
                     <div className="h-9 w-12 rounded bg-current opacity-20 animate-pulse mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold mt-0.5" style={{ color: colors.warning }}>
+                    <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning)' }}>
                       {stockBajo}
                     </p>
                   )}
@@ -165,13 +189,13 @@ export default function AdminDashboardPage() {
                   🚫
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
                     Sin stock
                   </p>
                   {loading ? (
                     <div className="h-9 w-12 rounded bg-current opacity-20 animate-pulse mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold mt-0.5" style={{ color: colors.danger }}>
+                    <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--danger)' }}>
                       {sinStock}
                     </p>
                   )}
@@ -187,13 +211,13 @@ export default function AdminDashboardPage() {
                   💰
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
                     Valor inventario
                   </p>
                   {loading ? (
                     <div className="h-9 w-24 rounded bg-current opacity-20 animate-pulse mt-1" />
                   ) : (
-                    <p className="text-xl font-bold mt-0.5" style={{ color: colors.menuTextoPrincipal }}>
+                    <p className="text-xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>
                       ${valorInventario.toLocaleString('es-MX')}
                     </p>
                   )}
@@ -205,13 +229,13 @@ export default function AdminDashboardPage() {
 
         {/* Accesos rápidos por grupo */}
         <section>
-          <h2 className="text-xl font-semibold mb-6" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
             Accesos rápidos
           </h2>
           <div className="space-y-8">
             {GRUPOS_ACCESOS.map((grupo) => (
               <div key={grupo.titulo}>
-                <h3 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: colors.encabezadosAlterno }}>
+                <h3 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
                   {grupo.titulo}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -227,16 +251,16 @@ export default function AdminDashboardPage() {
                             {item.icon}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               {item.label}
                             </p>
                             {item.description && (
-                              <p className="text-xs mt-0.5" style={{ color: colors.encabezadosAlterno }}>
+                              <p className="text-xs mt-0.5" style={{ color: 'var(--encabezados-alterno)' }}>
                                 {item.description}
                               </p>
                             )}
                           </div>
-                          <span className="text-lg opacity-0 group-hover:opacity-100 transition-opacity shrink-0" style={{ color: colors.hover }}>
+                          <span className="text-lg opacity-0 group-hover:opacity-100 transition-opacity shrink-0" style={{ color: 'var(--hover)' }}>
                             →
                           </span>
                         </div>

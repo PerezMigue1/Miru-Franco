@@ -9,7 +9,6 @@ import Card from '../../../../../components/ui/Card';
 import Input from '../../../../../components/ui/Input';
 import Select from '../../../../../components/ui/Select';
 import Textarea from '../../../../../components/ui/Textarea';
-import { colors } from '../../../../../utils/colors';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
 
@@ -92,7 +91,7 @@ function CrearCitaContent() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Información de Contacto
                 </h2>
@@ -123,7 +122,7 @@ function CrearCitaContent() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Detalles de la Cita
                 </h2>
@@ -151,25 +150,25 @@ function CrearCitaContent() {
               <Card>
                 <h3
                   className="text-subtitle mb-4"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Resumen de la Cita
                 </h3>
                 {loadingServicio ? (
-                  <p style={{ color: colors.encabezadosAlterno }}>Cargando servicio...</p>
+                  <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando servicio...</p>
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                      <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Servicio
                       </p>
-                      <p style={{ color: colors.menuTextoPrincipal }}>{servicio?.nombre ?? 'No seleccionado'}</p>
+                      <p style={{ color: 'var(--menu-texto-principal)' }}>{servicio?.nombre ?? 'No seleccionado'}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                      <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Fecha
                       </p>
-                      <p style={{ color: colors.menuTextoPrincipal }}>
+                      <p style={{ color: 'var(--menu-texto-principal)' }}>
                         {fecha ? new Date(fecha).toLocaleDateString('es-ES', {
                           weekday: 'long',
                           year: 'numeric',
@@ -179,26 +178,26 @@ function CrearCitaContent() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                      <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Hora
                       </p>
-                      <p style={{ color: colors.menuTextoPrincipal }}>{hora || 'No seleccionada'}</p>
+                      <p style={{ color: 'var(--menu-texto-principal)' }}>{hora || 'No seleccionada'}</p>
                     </div>
                     {servicio?.duracion && (
                       <div>
-                        <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                           Duración
                         </p>
-                        <p style={{ color: colors.menuTextoPrincipal }}>{servicio.duracion}</p>
+                        <p style={{ color: 'var(--menu-texto-principal)' }}>{servicio.duracion}</p>
                       </div>
                     )}
-                    <div className="pt-4 border-t" style={{ borderColor: colors.fondosSuaves }}>
-                      <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <div className="pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                      <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Total
                       </p>
                       <p
                         className="text-2xl font-bold"
-                        style={{ color: colors.menuTextoPrincipal }}
+                        style={{ color: 'var(--menu-texto-principal)' }}
                       >
                         {servicio?.precio ?? '—'}
                       </p>
@@ -227,7 +226,7 @@ export default function CrearCitaPage() {
     <Suspense fallback={
       <ModuleLayout>
         <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: colors.encabezadosAlterno }}>Cargando...</p>
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
         </div>
       </ModuleLayout>
     }>

@@ -6,7 +6,6 @@ import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
-import { colors } from '../../../utils/colors';
 
 export default function ControlCaducidadPage() {
   const productos = [
@@ -31,20 +30,20 @@ export default function ControlCaducidadPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Vigentes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.success }}>18</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Vigentes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--success)' }}>18</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Próximos a Vencer</p>
-            <p className="text-3xl font-bold" style={{ color: colors.warning }}>3</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Próximos a Vencer</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>3</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Vencidos</p>
-            <p className="text-3xl font-bold" style={{ color: colors.danger }}>1</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Vencidos</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--danger)' }}>1</p>
           </div>
         </Card>
       </div>
@@ -57,7 +56,7 @@ export default function ControlCaducidadPage() {
               <TableCell>{producto.fechaApertura}</TableCell>
               <TableCell>{producto.fechaCaducidad}</TableCell>
               <TableCell>
-                <span style={{ color: producto.diasRestantes < 0 ? colors.danger : producto.diasRestantes < 30 ? colors.warning : colors.success }}>
+                <span style={{ color: producto.diasRestantes < 0 ? 'var(--danger)' : producto.diasRestantes < 30 ? 'var(--warning)' : 'var(--success)' }}>
                   {producto.diasRestantes > 0 ? `${producto.diasRestantes} días` : `Vencido hace ${Math.abs(producto.diasRestantes)} días`}
                 </span>
               </TableCell>

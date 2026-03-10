@@ -10,7 +10,6 @@ import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
 import Badge from '../../../../components/ui/Badge';
 import Select from '../../../../components/ui/Select';
-import { colors } from '../../../../utils/colors';
 import { getServicios } from '../../../../services/servicios';
 import type { Servicio } from '../../../../services/servicios';
 
@@ -187,24 +186,24 @@ export default function ListaServiciosPage() {
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current" style={{ color: colors.menuTextoPrincipal }} />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current" style={{ color: 'var(--menu-texto-principal)' }} />
         </div>
       )}
       {error && !loading && (
-        <p className="text-center py-6" style={{ color: colors.danger }}>{error}</p>
+        <p className="text-center py-6" style={{ color: 'var(--danger)' }}>{error}</p>
       )}
       {!loading && !error && filtrados.length === 0 && (
-        <p className="text-center py-8" style={{ color: colors.encabezadosAlterno }}>
+        <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
           {busqueda.trim() ? 'No hay servicios que coincidan con la búsqueda.' : 'No hay servicios disponibles.'}
         </p>
       )}
       {!loading && !error && filtrados.length > 0 && (
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="lg:w-72 flex-shrink-0">
-            <Card className="p-4 space-y-4" style={{ backgroundColor: colors.tarjetasPaneles }}>
+            <Card className="p-4 space-y-4" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
               <h3
                 className="text-subtitle font-semibold"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Filtros avanzados
               </h3>
@@ -212,7 +211,7 @@ export default function ListaServiciosPage() {
               <div>
                 <h4
                   className="text-sm font-semibold mb-2"
-                  style={{ color: colors.encabezadosAlterno }}
+                  style={{ color: 'var(--encabezados-alterno)' }}
                 >
                   Precio (MXN)
                 </h4>
@@ -225,7 +224,7 @@ export default function ListaServiciosPage() {
                     min={0}
                     className="w-24"
                   />
-                  <span style={{ color: colors.encabezadosAlterno }}>–</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>–</span>
                   <Input
                     type="number"
                     placeholder="Máx"
@@ -240,7 +239,7 @@ export default function ListaServiciosPage() {
               <div>
                 <h4
                   className="text-sm font-semibold mb-2"
-                  style={{ color: colors.encabezadosAlterno }}
+                  style={{ color: 'var(--encabezados-alterno)' }}
                 >
                   Duración (minutos)
                 </h4>
@@ -253,7 +252,7 @@ export default function ListaServiciosPage() {
                     min={0}
                     className="w-24"
                   />
-                  <span style={{ color: colors.encabezadosAlterno }}>–</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>–</span>
                   <Input
                     type="number"
                     placeholder="Máx"
@@ -276,7 +275,7 @@ export default function ListaServiciosPage() {
                 <label
                   htmlFor="requiere-evaluacion"
                   className="text-sm"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Solo servicios que requieren evaluación previa
                 </label>
@@ -310,7 +309,7 @@ export default function ListaServiciosPage() {
                   <div className="mb-4">
                     <div
                       className="w-full h-48 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden"
-                      style={{ backgroundColor: colors.fondosSuaves }}
+                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
                     >
                       {(() => {
                         const imgSrc = servicio.imagen ?? servicio.imagenes?.[0];
@@ -326,7 +325,7 @@ export default function ListaServiciosPage() {
                             sizes="(max-width: 768px) 100vw, 33vw"
                           />
                         ) : (
-                          <span style={{ color: colors.menuTextoPrincipal }}>
+                          <span style={{ color: 'var(--menu-texto-principal)' }}>
                             Imagen del Servicio
                           </span>
                         );
@@ -335,7 +334,7 @@ export default function ListaServiciosPage() {
                     <div className="flex items-start justify-between mb-2">
                       <h3
                         className="text-subtitle"
-                        style={{ color: colors.menuTextoPrincipal }}
+                        style={{ color: 'var(--menu-texto-principal)' }}
                       >
                         {servicio.nombre}
                       </h3>
@@ -344,7 +343,7 @@ export default function ListaServiciosPage() {
                     {servicio.descripcion && (
                       <p
                         className="text-sm mb-3 line-clamp-2"
-                        style={{ color: colors.encabezadosAlterno }}
+                        style={{ color: 'var(--encabezados-alterno)' }}
                       >
                         {servicio.descripcion}
                       </p>
@@ -352,7 +351,7 @@ export default function ListaServiciosPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         {servicio.duracion && (
-                          <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                             Duración:{' '}
                             <span className="font-semibold">{servicio.duracion}</span>
                           </p>
@@ -360,7 +359,7 @@ export default function ListaServiciosPage() {
                         {servicio.precio && (
                           <p
                             className="text-lg font-bold mt-1"
-                            style={{ color: colors.menuTextoPrincipal }}
+                            style={{ color: 'var(--menu-texto-principal)' }}
                           >
                             {servicio.precio}
                           </p>

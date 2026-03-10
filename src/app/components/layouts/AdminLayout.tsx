@@ -3,7 +3,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { colors } from '../../utils/colors';
 import { getToken } from '../../utils/security';
 import { api } from '../../services/auth';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
@@ -95,13 +94,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center"
-        style={{ backgroundColor: colors.fondoGeneral }}
+        style={{ backgroundColor: 'var(--fondo-general)' }}
       >
         <div className="text-center">
-          <p className="text-lg font-medium mb-2" style={{ color: colors.menuTextoPrincipal }}>
+          <p className="text-lg font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Verificando acceso...
           </p>
-          <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
             Comprobando sesión y permisos de administrador
           </p>
         </div>
@@ -114,14 +113,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.fondoGeneral }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       {/* Barra superior solo para admin: sin header público ni footer */}
       <header
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-6 h-14 border-b shadow-sm"
         style={{
           height: ADMIN_BAR_HEIGHT,
-          backgroundColor: colors.headerFooter,
-          color: colors.textoFondoOscuro,
+          backgroundColor: 'var(--header-footer)',
+          color: 'var(--texto-fondo-oscuro)',
           borderColor: 'rgba(255,255,255,0.08)',
         }}
       >

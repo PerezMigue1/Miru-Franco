@@ -9,7 +9,6 @@ import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import Textarea from '../../../../components/ui/Textarea';
 import Modal from '../../../../components/ui/Modal';
-import { colors } from '../../../../utils/colors';
 import { getCategoryColor } from '../../../../utils/categoryColors';
 import {
   getServicioPorId,
@@ -114,7 +113,7 @@ export default function ServicioDetalleAdminPage() {
     return (
       <AdminLayout>
         <div className="container mx-auto px-4 py-12">
-          <p style={{ color: colors.encabezadosAlterno }}>Cargando servicio...</p>
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando servicio...</p>
         </div>
       </AdminLayout>
     );
@@ -124,7 +123,7 @@ export default function ServicioDetalleAdminPage() {
     return (
       <AdminLayout>
         <div className="container mx-auto px-4 py-12">
-          <p className="mb-4" style={{ color: colors.danger }}>{error}</p>
+          <p className="mb-4" style={{ color: 'var(--danger)' }}>{error}</p>
         </div>
       </AdminLayout>
     );
@@ -137,18 +136,18 @@ export default function ServicioDetalleAdminPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {error && (
-            <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: colors.danger }}>
-              <p className="text-sm font-medium" style={{ color: colors.danger }}>{error}</p>
+            <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+              <p className="text-sm font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
             </Card>
           )}
 
           <Card>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-hero mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   {nombre || servicio.nombre}
                 </h1>
-                <Badge variant={getCategoryColor(categoria || servicio.categoria ?? '')} size="lg">
+                <Badge variant={getCategoryColor((categoria || servicio.categoria) ?? '')} size="lg">
                   {categoria || servicio.categoria || 'Sin categoría'}
                 </Badge>
               </div>
@@ -219,7 +218,7 @@ export default function ServicioDetalleAdminPage() {
           </>
         }
       >
-        <p style={{ color: colors.menuTextoPrincipal }}>
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
           ¿Estás seguro de que deseas eliminar el servicio &quot;{servicio.nombre}&quot;?
         </p>
       </Modal>

@@ -2,6 +2,7 @@
 
 import { getApiBaseUrl, getBackendBaseUrl } from './config';
 import { getToken, saveToken, clearAuthData } from '../utils/security';
+import { showAlert } from '../utils/toast';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -183,7 +184,7 @@ class ApiClient {
                 localStorage.removeItem('manualLogout');
               } else {
                 // Mostrar mensaje según la guía
-                alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+                await showAlert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
               }
               
               // replace para que "atrás" lleve a la página anterior, no a la protegida
@@ -195,7 +196,7 @@ class ApiClient {
             ) {
               // Solo cuando el backend indica EXPLÍCITAMENTE sesión en otro dispositivo (evitar confundir con token expirado)
               clearAuthData();
-              alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada. Por favor inicia sesión nuevamente si deseas continuar.');
+              await showAlert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada. Por favor inicia sesión nuevamente si deseas continuar.');
               window.location.replace('/login');
             } else if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmado')) {
               // Usuario no ha verificado correo

@@ -6,8 +6,6 @@ import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
-import { colors } from '../../../../../../utils/colors';
-
 export default function DetalleMiCitaPage() {
   const params = useParams();
   const router = useRouter();
@@ -53,7 +51,7 @@ export default function DetalleMiCitaPage() {
           <div>
             <h1
               className="text-hero mb-2"
-              style={{ color: colors.menuTextoPrincipal }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Detalle de la Cita
             </h1>
@@ -84,39 +82,39 @@ export default function DetalleMiCitaPage() {
             <Card>
               <h2
                 className="text-page-title mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Información del Servicio
               </h2>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Servicio
                   </p>
                   <p
                     className="text-xl font-bold"
-                    style={{ color: colors.menuTextoPrincipal }}
+                    style={{ color: 'var(--menu-texto-principal)' }}
                   >
                     {cita.servicio}
                   </p>
-                  <p className="text-sm mt-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     {cita.descripcion}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Duración
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>{cita.duracion}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.duracion}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Precio
                     </p>
                     <p
                       className="text-xl font-bold"
-                      style={{ color: colors.menuTextoPrincipal }}
+                      style={{ color: 'var(--menu-texto-principal)' }}
                     >
                       {cita.precio}
                     </p>
@@ -128,17 +126,17 @@ export default function DetalleMiCitaPage() {
             <Card>
               <h2
                 className="text-page-title mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Detalles de la Cita
               </h2>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Fecha
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>
                       {new Date(cita.fecha).toLocaleDateString('es-ES', {
                         weekday: 'long',
                         year: 'numeric',
@@ -148,24 +146,24 @@ export default function DetalleMiCitaPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Hora
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>{cita.hora}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.hora}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Especialista
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>{cita.especialista}</p>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialista}</p>
                 </div>
                 {cita.notas && (
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Notas
                     </p>
-                    <p style={{ color: colors.encabezadosAlterno }}>{cita.notas}</p>
+                    <p style={{ color: 'var(--encabezados-alterno)' }}>{cita.notas}</p>
                   </div>
                 )}
               </div>
@@ -176,28 +174,28 @@ export default function DetalleMiCitaPage() {
             <Card>
               <h3
                 className="text-subtitle mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Información de Contacto
               </h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Nombre
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>{cita.contacto.nombre}</p>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.contacto.nombre}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Teléfono
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>{cita.contacto.telefono}</p>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.contacto.telefono}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Email
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>{cita.contacto.email}</p>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.contacto.email}</p>
                 </div>
               </div>
             </Card>
@@ -205,11 +203,11 @@ export default function DetalleMiCitaPage() {
             <Card className="mt-6">
               <h3
                 className="text-subtitle mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Recordatorios
               </h3>
-              <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                 Recibirás un recordatorio por correo electrónico 24 horas antes de tu cita.
               </p>
             </Card>

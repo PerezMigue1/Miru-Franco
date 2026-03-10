@@ -2,22 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '../../../utils/security';
+import { hasValidToken } from '../../../utils/security';
 import ModuleLayout from '../../../components/layouts/ModuleLayout';
 import UserProfile from '../../../components/perfil/UserProfile';
 
 export default function PerfilPage() {
   const router = useRouter();
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [allowed] = useState<boolean | null>(() => (hasValidToken() ? true : null));
 
   useEffect(() => {
-    const token = getToken();
-    if (!token || token.trim() === '') {
-      // replace para que "atrás" no vuelva a perfil (va a la página anterior, ej. home)
+    if (!hasValidToken()) {
       router.replace('/login?returnUrl=/perfil');
-      return;
     }
-    setAllowed(true);
   }, [router]);
 
   if (allowed !== true) {
@@ -34,5 +30,4 @@ export default function PerfilPage() {
     </ModuleLayout>
   );
 }
-
 

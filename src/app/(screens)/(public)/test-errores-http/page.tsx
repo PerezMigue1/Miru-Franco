@@ -5,7 +5,6 @@ import { apiClient } from '../../../services/client';
 import { getBackendBaseUrl } from '../../../services/config';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
-import { colors } from '../../../utils/colors';
 
 /**
  * Página para probar que el frontend reacciona correctamente a 400, 403 y 500 del backend.
@@ -47,13 +46,13 @@ export default function TestErroresHttpPage() {
   return (
     <div
       className="min-h-screen p-6 flex flex-col items-center justify-center"
-      style={{ backgroundColor: colors.fondoGeneral }}
+      style={{ backgroundColor: 'var(--fondo-general)' }}
     >
       <Card className="max-w-md w-full p-6">
-        <h1 className="text-xl font-semibold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+        <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Probar errores HTTP (400, 403, 500)
         </h1>
-        <p className="text-sm mb-6" style={{ color: colors.encabezadosAlterno }}>
+        <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
           El backend debe tener rutas de prueba que devuelvan cada código. Al pulsar cada botón se llama a{' '}
           <code className="text-xs bg-black/10 px-1 rounded">/api/test/errores/XXX</code>.
         </p>
@@ -86,12 +85,12 @@ export default function TestErroresHttpPage() {
         </div>
 
         {mensaje && (
-          <p className="mt-4 text-sm p-3 rounded" style={{ backgroundColor: colors.fondosSuaves, color: colors.menuTextoPrincipal }}>
+          <p className="mt-4 text-sm p-3 rounded" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}>
             {mensaje}
           </p>
         )}
 
-        <p className="mt-6 text-xs" style={{ color: colors.encabezadosAlterno }}>
+        <p className="mt-6 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
           Esperado: 403 y 500 te redirigen a /403 y /500. 400 lanza error (no redirige por defecto para poder mostrar validaciones en formularios).
         </p>
       </Card>

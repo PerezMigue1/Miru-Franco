@@ -9,7 +9,6 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
-import { colors } from '../../../utils/colors';
 
 export default function QuejasGarantiasPage() {
   const casos = [
@@ -62,7 +61,7 @@ export default function QuejasGarantiasPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar Nuevo Caso
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

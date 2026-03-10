@@ -59,6 +59,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'atencion-sin-cita': { label: 'Atención sin cita', href: '/admin/atencion-sin-cita' },
       'seguimiento-post-servicio': { label: 'Seguimiento post servicio', href: '/admin/seguimiento-post-servicio' },
       'quejas-garantias': { label: 'Quejas y garantías', href: '/admin/quejas-garantias' },
+      'base-datos': { label: 'Base de datos', href: '/admin/base-datos' },
     };
 
     const sectionInfo = sectionLabels[section];

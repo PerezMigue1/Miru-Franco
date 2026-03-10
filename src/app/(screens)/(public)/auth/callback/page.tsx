@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { colors, colorsWithOpacity } from '../../../../utils/colors';
 import { apiClient } from '../../../../services/client';
 import { getBackendBaseUrl } from '../../../../services/config';
 import { saveToken } from '../../../../utils/security';
@@ -121,7 +120,7 @@ function AuthCallbackContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-fondo-general px-4">
       <div className="text-center max-w-md w-full">
-        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
           {status === 'loading' && (
             <>
               <div className="mx-auto w-16 h-16 mb-4">
@@ -133,7 +132,7 @@ function AuthCallbackContent() {
               <h2 className="text-page-title mb-2 text-texto-fondo-oscuro">
                 {message}
               </h2>
-              <p className="text-sm text-texto-fondo-oscuro" style={{ color: colors.textoFondoOscuro || 'rgba(242,241,237,0.7)' }}>
+              <p className="text-sm text-texto-fondo-oscuro" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                 Por favor espera...
               </p>
             </>
@@ -171,9 +170,9 @@ function AuthCallbackContent() {
               <button
                 onClick={() => router.push('/')}
                 className="mt-4 px-6 py-2 rounded-lg font-medium transition-colors bg-botones-principales text-texto-fondo-oscuro hover:opacity-90"
-                style={{ backgroundColor: colors.botonesPrincipales }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+                style={{ backgroundColor: 'var(--botones-principales)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
               >
                 Volver al Login
               </button>

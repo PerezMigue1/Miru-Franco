@@ -7,7 +7,6 @@ import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Input from '../../../../../../components/ui/Input';
-import { colors } from '../../../../../../utils/colors';
 import { getProductoPorId, type Producto } from '../../../../../../services/productos';
 import { useCart } from '../../../../../../context/CartContext';
 
@@ -87,7 +86,7 @@ export default function DetalleProductoPage() {
     return (
       <ModuleLayout>
         <div className="max-w-4xl mx-auto py-12 text-center">
-          <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando producto...
           </p>
         </div>
@@ -99,8 +98,8 @@ export default function DetalleProductoPage() {
     return (
       <ModuleLayout>
         <div className="max-w-4xl mx-auto py-12">
-          <Card className="text-center py-12" style={{ borderColor: colors.danger }}>
-            <p className="text-lead mb-4" style={{ color: colors.danger }}>
+          <Card className="text-center py-12" style={{ borderColor: 'var(--danger)' }}>
+            <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
               {error ?? 'Producto no encontrado'}
             </p>
           </Card>
@@ -135,8 +134,8 @@ export default function DetalleProductoPage() {
             <div
               className="w-full h-64 sm:h-80 lg:h-96 xl:h-[500px] rounded-lg flex items-center justify-center overflow-hidden p-4 sm:p-6"
               style={{
-                backgroundColor: colors.textoFondoOscuro,
-                border: `2px solid ${colors.tarjetasPaneles}`,
+                backgroundColor: 'var(--texto-fondo-oscuro)',
+                border: '2px solid var(--tarjetas-paneles)',
               }}
             >
               {(producto.imagenes?.[0] ?? producto.imagen) ? (
@@ -146,7 +145,7 @@ export default function DetalleProductoPage() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <span className="text-sm sm:text-base" style={{ color: colors.menuTextoPrincipal }}>
+                <span className="text-sm sm:text-base" style={{ color: 'var(--menu-texto-principal)' }}>
                   Imagen del Producto
                 </span>
               )}
@@ -165,18 +164,18 @@ export default function DetalleProductoPage() {
               </div>
               <h1
                 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 {producto.nombre}
               </h1>
               {producto.marca && (
-                <p className="text-base sm:text-lg mb-1 sm:mb-2" style={{ color: colors.encabezadosAlterno }}>
-                  <span className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>{producto.marca}</span>
+                <p className="text-base sm:text-lg mb-1 sm:mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                  <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{producto.marca}</span>
                 </p>
               )}
               {producto.presentaciones && producto.presentaciones.length > 0 && (
                 <div className="mb-4">
-                  <label className="block mb-2 text-sm sm:text-base font-medium" style={{ color: colors.menuTextoPrincipal }}>
+                  <label className="block mb-2 text-sm sm:text-base font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
                     Presentación:
                   </label>
                   <div className="flex gap-2 flex-wrap">
@@ -192,13 +191,13 @@ export default function DetalleProductoPage() {
                         `}
                         style={{
                           backgroundColor: presentacionSeleccionada === pres.tamaño
-                            ? colors.botonesPrincipales
+                            ? 'var(--botones-principales)'
                             : pres.disponible
-                            ? colors.tarjetasPaneles
-                            : colors.fondosSuaves,
+                            ? 'var(--tarjetas-paneles)'
+                            : 'var(--fondos-suaves)',
                           color: presentacionSeleccionada === pres.tamaño
-                            ? colors.textoFondoOscuro
-                            : colors.menuTextoPrincipal,
+                            ? 'var(--texto-fondo-oscuro)'
+                            : 'var(--menu-texto-principal)',
                         }}
                       >
                         {pres.tamaño}
@@ -212,27 +211,27 @@ export default function DetalleProductoPage() {
 
             <Card className="p-4 sm:p-6">
               <div className="space-y-4 sm:space-y-5">
-                <div className="pb-4 border-b" style={{ borderColor: colors.fondosSuaves }}>
+                <div className="pb-4 border-b" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <div className="flex items-baseline gap-3 mb-3 flex-wrap">
                     {producto.presentaciones?.length ? (
                       <>
                         {presActual?.precioOriginal && (
-                          <p className="text-xl sm:text-2xl line-through" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-xl sm:text-2xl line-through" style={{ color: 'var(--encabezados-alterno)' }}>
                             {presActual.precioOriginal}
                           </p>
                         )}
-                        <p className="text-4xl sm:text-5xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {presActual?.precio ?? producto.precio}
                         </p>
                       </>
                     ) : (
                       <>
                         {producto.precioOriginal && (
-                          <p className="text-xl sm:text-2xl line-through" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-xl sm:text-2xl line-through" style={{ color: 'var(--encabezados-alterno)' }}>
                             {producto.precioOriginal}
                           </p>
                         )}
-                        <p className="text-4xl sm:text-5xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {producto.precio}
                         </p>
                       </>
@@ -241,13 +240,13 @@ export default function DetalleProductoPage() {
                   <div className="flex items-center gap-2">
                     {disponible ? (
                       <>
-                        <span className="text-base" style={{ color: colors.success }}>✓</span>
-                        <p className="text-sm sm:text-base" style={{ color: colors.encabezadosAlterno }}>
+                        <span className="text-base" style={{ color: 'var(--success)' }}>✓</span>
+                        <p className="text-sm sm:text-base" style={{ color: 'var(--encabezados-alterno)' }}>
                           Stock disponible: <span className="font-semibold">{maxCantidad} unidades</span>
                         </p>
                       </>
                     ) : (
-                      <p className="text-sm sm:text-base font-medium" style={{ color: colors.danger }}>
+                      <p className="text-sm sm:text-base font-medium" style={{ color: 'var(--danger)' }}>
                         {!disponibleProducto ? 'Producto no disponible en este momento' : 'Agotado'}
                       </p>
                     )}
@@ -256,7 +255,7 @@ export default function DetalleProductoPage() {
 
                 {disponible && (
                   <div>
-                    <label className="block mb-3 text-base sm:text-lg font-medium" style={{ color: colors.menuTextoPrincipal }}>
+                    <label className="block mb-3 text-base sm:text-lg font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
                       Cantidad
                     </label>
                     <div className="flex items-center gap-3">
@@ -292,7 +291,7 @@ export default function DetalleProductoPage() {
                   {mensajeAñadido && (
                     <p
                       className="text-sm text-center font-medium py-2 rounded-lg"
-                      style={{ backgroundColor: colors.success + '33', color: colors.success }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--success) 20%, transparent)', color: 'var(--success)' }}
                     >
                       ✓ Añadido al carrito
                     </p>
@@ -316,16 +315,16 @@ export default function DetalleProductoPage() {
           <Card className="p-4 sm:p-6 lg:p-8">
             <h2
               className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b"
-              style={{ color: colors.menuTextoPrincipal, borderColor: colors.fondosSuaves }}
+              style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}
             >
               📝 Descripción
             </h2>
             <div className="space-y-3 sm:space-y-4">
-              <p className="text-base sm:text-lg font-medium" style={{ color: colors.menuTextoPrincipal }}>
+              <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
                 {producto.descripcion}
               </p>
               {producto.descripcionLarga && (
-                <p className="text-sm sm:text-base leading-relaxed" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
                   {producto.descripcionLarga}
                 </p>
               )}
@@ -335,7 +334,7 @@ export default function DetalleProductoPage() {
           <Card className="p-4 sm:p-6 lg:p-8">
             <h2
               className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b"
-              style={{ color: colors.menuTextoPrincipal, borderColor: colors.fondosSuaves }}
+              style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}
             >
               ✨ Características
             </h2>
@@ -343,22 +342,22 @@ export default function DetalleProductoPage() {
               <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                 {producto.caracteristicas.map((caracteristica, index) => (
                   <li key={index} className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-base sm:text-lg flex-shrink-0 mt-0.5" style={{ color: colors.success }}>✓</span>
-                    <span className="text-sm sm:text-base leading-relaxed" style={{ color: colors.encabezadosAlterno }}>
+                    <span className="text-base sm:text-lg flex-shrink-0 mt-0.5" style={{ color: 'var(--success)' }}>✓</span>
+                    <span className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
                       {caracteristica}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm mb-4" style={{ color: colors.encabezadosAlterno }}>Sin características adicionales.</p>
+              <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin características adicionales.</p>
             )}
             {producto.ingredientes && (
-              <div className="pt-3 sm:pt-4 border-t" style={{ borderColor: colors.fondosSuaves }}>
-                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3" style={{ color: colors.menuTextoPrincipal }}>
+              <div className="pt-3 sm:pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
                   🧪 Ingredientes
                 </h3>
-                <p className="text-xs sm:text-sm leading-relaxed" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
                   {producto.ingredientes}
                 </p>
               </div>
@@ -372,11 +371,11 @@ export default function DetalleProductoPage() {
               <Card className="p-4 sm:p-6 lg:p-8">
                 <h2
                   className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b"
-                  style={{ color: colors.menuTextoPrincipal, borderColor: colors.fondosSuaves }}
+                  style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}
                 >
                   📋 Modo de uso
                 </h2>
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>
                   {producto.modoUso}
                 </p>
               </Card>
@@ -385,11 +384,11 @@ export default function DetalleProductoPage() {
               <Card className="p-4 sm:p-6 lg:p-8">
                 <h2
                   className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b"
-                  style={{ color: colors.menuTextoPrincipal, borderColor: colors.fondosSuaves }}
+                  style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}
                 >
                   ✨ Resultado
                 </h2>
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>
                   {producto.resultado}
                 </p>
               </Card>

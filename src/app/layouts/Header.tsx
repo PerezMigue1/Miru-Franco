@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
-import { colors, colorsWithOpacity } from '../utils/colors';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import { clearAuthData, getToken } from '../utils/security';
 import { useCart } from '../context/CartContext';
 
@@ -16,6 +16,7 @@ export default function Header() {
   const { totalItems } = useCart();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('Usuario');
@@ -38,6 +39,19 @@ export default function Header() {
       }
     }
   }, [pathname]);
+
+  // Cerrar menú usuario al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   // ✅ Logout individual (solo este dispositivo)
   const handleLogout = async () => {
@@ -139,19 +153,9 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Derecha: Tienda + Carrito + Notificaciones + Usuario */}
+            {/* Derecha: Tema + Carrito + Notificaciones + Usuario */}
             <div className="flex items-center gap-4">
-              {/* Tienda en línea */}
-              <Link
-                href="/cliente/tienda-online"
-                className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
-                style={{ backgroundColor: colors.hover }}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                Tienda
-              </Link>
+              <ThemeToggle />
               {/* Carrito */}
               <Link
                 href="/cliente/tienda-online/carrito"
@@ -164,7 +168,7 @@ export default function Header() {
                 {totalItems > 0 && (
                   <span
                     className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
+                    style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
                   >
                     {totalItems > 99 ? '99+' : totalItems}
                   </span>
@@ -191,7 +195,7 @@ export default function Header() {
 
               {/* Usuario: Iniciar sesión si no está logueado, menú con perfil y cerrar sesión si sí */}
               {isLoggedIn ? (
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
@@ -206,29 +210,85 @@ export default function Header() {
                   </button>
                   {isUserMenuOpen && (
                     <div 
-                      className="absolute right-0 mt-2 rounded-lg shadow-lg border min-w-[200px] bg-header-footer"
-                      style={{ borderColor: colorsWithOpacity.bordeVisible }}
+                      className="absolute right-0 mt-2 rounded-lg shadow-xl border min-w-[240px] bg-white dark:bg-[#8a0018] overflow-hidden"
+                      style={{ borderColor: 'var(--borde-visible)' }}
                     >
+                      {/* Cabecera: usuario y perfil */}
+                      <div className="px-4 pt-4 pb-3">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0"
+                            style={{ backgroundColor: 'var(--hover)', color: 'var(--texto-fondo-oscuro)' }}
+                          >
+                            {userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-base truncate text-gray-900 dark:text-white">{userName}</p>
+                            <button
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                router.push('/perfil');
+                              }}
+                              className="text-sm font-medium hover:underline flex items-center gap-1 text-gray-700 dark:text-gray-200"
+                            >
+                              Mi perfil
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <hr className="border-gray-200 dark:border-white/20" />
+                      {/* Mi cuenta */}
                       <div className="py-2">
+                        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          Mi cuenta
+                        </p>
                         <button
                           onClick={() => {
                             setIsUserMenuOpen(false);
-                            router.push('/perfil');
+                            router.push('/cliente/tienda-online/mis-pedidos');
                           }}
-                          className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"
                         >
-                          Mi Perfil
+                          Mis pedidos
                         </button>
-                        <a href="#" className="block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro">
-                          Configuración
-                        </a>
-                        <hr className="my-2" style={{ borderColor: colorsWithOpacity.bordeVisible }} />
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            router.push('/cliente/tienda-online');
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"
+                        >
+                          Sigue comprando
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            router.push('/cliente/tienda-online/carrito');
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white flex items-center justify-between"
+                        >
+                          Carrito
+                          {totalItems > 0 && (
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded-full"
+                              style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
+                            >
+                              {totalItems}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                      <hr className="border-gray-200 dark:border-white/20" />
+                      <div className="py-2">
                         <button
                           onClick={handleLogout}
                           disabled={loading}
-                          className="w-full text-left block px-4 py-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro disabled:opacity-50"
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white disabled:opacity-50"
                         >
-                          {loading ? 'Cerrando...' : 'Cerrar Sesión'}
+                          {loading ? 'Cerrando...' : 'Cerrar sesión'}
                         </button>
                       </div>
                     </div>
@@ -238,7 +298,7 @@ export default function Header() {
                 <Link
                   href="/login"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
-                  style={{ backgroundColor: colors.hover }}
+                  style={{ backgroundColor: 'var(--hover)' }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -254,8 +314,7 @@ export default function Header() {
       {/* Menú Hamburguesa */}
       {isMenuOpen && (
         <div 
-          className="fixed left-0 w-80 h-[calc(100vh-72px)] z-50 overflow-y-auto shadow-xl text-texto-fondo-oscuro"
-          style={{ backgroundColor: colors.textoFondoOscuro, top: '72px' }}
+          className="fixed left-0 w-80 h-[calc(100vh-72px)] z-50 overflow-y-auto scrollbar-hide shadow-xl bg-white dark:bg-[#710014] top-[72px]"
         >
           <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
         </div>
@@ -270,7 +329,7 @@ export default function Header() {
       )}
 
       {/* Barra de Navegación Secundaria */}
-      <nav className="fixed left-0 right-0 z-30 shadow-md bg-menu-texto-principal" style={{ top: '72px' }}>
+      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ top: '72px', backgroundColor: '#710014' }}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center h-14">
             <MenuHorizontal />

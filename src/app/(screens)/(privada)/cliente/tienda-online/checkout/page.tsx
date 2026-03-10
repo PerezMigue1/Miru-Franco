@@ -1,18 +1,29 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Input from '../../../../../components/ui/Input';
 import Select from '../../../../../components/ui/Select';
-import { colors } from '../../../../../utils/colors';
+import { useCart } from '../../../../../context/CartContext';
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { items, clearCart } = useCart();
   const [paso, setPaso] = useState(1);
+
+  const subtotal = items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+  const envio = items.length > 0 ? 50 : 0;
+  const total = subtotal + envio;
+
+  useEffect(() => {
+    if (items.length === 0 && paso > 0) {
+      router.replace('/cliente/tienda-online/carrito');
+    }
+  }, [items.length, paso, router]);
 
   const [datosPersonales, setDatosPersonales] = useState({
     nombre: '',
@@ -53,14 +64,11 @@ export default function CheckoutPage() {
     { value: 'transferencia', label: 'Transferencia Bancaria' },
   ];
 
-  const subtotal = 880;
-  const envio = 50;
-  const total = subtotal + envio;
-
   const manejarSiguiente = () => {
     if (paso < 3) {
       setPaso(paso + 1);
     } else {
+      clearCart();
       router.push('/cliente/tienda-online/confirmacion');
     }
   };
@@ -88,8 +96,8 @@ export default function CheckoutPage() {
                     paso >= num ? 'ring-2 ring-offset-2' : ''
                   }`}
                   style={{
-                    backgroundColor: paso >= num ? colors.botonesPrincipales : colors.fondosSuaves,
-                    color: paso >= num ? colors.textoFondoOscuro : colors.menuTextoPrincipal,
+                    backgroundColor: paso >= num ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
+                    color: paso >= num ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
                   }}
                 >
                   {num}
@@ -97,20 +105,20 @@ export default function CheckoutPage() {
                 {num < 3 && (
                   <div
                     className={`w-16 h-1 ${paso > num ? '' : 'opacity-50'}`}
-                    style={{ backgroundColor: paso > num ? colors.botonesPrincipales : colors.fondosSuaves }}
+                    style={{ backgroundColor: paso > num ? 'var(--botones-principales)' : 'var(--fondos-suaves)' }}
                   />
                 )}
               </div>
             ))}
           </div>
           <div className="flex justify-center gap-16 mt-2">
-            <span className="text-sm" style={{ color: paso >= 1 ? colors.menuTextoPrincipal : colors.encabezadosAlterno }}>
+            <span className="text-sm" style={{ color: paso >= 1 ? 'var(--menu-texto-principal)' : 'var(--encabezados-alterno)' }}>
               Datos Personales
             </span>
-            <span className="text-sm" style={{ color: paso >= 2 ? colors.menuTextoPrincipal : colors.encabezadosAlterno }}>
+            <span className="text-sm" style={{ color: paso >= 2 ? 'var(--menu-texto-principal)' : 'var(--encabezados-alterno)' }}>
               Envío
             </span>
-            <span className="text-sm" style={{ color: paso >= 3 ? colors.menuTextoPrincipal : colors.encabezadosAlterno }}>
+            <span className="text-sm" style={{ color: paso >= 3 ? 'var(--menu-texto-principal)' : 'var(--encabezados-alterno)' }}>
               Pago
             </span>
           </div>
@@ -122,7 +130,7 @@ export default function CheckoutPage() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Datos Personales
                 </h2>
@@ -163,7 +171,7 @@ export default function CheckoutPage() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Dirección de Envío
                 </h2>
@@ -224,7 +232,7 @@ export default function CheckoutPage() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Método de Pago
                 </h2>
@@ -297,27 +305,45 @@ export default function CheckoutPage() {
             <Card>
               <h3
                 className="text-subtitle mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Resumen del Pedido
               </h3>
+              {items.length > 0 && (
+                <div className="mb-4 max-h-40 overflow-y-auto space-y-2" style={{ borderBottom: '1px solid var(--fondos-suaves)' }}>
+                  {items.map((item) => (
+                    <div key={String(item.id)} className="flex justify-between text-sm">
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>
+                        {item.nombre}
+                        {item.presentacion && (
+                          <span style={{ color: 'var(--encabezados-alterno)' }}> — {item.presentacion}</span>
+                        )}
+                        <span style={{ color: 'var(--encabezados-alterno)' }}> × {item.cantidad}</span>
+                      </span>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>
+                        ${(item.precio * item.cantidad).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
-                  <span style={{ color: colors.encabezadosAlterno }}>Subtotal:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${subtotal.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: colors.encabezadosAlterno }}>Envío:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${envio.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${envio.toLocaleString()}</span>
                 </div>
-                <div className="pt-3 border-t" style={{ borderColor: colors.fondosSuaves }}>
+                <div className="pt-3 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <div className="flex justify-between">
-                    <span className="font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                    <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                       Total:
                     </span>
                     <span
                       className="text-2xl font-bold"
-                      style={{ color: colors.menuTextoPrincipal }}
+                      style={{ color: 'var(--menu-texto-principal)' }}
                     >
                       ${total.toLocaleString()}
                     </span>

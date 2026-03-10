@@ -8,7 +8,6 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
-import { colors } from '../../../utils/colors';
 
 export interface ProveedorItem {
   id: number;
@@ -201,7 +200,7 @@ export default function ProveedoresPage() {
           </>
         }
       >
-        <p style={{ color: colors.menuTextoPrincipal }}>
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
           ¿Estás seguro de que deseas eliminar a &quot;{proveedorToDelete?.nombre}&quot;?
         </p>
       </Modal>

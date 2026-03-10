@@ -8,7 +8,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
 
 export default function EntregasEnviosPage() {
   const entregas = [
@@ -72,7 +71,7 @@ export default function EntregasEnviosPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Coordinar Nueva Entrega
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface EnlaceEnviadoProps {
   email?: string;
@@ -24,7 +23,7 @@ export default function EnlaceEnviado({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
         <div className="text-center">
           <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,9 +61,9 @@ export default function EnlaceEnviado({
           <button
             onClick={handleSwitchToLogin}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors bg-botones-principales"
-            style={{ backgroundColor: colors.botonesPrincipales }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+            style={{ backgroundColor: 'var(--botones-principales)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
           >
             Volver a Iniciar Sesión
           </button>

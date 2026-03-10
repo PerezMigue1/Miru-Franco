@@ -8,8 +8,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
-
 export default function VentaOnlinePage() {
   const pedidos = [
     { id: 1, cliente: 'María González', productos: 'Shampoo Avina x2', total: '$700', estado: 'pendiente', metodo: 'Transferencia', zona: 'Colonia Juárez', entrega: 'Gratuita' },
@@ -34,26 +32,26 @@ export default function VentaOnlinePage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Pendientes</p>
-            <p className="text-2xl font-bold" style={{ color: colors.menuTextoPrincipal }}>5</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p>
+            <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>5</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Preparados</p>
-            <p className="text-2xl font-bold" style={{ color: colors.menuTextoPrincipal }}>2</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Preparados</p>
+            <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>En Tránsito</p>
-            <p className="text-2xl font-bold" style={{ color: colors.menuTextoPrincipal }}>3</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Tránsito</p>
+            <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>3</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Entregados</p>
-            <p className="text-2xl font-bold" style={{ color: colors.menuTextoPrincipal }}>12</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Entregados</p>
+            <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>12</p>
           </div>
         </Card>
       </div>
@@ -95,7 +93,7 @@ export default function VentaOnlinePage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Nuevo Pedido Online
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

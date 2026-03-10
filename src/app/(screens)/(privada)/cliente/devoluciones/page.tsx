@@ -9,7 +9,7 @@ import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import Badge from '../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { colors } from '../../../../utils/colors';
+import { showAlert } from '../../../../utils/toast';
 
 export default function DevolucionesPage() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -85,35 +85,35 @@ export default function DevolucionesPage() {
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Devoluciones y Cambios
             </h1>
-            <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
               Solicita cambios de productos. Recuerda que solo se realizan cambios, no reembolsos en efectivo.
             </p>
           </div>
 
           {/* Información del Cliente */}
           <Card className="mb-6">
-            <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Información del Cliente
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Nombre:</p>
-                <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Nombre:</p>
+                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                   {clienteInfo.nombre}
                 </p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>ID Cliente:</p>
-                <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>ID Cliente:</p>
+                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                   {clienteInfo.id}
                 </p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Teléfono:</p>
-                <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono:</p>
+                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                   {clienteInfo.telefono}
                 </p>
               </div>
@@ -121,11 +121,11 @@ export default function DevolucionesPage() {
           </Card>
 
           <Card className="mb-6">
-            <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: colors.fondosSuaves }}>
-              <h3 className="font-semibold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+            <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <h3 className="font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                 Política de Cambios:
               </h3>
-              <ul className="text-sm space-y-1" style={{ color: colors.encabezadosAlterno }}>
+              <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
                 <li>• El producto debe estar sellado y sin abrir</li>
                 <li>• El producto debe estar en las mismas condiciones en que fue entregado</li>
                 <li>• Solo se aceptan cambios, no devoluciones de dinero</li>
@@ -133,7 +133,7 @@ export default function DevolucionesPage() {
               </ul>
             </div>
 
-            <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Mis Solicitudes de Cambio
             </h2>
             <Table headers={['Producto', 'Pedido', 'Cliente', 'Motivo', 'Fecha', 'Estado']}>
@@ -159,10 +159,10 @@ export default function DevolucionesPage() {
           {!mostrarFormulario ? (
             <Card>
               <div className="text-center">
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Solicitar Cambio de Producto
                 </h2>
-                <p className="mb-6" style={{ color: colors.encabezadosAlterno }}>
+                <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
                   Si necesitas cambiar un producto, completa el siguiente formulario
                 </p>
                 <Button onClick={() => setMostrarFormulario(true)}>
@@ -172,7 +172,7 @@ export default function DevolucionesPage() {
             </Card>
           ) : (
             <Card>
-              <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Nueva Solicitud de Cambio
               </h2>
               <div className="space-y-4">
@@ -191,43 +191,43 @@ export default function DevolucionesPage() {
                 />
 
                 {productoActual && (
-                  <Card className="p-4" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <h3 className="font-semibold mb-3" style={{ color: colors.menuTextoPrincipal }}>
+                  <Card className="p-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <h3 className="font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
                       Información del Producto Seleccionado:
                     </h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p style={{ color: colors.encabezadosAlterno }}>Producto:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p style={{ color: 'var(--encabezados-alterno)' }}>Producto:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {productoActual.nombre}
                         </p>
                       </div>
                       <div>
-                        <p style={{ color: colors.encabezadosAlterno }}>Número de Pedido:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p style={{ color: 'var(--encabezados-alterno)' }}>Número de Pedido:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {productoActual.pedido}
                         </p>
                       </div>
                       <div>
-                        <p style={{ color: colors.encabezadosAlterno }}>Fecha de Compra:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p style={{ color: 'var(--encabezados-alterno)' }}>Fecha de Compra:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {productoActual.fechaCompra}
                         </p>
                       </div>
                       <div>
-                        <p style={{ color: colors.encabezadosAlterno }}>Precio:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p style={{ color: 'var(--encabezados-alterno)' }}>Precio:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {productoActual.precio}
                         </p>
                       </div>
                       <div>
-                        <p style={{ color: colors.encabezadosAlterno }}>Cantidad:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p style={{ color: 'var(--encabezados-alterno)' }}>Cantidad:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {productoActual.cantidad}
                         </p>
                       </div>
                       <div>
-                        <p style={{ color: colors.encabezadosAlterno }}>Estado:</p>
+                        <p style={{ color: 'var(--encabezados-alterno)' }}>Estado:</p>
                         <Badge variant="success" size="sm">{productoActual.estado}</Badge>
                       </div>
                     </div>
@@ -256,11 +256,11 @@ export default function DevolucionesPage() {
                   rows={3} 
                   fullWidth 
                 />
-                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                     Información que se enviará:
                   </p>
-                  <ul className="text-sm space-y-1" style={{ color: colors.encabezadosAlterno }}>
+                  <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     <li>• Cliente: {clienteInfo.nombre} ({clienteInfo.id})</li>
                     {productoActual && (
                       <>
@@ -287,10 +287,10 @@ export default function DevolucionesPage() {
                     disabled={!productoSeleccionado}
                     onClick={() => {
                       if (!productoSeleccionado) {
-                        alert('Por favor selecciona un producto');
+                        showAlert('Por favor selecciona un producto');
                         return;
                       }
-                      alert(`Solicitud de cambio enviada para:\n\nCliente: ${clienteInfo.nombre}\nProducto: ${productoActual?.nombre}\nPedido: ${productoActual?.pedido}`);
+                      showAlert(`Solicitud de cambio enviada para:\n\nCliente: ${clienteInfo.nombre}\nProducto: ${productoActual?.nombre}\nPedido: ${productoActual?.pedido}`);
                       setMostrarFormulario(false);
                       setProductoSeleccionado('');
                     }}

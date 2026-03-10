@@ -1,6 +1,5 @@
 'use client';
 
-import { colors } from '../../utils/colors';
 
 /** Clase estándar para el padding horizontal del área de scroll (evita que el contenido quede bajo las flechas). */
 export const SCROLL_ARROW_PADDING_X = 'px-12 sm:px-14';
@@ -34,10 +33,10 @@ export default function ScrollArrows({
         type="button"
         onClick={onPrev}
         className={`left-0 ${btnClass}`}
-        style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
+        style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
         aria-label={prevAriaLabel}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.botonesPrincipales; }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
       >
         <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -47,10 +46,10 @@ export default function ScrollArrows({
         type="button"
         onClick={onNext}
         className={`right-0 ${btnClass}`}
-        style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
+        style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
         aria-label={nextAriaLabel}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.botonesPrincipales; }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
       >
         <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

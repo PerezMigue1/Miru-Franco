@@ -7,7 +7,7 @@ import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Badge from '../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { colors } from '../../../../utils/colors';
+import { showToast } from '../../../../utils/toast';
 
 export default function FacturasPage() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -23,10 +23,10 @@ export default function FacturasPage() {
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Mis Facturas y Notas de Remisión
             </h1>
-            <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
               Descarga tus facturas electrónicas y notas de remisión
             </p>
           </div>
@@ -54,7 +54,7 @@ export default function FacturasPage() {
                       size="sm" 
                       variant="outline"
                       onClick={() => {
-                        alert(`Descargando ${doc.tipo} ${doc.numero}...`);
+                        showToast(`Descargando ${doc.tipo} ${doc.numero}...`, 'info');
                         // En producción, esto descargaría el archivo
                       }}
                     >
@@ -68,10 +68,10 @@ export default function FacturasPage() {
 
           {!mostrarFormulario ? (
             <Card className="mt-6">
-              <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Solicitar Factura Electrónica
               </h2>
-              <p className="mb-4" style={{ color: colors.encabezadosAlterno }}>
+              <p className="mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                 Si necesitas una factura electrónica para alguna de tus compras o servicios, 
                 puedes solicitarla aquí. Te la enviaremos por correo electrónico.
               </p>
@@ -81,7 +81,7 @@ export default function FacturasPage() {
             </Card>
           ) : (
             <Card className="mt-6">
-              <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Nueva Solicitud de Factura
               </h2>
               <div className="space-y-4">
@@ -96,7 +96,7 @@ export default function FacturasPage() {
                   <Button 
                     fullWidth 
                     onClick={() => {
-                      alert('Solicitud de factura enviada. Te contactaremos pronto.');
+                      showToast('Solicitud de factura enviada. Te contactaremos pronto.', 'success');
                       setMostrarFormulario(false);
                     }}
                   >

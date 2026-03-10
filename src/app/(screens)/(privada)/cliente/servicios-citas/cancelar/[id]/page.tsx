@@ -7,8 +7,6 @@ import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Textarea from '../../../../../../components/ui/Textarea';
-import { colors } from '../../../../../../utils/colors';
-
 export default function CancelarCitaPage() {
   const params = useParams();
   const router = useRouter();
@@ -53,21 +51,21 @@ export default function CancelarCitaPage() {
             <div className="mb-6">
               <div
                 className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
-                style={{ backgroundColor: colors.danger }}
+                style={{ backgroundColor: 'var(--danger)' }}
               >
-                <span className="text-4xl" style={{ color: colors.textoFondoOscuro }}>
+                <span className="text-4xl" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                   ⚠
                 </span>
               </div>
               <h1
                 className="text-hero mb-2"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 ¿Confirmar Cancelación?
               </h1>
               <p
                 className="text-lead"
-                style={{ color: colors.encabezadosAlterno }}
+                style={{ color: 'var(--encabezados-alterno)' }}
               >
                 Esta acción no se puede deshacer
               </p>
@@ -75,16 +73,16 @@ export default function CancelarCitaPage() {
 
             <div
               className="bg-white rounded-lg p-6 mb-6 text-left"
-              style={{ backgroundColor: colors.fondosSuaves }}
+              style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
               <div className="space-y-2">
-                <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                   Cita a cancelar:
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Servicio:</strong> {cita.servicio}
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Fecha:</strong>{' '}
                   {new Date(cita.fecha).toLocaleDateString('es-ES', {
                     weekday: 'long',
@@ -93,10 +91,10 @@ export default function CancelarCitaPage() {
                     day: 'numeric',
                   })}
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Hora:</strong> {cita.hora}
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Especialista:</strong> {cita.especialista}
                 </p>
               </div>
@@ -137,15 +135,15 @@ export default function CancelarCitaPage() {
             <div className="mb-6">
               <h2
                 className="text-page-title mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Información de la Cita
               </h2>
               <div className="space-y-2">
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Servicio:</strong> {cita.servicio}
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Fecha:</strong>{' '}
                   {new Date(cita.fecha).toLocaleDateString('es-ES', {
                     weekday: 'long',
@@ -154,10 +152,10 @@ export default function CancelarCitaPage() {
                     day: 'numeric',
                   })}
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Hora:</strong> {cita.hora}
                 </p>
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Especialista:</strong> {cita.especialista}
                 </p>
               </div>
@@ -167,7 +165,7 @@ export default function CancelarCitaPage() {
               <div>
                 <label
                   className="block mb-2 font-medium"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Motivo de Cancelación
                 </label>
@@ -176,14 +174,14 @@ export default function CancelarCitaPage() {
                   onChange={(e) => setMotivo(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
                   style={{
-                    backgroundColor: colors.textoFondoOscuro,
-                    borderColor: colors.fondosSuaves,
-                    color: colors.menuTextoPrincipal,
+                    backgroundColor: 'var(--texto-fondo-oscuro)',
+                    borderColor: 'var(--fondos-suaves)',
+                    color: 'var(--menu-texto-principal)',
                   }}
                 >
                   <option value="">Selecciona un motivo</option>
                   {motivos.map((m) => (
-                    <option key={m} value={m} style={{ color: colors.menuTextoPrincipal, backgroundColor: colors.textoFondoOscuro }}>
+                    <option key={m} value={m} style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'var(--texto-fondo-oscuro)' }}>
                       {m}
                     </option>
                   ))}
@@ -201,9 +199,9 @@ export default function CancelarCitaPage() {
 
               <div
                 className="p-4 rounded-lg"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
-                <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Importante:</strong> Si cancelas con menos de 24 horas de anticipación, 
                   puede aplicarse una política de cancelación. Te recomendamos reprogramar tu cita 
                   en lugar de cancelarla.

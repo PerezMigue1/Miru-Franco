@@ -7,7 +7,6 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
-import { colors } from '../../../utils/colors';
 
 export default function GestionPersonalPage() {
   const empleados = [
@@ -28,20 +27,20 @@ export default function GestionPersonalPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Total Empleados</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>2</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Total Empleados</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Servicios del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>43</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios del Mes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>43</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Comisiones del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>$4,300</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Comisiones del Mes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$4,300</p>
           </div>
         </Card>
       </div>
@@ -72,15 +71,15 @@ export default function GestionPersonalPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Solicitudes de Permisos
           </h2>
           <div className="space-y-3">
-            <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-              <p className="font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                 Auxiliar - 2024-01-20
               </p>
-              <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
                 Permiso personal
               </p>
               <div className="flex gap-2">
@@ -92,16 +91,16 @@ export default function GestionPersonalPage() {
         </Card>
 
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Horas Extras del Mes
           </h2>
           <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
+            <div className="flex justify-between items-center p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
               <div>
-                <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>Auxiliar</p>
-                <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>5 horas extras</p>
+                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Auxiliar</p>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>5 horas extras</p>
               </div>
-              <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>$500</p>
+              <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>$500</p>
             </div>
           </div>
         </Card>

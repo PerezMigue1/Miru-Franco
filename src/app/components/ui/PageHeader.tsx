@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { colors } from '../../utils/colors';
 
 interface PageHeaderProps {
   title: string;
@@ -15,14 +14,14 @@ export default function PageHeader({ title, subtitle, actions }: PageHeaderProps
       <div>
         <h1
           className="text-section-title mb-2"
-          style={{ color: colors.menuTextoPrincipal }}
+          style={{ color: 'var(--menu-texto-principal)' }}
         >
           {title}
         </h1>
         {subtitle && (
           <p
             className="text-lead"
-            style={{ color: colors.encabezadosAlterno }}
+            style={{ color: 'var(--encabezados-alterno)' }}
           >
             {subtitle}
           </p>

@@ -1,21 +1,35 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Input from '../../../../../components/ui/Input';
-import { colors } from '../../../../../utils/colors';
-import { useCart } from '../../../../../context/CartContext';
+import Modal from '../../../../../components/ui/Modal';
+import { useCart, type CartItem } from '../../../../../context/CartContext';
 
 export default function CarritoComprasPage() {
   const router = useRouter();
   const { items, updateQuantity, removeItem } = useCart();
+  const [itemToRemove, setItemToRemove] = useState<CartItem | null>(null);
 
-  const subtotal = items.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+  const subtotal = items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
   const envio = items.length > 0 ? 50 : 0;
   const total = subtotal + envio;
+
+  const handleRemoveConfirm = () => {
+    if (itemToRemove) {
+      removeItem(itemToRemove.id);
+      setItemToRemove(null);
+    }
+  };
+
+  const handleQuantityChange = (item: CartItem, value: number) => {
+    const qty = Math.max(1, Math.min(999, Math.floor(value) || 1));
+    updateQuantity(item.id, qty);
+  };
 
   return (
     <ModuleLayout>
@@ -37,7 +51,7 @@ export default function CarritoComprasPage() {
           <div className="lg:col-span-2 space-y-4">
             {items.length === 0 ? (
               <Card className="text-center py-12">
-                <p className="text-lead mb-4" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                   Tu carrito está vacío
                 </p>
                 <Button onClick={() => router.push('/cliente/tienda-online')}>
@@ -50,7 +64,7 @@ export default function CarritoComprasPage() {
                   <div className="flex flex-col md:flex-row gap-4">
                     <div
                       className="w-full md:w-32 h-32 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ backgroundColor: colors.fondosSuaves }}
+                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
                     >
                       {item.imagen ? (
                         <img
@@ -59,7 +73,7 @@ export default function CarritoComprasPage() {
                           className="w-full h-full object-contain"
                         />
                       ) : (
-                        <span className="text-xs" style={{ color: colors.menuTextoPrincipal }}>
+                        <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>
                           Imagen
                         </span>
                       )}
@@ -69,18 +83,18 @@ export default function CarritoComprasPage() {
                         <div>
                           <h3
                             className="text-subtitle mb-1"
-                            style={{ color: colors.menuTextoPrincipal }}
+                            style={{ color: 'var(--menu-texto-principal)' }}
                           >
                             {item.nombre}
                             {item.presentacion && (
-                              <span className="text-sm font-normal ml-1" style={{ color: colors.encabezadosAlterno }}>
+                              <span className="text-sm font-normal ml-1" style={{ color: 'var(--encabezados-alterno)' }}>
                                 — {item.presentacion}
                               </span>
                             )}
                           </h3>
                           <p
                             className="text-lg font-bold"
-                            style={{ color: colors.menuTextoPrincipal }}
+                            style={{ color: 'var(--menu-texto-principal)' }}
                           >
                             ${item.precio.toLocaleString()}
                           </p>
@@ -88,47 +102,48 @@ export default function CarritoComprasPage() {
                         <Button
                           size="sm"
                           variant="danger"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => setItemToRemove(item)}
                         >
                           Eliminar
                         </Button>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <label className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>
+                          <label className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
                             Cantidad:
                           </label>
                           <div className="flex items-center gap-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateQuantity(item.id, Math.max(1, item.cantidad - 1))}
+                              onClick={() => handleQuantityChange(item, item.cantidad - 1)}
                             >
                               -
                             </Button>
                             <Input
                               type="number"
                               value={item.cantidad}
-                              onChange={(e) => updateQuantity(item.id, Math.max(1, parseInt(e.target.value) || 1))}
+                              onChange={(e) => handleQuantityChange(item, parseInt(e.target.value, 10))}
                               className="w-20 text-center"
                               min={1}
+                              max={999}
                             />
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateQuantity(item.id, item.cantidad + 1)}
+                              onClick={() => handleQuantityChange(item, item.cantidad + 1)}
                             >
                               +
                             </Button>
                           </div>
                         </div>
                         <div>
-                          <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                             Subtotal:
                           </p>
                           <p
                             className="text-xl font-bold"
-                            style={{ color: colors.menuTextoPrincipal }}
+                            style={{ color: 'var(--menu-texto-principal)' }}
                           >
                             ${(item.precio * item.cantidad).toLocaleString()}
                           </p>
@@ -145,27 +160,27 @@ export default function CarritoComprasPage() {
             <Card>
               <h3
                 className="text-subtitle mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Resumen de Compra
               </h3>
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
-                  <span style={{ color: colors.encabezadosAlterno }}>Subtotal:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${subtotal.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: colors.encabezadosAlterno }}>Envío:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${envio.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${envio.toLocaleString()}</span>
                 </div>
-                <div className="pt-3 border-t" style={{ borderColor: colors.fondosSuaves }}>
+                <div className="pt-3 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <div className="flex justify-between">
-                    <span className="font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                    <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                       Total:
                     </span>
                     <span
                       className="text-2xl font-bold"
-                      style={{ color: colors.menuTextoPrincipal }}
+                      style={{ color: 'var(--menu-texto-principal)' }}
                     >
                       ${total.toLocaleString()}
                     </span>
@@ -192,6 +207,28 @@ export default function CarritoComprasPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={!!itemToRemove}
+        onClose={() => setItemToRemove(null)}
+        title="Eliminar producto"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setItemToRemove(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleRemoveConfirm}>
+              Eliminar
+            </Button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
+          ¿Quieres eliminar &quot;{itemToRemove?.nombre}
+          {itemToRemove?.presentacion ? ` — ${itemToRemove.presentacion}` : ''}&quot; del carrito?
+        </p>
+      </Modal>
     </ModuleLayout>
   );
 }

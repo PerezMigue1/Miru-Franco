@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 import { handleSecurityError } from '../../utils/security';
 import Notification from '../ui/Notification';
 import ActivateAccount from './ActivateAccount';
@@ -469,7 +468,7 @@ export default function Login({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
         <h2 className="text-page-title text-center mb-6 text-texto-fondo-oscuro">
           Iniciar Sesión
         </h2>
@@ -500,7 +499,7 @@ export default function Login({
                   onClick={handleResendCode}
                   disabled={isResending || !email || countdown !== null}
                   className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed block mx-auto"
-                  style={{ color: colors.enlacesTextosInteractivos }}
+                  style={{ color: 'var(--enlaces-textos-interactivos)' }}
                 >
                   {isResending 
                     ? 'Enviando...' 
@@ -514,9 +513,9 @@ export default function Login({
                 {countdown !== null && countdown > 0 && (
                   <div className="mt-3 p-3 rounded-lg border mx-auto max-w-md" style={{ 
                     backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                    borderColor: colors.warning
+                    borderColor: 'var(--warning)'
                   }}>
-                    <p className="text-sm text-center" style={{ color: colors.warning }}>
+                    <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
                       ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
                     </p>
                   </div>
@@ -551,7 +550,7 @@ export default function Login({
               }}
               className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
               style={{ 
-                borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
+                borderColor: errors.email ? 'var(--danger)' : 'var(--borde-visible)'
               }}
               placeholder="tu@email.com"
               disabled={isLoading || formDisabled}
@@ -590,7 +589,7 @@ export default function Login({
                 }}
                 className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors pr-12 bg-texto-fondo-oscuro text-header-footer"
               style={{ 
-                  borderColor: errors.password ? colors.danger : colorsWithOpacity.bordeVisible
+                  borderColor: errors.password ? 'var(--danger)' : 'var(--borde-visible)'
               }}
                 placeholder="••••••••"
                 disabled={isLoading || formDisabled}
@@ -642,9 +641,9 @@ export default function Login({
             }}
             disabled={isLoading || isGoogleLoading || formDisabled}
             className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
-            style={{ backgroundColor: colors.botonesPrincipales }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+            style={{ backgroundColor: 'var(--botones-principales)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
@@ -652,11 +651,11 @@ export default function Login({
 
         {/* Divider */}
         <div className="my-6 flex items-center">
-          <div className="flex-1 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}></div>
-          <span className="px-4 text-sm text-texto-fondo-oscuro" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+          <div className="flex-1 border-t" style={{ borderColor: 'var(--borde-sutil)' }}></div>
+          <span className="px-4 text-sm text-texto-fondo-oscuro" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
             O
           </span>
-          <div className="flex-1 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}></div>
+          <div className="flex-1 border-t" style={{ borderColor: 'var(--borde-sutil)' }}></div>
         </div>
 
         {/* Google Login Button */}
@@ -666,14 +665,14 @@ export default function Login({
           disabled={isLoading || isGoogleLoading}
           className="w-full py-3 px-4 rounded-lg border font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 bg-texto-fondo-oscuro hover:opacity-90"
           style={{ 
-            borderColor: colorsWithOpacity.bordeVisible,
-            color: colors.headerFooter 
+            borderColor: 'var(--borde-visible)',
+            color: 'var(--header-footer)' 
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = colorsWithOpacity.bordeSecundario;
+            e.currentTarget.style.borderColor = 'var(--borde-secundario)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = colorsWithOpacity.bordeVisible;
+            e.currentTarget.style.borderColor = 'var(--borde-visible)';
           }}
         >
           {isGoogleLoading ? (
@@ -703,9 +702,9 @@ export default function Login({
             <button
               onClick={handleSwitchToRegister}
               className="font-medium hover:underline text-enlaces-textos-interactivos"
-              style={{ color: colors.enlacesTextosInteractivos }}
-              onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-              onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+              style={{ color: 'var(--enlaces-textos-interactivos)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'}
               disabled={isLoading}
             >
               Regístrate

@@ -1,7 +1,6 @@
 'use client';
 
 import { SelectHTMLAttributes, ReactNode } from 'react';
-import { colors } from '../../utils/colors';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -25,7 +24,7 @@ export default function Select({
       {label && (
         <label
           className="block mb-2 font-medium"
-          style={{ color: colors.menuTextoPrincipal }}
+          style={{ color: 'var(--menu-texto-principal)' }}
         >
           {label}
         </label>
@@ -38,33 +37,33 @@ export default function Select({
           ${className}
         `}
         style={{
-          backgroundColor: colors.textoFondoOscuro,
-          borderColor: error ? colors.danger : colors.encabezadosAlterno,
-          color: colors.menuTextoPrincipal,
+          backgroundColor: 'var(--input-bg)',
+          borderColor: error ? 'var(--danger)' : 'var(--encabezados-alterno)',
+          color: 'var(--menu-texto-principal)',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = colors.hover;
-          e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.hover}`;
+          e.currentTarget.style.borderColor = 'var(--hover)';
+          e.currentTarget.style.boxShadow = '0 0 0 3px var(--hover)';
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = error ? colors.danger : colors.encabezadosAlterno;
+          e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--encabezados-alterno)';
           e.currentTarget.style.boxShadow = 'none';
         }}
         {...props}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value} style={{ color: colors.menuTextoPrincipal, backgroundColor: colors.textoFondoOscuro }}>
+          <option key={option.value} value={option.value} style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'var(--input-bg)' }}>
             {option.label}
           </option>
         ))}
       </select>
       {error && (
-        <p className="mt-1 text-sm" style={{ color: colors.danger }}>
+        <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
           {error}
         </p>
       )}
       {helperText && !error && (
-        <p className="mt-1 text-sm" style={{ color: colors.encabezadosAlterno }}>
+        <p className="mt-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           {helperText}
         </p>
       )}

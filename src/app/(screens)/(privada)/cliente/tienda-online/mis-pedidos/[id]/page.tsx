@@ -7,8 +7,6 @@ import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../../../components/ui/Table';
-import { colors } from '../../../../../../utils/colors';
-
 export default function DetallePedidoPage() {
   const params = useParams();
   const router = useRouter();
@@ -80,11 +78,11 @@ export default function DetallePedidoPage() {
           <div>
             <h1
               className="text-hero mb-2"
-              style={{ color: colors.menuTextoPrincipal }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Detalle del Pedido
             </h1>
-            <p className="font-mono text-lg mb-2" style={{ color: colors.encabezadosAlterno }}>
+            <p className="font-mono text-lg mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
               {pedido.id}
             </p>
             <Badge variant={obtenerVariantEstado(pedido.estado) as any} size="lg">
@@ -98,7 +96,7 @@ export default function DetallePedidoPage() {
             <Card>
               <h2
                 className="text-page-title mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Productos del Pedido
               </h2>
@@ -112,22 +110,22 @@ export default function DetallePedidoPage() {
                   </TableRow>
                 ))}
               </Table>
-              <div className="mt-4 pt-4 border-t" style={{ borderColor: colors.fondosSuaves }}>
+              <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                 <div className="flex justify-between mb-2">
-                  <span style={{ color: colors.encabezadosAlterno }}>Subtotal:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${pedido.subtotal.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${pedido.subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between mb-2">
-                  <span style={{ color: colors.encabezadosAlterno }}>Envío:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${pedido.envio.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${pedido.envio.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t" style={{ borderColor: colors.fondosSuaves }}>
-                  <span className="font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="flex justify-between pt-2 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                  <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                     Total:
                   </span>
                   <span
                     className="text-2xl font-bold"
-                    style={{ color: colors.menuTextoPrincipal }}
+                    style={{ color: 'var(--menu-texto-principal)' }}
                   >
                     ${pedido.total.toLocaleString()}
                   </span>
@@ -138,16 +136,16 @@ export default function DetallePedidoPage() {
             <Card>
               <h2
                 className="text-page-title mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Información de Envío
               </h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Dirección
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>
                     {pedido.direccion.calle} {pedido.direccion.numero}
                     <br />
                     {pedido.direccion.colonia}
@@ -157,10 +155,10 @@ export default function DetallePedidoPage() {
                 </div>
                 {pedido.direccion.referencias && (
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Referencias
                     </p>
-                    <p style={{ color: colors.encabezadosAlterno }}>{pedido.direccion.referencias}</p>
+                    <p style={{ color: 'var(--encabezados-alterno)' }}>{pedido.direccion.referencias}</p>
                   </div>
                 )}
               </div>
@@ -170,36 +168,36 @@ export default function DetallePedidoPage() {
               <Card>
                 <h2
                   className="text-page-title mb-4"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Seguimiento del Envío
                 </h2>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Número de Rastreo
                     </p>
-                    <p className="font-mono font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                    <p className="font-mono font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                       {pedido.seguimiento.numero}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Estado
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>{pedido.seguimiento.estado}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{pedido.seguimiento.estado}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Ubicación Actual
                     </p>
-                    <p style={{ color: colors.encabezadosAlterno }}>{pedido.seguimiento.ubicacion}</p>
+                    <p style={{ color: 'var(--encabezados-alterno)' }}>{pedido.seguimiento.ubicacion}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Fecha Estimada de Entrega
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>
                       {new Date(pedido.seguimiento.fechaEstimada).toLocaleDateString('es-ES', {
                         weekday: 'long',
                         year: 'numeric',
@@ -217,16 +215,16 @@ export default function DetallePedidoPage() {
             <Card>
               <h3
                 className="text-subtitle mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Información del Pedido
               </h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Fecha del Pedido
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>
                     {new Date(pedido.fecha).toLocaleDateString('es-ES', {
                       weekday: 'long',
                       year: 'numeric',
@@ -234,16 +232,16 @@ export default function DetallePedidoPage() {
                       day: 'numeric',
                     })}
                   </p>
-                  <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     Hora: {pedido.hora}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Método de Pago
                   </p>
-                  <p style={{ color: colors.menuTextoPrincipal }}>{pedido.metodoPago.tipo}</p>
-                  <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{pedido.metodoPago.tipo}</p>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     {pedido.metodoPago.ultimosDigitos}
                   </p>
                 </div>

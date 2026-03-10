@@ -10,7 +10,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
-import { colors } from '../../../utils/colors';
 import { getCategoryColor } from '../../../utils/categoryColors';
 import {
   getServicios,
@@ -109,8 +108,8 @@ export default function ServiciosPage() {
       />
 
       {error && (
-        <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: colors.danger }}>
-          <p className="text-sm font-medium" style={{ color: colors.danger }}>{error}</p>
+        <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+          <p className="text-sm font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
         </Card>
       )}
 
@@ -118,7 +117,7 @@ export default function ServiciosPage() {
         <Table headers={['Servicio', 'Precio', 'Duración', 'Categoría', 'Acciones']}>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={5} style={{ color: colors.encabezadosAlterno }}>
+              <TableCell colSpan={5} style={{ color: 'var(--encabezados-alterno)' }}>
                 Cargando servicios...
               </TableCell>
             </TableRow>
@@ -231,7 +230,7 @@ export default function ServiciosPage() {
           </>
         }
       >
-        <p style={{ color: colors.menuTextoPrincipal }}>
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
           ¿Estás seguro de que deseas eliminar el servicio &quot;{servicioToDelete?.nombre}&quot;?
         </p>
       </Modal>

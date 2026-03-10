@@ -1,7 +1,6 @@
 'use client';
 
 import { ButtonHTMLAttributes, ReactNode } from 'react';
-import { colors } from '../../utils/colors';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'outline' | 'chip';
@@ -22,43 +21,40 @@ export default function Button({
   
   const variants = {
     primary: {
-      // Volvemos al estilo global original de primario (vino)
-      bg: colors.botonesPrincipales,
-      text: colors.textoFondoOscuro,
-      hover: colors.hover,
+      bg: 'var(--botones-principales)',
+      text: 'var(--texto-fondo-oscuro)',
+      hover: 'var(--hover)',
     },
     secondary: {
-      bg: colors.tarjetasPaneles,
-      text: colors.textoFondoOscuro,
-      hover: colors.hover,
+      bg: 'var(--tarjetas-paneles)',
+      text: 'var(--texto-fondo-oscuro)',
+      hover: 'var(--hover)',
     },
     danger: {
-      bg: colors.danger,
-      text: colors.textoFondoOscuro,
-      hover: colors.hover,
+      bg: 'var(--danger)',
+      text: 'var(--texto-fondo-oscuro)',
+      hover: 'var(--hover)',
     },
     success: {
-      bg: colors.success,
-      text: colors.textoFondoOscuro,
-      hover: colors.hover,
+      bg: 'var(--success)',
+      text: 'var(--texto-fondo-oscuro)',
+      hover: 'var(--hover)',
     },
     warning: {
-      bg: colors.warning,
-      text: colors.textoFondoOscuro,
-      hover: colors.hover,
+      bg: 'var(--warning)',
+      text: 'var(--texto-fondo-oscuro)',
+      hover: 'var(--hover)',
     },
     outline: {
       bg: 'transparent',
-      text: colors.menuTextoPrincipal,
-      // Rosa sólido de la paleta para hover (chips como "Maquillaje")
-      hover: colors.hover,
-      border: colors.menuTextoPrincipal,
+      text: 'var(--menu-texto-principal)',
+      hover: 'var(--hover)',
+      border: 'var(--menu-texto-principal)',
     },
-    // Variante específica para chips de categorías (fondo rosa sólido siempre)
     chip: {
-      bg: colors.hover,
-      text: colors.textoFondoOscuro,
-      hover: colors.hover,
+      bg: 'var(--hover)',
+      text: 'var(--texto-fondo-oscuro)',
+      hover: 'var(--hover)',
     },
   };
 
@@ -67,7 +63,6 @@ export default function Button({
     md: 'px-6 py-2.5 text-base',
     lg: 'px-8 py-3.5 text-lg',
   };
-
   const variantStyle = variants[variant];
   const sizeStyle = sizes[size];
   const widthStyle = fullWidth ? 'w-full' : '';
@@ -76,18 +71,30 @@ export default function Button({
     <button
       className={`${baseStyles} ${sizeStyle} ${widthStyle} ${className}`}
       style={{
-        backgroundColor: variant === 'outline' ? variantStyle.bg : variantStyle.bg,
+        backgroundColor: variantStyle.bg,
         color: variantStyle.text,
         border: variant === 'outline' && 'border' in variantStyle ? `2px solid ${variantStyle.border}` : 'none',
       }}
       onMouseEnter={(e) => {
         if (!props.disabled) {
           e.currentTarget.style.backgroundColor = variantStyle.hover;
+          if (variant === 'outline') {
+            if ('border' in variantStyle && variantStyle.border) {
+              e.currentTarget.style.borderColor = variantStyle.hover;
+            }
+            e.currentTarget.style.color = 'var(--texto-fondo-oscuro)';
+          }
         }
       }}
       onMouseLeave={(e) => {
         if (!props.disabled) {
-          e.currentTarget.style.backgroundColor = variant === 'outline' ? 'transparent' : variantStyle.bg;
+          e.currentTarget.style.backgroundColor = variantStyle.bg;
+          if (variant === 'outline') {
+            if ('border' in variantStyle && variantStyle.border) {
+              e.currentTarget.style.borderColor = variantStyle.border;
+            }
+            e.currentTarget.style.color = variantStyle.text;
+          }
         }
       }}
       {...props}

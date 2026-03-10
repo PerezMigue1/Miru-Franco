@@ -11,7 +11,6 @@ import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
 import Modal from '../../../components/ui/Modal';
 import { useState } from 'react';
-import { colors } from '../../../utils/colors';
 
 export default function CotizacionesEventosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,13 +39,13 @@ export default function CotizacionesEventosPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {paquetes.map((paquete) => (
           <Card key={paquete.id}>
-            <h3 className="text-subtitle mb-2" style={{ color: colors.textoFondoOscuro }}>
+            <h3 className="text-subtitle mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
               {paquete.nombre}
             </h3>
-            <p className="text-2xl font-bold mb-2" style={{ color: colors.textoFondoOscuro }}>
+            <p className="text-2xl font-bold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
               {paquete.precio}
             </p>
-            <p className="text-sm mb-4" style={{ color: colors.textoFondoOscuro }}>
+            <p className="text-sm mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
               {paquete.descripcion}
             </p>
             <Button size="sm" fullWidth>Ver Detalles</Button>

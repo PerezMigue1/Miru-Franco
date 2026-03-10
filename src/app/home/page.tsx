@@ -4,11 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import Header from '../layouts/Header';
-import Carousel from '../components/ui/Carousel';
 import ScrollArrows, { SCROLL_ARROW_PADDING_X } from '../components/ui/ScrollArrows';
 import Card from '../components/ui/Card';
 import Footer from '../layouts/Footer';
-import { colors } from '../utils/colors';
 import { getProductosSinRedirigir } from '../services/productos';
 import type { Producto } from '../services/productos';
 import { getServicios } from '../services/servicios';
@@ -84,15 +82,93 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.fondoGeneral }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
       
       <main className="flex-1">
-        {/* Carrusel */}
-        <Carousel />
+        {/* Hero con tipografía marca MIRÚ Franco */}
+        <section
+          className="hero-bg-gradient relative flex flex-col items-center justify-center w-full px-4 overflow-hidden"
+          style={{ marginTop: '104px', height: 'calc(100vh - 104px)' }}
+        >
+          <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 lg:gap-6 py-0 md:items-center flex-1 min-h-0 h-full">
+            {/* Logo MIRÚ Franco - máximo tamaño, centrado en parte izquierda */}
+            <div className="w-full md:w-1/2 h-full md:flex md:items-center md:justify-center md:pr-2 lg:pr-4 min-h-0 flex-1 flex justify-center">
+              <div
+                className="relative flex-shrink-0 aspect-square mx-auto"
+                style={{
+                  width: 'min(90vw, calc(100vh - 130px))',
+                  height: 'min(90vw, calc(100vh - 130px))',
+                }}
+              >
+                <Image
+                  src="/logo-miru.jpg"
+                  alt="Mirú Franco"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 85vw, 50vw"
+                  priority
+                />
+              </div>
+            </div>
+
+            {/* Bloque de texto - alineado al logo */}
+            <div className="w-full md:w-1/2 md:flex md:flex-col md:justify-center md:items-start md:pl-4 lg:pl-6 md:-mt-26 flex flex-col items-center md:items-start text-center md:text-left min-h-0 flex-1 overflow-hidden">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                <span className="hero-flourish" />
+                <span className="hero-ornament" />
+                <span className="hero-flourish" />
+              </div>
+
+              <div className="relative space-y-1">
+                <h1 className="text-brand-miru text-brand-gold tracking-tight leading-none">
+                  MIRÚ
+                </h1>
+                <span className="text-brand-franco text-brand-gold block -mt-0.5 md:ml-8 ml-5">
+                  FRANCO
+                </span>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-4">
+                  <span className="w-6 h-px shrink-0 opacity-70" style={{ backgroundColor: 'var(--logo-branding)' }} />
+                  <p
+                    className="text-brand-tagline tracking-[0.2em] px-2"
+                    style={{ color: 'var(--hero-tagline-color)' }}
+                  >
+                    BEAUTY SALON
+                  </p>
+                  <span className="w-6 h-px shrink-0 opacity-70" style={{ backgroundColor: 'var(--logo-branding)' }} />
+                </div>
+              </div>
+
+              {/* Texto descriptivo del sitio */}
+              <p
+                className="mt-5 md:mt-6 max-w-md text-sm md:text-base leading-relaxed"
+                style={{ color: 'var(--hero-tagline-color)', opacity: 0.95 }}
+              >
+                Realza tu belleza natural con productos y servicios profesionales.
+                Agenda tu cita, explora nuestra tienda y descubre la experiencia Mirú Franco.
+              </p>
+
+              <div className="flex items-center justify-center md:justify-start gap-3 mt-4">
+                <span className="hero-flourish" />
+                <span className="hero-ornament" />
+                <span className="hero-flourish" />
+              </div>
+            </div>
+          </div>
+
+          {/* Indicador scroll */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-bounce z-10" style={{ animationDuration: '2.5s' }}>
+            <span className="text-xs tracking-[0.3em] uppercase opacity-70" style={{ color: 'var(--hero-tagline-color)' }}>
+              Descubre
+            </span>
+            <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="opacity-60" style={{ color: 'var(--logo-branding)' }} aria-hidden>
+              <path d="M2 2l8 8 8-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </section>
 
         {/* Sección 1: Productos (API, orden aleatorio) */}
-        <section className="py-20" style={{ backgroundColor: colors.fondoGeneral }}>
+        <section className="py-20" style={{ backgroundColor: 'var(--fondo-general)' }}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-hero mb-4" style={{ color: '#161616' }}>
@@ -107,7 +183,7 @@ export default function Home() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-menu-texto-principal" />
               </div>
             ) : productos.length === 0 ? (
-              <p className="text-center py-8" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-center py-8" style={{ color: 'var(--hero-tagline-color)' }}>
                 No hay productos disponibles por el momento.
               </p>
             ) : (
@@ -148,7 +224,7 @@ export default function Home() {
                         })()}
                       </div>
                       <div className="p-4">
-                        <h3 className="text-subtitle mb-0.5 font-semibold line-clamp-1" style={{ color: colors.textoFondoOscuro }}>
+                        <h3 className="text-subtitle mb-0.5 font-semibold line-clamp-1" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                           {producto.nombre}
                         </h3>
                         <p className="text-sm line-clamp-2" style={{ color: 'rgba(242,241,237,0.8)' }}>
@@ -166,9 +242,9 @@ export default function Home() {
                 type="button"
                 onClick={() => router.push('/cliente/tienda-online')}
                 className="px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
-                style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.botonesPrincipales; }}
+                style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
               >
                 Ver tienda en línea →
               </button>
@@ -233,7 +309,7 @@ export default function Home() {
                           );
                         })()}
                         <div className="p-4">
-                          <h3 className="text-subtitle mb-0.5 font-semibold line-clamp-1" style={{ color: colors.textoFondoOscuro }}>
+                          <h3 className="text-subtitle mb-0.5 font-semibold line-clamp-1" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                             {servicio.nombre}
                           </h3>
                           <p className="text-sm line-clamp-2" style={{ color: 'rgba(242,241,237,0.7)' }}>
@@ -250,13 +326,13 @@ export default function Home() {
         </section>
 
         {/* Sección 3: Galería (scroll lateral con flechas) — mismo fondo que Productos */}
-        <section className="py-20 overflow-hidden" style={{ backgroundColor: colors.fondoGeneral }}>
+        <section className="py-20 overflow-hidden" style={{ backgroundColor: 'var(--fondo-general)' }}>
           <div className="container mx-auto px-4 mb-8">
             <div className="text-center">
-              <h2 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Galería
               </h2>
-              <p className="text-lead max-w-2xl mx-auto" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--hero-tagline-color)' }}>
                 Algunos de nuestros trabajos realizados.
               </p>
             </div>
@@ -282,15 +358,15 @@ export default function Home() {
                   >
                     <div
                       className="aspect-square w-full flex items-center justify-center"
-                      style={{ backgroundColor: colors.fondosSuaves }}
+                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
                     >
                       <span className="text-6xl">📸</span>
                     </div>
                     <div className="p-4">
-                      <p className="font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+                      <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                         {item.categoria}
                       </p>
-                      <p className="text-sm line-clamp-2" style={{ color: colors.encabezadosAlterno }}>
+                      <p className="text-sm line-clamp-2" style={{ color: 'var(--hero-tagline-color)' }}>
                         {item.descripcion}
                       </p>
                     </div>
@@ -304,9 +380,9 @@ export default function Home() {
               type="button"
               onClick={() => router.push('/cliente/galeria')}
               className="px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
-              style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.botonesPrincipales; }}
+              style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
             >
               Ver galería completa →
             </button>
@@ -314,7 +390,7 @@ export default function Home() {
         </section>
 
         {/* Sección 4: Sobre Nosotros */}
-        <section className="py-20" style={{ backgroundColor: colors.fondosSuaves }}>
+        <section className="py-20" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="rounded-lg shadow-lg p-8 border text-center" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
@@ -332,9 +408,9 @@ export default function Home() {
                 <button
                   type="button"
                   className="px-8 py-3 rounded-lg font-semibold text-lg transition-colors duration-200"
-                  style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.botonesPrincipales; }}
+                  style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
                 >
                   Conoce Más
                 </button>
@@ -357,17 +433,17 @@ export default function Home() {
                 <button
                   type="button"
                   className="px-8 py-3 rounded-lg font-semibold text-lg transition-colors duration-200"
-                  style={{ backgroundColor: colors.botonesPrincipales, color: colors.textoFondoOscuro }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.botonesPrincipales; }}
+                  style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
                 >
                   Agendar Cita
                 </button>
                 <button
                   type="button"
                   className="px-8 py-3 rounded-lg font-semibold text-lg transition-colors duration-200 border"
-                  style={{ borderColor: 'rgba(242,241,237,0.3)', color: colors.textoFondoOscuro }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hover; }}
+                  style={{ borderColor: 'var(--borde-secundario)', color: 'var(--texto-fondo-oscuro)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   Ver Catálogo

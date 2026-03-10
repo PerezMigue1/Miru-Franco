@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ForgotPasswordOTPProps {
   email: string;
@@ -171,7 +170,7 @@ export default function ForgotPasswordOTP({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
         <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
           Verificar Código
         </h2>
@@ -194,7 +193,7 @@ export default function ForgotPasswordOTP({
               onChange={handleInputChange}
               className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors text-center text-2xl tracking-widest bg-texto-fondo-oscuro text-header-footer"
               style={{ 
-                borderColor: error ? colors.danger : colorsWithOpacity.bordeVisible
+                borderColor: error ? 'var(--danger)' : 'var(--borde-visible)'
               }}
               placeholder="000000"
               maxLength={6}
@@ -214,21 +213,21 @@ export default function ForgotPasswordOTP({
           </div>
 
           {timeLeft > 0 && (
-            <p className="text-center text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            <p className="text-center text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               El código expira en: <strong>{formatTime(timeLeft)}</strong>
             </p>
           )}
 
           {timeLeft === 0 && (
             <div className="text-center">
-              <p className="text-sm mb-3" style={{ color: colors.danger }}>
+              <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>
                 El código ha expirado
               </p>
               <button
                 onClick={handleReenviarOTP}
                 disabled={isResending || countdown !== null}
                 className="text-sm font-medium transition-colors text-texto-fondo-oscuro hover:opacity-80 disabled:opacity-50"
-                style={{ color: colors.botonesPrincipales }}
+                style={{ color: 'var(--botones-principales)' }}
               >
                 {isResending 
                   ? 'Reenviando...' 
@@ -242,9 +241,9 @@ export default function ForgotPasswordOTP({
               {countdown !== null && countdown > 0 && (
                 <div className="mt-3 p-3 rounded-lg border" style={{ 
                   backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                  borderColor: colors.warning
+                  borderColor: 'var(--warning)'
                 }}>
-                  <p className="text-sm text-center" style={{ color: colors.warning }}>
+                  <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
                     ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
                   </p>
                 </div>
@@ -256,15 +255,15 @@ export default function ForgotPasswordOTP({
             onClick={handleVerificarOTP}
             disabled={isLoading || codigoOTP.length < 6}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
-            style={{ backgroundColor: colors.botonesPrincipales }}
+            style={{ backgroundColor: 'var(--botones-principales)' }}
             onMouseEnter={(e) => {
               if (!isLoading && codigoOTP.length >= 6) {
-                e.currentTarget.style.backgroundColor = colors.hover;
+                e.currentTarget.style.backgroundColor = 'var(--hover)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isLoading && codigoOTP.length >= 6) {
-                e.currentTarget.style.backgroundColor = colors.botonesPrincipales;
+                e.currentTarget.style.backgroundColor = 'var(--botones-principales)';
               }
             }}
           >
@@ -277,7 +276,7 @@ export default function ForgotPasswordOTP({
                 onClick={handleReenviarOTP}
                 disabled={isResending || countdown !== null}
                 className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro disabled:opacity-50"
-                style={{ borderColor: colorsWithOpacity.bordeSecundario }}
+                style={{ borderColor: 'var(--borde-secundario)' }}
               >
                 {isResending 
                   ? 'Reenviando...' 
@@ -291,9 +290,9 @@ export default function ForgotPasswordOTP({
               {countdown !== null && countdown > 0 && (
                 <div className="mt-3 p-3 rounded-lg border" style={{ 
                   backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                  borderColor: colors.warning
+                  borderColor: 'var(--warning)'
                 }}>
-                  <p className="text-sm text-center" style={{ color: colors.warning }}>
+                  <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
                     ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
                   </p>
                 </div>

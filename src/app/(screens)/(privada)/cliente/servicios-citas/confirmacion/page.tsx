@@ -6,7 +6,6 @@ import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
-import { colors } from '../../../../../utils/colors';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
 
@@ -48,71 +47,71 @@ function ConfirmacionContent() {
           <div className="mb-6">
             <div
               className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: colors.success }}
+              style={{ backgroundColor: 'var(--success)' }}
             >
-              <span className="text-4xl" style={{ color: colors.textoFondoOscuro }}>
+              <span className="text-4xl" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                 ✓
               </span>
             </div>
             <h1
               className="text-hero mb-2"
-              style={{ color: colors.menuTextoPrincipal }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               ¡Cita Confirmada!
             </h1>
             <p
               className="text-lead"
-              style={{ color: colors.encabezadosAlterno }}
+              style={{ color: 'var(--encabezados-alterno)' }}
             >
               Tu cita ha sido agendada exitosamente
             </p>
           </div>
 
-          <div className="bg-white rounded-lg p-6 mb-6" style={{ backgroundColor: colors.fondosSuaves }}>
+          <div className="bg-white rounded-lg p-6 mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
             <div className="space-y-4 text-left">
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Número de Cita:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{cita.id}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.id}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Servicio:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{cita.servicio}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.servicio}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Fecha:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{cita.fecha}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.fecha}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Hora:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{cita.hora}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.hora}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Duración:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{cita.duracion}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.duracion}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Especialista:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{cita.especialista}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialista}</span>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: colors.tarjetasPaneles }}>
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+              <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--tarjetas-paneles)' }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Total:
                 </span>
                 <span
                   className="text-2xl font-bold"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   {cita.precio}
                 </span>
@@ -124,10 +123,10 @@ function ConfirmacionContent() {
           </div>
 
           {servicio?.productosAsociados && servicio.productosAsociados.length > 0 && (
-            <div className="bg-white rounded-lg p-6 mb-6" style={{ backgroundColor: colors.fondosSuaves }}>
+            <div className="bg-white rounded-lg p-6 mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
               <h3
                 className="text-subtitle mb-3"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Productos que se utilizarán en tu cita
               </h3>
@@ -135,10 +134,10 @@ function ConfirmacionContent() {
                 {servicio.productosAsociados.map((p) => (
                   <li key={p.id} className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                         {p.productoNombre ?? 'Producto'}
                       </p>
-                      <p className="text-xs" style={{ color: colors.encabezadosAlterno }}>
+                      <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                         {p.productoMarca ?? p.productoCategoria ?? ''}
                       </p>
                     </div>
@@ -156,9 +155,9 @@ function ConfirmacionContent() {
           <div className="space-y-4">
             <div
               className="p-4 rounded-lg"
-              style={{ backgroundColor: colors.fondosSuaves }}
+              style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
-              <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                 <strong>Importante:</strong> Recibirás un correo electrónico de confirmación con todos los detalles de tu cita. 
                 Te recordaremos 24 horas antes de tu cita.
               </p>
@@ -191,7 +190,7 @@ export default function ConfirmacionCitaPage() {
     <Suspense fallback={
       <ModuleLayout>
         <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: colors.encabezadosAlterno }}>Cargando...</p>
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
         </div>
       </ModuleLayout>
     }>

@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ModalProps {
   isOpen: boolean;
@@ -48,25 +47,25 @@ export default function Modal({
     >
       <div
         className={`${sizes[size]} w-full rounded-lg shadow-xl`}
-        style={{ backgroundColor: colors.tarjetasPaneles }}
+        style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         {title && (
           <div
             className="flex items-center justify-between px-6 py-4 border-b"
-            style={{ borderColor: colorsWithOpacity.bordeVisible }}
+            style={{ borderColor: 'var(--borde-visible)' }}
           >
             <h2
               className="text-xl font-bold"
-              style={{ color: colors.textoFondoOscuro }}
+              style={{ color: 'var(--texto-fondo-oscuro)' }}
             >
               {title}
             </h2>
             <button
               onClick={onClose}
               className="p-1 rounded-full hover:opacity-80 transition-opacity"
-              style={{ color: colors.textoFondoOscuro }}
+              style={{ color: 'var(--texto-fondo-oscuro)' }}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -76,7 +75,7 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className="px-6 py-4" style={{ color: colors.textoFondoOscuro }}>
+        <div className="px-6 py-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
           {children}
         </div>
 
@@ -84,7 +83,7 @@ export default function Modal({
         {footer && (
           <div
             className="flex items-center justify-end gap-3 px-6 py-4 border-t"
-            style={{ borderColor: colorsWithOpacity.bordeVisible }}
+            style={{ borderColor: 'var(--borde-visible)' }}
           >
             {footer}
           </div>

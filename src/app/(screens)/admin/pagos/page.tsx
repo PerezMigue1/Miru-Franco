@@ -8,8 +8,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
-
 export default function PagosPage() {
   const pagos = [
     { id: 1, cliente: 'María González', concepto: 'Servicio - Corte', monto: '$350', metodo: 'Efectivo', fecha: '2024-01-15 10:30', tipo: 'Completo' },
@@ -30,26 +28,26 @@ export default function PagosPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Total del Día</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>$2,050</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Total del Día</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$2,050</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Efectivo</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>$1,550</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Efectivo</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$1,550</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Transferencias</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>$500</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Transferencias</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$500</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Anticipos Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.warning }}>$1,200</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Anticipos Pendientes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>$1,200</p>
           </div>
         </Card>
       </div>
@@ -81,7 +79,7 @@ export default function PagosPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar Nuevo Pago
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

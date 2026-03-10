@@ -9,11 +9,10 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
-import { getCategoryColor } from '../../../utils/categoryColors';
+import { getCategoryColor, getEstadoColor } from '../../../utils/categoryColors';
 import {
   getProductosSinRedirigir,
-  aplicarDescuentoPorMarca,
+  aplicarDescuentoGlobal,
   type Producto,
 } from '../../../services/productos';
 
@@ -22,6 +21,22 @@ function precioANumero(precio: string | undefined): number {
   if (!precio) return 0;
   const s = String(precio).replace(/[^0-9.,]/g, '').replace(',', '.');
   return parseFloat(s) || 0;
+}
+
+// Próxima caducidad: la fecha más cercana entre presentaciones con fecha_caducidad
+function proximaCaducidad(producto: Producto): { fecha: string | null; diasRestantes: number | null; estado: 'vigente' | 'proximo' | 'vencido' | null } {
+  const fechas = (producto.presentaciones ?? [])
+    .map((p) => p.fechaCaducidad)
+    .filter((f): f is string => !!f);
+  if (fechas.length === 0) return { fecha: null, diasRestantes: null, estado: null };
+  const ordenadas = fechas.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const masCercana = ordenadas[0];
+  const ahora = new Date();
+  const fechaCad = new Date(masCercana);
+  const dias = Math.floor((fechaCad.getTime() - ahora.getTime()) / (24 * 60 * 60 * 1000));
+  const estado: 'vigente' | 'proximo' | 'vencido' = dias < 0 ? 'vencido' : dias <= 30 ? 'proximo' : 'vigente';
+  const fechaFormateada = fechaCad.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return { fecha: fechaFormateada, diasRestantes: dias, estado };
 }
 
 export default function InventarioPage() {
@@ -33,6 +48,7 @@ export default function InventarioPage() {
   const [categoriaFiltro, setCategoriaFiltro] = useState('all');
   const [filtroDisponibilidad, setFiltroDisponibilidad] = useState<'all' | 'disponibles' | 'noDisponibles'>('all');
   const [marcaDescuento, setMarcaDescuento] = useState('');
+  const [categoriaDescuento, setCategoriaDescuento] = useState('');
   const [porcentajeDescuento, setPorcentajeDescuento] = useState('');
   const [aplicandoDescuento, setAplicandoDescuento] = useState(false);
   const [resultadoDescuento, setResultadoDescuento] = useState<{ ok: boolean; mensaje: string } | null>(null);
@@ -66,20 +82,32 @@ export default function InventarioPage() {
     [productos]
   );
 
-  const productosDeLaMarca =
-    marcaDescuento.trim() === ''
-      ? []
-      : productos.filter(
-          (p) =>
-            p.marca && p.marca.trim().toLowerCase() === marcaDescuento.trim().toLowerCase()
-        );
+  const categoriasUnicas = useMemo(
+    () => categorias.filter((c) => c !== 'all'),
+    [categorias]
+  );
+
+  const productosAfectadosDescuento = useMemo(() => {
+    return productos.filter((p) => {
+      const cumpleMarca =
+        !marcaDescuento.trim() ||
+        (p.marca && p.marca.trim().toLowerCase() === marcaDescuento.trim().toLowerCase());
+      const cumpleCategoria =
+        !categoriaDescuento.trim() ||
+        (p.categoria && p.categoria.trim().toLowerCase() === categoriaDescuento.trim().toLowerCase());
+      return cumpleMarca && cumpleCategoria;
+    });
+  }, [productos, marcaDescuento, categoriaDescuento]);
 
   const handleAplicarDescuento = async (e: React.FormEvent) => {
     e.preventDefault();
     setResultadoDescuento(null);
     const pct = parseInt(porcentajeDescuento, 10);
-    if (!marcaDescuento.trim()) {
-      setResultadoDescuento({ ok: false, mensaje: 'Selecciona una marca.' });
+    if (!marcaDescuento.trim() && !categoriaDescuento.trim()) {
+      setResultadoDescuento({
+        ok: false,
+        mensaje: 'Selecciona al menos una marca o una categoría para aplicar el descuento.',
+      });
       return;
     }
     if (Number.isNaN(pct) || pct <= 0 || pct > 100) {
@@ -88,7 +116,11 @@ export default function InventarioPage() {
     }
     setAplicandoDescuento(true);
     try {
-      const res = await aplicarDescuentoPorMarca(marcaDescuento.trim(), pct);
+      const res = await aplicarDescuentoGlobal({
+        marca: marcaDescuento.trim() || undefined,
+        categoria: categoriaDescuento.trim() || undefined,
+        porcentaje: pct,
+      });
       if (res.success) {
         setResultadoDescuento({
           ok: true,
@@ -140,10 +172,10 @@ export default function InventarioPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+            <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
               Gestión de Inventario
             </h1>
-            <p className="text-sm mt-1" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
               Control y supervisión en tiempo real de todos los productos de la tienda online
             </p>
           </div>
@@ -155,10 +187,10 @@ export default function InventarioPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="transition-all duration-200 hover:shadow-lg" variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: colors.fondosSuaves }}>📦</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>📦</div>
               <div>
-                <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>Total Productos</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: colors.menuTextoPrincipal }}>{totalProductos}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total Productos</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalProductos}</p>
               </div>
             </div>
           </Card>
@@ -166,8 +198,8 @@ export default function InventarioPage() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'rgba(217, 142, 4, 0.2)' }}>⚠️</div>
               <div>
-                <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>Stock Bajo (≤5)</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: colors.warning }}>{stockBajo}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Stock Bajo (≤5)</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning)' }}>{stockBajo}</p>
               </div>
             </div>
           </Card>
@@ -175,8 +207,8 @@ export default function InventarioPage() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'rgba(89, 12, 12, 0.15)' }}>🚫</div>
               <div>
-                <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>Sin stock</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: colors.danger }}>{sinStock}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Sin stock</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--danger)' }}>{sinStock}</p>
               </div>
             </div>
           </Card>
@@ -184,37 +216,37 @@ export default function InventarioPage() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'rgba(110, 125, 87, 0.25)' }}>💰</div>
               <div>
-                <p className="text-sm font-medium" style={{ color: colors.encabezadosAlterno }}>Valor Total</p>
-                <p className="text-xl font-bold mt-0.5" style={{ color: colors.menuTextoPrincipal }}>${valorTotal.toLocaleString('es-MX')}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Valor Total</p>
+                <p className="text-xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${valorTotal.toLocaleString('es-MX')}</p>
               </div>
             </div>
           </Card>
         </div>
 
         {error && (
-          <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: colors.danger }}>
-            <p className="text-sm font-medium" style={{ color: colors.danger }}>{error}</p>
+          <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
           </Card>
         )}
 
         <Card variant="elevated" padding="lg" className="mb-6">
-          <h2 className="text-lg font-semibold mb-4" style={{ color: colors.menuTextoPrincipal }}>
-            Descuento por marca
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+            Descuento global
           </h2>
-          <p className="text-sm mb-4" style={{ color: colors.encabezadosAlterno }}>
-            Aplica un porcentaje de descuento a todos los productos de una misma marca.
+          <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+            Aplica un porcentaje de descuento filtrando por marca, categoría o ambos. Ejemplo: marca «AVYNA» + categoría «Cuidado del cabello» aplica solo a esos productos. Deja en «Todas» el filtro que no quieras usar.
           </p>
           {aplicandoDescuento && (
             <div
               className="flex items-center gap-3 mb-4 p-3 rounded-lg"
-              style={{ backgroundColor: 'rgba(217, 142, 4, 0.15)', borderLeft: `4px solid ${colors.warning}` }}
+              style={{ backgroundColor: 'rgba(217, 142, 4, 0.15)', borderLeft: `4px solid ${'var(--warning)'}` }}
             >
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-current shrink-0" style={{ color: colors.warning }} />
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-current shrink-0" style={{ color: 'var(--warning)' }} />
               <div>
-                <p className="text-sm font-medium" style={{ color: colors.menuTextoPrincipal }}>
-                  Aplicando descuento a todos los productos de la marca…
+                <p className="text-sm font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Aplicando descuento…
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--encabezados-alterno)' }}>
                   Por favor espera. Puede tardar unos segundos según la cantidad de productos. No cierres esta página.
                 </p>
               </div>
@@ -227,8 +259,20 @@ export default function InventarioPage() {
                 value={marcaDescuento}
                 onChange={(e) => setMarcaDescuento(e.target.value)}
                 options={[
-                  { value: '', label: 'Selecciona una marca' },
+                  { value: '', label: 'Todas las marcas' },
                   ...marcas.map((m) => ({ value: m, label: m })),
+                ]}
+                fullWidth
+              />
+            </div>
+            <div className="min-w-[180px]">
+              <Select
+                label="Categoría"
+                value={categoriaDescuento}
+                onChange={(e) => setCategoriaDescuento(e.target.value)}
+                options={[
+                  { value: '', label: 'Todas las categorías' },
+                  ...categoriasUnicas.map((c) => ({ value: c, label: c })),
                 ]}
                 fullWidth
               />
@@ -249,15 +293,20 @@ export default function InventarioPage() {
               {aplicandoDescuento ? 'Espera…' : 'Aplicar'}
             </Button>
           </form>
-          {marcaDescuento.trim() && (
-            <p className="text-sm mt-3" style={{ color: colors.encabezadosAlterno }}>
-              Se actualizarán <strong>{productosDeLaMarca.length}</strong> producto(s) de la marca «{marcaDescuento}».
+          {(marcaDescuento.trim() || categoriaDescuento.trim()) && (
+            <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }}>
+              Se actualizarán <strong>{productosAfectadosDescuento.length}</strong> producto(s)
+              {marcaDescuento.trim() && categoriaDescuento.trim()
+                ? ` de la marca «${marcaDescuento}» y categoría «${categoriaDescuento}».`
+                : marcaDescuento.trim()
+                ? ` de la marca «${marcaDescuento}».`
+                : ` de la categoría «${categoriaDescuento}».`}
             </p>
           )}
           {resultadoDescuento && (
             <p
               className="text-sm font-medium mt-3"
-              style={{ color: resultadoDescuento.ok ? colors.success : colors.danger }}
+              style={{ color: resultadoDescuento.ok ? 'var(--success)' : 'var(--danger)' }}
             >
               {resultadoDescuento.mensaje}
             </p>
@@ -266,7 +315,7 @@ export default function InventarioPage() {
 
         <Card variant="elevated" padding="lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-            <h2 className="text-lg font-semibold" style={{ color: colors.menuTextoPrincipal }}>Listado de productos</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Listado de productos</h2>
             <div className="flex flex-wrap gap-2">
               <Input
                 placeholder="Buscar producto..."
@@ -293,8 +342,10 @@ export default function InventarioPage() {
               />
             </div>
           </div>
-          <Table headers={['Producto', 'Categoría', 'Stock', 'Estado', 'Acciones']}>
-          {!loading && productosFiltrados.map((producto) => (
+          <Table headers={['Producto', 'Categoría', 'Stock', 'Próxima caducidad', 'Estado', 'Acciones']}>
+          {!loading && productosFiltrados.map((producto) => {
+            const cad = proximaCaducidad(producto);
+            return (
             <TableRow key={producto.id}>
               <TableCell className="font-semibold">{producto.nombre}</TableCell>
               <TableCell>
@@ -304,7 +355,31 @@ export default function InventarioPage() {
               </TableCell>
               <TableCell>{typeof producto.stockCantidad === 'number' ? producto.stockCantidad : '—'}</TableCell>
               <TableCell>
-                <Badge variant={producto.stock ? 'success' : 'danger'}>
+                {cad.fecha ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span>{cad.fecha}</span>
+                    {cad.estado && (
+                      <Badge
+                        variant={
+                          cad.estado === 'vencido' ? 'danger' :
+                          cad.estado === 'proximo' ? 'warning' : 'success'
+                        }
+                        size="sm"
+                      >
+                        {cad.estado === 'vencido'
+                          ? `Vencido hace ${Math.abs(cad.diasRestantes ?? 0)} d`
+                          : cad.estado === 'proximo'
+                          ? `${cad.diasRestantes}d`
+                          : `${cad.diasRestantes}d`}
+                      </Badge>
+                    )}
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </TableCell>
+              <TableCell>
+                <Badge variant={getEstadoColor(!!producto.stock)}>
                   {producto.stock ? 'Disponible' : 'Agotado'}
                 </Badge>
               </TableCell>
@@ -318,7 +393,8 @@ export default function InventarioPage() {
                 </Button>
               </TableCell>
             </TableRow>
-          ))}
+          );
+          })}
           </Table>
         </Card>
       </div>

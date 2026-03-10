@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { colors, colorsWithOpacity, socialColors } from '../utils/colors';
+import { socialColors } from '../utils/colors';
 
 export default function Footer() {
   return (
@@ -13,7 +13,7 @@ export default function Footer() {
             <h3 className="text-page-title mb-4 text-texto-fondo-oscuro">
               <span className="text-menu-texto-principal">Miru</span> Franco
             </h3>
-            <p className="text-sm mb-4" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            <p className="text-sm mb-4" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               Tu tienda de confianza para productos capilares de calidad. Transformamos tu belleza con dedicación y profesionalismo.
             </p>
             {/* Redes Sociales */}
@@ -65,9 +65,9 @@ export default function Footer() {
                   <Link 
                     href={`/${item.toLowerCase().replace(/\s+/g, '-')}`}
                     className="text-sm hover:opacity-80 transition-opacity flex items-center gap-2 group text-enlaces-textos-interactivos"
-                    style={{ color: colors.enlacesTextosInteractivos }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-                    onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+                    style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'; }}
                   >
                     <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                     {item}
@@ -82,7 +82,7 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4 text-texto-fondo-oscuro">
               Servicios
             </h4>
-            <ul className="space-y-3 text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            <ul className="space-y-3 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               <li>Cortes de Cabello</li>
               <li>Tratamientos Capilares</li>
               <li>Coloración Profesional</li>
@@ -96,7 +96,7 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4 text-texto-fondo-oscuro">
               Contacto
             </h4>
-            <ul className="space-y-3 text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            <ul className="space-y-3 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               <li className="flex items-start gap-2">
                 <span>📍</span>
                 <span>Tu dirección aquí, Ciudad, País</span>
@@ -104,9 +104,9 @@ export default function Footer() {
               <li className="flex items-center gap-2">
                 <span>📧</span>
                 <a href="mailto:contacto@mirufranco.com" className="hover:opacity-80 transition-opacity text-enlaces-textos-interactivos"
-                  style={{ color: colors.enlacesTextosInteractivos }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-                  onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+                  style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'; }}
                 >
                   contacto@mirufranco.com
                 </a>
@@ -114,9 +114,9 @@ export default function Footer() {
               <li className="flex items-center gap-2">
                 <span>📞</span>
                 <a href="tel:+521234567890" className="hover:opacity-80 transition-opacity text-enlaces-textos-interactivos"
-                  style={{ color: colors.enlacesTextosInteractivos }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-                  onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+                  style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'; }}
                 >
                   +52 123 456 7890
                 </a>
@@ -130,23 +130,23 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="border-t pt-6" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+        <div className="border-t pt-6" style={{ borderColor: 'var(--borde-sutil)' }}>
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-center" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            <p className="text-sm text-center" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               © {new Date().getFullYear()} Miru Franco. Todos los derechos reservados.
             </p>
             <div className="flex gap-6 text-sm">
               <Link href="/politica-privacidad" className="hover:opacity-80 transition-opacity text-enlaces-textos-interactivos"
-                style={{ color: colors.enlacesTextosInteractivos }}
-                onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-                onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+                style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'; }}
               >
                 Política de Privacidad
               </Link>
               <Link href="/terminos" className="hover:opacity-80 transition-opacity text-enlaces-textos-interactivos"
-                style={{ color: colors.enlacesTextosInteractivos }}
-                onMouseEnter={(e) => e.currentTarget.style.color = colors.hover}
-                onMouseLeave={(e) => e.currentTarget.style.color = colors.enlacesTextosInteractivos}
+                style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'; }}
               >
                 Términos y Condiciones
               </Link>

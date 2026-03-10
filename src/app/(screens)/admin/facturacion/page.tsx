@@ -8,8 +8,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
-
 export default function FacturacionPage() {
   const facturas = [
     { id: 1, cliente: 'María González', concepto: 'Servicio - Corte', monto: '$350', fecha: '2024-01-15', tipo: 'Nota de Remisión', estado: 'entregada' },
@@ -57,7 +55,7 @@ export default function FacturacionPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Generar Nota/Factura
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

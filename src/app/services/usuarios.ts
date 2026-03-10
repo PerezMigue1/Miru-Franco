@@ -158,6 +158,8 @@ export interface CrearUsuarioPayload {
   perfilCapilar?: { tipoCabello: string; tieneAlergias: boolean; alergias?: string; tratamientosQuimicos: boolean; tratamientos?: string };
   aceptaAvisoPrivacidad?: boolean;
   recibePromociones?: boolean;
+  /** Usuarios creados por admin deben poder iniciar sesión sin verificación de correo */
+  confirmado?: boolean;
 }
 
 /**
@@ -189,6 +191,7 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
     perfilCapilar,
     aceptaAvisoPrivacidad: Boolean(aceptaAvisoPrivacidad),
     recibePromociones: Boolean(recibePromociones),
+    confirmado: payload.confirmado ?? true, // Usuarios creados por admin pueden iniciar sesión sin verificación
   };
   // No enviar "rol" si el backend lo rechaza en el POST; asignar rol después con PATCH /api/usuarios/:id/rol
 

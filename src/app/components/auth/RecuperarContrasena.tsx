@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
@@ -60,7 +59,7 @@ export default function ForgotPassword({
   if (isSent) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,23 +72,23 @@ export default function ForgotPassword({
             <p className="mb-6 text-texto-fondo-oscuro">
               Hemos enviado un enlace de recuperación a <strong>{email}</strong>
             </p>
-            <p className="text-sm mb-6" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+            <p className="text-sm mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               Por favor revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.
             </p>
             <div className="space-y-3">
               <button
                 onClick={handleBackToLogin}
                 className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
-                style={{ backgroundColor: colors.botonesPrincipales }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+                style={{ backgroundColor: 'var(--botones-principales)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
               >
                 Volver a Iniciar Sesión
               </button>
               <button
                 onClick={handleResendEmail}
                 className="w-full py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-texto-fondo-oscuro"
-                style={{ borderColor: colorsWithOpacity.bordeSecundario }}
+                style={{ borderColor: 'var(--borde-secundario)' }}
               >
                 Reenviar Email
               </button>
@@ -102,7 +101,7 @@ export default function ForgotPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
         <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
           Recuperar Contraseña
         </h2>
@@ -129,7 +128,7 @@ export default function ForgotPassword({
                 }
               }}
               className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
-              style={{ borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible }}
+              style={{ borderColor: errors.email ? 'var(--danger)' : 'var(--borde-visible)' }}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
@@ -144,17 +143,17 @@ export default function ForgotPassword({
             type="submit"
             disabled={isLoading}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: colors.botonesPrincipales }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+            style={{ backgroundColor: 'var(--botones-principales)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
           >
             {isLoading ? 'Enviando...' : 'Enviar Enlace'}
           </button>
         </form>
 
         {onSwitchToSecurityQuestions && (
-          <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
-            <p className="text-center text-sm" style={{ color: colorsWithOpacity.textoFondoOscuro70 }}>
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--borde-sutil)' }}>
+            <p className="text-center text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2 mt-4">
@@ -162,7 +161,7 @@ export default function ForgotPassword({
                 <button
                   onClick={onSwitchToSecurityQuestions}
                   className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                  style={{ borderColor: colorsWithOpacity.bordeSecundario, color: colors.textoFondoOscuro }}
+                  style={{ borderColor: 'var(--borde-secundario)', color: 'var(--texto-fondo-oscuro)' }}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad
@@ -177,7 +176,7 @@ export default function ForgotPassword({
             <button
               onClick={onSwitchToLogin}
               className="text-sm transition-colors"
-              style={{ color: colors.textoFondoOscuro }}
+              style={{ color: 'var(--texto-fondo-oscuro)' }}
               disabled={isLoading}
             >
               ← Volver a Iniciar Sesión

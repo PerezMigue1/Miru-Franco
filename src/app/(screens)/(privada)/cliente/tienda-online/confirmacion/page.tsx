@@ -6,8 +6,6 @@ import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
-import { colors } from '../../../../../utils/colors';
-
 export default function ConfirmacionCompraPage() {
   const router = useRouter();
 
@@ -47,91 +45,91 @@ export default function ConfirmacionCompraPage() {
           <div className="mb-6">
             <div
               className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: colors.success }}
+              style={{ backgroundColor: 'var(--success)' }}
             >
-              <span className="text-4xl" style={{ color: colors.textoFondoOscuro }}>
+              <span className="text-4xl" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                 ✓
               </span>
             </div>
             <h1
               className="text-hero mb-2"
-              style={{ color: colors.menuTextoPrincipal }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               ¡Compra Confirmada!
             </h1>
             <p
               className="text-lead"
-              style={{ color: colors.encabezadosAlterno }}
+              style={{ color: 'var(--encabezados-alterno)' }}
             >
               Tu pedido ha sido procesado exitosamente
             </p>
           </div>
 
-          <div className="bg-white rounded-lg p-6 mb-6 text-left" style={{ backgroundColor: colors.fondosSuaves }}>
+          <div className="bg-white rounded-lg p-6 mb-6 text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Número de Pedido:
                 </span>
-                <span className="font-mono font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                <span className="font-mono font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                   {pedido.numero}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Fecha:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{pedido.fecha}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{pedido.fecha}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: colors.encabezadosAlterno }}>
+                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Hora:
                 </span>
-                <span style={{ color: colors.menuTextoPrincipal }}>{pedido.hora}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{pedido.hora}</span>
               </div>
-              <div className="pt-4 border-t" style={{ borderColor: colors.tarjetasPaneles }}>
-                <p className="font-semibold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--tarjetas-paneles)' }}>
+                <p className="font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Productos:
                 </p>
                 <div className="space-y-1">
                   {pedido.productos.map((producto, index) => (
                     <div key={index} className="flex justify-between text-sm">
-                      <span style={{ color: colors.encabezadosAlterno }}>
+                      <span style={{ color: 'var(--encabezados-alterno)' }}>
                         {producto.cantidad}x {producto.nombre}
                       </span>
-                      <span style={{ color: colors.menuTextoPrincipal }}>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>
                         ${(producto.cantidad * producto.precio).toLocaleString()}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="pt-4 border-t" style={{ borderColor: colors.tarjetasPaneles }}>
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--tarjetas-paneles)' }}>
                 <div className="flex justify-between mb-1">
-                  <span style={{ color: colors.encabezadosAlterno }}>Subtotal:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${pedido.subtotal.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${pedido.subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between mb-1">
-                  <span style={{ color: colors.encabezadosAlterno }}>Envío:</span>
-                  <span style={{ color: colors.menuTextoPrincipal }}>${pedido.envio.toLocaleString()}</span>
+                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>${pedido.envio.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t" style={{ borderColor: colors.fondosSuaves }}>
-                  <span className="font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="flex justify-between pt-2 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                  <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                     Total:
                   </span>
                   <span
                     className="text-2xl font-bold"
-                    style={{ color: colors.menuTextoPrincipal }}
+                    style={{ color: 'var(--menu-texto-principal)' }}
                   >
                     ${pedido.total.toLocaleString()}
                   </span>
                 </div>
               </div>
-              <div className="pt-4 border-t" style={{ borderColor: colors.tarjetasPaneles }}>
-                <p className="font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--tarjetas-paneles)' }}>
+                <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                   Dirección de Envío:
                 </p>
-                <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   {pedido.direccion.calle} {pedido.direccion.numero}, {pedido.direccion.colonia}
                   <br />
                   {pedido.direccion.ciudad}, {pedido.direccion.estado} {pedido.direccion.codigoPostal}
@@ -146,9 +144,9 @@ export default function ConfirmacionCompraPage() {
           <div className="space-y-4">
             <div
               className="p-4 rounded-lg"
-              style={{ backgroundColor: colors.fondosSuaves }}
+              style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
-              <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                 <strong>Importante:</strong> Recibirás un correo electrónico de confirmación con todos los detalles de tu pedido. 
                 Te notificaremos cuando tu pedido sea enviado.
               </p>

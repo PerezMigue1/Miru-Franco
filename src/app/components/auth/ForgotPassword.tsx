@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 import Notification from '../ui/Notification';
 
 interface ForgotPasswordProps {
@@ -123,7 +122,7 @@ export default function ForgotPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
         <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
           Recuperar Contraseña
         </h2>
@@ -164,7 +163,7 @@ export default function ForgotPassword({
               }}
               className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
               style={{ 
-                borderColor: errors.email ? colors.danger : colorsWithOpacity.bordeVisible
+                borderColor: errors.email ? 'var(--danger)' : 'var(--borde-visible)'
               }}
               placeholder="tu@email.com"
               disabled={isLoading}
@@ -180,9 +179,9 @@ export default function ForgotPassword({
             type="submit"
             disabled={isLoading || countdown !== null}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
-            style={{ backgroundColor: colors.botonesPrincipales }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.botonesPrincipales}
+            style={{ backgroundColor: 'var(--botones-principales)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
           >
             {isLoading 
               ? 'Enviando enlace...'
@@ -196,9 +195,9 @@ export default function ForgotPassword({
           {countdown !== null && countdown > 0 && (
             <div className="mt-4 p-3 rounded-lg border" style={{ 
               backgroundColor: 'rgba(255, 193, 7, 0.1)',
-              borderColor: colors.warning
+              borderColor: 'var(--warning)'
             }}>
-              <p className="text-sm text-center" style={{ color: colors.warning }}>
+              <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
                 ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
               </p>
             </div>
@@ -206,7 +205,7 @@ export default function ForgotPassword({
         </form>
 
         {onSwitchToSecurityQuestions && (
-          <div className="mt-6 pt-6 border-t" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--borde-sutil)' }}>
             <p className="text-center text-sm mb-4 text-texto-fondo-oscuro">
               Otras opciones de recuperación:
             </p>
@@ -215,7 +214,7 @@ export default function ForgotPassword({
                 <button
                   onClick={onSwitchToSecurityQuestions}
                   className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
-                  style={{ borderColor: colorsWithOpacity.bordeSecundario }}
+                  style={{ borderColor: 'var(--borde-secundario)' }}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad

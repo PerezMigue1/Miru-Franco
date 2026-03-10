@@ -8,8 +8,6 @@ import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
-import { colors } from '../../../../../utils/colors';
-
 function CalendarioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,15 +86,15 @@ function CalendarioContent() {
                   onClick={() => cambiarMes(-1)}
                   className="px-4 py-2 rounded-lg transition-colors"
                   style={{
-                    backgroundColor: colors.tarjetasPaneles,
-                    color: colors.textoFondoOscuro,
+                    backgroundColor: 'var(--tarjetas-paneles)',
+                    color: 'var(--texto-fondo-oscuro)',
                   }}
                 >
                   ← Anterior
                 </button>
                 <h2
                   className="text-page-title"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   {nombresMeses[mesActual.getMonth()]} {mesActual.getFullYear()}
                 </h2>
@@ -104,8 +102,8 @@ function CalendarioContent() {
                   onClick={() => cambiarMes(1)}
                   className="px-4 py-2 rounded-lg transition-colors"
                   style={{
-                    backgroundColor: colors.tarjetasPaneles,
-                    color: colors.textoFondoOscuro,
+                    backgroundColor: 'var(--tarjetas-paneles)',
+                    color: 'var(--texto-fondo-oscuro)',
                   }}
                 >
                   Siguiente →
@@ -117,7 +115,7 @@ function CalendarioContent() {
                   <div
                     key={dia}
                     className="text-center font-semibold py-2"
-                    style={{ color: colors.encabezadosAlterno }}
+                    style={{ color: 'var(--encabezados-alterno)' }}
                   >
                     {dia}
                   </div>
@@ -143,12 +141,12 @@ function CalendarioContent() {
                       `}
                       style={{
                         backgroundColor: seleccionado
-                          ? colors.botonesPrincipales
-                          : colors.tarjetasPaneles,
+                          ? 'var(--botones-principales)'
+                          : 'var(--tarjetas-paneles)',
                         color: seleccionado
-                          ? colors.textoFondoOscuro
-                          : colors.menuTextoPrincipal,
-                        border: esHoy ? `2px solid ${colors.warning}` : 'none',
+                          ? 'var(--texto-fondo-oscuro)'
+                          : 'var(--menu-texto-principal)',
+                        border: esHoy ? '2px solid var(--warning)' : 'none',
                       }}
                     >
                       {dia.getDate()}
@@ -163,13 +161,13 @@ function CalendarioContent() {
             <Card>
               <h3
                 className="text-subtitle mb-4"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Horarios Disponibles
               </h3>
               {diaSeleccionado ? (
                 <>
-                  <p className="text-sm mb-4" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                     {diaSeleccionado.toLocaleDateString('es-ES', {
                       weekday: 'long',
                       year: 'numeric',
@@ -192,13 +190,13 @@ function CalendarioContent() {
                           `}
                           style={{
                             backgroundColor: seleccionada
-                              ? colors.botonesPrincipales
+                              ? 'var(--botones-principales)'
                               : ocupada
-                              ? colors.fondosSuaves
-                              : colors.tarjetasPaneles,
+                              ? 'var(--fondos-suaves)'
+                              : 'var(--tarjetas-paneles)',
                             color: seleccionada
-                              ? colors.textoFondoOscuro
-                              : colors.menuTextoPrincipal,
+                              ? 'var(--texto-fondo-oscuro)'
+                              : 'var(--menu-texto-principal)',
                             opacity: ocupada ? 0.7 : 1,
                           }}
                         >
@@ -216,7 +214,7 @@ function CalendarioContent() {
                   </Button>
                 </>
               ) : (
-                <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   Selecciona un día para ver los horarios disponibles
                 </p>
               )}
@@ -233,7 +231,7 @@ export default function CalendarioDisponibilidadPage() {
     <Suspense fallback={
       <ModuleLayout>
         <div className="max-w-6xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: colors.encabezadosAlterno }}>Cargando calendario...</p>
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando calendario...</p>
         </div>
       </ModuleLayout>
     }>

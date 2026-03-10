@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import AuthContainer from '../../../components/auth/AuthContainer';
+import { showAlert } from '../../../utils/toast';
 
 /** Rutas permitidas para redirigir después del login (evita open redirect). */
 const REDIRECT_ALLOWED_PREFIXES = ['/admin', '/perfil', '/cliente'];
@@ -48,7 +49,7 @@ function LoginContent() {
         router.push(destino);
       }
     } else {
-      alert('Error: No se pudo guardar la sesión. Por favor intenta nuevamente.');
+      showAlert('Error: No se pudo guardar la sesión. Por favor intenta nuevamente.');
     }
   };
 

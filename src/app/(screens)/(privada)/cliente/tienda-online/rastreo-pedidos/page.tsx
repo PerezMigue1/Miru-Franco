@@ -6,7 +6,7 @@ import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
 import Button from '../../../../../components/ui/Button';
 import Modal from '../../../../../components/ui/Modal';
-import { colors } from '../../../../../utils/colors';
+import { showAlert, showConfirm } from '../../../../../utils/toast';
 
 interface Pedido {
   id: number;
@@ -101,9 +101,11 @@ export default function RastreoPedidosPage() {
 
   const pedidoActual = pedidos.find(p => p.id === pedidoSeleccionado);
 
-  const cancelarPedido = () => {
-    if (pedidoActual && confirm(`¿Estás seguro de cancelar el pedido ${pedidoActual.numero}?`)) {
-      alert(`Pedido ${pedidoActual.numero} cancelado exitosamente. Se procesará el reembolso según el método de pago utilizado.`);
+  const cancelarPedido = async () => {
+    if (!pedidoActual) return;
+    const ok = await showConfirm(`¿Estás seguro de cancelar el pedido ${pedidoActual.numero}?`);
+    if (ok) {
+      await showAlert(`Pedido ${pedidoActual.numero} cancelado exitosamente. Se procesará el reembolso según el método de pago utilizado.`);
       setMostrarCancelar(false);
       setVista('lista');
       setPedidoSeleccionado(null);
@@ -117,10 +119,10 @@ export default function RastreoPedidosPage() {
           {vista === 'lista' && (
             <>
               <div className="text-center mb-8">
-                <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Mis Pedidos
                 </h1>
-                <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
                   Consulta el estado de tus pedidos y realiza seguimiento en tiempo real
                 </p>
               </div>
@@ -133,38 +135,38 @@ export default function RastreoPedidosPage() {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-subtitle" style={{ color: colors.menuTextoPrincipal }}>
+                            <h3 className="text-subtitle" style={{ color: 'var(--menu-texto-principal)' }}>
                               Pedido #{pedido.numero}
                             </h3>
                             <Badge variant={estadoInfo?.variant || 'default'}>
                               {estadoInfo?.label || pedido.estado}
                             </Badge>
                           </div>
-                          <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                             {pedido.productos}
                           </p>
                           <div className="flex flex-wrap gap-4 text-sm mt-2">
-                            <span style={{ color: colors.encabezadosAlterno }}>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>
                               📅 Fecha: {pedido.fecha}
                             </span>
-                            <span style={{ color: colors.encabezadosAlterno }}>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>
                               💰 Total: ${pedido.total.toLocaleString()}
                             </span>
-                            <span style={{ color: colors.encabezadosAlterno }}>
+                            <span style={{ color: 'var(--encabezados-alterno)' }}>
                               📍 {pedido.zona}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: colors.fondosSuaves }}>
-                        <p className="text-sm font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+                      <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                           Estado Actual:
                         </p>
-                        <p className="text-sm mb-3" style={{ color: colors.encabezadosAlterno }}>
+                        <p className="text-sm mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
                           {estadoInfo?.descripcion}
                         </p>
                         {pedido.mensajero !== '-' && (
-                          <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                             🚚 Mensajero: {pedido.mensajero}
                           </p>
                         )}
@@ -198,7 +200,7 @@ export default function RastreoPedidosPage() {
               <Card>
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h1 className="text-hero mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                    <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                       Pedido #{pedidoActual.numero}
                     </h1>
                     <Badge variant={estados[pedidoActual.estado as keyof typeof estados]?.variant || 'default'} size="lg">
@@ -209,31 +211,31 @@ export default function RastreoPedidosPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <h3 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                    <h3 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                       Información del Pedido
                     </h3>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Productos:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Productos:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {pedidoActual.productos}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Fecha del Pedido:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Fecha del Pedido:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {pedidoActual.fecha}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Total:</p>
-                        <p className="text-xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Total:</p>
+                        <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                           ${pedidoActual.total.toLocaleString()} MXN
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Método de Pago:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Método de Pago:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {pedidoActual.metodoPago}
                         </p>
                       </div>
@@ -241,26 +243,26 @@ export default function RastreoPedidosPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                    <h3 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                       Información de Entrega
                     </h3>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Dirección:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Dirección:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {pedidoActual.direccion}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Zona:</p>
-                        <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Zona:</p>
+                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                           {pedidoActual.zona}
                         </p>
                       </div>
                       {pedidoActual.mensajero !== '-' && (
                         <div>
-                          <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Mensajero:</p>
-                          <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                          <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Mensajero:</p>
+                          <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                             {pedidoActual.mensajero}
                           </p>
                         </div>
@@ -269,8 +271,8 @@ export default function RastreoPedidosPage() {
                   </div>
                 </div>
 
-                <div className="border-t pt-6" style={{ borderColor: colors.fondosSuaves }}>
-                  <h3 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="border-t pt-6" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                  <h3 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                     Acciones Disponibles
                   </h3>
                   <div className="flex gap-3">
@@ -286,8 +288,8 @@ export default function RastreoPedidosPage() {
                         fullWidth
                         onClick={() => setMostrarCancelar(true)}
                         style={{
-                          borderColor: colors.danger,
-                          color: colors.danger
+                          borderColor: 'var(--danger)',
+                          color: 'var(--danger)'
                         }}
                       >
                         ❌ Cancelar Pedido
@@ -307,7 +309,7 @@ export default function RastreoPedidosPage() {
                 </Button>
               </div>
               <Card>
-                <h1 className="text-hero mb-6" style={{ color: colors.menuTextoPrincipal }}>
+                <h1 className="text-hero mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
                   Rastreo de Envío - Pedido #{pedidoActual.numero}
                 </h1>
 
@@ -317,32 +319,32 @@ export default function RastreoPedidosPage() {
                       <div className="flex flex-col items-center">
                         <div
                           className="w-4 h-4 rounded-full mb-2"
-                          style={{ backgroundColor: colors.botonesPrincipales }}
+                          style={{ backgroundColor: 'var(--botones-principales)' }}
                         />
                         {index < pedidoActual.historialEnvio!.length - 1 && (
                           <div
                             className="w-0.5 flex-1"
-                            style={{ backgroundColor: colors.fondosSuaves }}
+                            style={{ backgroundColor: 'var(--fondos-suaves)' }}
                           />
                         )}
                       </div>
                       <div className="flex-1 pb-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                               {evento.evento}
                             </p>
                             {evento.ubicacion && (
-                              <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                                 📍 {evento.ubicacion}
                               </p>
                             )}
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                            <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               {evento.fecha}
                             </p>
-                            <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                               {evento.hora}
                             </p>
                           </div>
@@ -352,15 +354,15 @@ export default function RastreoPedidosPage() {
                   ))}
                 </div>
 
-                <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                     Estado Actual:
                   </p>
-                  <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     {estados[pedidoActual.estado as keyof typeof estados]?.descripcion}
                   </p>
                   {pedidoActual.mensajero !== '-' && (
-                    <p className="text-sm mt-2" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
                       🚚 Mensajero asignado: {pedidoActual.mensajero}
                     </p>
                   )}
@@ -376,14 +378,14 @@ export default function RastreoPedidosPage() {
               title="Cancelar Pedido"
             >
               <div className="space-y-4">
-                <p style={{ color: colors.encabezadosAlterno }}>
+                <p style={{ color: 'var(--encabezados-alterno)' }}>
                   ¿Estás seguro de que deseas cancelar el pedido <strong>{pedidoActual.numero}</strong>?
                 </p>
-                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                     Información importante:
                   </p>
-                  <ul className="text-sm space-y-1" style={{ color: colors.encabezadosAlterno }}>
+                  <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     <li>• El reembolso se procesará según el método de pago utilizado</li>
                     <li>• Si el pedido ya está en camino, puede haber restricciones</li>
                     <li>• Te contactaremos para confirmar la cancelación</li>
@@ -401,8 +403,8 @@ export default function RastreoPedidosPage() {
                     fullWidth
                     onClick={cancelarPedido}
                     style={{
-                      backgroundColor: colors.danger,
-                      color: colors.textoFondoOscuro
+                      backgroundColor: 'var(--danger)',
+                      color: 'var(--texto-fondo-oscuro)'
                     }}
                   >
                     Sí, cancelar pedido

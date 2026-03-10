@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { colors } from '../../utils/colors';
 
 export interface BreadcrumbItem {
   label: string;
@@ -28,7 +27,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
             {index > 0 && (
               <span
                 className="select-none opacity-50"
-                style={{ color: colors.encabezadosAlterno }}
+                style={{ color: 'var(--encabezados-alterno)' }}
                 aria-hidden
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -41,7 +40,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
                 href={item.href}
                 className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 transition-all hover:opacity-90 hover:shadow-sm"
                 style={{
-                  color: colors.enlacesTextosInteractivos,
+                  color: 'var(--enlaces-textos-interactivos)',
                   borderColor: 'rgba(74, 123, 167, 0.4)',
                   backgroundColor: 'rgba(74, 123, 167, 0.06)',
                 }}
@@ -58,7 +57,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
               <span
                 className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium"
                 style={{
-                  color: isLast ? colors.menuTextoPrincipal : colors.encabezadosAlterno,
+                  color: isLast ? 'var(--menu-texto-principal)' : 'var(--encabezados-alterno)',
                   borderColor: isLast ? 'rgba(113, 0, 20, 0.35)' : 'rgba(42, 42, 42, 0.25)',
                   backgroundColor: isLast ? 'rgba(113, 0, 20, 0.08)' : 'transparent',
                 }}

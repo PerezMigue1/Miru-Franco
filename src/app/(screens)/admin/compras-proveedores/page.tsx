@@ -8,7 +8,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
 
 export default function ComprasProveedoresPage() {
   const proveedores = [
@@ -36,7 +35,7 @@ export default function ComprasProveedoresPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Proveedores
           </h2>
           <div className="space-y-3">
@@ -44,16 +43,16 @@ export default function ComprasProveedoresPage() {
               <div
                 key={proveedor.id}
                 className="flex items-center justify-between p-4 rounded-lg"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <div>
-                  <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                  <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                     {proveedor.nombre}
                   </p>
-                  <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     {proveedor.productos} • Tel: {proveedor.contacto}
                   </p>
-                  <p className="text-xs mt-1" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Última compra: {proveedor.ultimaCompra}
                   </p>
                 </div>
@@ -64,7 +63,7 @@ export default function ComprasProveedoresPage() {
         </Card>
 
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Nueva Orden de Compra
           </h2>
           <div className="space-y-4">
@@ -82,7 +81,7 @@ export default function ComprasProveedoresPage() {
       </div>
 
       <Card>
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Historial de Compras
         </h2>
         <Table headers={['Proveedor', 'Fecha', 'Productos', 'Total', 'Estado', 'Acciones']}>

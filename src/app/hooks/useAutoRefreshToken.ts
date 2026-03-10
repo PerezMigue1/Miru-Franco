@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { getToken, clearAuthData } from '../utils/security';
+import { showAlert } from '../utils/toast';
 import { getBackendBaseUrl } from '../services/config';
 
 /**
@@ -90,11 +91,11 @@ export function useAutoRefreshToken() {
               lowerMessage.includes('cerrada desde otro dispositivo') ||
               lowerMessage.includes('nueva sesión en otro dispositivo');
             if (esOtroDispositivo) {
-              alert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada automáticamente.');
+              await showAlert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada automáticamente.');
             } else if (lowerMessage.includes('inactividad') || lowerMessage.includes('sesión expirada')) {
-              alert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
+              await showAlert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
             } else {
-              alert('Tu sesión ha expirado o ya no es válida. Por favor inicia sesión nuevamente.');
+              await showAlert('Tu sesión ha expirado o ya no es válida. Por favor inicia sesión nuevamente.');
             }
             window.location.href = '/login';
           }

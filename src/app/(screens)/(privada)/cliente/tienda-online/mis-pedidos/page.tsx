@@ -8,8 +8,6 @@ import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
 import Input from '../../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../../components/ui/Table';
-import { colors } from '../../../../../utils/colors';
-
 export default function MisPedidosPage() {
   const router = useRouter();
 
@@ -130,7 +128,7 @@ export default function MisPedidosPage() {
 
       {pedidos.length === 0 && (
         <Card className="text-center py-12">
-          <p className="text-lead mb-4" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
             No tienes pedidos realizados
           </p>
           <Button onClick={() => router.push('/cliente/tienda-online')}>

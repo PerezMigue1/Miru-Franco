@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { colors } from '../utils/colors';
 
 export default function MenuHorizontal() {
   const pathname = usePathname();
@@ -49,6 +48,41 @@ export default function MenuHorizontal() {
   return (
     <div className="flex items-center justify-center w-full">
       <ul className="flex items-center space-x-1 overflow-x-auto scrollbar-hide relative">
+        {/* Tienda en línea - primer ítem */}
+        <li className="relative shrink-0">
+          <Link
+            href="/cliente/tienda-online"
+            className={`relative flex items-center gap-2 px-5 py-2.5 transition-all duration-300 whitespace-nowrap rounded-full text-texto-fondo-oscuro ${
+              pathname?.startsWith('/cliente/tienda-online') ? 'shadow-lg' : 'hover:opacity-90'
+            }`}
+            style={{
+              backgroundColor: pathname?.startsWith('/cliente/tienda-online') ? 'var(--hover)' : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (!pathname?.startsWith('/cliente/tienda-online')) {
+                e.currentTarget.style.backgroundColor = 'var(--hover)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!pathname?.startsWith('/cliente/tienda-online')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span className="font-semibold text-sm">Tienda</span>
+            {pathname?.startsWith('/cliente/tienda-online') && (
+              <svg className="w-3.5 h-3.5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
+          </Link>
+          {pathname?.startsWith('/cliente/tienda-online') && (
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-16 h-0.5 rounded-full bg-menu-texto-principal" />
+          )}
+        </li>
         {marcas.map((marca) => {
           const isActive = pathname === marca.href;
           return (
@@ -61,11 +95,11 @@ export default function MenuHorizontal() {
                     : 'hover:opacity-90'
                 }`}
                 style={{ 
-                  backgroundColor: isActive ? colors.hover : 'transparent',
+                  backgroundColor: isActive ? 'var(--hover)' : 'transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = colors.hover;
+                    e.currentTarget.style.backgroundColor = 'var(--hover)';
                   }
                 }}
                 onMouseLeave={(e) => {

@@ -5,7 +5,6 @@ import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
-import { colors } from '../../../utils/colors';
 
 export default function AgendaCalendarioPage() {
   const citasHoy = [
@@ -30,7 +29,7 @@ export default function AgendaCalendarioPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <Card className="lg:col-span-3">
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Calendario - Enero 2024
           </h2>
           <div className="grid grid-cols-7 gap-2 mb-4">
@@ -38,7 +37,7 @@ export default function AgendaCalendarioPage() {
               <div
                 key={dia}
                 className="text-center font-semibold py-2"
-                style={{ color: colors.menuTextoPrincipal }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 {dia}
               </div>
@@ -50,15 +49,15 @@ export default function AgendaCalendarioPage() {
                 key={dia}
                 className="aspect-square p-2 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                 style={{
-                  backgroundColor: dia === 15 ? colors.fondosSuaves : colors.fondoGeneral,
-                  borderColor: colors.fondosSuaves,
+                  backgroundColor: dia === 15 ? 'var(--fondos-suaves)' : 'var(--fondo-general)',
+                  borderColor: 'var(--fondos-suaves)',
                 }}
               >
-                <div className="text-sm font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+                <div className="text-sm font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                   {dia}
                 </div>
                 {dia === 15 && (
-                  <div className="text-xs" style={{ color: colors.encabezadosAlterno }}>
+                  <div className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                     3 citas
                   </div>
                 )}
@@ -68,7 +67,7 @@ export default function AgendaCalendarioPage() {
         </Card>
 
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Citas de Hoy
           </h2>
           <div className="space-y-3">
@@ -76,14 +75,14 @@ export default function AgendaCalendarioPage() {
               <div
                 key={index}
                 className="p-3 rounded-lg"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: colors.menuTextoPrincipal }}>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       {cita.hora}
                     </p>
-                    <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                    <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                       {cita.cliente}
                     </p>
                   </div>
@@ -91,10 +90,10 @@ export default function AgendaCalendarioPage() {
                     {cita.estado}
                   </Badge>
                 </div>
-                <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                   {cita.servicio}
                 </p>
-                <p className="text-xs" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                   {cita.especialista}
                 </p>
               </div>

@@ -7,8 +7,6 @@ import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Select from '../../../../../../components/ui/Select';
-import { colors } from '../../../../../../utils/colors';
-
 export default function ReprogramarCitaPage() {
   const params = useParams();
   const router = useRouter();
@@ -69,22 +67,22 @@ export default function ReprogramarCitaPage() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Cita Actual
                 </h2>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Servicio
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>{cita.servicio}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.servicio}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Fecha Actual
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>
                       {new Date(cita.fechaActual).toLocaleDateString('es-ES', {
                         weekday: 'long',
                         year: 'numeric',
@@ -94,16 +92,16 @@ export default function ReprogramarCitaPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Hora Actual
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>{cita.horaActual}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.horaActual}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Especialista
                     </p>
-                    <p style={{ color: colors.menuTextoPrincipal }}>{cita.especialista}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialista}</p>
                   </div>
                 </div>
               </Card>
@@ -113,7 +111,7 @@ export default function ReprogramarCitaPage() {
               <Card>
                 <h2
                   className="text-page-title mb-6"
-                  style={{ color: colors.menuTextoPrincipal }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Nueva Fecha y Hora
                 </h2>
@@ -121,7 +119,7 @@ export default function ReprogramarCitaPage() {
                   <div>
                     <label
                       className="block mb-2 font-medium"
-                      style={{ color: colors.menuTextoPrincipal }}
+                      style={{ color: 'var(--menu-texto-principal)' }}
                     >
                       Nueva Fecha
                     </label>
@@ -131,9 +129,9 @@ export default function ReprogramarCitaPage() {
                       onChange={(e) => setNuevaFecha(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
                       style={{
-                        backgroundColor: colors.textoFondoOscuro,
-                        borderColor: colors.fondosSuaves,
-                        color: colors.menuTextoPrincipal,
+                        backgroundColor: 'var(--texto-fondo-oscuro)',
+                        borderColor: 'var(--fondos-suaves)',
+                        color: 'var(--menu-texto-principal)',
                       }}
                     />
                   </div>
@@ -146,9 +144,9 @@ export default function ReprogramarCitaPage() {
                   />
                   <div
                     className="p-4 rounded-lg"
-                    style={{ backgroundColor: colors.fondosSuaves }}
+                    style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
-                    <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                       <strong>Nota:</strong> Al reprogramar tu cita, recibirás una confirmación por correo electrónico con los nuevos detalles.
                     </p>
                   </div>

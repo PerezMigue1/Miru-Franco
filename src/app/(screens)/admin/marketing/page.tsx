@@ -7,7 +7,6 @@ import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
 import Textarea from '../../../components/ui/Textarea';
 import Select from '../../../components/ui/Select';
-import { colors } from '../../../utils/colors';
 
 export default function MarketingPage() {
   return (
@@ -22,7 +21,7 @@ export default function MarketingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Programar Publicación
           </h2>
           <div className="space-y-4">
@@ -44,7 +43,7 @@ export default function MarketingPage() {
         </Card>
 
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Crear Promoción
           </h2>
           <div className="space-y-4">
@@ -70,7 +69,7 @@ export default function MarketingPage() {
       </div>
 
       <Card>
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Galería de Trabajos
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -78,9 +77,9 @@ export default function MarketingPage() {
             <div
               key={item}
               className="aspect-square rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: colors.fondosSuaves }}
+              style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
-              <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                 Imagen {item}
               </p>
             </div>

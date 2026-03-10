@@ -6,8 +6,6 @@ import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
-import { colors } from '../../../utils/colors';
-
 export default function ReportesPage() {
   return (
     <AdminLayout>
@@ -19,33 +17,33 @@ export default function ReportesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Ventas del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>$45,000</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Ventas del Mes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$45,000</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Servicios del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>120</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios del Mes</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>120</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Clientes Nuevos</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>25</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Clientes Nuevos</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>25</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Productos Vendidos</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>85</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Productos Vendidos</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>85</p>
           </div>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Generar Reporte
           </h2>
           <div className="space-y-4">
@@ -80,7 +78,7 @@ export default function ReportesPage() {
         </Card>
 
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Reportes Recientes
           </h2>
           <div className="space-y-3">
@@ -92,13 +90,13 @@ export default function ReportesPage() {
               <div
                 key={index}
                 className="flex items-center justify-between p-3 rounded-lg"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <div>
-                  <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                  <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                     {reporte.nombre}
                   </p>
-                  <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     {reporte.fecha} • {reporte.tipo}
                   </p>
                 </div>

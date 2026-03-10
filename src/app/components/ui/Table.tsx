@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { colors, colorsWithOpacity } from '../../utils/colors';
 
 interface TableProps {
   headers: string[];
@@ -14,19 +13,19 @@ export default function Table({ headers, children, className = '' }: TableProps)
     <div className="overflow-x-auto rounded-lg">
       <table className={`w-full ${className}`}>
         <thead>
-          <tr style={{ backgroundColor: colors.encabezadosAlterno }}>
+          <tr style={{ backgroundColor: 'var(--encabezados-alterno)' }}>
             {headers.map((header, index) => (
               <th
                 key={index}
                 className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider"
-                style={{ color: colors.textoFondoOscuro }}
+                style={{ color: 'var(--texto-fondo-oscuro)' }}
               >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y" style={{ borderColor: colorsWithOpacity.bordeSutil }}>
+        <tbody className="divide-y" style={{ borderColor: 'var(--borde-sutil)' }}>
           {children}
         </tbody>
       </table>
@@ -49,16 +48,16 @@ export function TableRow({ children, onClick, className = '' }: TableRowProps) {
         ${className}
       `}
       style={{
-        backgroundColor: colors.fondoGeneral,
+        backgroundColor: 'var(--fondo-general)',
       }}
       onMouseEnter={(e) => {
         if (onClick) {
-          e.currentTarget.style.backgroundColor = colors.fondosSuaves;
+          e.currentTarget.style.backgroundColor = 'var(--fondos-suaves)';
         }
       }}
       onMouseLeave={(e) => {
         if (onClick) {
-          e.currentTarget.style.backgroundColor = colors.fondoGeneral;
+          e.currentTarget.style.backgroundColor = 'var(--fondo-general)';
         }
       }}
       onClick={onClick}
@@ -72,14 +71,15 @@ interface TableCellProps {
   children: ReactNode;
   className?: string;
   colSpan?: number;
+  style?: React.CSSProperties;
 }
 
-export function TableCell({ children, className = '', colSpan }: TableCellProps) {
+export function TableCell({ children, className = '', colSpan, style }: TableCellProps) {
   return (
     <td
       colSpan={colSpan}
       className={`px-6 py-4 whitespace-nowrap text-sm ${className}`}
-      style={{ color: colors.menuTextoPrincipal }}
+      style={{ color: 'var(--menu-texto-principal)', ...style }}
     >
       {children}
     </td>

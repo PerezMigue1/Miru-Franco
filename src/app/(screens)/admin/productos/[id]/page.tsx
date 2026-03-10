@@ -7,10 +7,10 @@ import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
-import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { colors } from '../../../../utils/colors';
-import { getCategoryColor } from '../../../../utils/categoryColors';
+import Select from '../../../../components/ui/Select';
+import { getCategoryColor, getDescuentoColor } from '../../../../utils/categoryColors';
 import {
+  getProductos,
   getProductoPorId,
   updateProducto,
   deleteProducto,
@@ -57,6 +57,14 @@ export default function ProductoDetalleAdminPage() {
   const [resultado, setResultado] = useState('');
   const [imagenesText, setImagenesText] = useState('');
   const [imagenesEditadas, setImagenesEditadas] = useState(false);
+  const [categoriasCatalogo, setCategoriasCatalogo] = useState<string[]>([]);
+  const [marcasCatalogo, setMarcasCatalogo] = useState<string[]>([]);
+  const [showAgregarCategoria, setShowAgregarCategoria] = useState(false);
+  const [showAgregarMarca, setShowAgregarMarca] = useState(false);
+  const [nuevaCategoriaVal, setNuevaCategoriaVal] = useState('');
+  const [nuevaMarcaVal, setNuevaMarcaVal] = useState('');
+  const [categoriasEliminadas, setCategoriasEliminadas] = useState<string[]>([]);
+  const [marcasEliminadas, setMarcasEliminadas] = useState<string[]>([]);
   const [presentaciones, setPresentaciones] = useState<
     Array<{
       tamanio: string;
@@ -64,6 +72,8 @@ export default function ProductoDetalleAdminPage() {
       precio: string;
       stock: string;
       disponible: boolean;
+      /** YYYY-MM-DD para input date, vacío si no hay */
+      fechaCaducidad: string;
     }>
   >([]);
 
@@ -94,12 +104,19 @@ export default function ProductoDetalleAdminPage() {
             (p.presentaciones ?? []).map((pr) => {
               const base = parseNumero(pr.precioOriginal ?? pr.precio);
               const precioConDescuento = calcularPrecioDesdeDescuento(base, p.descuento ?? 0);
+              const fc = pr.fechaCaducidad;
+              let fechaCaducidad = '';
+              if (fc && typeof fc === 'string') {
+                const m = fc.match(/^(\d{4}-\d{2}-\d{2})/);
+                fechaCaducidad = m ? m[1] : new Date(fc + 'T12:00:00').toISOString().slice(0, 10);
+              }
               return {
                 tamanio: pr.tamaño,
                 precioOriginal: String(base || '0'),
                 precio: String(parseNumero(precioConDescuento)),
                 stock: String(pr.stock ?? 0),
                 disponible: pr.disponible ?? true,
+                fechaCaducidad,
               };
             })
           );
@@ -117,6 +134,99 @@ export default function ProductoDetalleAdminPage() {
       cancelled = true;
     };
   }, [id]);
+
+  // Catálogo para selects (categorías y marcas): se carga una vez
+  useEffect(() => {
+    let cancelled = false;
+    getProductos()
+      .then((list) => {
+        if (cancelled) return;
+        const categorias = Array.from(new Set(list.map((p) => p.categoria).filter(Boolean)));
+        const marcas = Array.from(new Set(list.map((p) => p.marca).filter(Boolean))) as string[];
+        setCategoriasCatalogo(categorias);
+        setMarcasCatalogo(marcas);
+      })
+      .catch(() => {
+        // Si falla, se mantienen arrays vacíos; el select mostrará al menos el valor actual.
+        setCategoriasCatalogo([]);
+        setMarcasCatalogo([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const AGREGAR_CAT = '__agregar_cat__';
+  const AGREGAR_MARCA = '__agregar_marca__';
+
+  const opcionesCategoria = useMemo(() => {
+    const base = categoriasCatalogo
+      .slice()
+      .filter((c) => !categoriasEliminadas.includes(c))
+      .sort((a, b) => a.localeCompare(b))
+      .map((c) => ({ value: c, label: c }));
+    const actual = categoria?.trim();
+    if (actual && !base.some((o) => o.value === actual) && !categoriasEliminadas.includes(actual)) {
+      base.unshift({ value: actual, label: actual });
+    }
+    return [
+      { value: '', label: 'Elige una opción' },
+      ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
+      { value: AGREGAR_CAT, label: '➕ Agregar otra categoría' },
+    ];
+  }, [categoriasCatalogo, categoria, categoriasEliminadas]);
+
+  const opcionesMarca = useMemo(() => {
+    const base = marcasCatalogo
+      .slice()
+      .filter((m) => !marcasEliminadas.includes(m))
+      .sort((a, b) => a.localeCompare(b))
+      .map((m) => ({ value: m, label: m }));
+    const actual = marca?.trim();
+    if (actual && !base.some((o) => o.value === actual) && !marcasEliminadas.includes(actual)) {
+      base.unshift({ value: actual, label: actual });
+    }
+    return [
+      { value: '', label: 'Elige una opción' },
+      { value: '__sin_marca__', label: 'Sin marca' },
+      ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
+      { value: AGREGAR_MARCA, label: '➕ Agregar otra marca' },
+    ];
+  }, [marcasCatalogo, marca, marcasEliminadas]);
+
+  const confirmarNuevaCategoria = () => {
+    const v = nuevaCategoriaVal.trim();
+    if (v) {
+      setCategoriasCatalogo((prev) => (prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b))));
+      setCategoria(v);
+    }
+    setShowAgregarCategoria(false);
+    setNuevaCategoriaVal('');
+  };
+
+  const confirmarNuevaMarca = () => {
+    const v = nuevaMarcaVal.trim();
+    if (v) {
+      setMarcasCatalogo((prev) => (prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b))));
+      setMarca(v);
+    }
+    setShowAgregarMarca(false);
+    setNuevaMarcaVal('');
+  };
+
+  const eliminarCategoriaActual = () => {
+    if (categoria?.trim()) {
+      setCategoriasEliminadas((prev) => (prev.includes(categoria.trim()) ? prev : [...prev, categoria.trim()]));
+      setCategoria('');
+    }
+  };
+
+  const eliminarMarcaActual = () => {
+    if (marca?.trim()) {
+      setMarcasEliminadas((prev) => (prev.includes(marca.trim()) ? prev : [...prev, marca.trim()]));
+      setMarca('');
+    }
+  };
 
   // Cuando cambia el descuento global, recalcular precios de cada presentación
   useEffect(() => {
@@ -142,6 +252,7 @@ export default function ProductoDetalleAdminPage() {
         precio: String(parseNumero(precioInicial)),
         stock: '0',
         disponible: true,
+        fechaCaducidad: '',
       },
     ]);
   };
@@ -149,14 +260,6 @@ export default function ProductoDetalleAdminPage() {
   const eliminarPresentacion = (index: number) => {
     setPresentaciones((prev) => prev.filter((_, i) => i !== index));
   };
-
-  const movimientos = useMemo(
-    () => [
-      { id: 1, tipo: 'Venta', cantidad: -2, fecha: '2024-01-15', referencia: 'Ejemplo cliente' },
-      { id: 2, tipo: 'Compra', cantidad: 20, fecha: '2024-01-10', referencia: 'Ejemplo proveedor' },
-    ],
-    []
-  );
 
   const handleGuardar = async () => {
     if (!producto) return;
@@ -186,12 +289,17 @@ export default function ProductoDetalleAdminPage() {
             ? presentaciones.map((pr) => {
                 const stockNum = parseInt(pr.stock || '0', 10);
                 const disponible = pr.disponible && stockNum > 0;
+                const fc = pr.fechaCaducidad?.trim();
+                const fechaCaducidad = fc ? new Date(fc + 'T00:00:00').toISOString() : undefined;
+                const precioStr = String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0';
+                const precioOrigStr = String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || '0';
                 return {
                   tamanio: pr.tamanio,
-                  precio: parseFloat(pr.precio) || 0,
-                  precioOriginal: parseFloat(pr.precioOriginal) || 0,
+                  precio: precioStr,
+                  precioOriginal: precioOrigStr || undefined,
                   stock: pr.disponible ? stockNum : 0,
                   disponible,
+                  ...(fechaCaducidad ? { fechaCaducidad } : {}),
                 };
               })
             : undefined,
@@ -232,7 +340,7 @@ export default function ProductoDetalleAdminPage() {
     return (
       <AdminLayout>
         <div className="container mx-auto px-4 py-12" >
-          <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando producto...
           </p>
         </div>
@@ -244,7 +352,7 @@ export default function ProductoDetalleAdminPage() {
     return (
       <AdminLayout>
         <div className="container mx-auto px-4 py-12" >
-          <p className="text-lead mb-4" style={{ color: colors.danger }}>
+          <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
             {error ?? 'Producto no encontrado'}
           </p>
         </div>
@@ -261,7 +369,7 @@ export default function ProductoDetalleAdminPage() {
           <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
             <div className="flex items-center gap-3">
               {successMessage && (
-                <span className="text-sm font-medium" style={{ color: colors.success }}>{successMessage}</span>
+                <span className="text-sm font-medium" style={{ color: 'var(--success)' }}>{successMessage}</span>
               )}
               <Button variant="primary" onClick={handleGuardar} disabled={saving}>
                 {saving ? 'Guardando...' : 'Guardar cambios'}
@@ -276,7 +384,7 @@ export default function ProductoDetalleAdminPage() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <div className="mb-6">
-                  <h1 className="text-hero mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                  <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                     {nombre}
                   </h1>
                   <Badge variant={getCategoryColor(producto.categoria)} size="lg">
@@ -285,21 +393,21 @@ export default function ProductoDetalleAdminPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Stock total</p>
-                    <p className="text-xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Stock total</p>
+                    <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                       {presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0)}
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Descuento</p>
-                    <p className="text-xl font-bold" style={{ color: colors.menuTextoPrincipal }}>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Descuento</p>
+                    <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                       {descuentoNum}%
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: colors.fondosSuaves }}>
-                    <p className="text-sm mb-1" style={{ color: colors.encabezadosAlterno }}>Marca</p>
-                    <p className="text-sm font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Marca</p>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                       {marca || 'Sin marca'}
                     </p>
                   </div>
@@ -312,18 +420,86 @@ export default function ProductoDetalleAdminPage() {
                     onChange={(e) => setNombre(e.target.value)}
                     fullWidth
                   />
-                  <Input
-                    label="Categoría"
-                    value={categoria}
-                    onChange={(e) => setCategoria(e.target.value)}
-                    fullWidth
-                  />
-                  <Input
-                    label="Marca"
-                    value={marca}
-                    onChange={(e) => setMarca(e.target.value)}
-                    fullWidth
-                  />
+                  <div>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <Select
+                          label="Categoría"
+                          options={opcionesCategoria}
+                          value={showAgregarCategoria ? AGREGAR_CAT : categoria}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === AGREGAR_CAT) setShowAgregarCategoria(true);
+                            else setCategoria(v);
+                          }}
+                          fullWidth
+                        />
+                      </div>
+                      {categoria?.trim() && (
+                        <Button type="button" size="sm" variant="outline" onClick={eliminarCategoriaActual} title="Eliminar esta categoría del listado">
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                    {showAgregarCategoria && (
+                      <div className="mt-2 flex gap-2 items-center">
+                        <Input
+                          placeholder="Nueva categoría"
+                          value={nuevaCategoriaVal}
+                          onChange={(e) => setNuevaCategoriaVal(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && confirmarNuevaCategoria()}
+                          fullWidth
+                          className="flex-1"
+                        />
+                        <Button size="sm" onClick={confirmarNuevaCategoria}>
+                          Agregar
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setShowAgregarCategoria(false); setNuevaCategoriaVal(''); }}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <Select
+                          label="Marca"
+                          options={opcionesMarca}
+                          value={showAgregarMarca ? AGREGAR_MARCA : (marca || '__sin_marca__')}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === AGREGAR_MARCA) setShowAgregarMarca(true);
+                            else setMarca(v === '__sin_marca__' ? '' : v);
+                          }}
+                          fullWidth
+                        />
+                      </div>
+                      {marca?.trim() && (
+                        <Button type="button" size="sm" variant="outline" onClick={eliminarMarcaActual} title="Eliminar esta marca del listado">
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                    {showAgregarMarca && (
+                      <div className="mt-2 flex gap-2 items-center">
+                        <Input
+                          placeholder="Nueva marca"
+                          value={nuevaMarcaVal}
+                          onChange={(e) => setNuevaMarcaVal(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && confirmarNuevaMarca()}
+                          fullWidth
+                          className="flex-1"
+                        />
+                        <Button size="sm" onClick={confirmarNuevaMarca}>
+                          Agregar
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setShowAgregarMarca(false); setNuevaMarcaVal(''); }}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <Input
                     label="Descuento (%)"
                     type="number"
@@ -339,7 +515,7 @@ export default function ProductoDetalleAdminPage() {
                   />
                 </div>
                 <div className="mt-4">
-                  <label className="block text-sm font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Descripción larga
                   </label>
                   <textarea
@@ -348,9 +524,9 @@ export default function ProductoDetalleAdminPage() {
                     onChange={(e) => setDescripcionLarga(e.target.value)}
                     placeholder="Descripción detallada del producto..."
                     style={{
-                      borderColor: colors.tarjetasPaneles,
-                      backgroundColor: colors.fondosSuaves,
-                      color: colors.menuTextoPrincipal,
+                      borderColor: 'var(--tarjetas-paneles)',
+                      backgroundColor: 'var(--fondos-suaves)',
+                      color: 'var(--menu-texto-principal)',
                     }}
                   />
                 </div>
@@ -358,7 +534,7 @@ export default function ProductoDetalleAdminPage() {
 
               <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-subtitle" style={{ color: colors.menuTextoPrincipal }}>
+                  <h3 className="text-subtitle" style={{ color: 'var(--menu-texto-principal)' }}>
                     Presentaciones (tamaños, precios y stock)
                   </h3>
                   <Button size="sm" variant="outline" onClick={agregarPresentacion}>
@@ -366,7 +542,7 @@ export default function ProductoDetalleAdminPage() {
                   </Button>
                 </div>
                 {presentaciones.length === 0 ? (
-                  <p className="text-sm py-4" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
                     No hay presentaciones. Agrega tamaños o variantes (ej. 500ml, 1L) con su precio y stock.
                   </p>
                 ) : (
@@ -374,11 +550,11 @@ export default function ProductoDetalleAdminPage() {
                     {presentaciones.map((pr, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end border-b pb-3 last:border-b-0"
-                        style={{ borderColor: colors.fondosSuaves }}
+                        className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end border-b pb-3 last:border-b-0"
+                        style={{ borderColor: 'var(--fondos-suaves)' }}
                       >
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                             Tamaño
                           </p>
                           <Input
@@ -393,7 +569,7 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                             Precio original
                           </p>
                           <Input
@@ -409,7 +585,7 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                             Precio con descuento
                           </p>
                           <Input
@@ -424,7 +600,7 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: colors.encabezadosAlterno }}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                             Stock
                           </p>
                           <Input
@@ -433,6 +609,21 @@ export default function ProductoDetalleAdminPage() {
                             onChange={(e) => {
                               setPresentaciones((prev) =>
                                 prev.map((p, i) => (i === index ? { ...p, stock: e.target.value } : p))
+                              );
+                            }}
+                            fullWidth
+                          />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                            Fecha caducidad
+                          </p>
+                          <Input
+                            type="date"
+                            value={pr.fechaCaducidad}
+                            onChange={(e) => {
+                              setPresentaciones((prev) =>
+                                prev.map((p, i) => (i === index ? { ...p, fechaCaducidad: e.target.value } : p))
                               );
                             }}
                             fullWidth
@@ -468,38 +659,16 @@ export default function ProductoDetalleAdminPage() {
                   </div>
                 )}
               </Card>
-
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
-                  Movimientos recientes
-                </h2>
-                <Table headers={['Tipo', 'Cantidad', 'Fecha', 'Referencia']}>
-                  {movimientos.map((movimiento) => (
-                    <TableRow key={movimiento.id}>
-                      <TableCell>
-                        <Badge variant={movimiento.tipo === 'Venta' ? 'success' : 'info'}>
-                          {movimiento.tipo}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className={movimiento.cantidad < 0 ? 'text-red-600' : 'text-green-600'}>
-                        {movimiento.cantidad > 0 ? '+' : ''}{movimiento.cantidad}
-                      </TableCell>
-                      <TableCell>{movimiento.fecha}</TableCell>
-                      <TableCell>{movimiento.referencia}</TableCell>
-                    </TableRow>
-                  ))}
-                </Table>
-              </Card>
             </div>
 
             <div className="space-y-6">
               <Card>
-                <h3 className="text-subtitle mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Estado del Producto
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span style={{ color: colors.encabezadosAlterno }}>Disponible:</span>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Disponible:</span>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -507,11 +676,11 @@ export default function ProductoDetalleAdminPage() {
                         onChange={(e) => setDisponible(e.target.checked)}
                         className="rounded"
                       />
-                      <span style={{ color: colors.menuTextoPrincipal }}>{disponible ? 'Sí' : 'No'}</span>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>{disponible ? 'Sí' : 'No'}</span>
                     </label>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span style={{ color: colors.encabezadosAlterno }}>Nuevo:</span>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Nuevo:</span>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -519,11 +688,11 @@ export default function ProductoDetalleAdminPage() {
                         onChange={(e) => setNuevo(e.target.checked)}
                         className="rounded"
                       />
-                      <span style={{ color: colors.menuTextoPrincipal }}>{nuevo ? 'Sí' : 'No'}</span>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>{nuevo ? 'Sí' : 'No'}</span>
                     </label>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span style={{ color: colors.encabezadosAlterno }}>Cruelty free:</span>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Cruelty free:</span>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -531,18 +700,18 @@ export default function ProductoDetalleAdminPage() {
                         onChange={(e) => setCrueltyFree(e.target.checked)}
                         className="rounded"
                       />
-                      <span style={{ color: colors.menuTextoPrincipal }}>{crueltyFree ? 'Sí' : 'No'}</span>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>{crueltyFree ? 'Sí' : 'No'}</span>
                     </label>
                   </div>
-                  <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${colors.fondosSuaves}` }}>
-                    <span style={{ color: colors.encabezadosAlterno }}>Descuento:</span>
-                    <Badge variant={descuentoNum > 0 ? 'warning' : 'info'}>
+                  <div className="flex justify-between pt-2" style={{ borderTop: '1px solid var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Descuento:</span>
+                    <Badge variant={getDescuentoColor(descuentoNum)}>
                       {descuentoNum > 0 ? `${descuentoNum}%` : 'Sin descuento'}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span style={{ color: colors.encabezadosAlterno }}>Stock total:</span>
-                    <span className="font-semibold" style={{ color: presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) <= 0 ? colors.danger : colors.success }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Stock total:</span>
+                    <span className="font-semibold" style={{ color: presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) <= 0 ? 'var(--danger)' : 'var(--success)' }}>
                       {presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) > 0 ? '✓ OK' : '⚠ Sin stock'}
                     </span>
                   </div>
@@ -550,7 +719,7 @@ export default function ProductoDetalleAdminPage() {
               </Card>
 
               <Card>
-                <h3 className="text-subtitle mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Características (una por línea)
                 </h3>
                 <textarea
@@ -559,12 +728,12 @@ export default function ProductoDetalleAdminPage() {
                   onChange={(e) => setCaracteristicasText(e.target.value)}
                   placeholder={'Ej: Sin parabenos\nVegano\n...'}
                   style={{
-                    borderColor: colors.tarjetasPaneles,
-                    backgroundColor: colors.fondosSuaves,
-                    color: colors.menuTextoPrincipal,
+                    borderColor: 'var(--tarjetas-paneles)',
+                    backgroundColor: 'var(--fondos-suaves)',
+                    color: 'var(--menu-texto-principal)',
                   }}
                 />
-                <h3 className="text-subtitle mt-4 mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mt-4 mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Ingredientes
                 </h3>
                 <textarea
@@ -573,12 +742,12 @@ export default function ProductoDetalleAdminPage() {
                   onChange={(e) => setIngredientes(e.target.value)}
                   placeholder="Lista o descripción de ingredientes..."
                   style={{
-                    borderColor: colors.tarjetasPaneles,
-                    backgroundColor: colors.fondosSuaves,
-                    color: colors.menuTextoPrincipal,
+                    borderColor: 'var(--tarjetas-paneles)',
+                    backgroundColor: 'var(--fondos-suaves)',
+                    color: 'var(--menu-texto-principal)',
                   }}
                 />
-                <h3 className="text-subtitle mt-4 mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mt-4 mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Modo de uso
                 </h3>
                 <textarea
@@ -587,12 +756,12 @@ export default function ProductoDetalleAdminPage() {
                   onChange={(e) => setModoUso(e.target.value)}
                   placeholder="Instrucciones de uso del producto..."
                   style={{
-                    borderColor: colors.tarjetasPaneles,
-                    backgroundColor: colors.fondosSuaves,
-                    color: colors.menuTextoPrincipal,
+                    borderColor: 'var(--tarjetas-paneles)',
+                    backgroundColor: 'var(--fondos-suaves)',
+                    color: 'var(--menu-texto-principal)',
                   }}
                 />
-                <h3 className="text-subtitle mt-4 mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mt-4 mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Resultado
                 </h3>
                 <textarea
@@ -601,15 +770,15 @@ export default function ProductoDetalleAdminPage() {
                   onChange={(e) => setResultado(e.target.value)}
                   placeholder="Resultado o beneficios esperados..."
                   style={{
-                    borderColor: colors.tarjetasPaneles,
-                    backgroundColor: colors.fondosSuaves,
-                    color: colors.menuTextoPrincipal,
+                    borderColor: 'var(--tarjetas-paneles)',
+                    backgroundColor: 'var(--fondos-suaves)',
+                    color: 'var(--menu-texto-principal)',
                   }}
                 />
               </Card>
 
               <Card>
-                <h3 className="text-subtitle mb-2" style={{ color: colors.menuTextoPrincipal }}>
+                <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Imágenes (una URL por línea)
                 </h3>
                 <textarea
@@ -622,9 +791,9 @@ export default function ProductoDetalleAdminPage() {
                   }}
                   placeholder="https://..."
                   style={{
-                    borderColor: colors.tarjetasPaneles,
-                    backgroundColor: colors.fondosSuaves,
-                    color: colors.menuTextoPrincipal,
+                    borderColor: 'var(--tarjetas-paneles)',
+                    backgroundColor: 'var(--fondos-suaves)',
+                    color: 'var(--menu-texto-principal)',
                   }}
                 />
               </Card>
@@ -649,7 +818,7 @@ export default function ProductoDetalleAdminPage() {
           </>
         }
       >
-        <p style={{ color: colors.menuTextoPrincipal }}>
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
           ¿Estás seguro de que deseas eliminar el producto &quot;{producto?.nombre}&quot;? Esta acción puede deshabilitarlo en el catálogo.
         </p>
       </Modal>

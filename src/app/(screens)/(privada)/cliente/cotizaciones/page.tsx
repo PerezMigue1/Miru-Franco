@@ -9,7 +9,7 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import Badge from '../../../../components/ui/Badge';
-import { colors } from '../../../../utils/colors';
+import { showAlert } from '../../../../utils/toast';
 
 export default function CotizacionesPage() {
   const router = useRouter();
@@ -31,10 +31,10 @@ export default function CotizacionesPage() {
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Cotizaciones para Eventos Especiales
             </h1>
-            <p className="text-lead max-w-2xl mx-auto" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
               Paquetes especiales de maquillaje y peinado para tus eventos más importantes
             </p>
           </div>
@@ -42,13 +42,13 @@ export default function CotizacionesPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {paquetes.map((paquete) => (
               <Card key={paquete.id} variant="elevated">
-                <h3 className="text-subtitle mb-2" style={{ color: colors.textoFondoOscuro }}>
+                <h3 className="text-subtitle mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                   {paquete.nombre}
                 </h3>
-                <p className="text-2xl font-bold mb-2" style={{ color: colors.textoFondoOscuro }}>
+                <p className="text-2xl font-bold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                   {paquete.precio}
                 </p>
-                <p className="text-sm mb-4" style={{ color: colors.textoFondoOscuro }}>
+                <p className="text-sm mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                   {paquete.descripcion}
                 </p>
                 <Button 
@@ -63,7 +63,7 @@ export default function CotizacionesPage() {
           </div>
 
           <Card className="mb-6">
-            <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Mis Cotizaciones
             </h2>
             <div className="space-y-4">
@@ -71,13 +71,13 @@ export default function CotizacionesPage() {
                 <div
                   key={cotizacion.id}
                   className="flex items-center justify-between p-4 rounded-lg"
-                  style={{ backgroundColor: colors.fondosSuaves }}
+                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
                 >
                   <div>
-                    <p className="font-semibold mb-1" style={{ color: colors.menuTextoPrincipal }}>
+                    <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                       {cotizacion.evento} - {cotizacion.paquete}
                     </p>
-                    <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                    <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                       Fecha del evento: {cotizacion.fecha}
                     </p>
                   </div>
@@ -89,7 +89,7 @@ export default function CotizacionesPage() {
                       size="sm" 
                       variant="outline"
                       onClick={() => {
-                        alert(`Detalles de cotización: ${cotizacion.evento} - ${cotizacion.paquete}\nFecha: ${cotizacion.fecha}\nEstado: ${cotizacion.estado}`);
+                        showAlert(`Detalles de cotización: ${cotizacion.evento} - ${cotizacion.paquete}\nFecha: ${cotizacion.fecha}\nEstado: ${cotizacion.estado}`);
                       }}
                     >
                       Ver Detalles
@@ -103,10 +103,10 @@ export default function CotizacionesPage() {
           {!mostrarFormulario ? (
             <Card>
               <div className="text-center">
-                <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Solicitar Nueva Cotización
                 </h2>
-                <p className="mb-6" style={{ color: colors.encabezadosAlterno }}>
+                <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
                   Completa el formulario y te enviaremos una cotización personalizada para tu evento
                 </p>
                 <Button onClick={() => setMostrarFormulario(true)}>
@@ -116,7 +116,7 @@ export default function CotizacionesPage() {
             </Card>
           ) : (
             <Card>
-              <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Nueva Solicitud de Cotización
               </h2>
               <div className="space-y-4">

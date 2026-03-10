@@ -4,7 +4,6 @@ import { useState, useRef } from 'react';
 import { subirImagenesCloudinary, PRESET_PRODUCTOS, PRESET_SERVICIOS } from '../../../utils/cloudinary';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
-import { colors } from '../../../utils/colors';
 
 type Preset = 'productos' | 'servicios';
 
@@ -54,17 +53,17 @@ export default function SubirImagenesPage() {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: colors.fondoGeneral }}>
+    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2" style={{ color: colors.menuTextoPrincipal }}>
+        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Subir imágenes a Cloudinary
         </h1>
-        <p className="text-sm mb-6" style={{ color: colors.encabezadosAlterno }}>
+        <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
           Elige el tipo, selecciona una o varias imágenes y obtendrás las URLs para usar en productos o servicios.
         </p>
 
         <Card className="mb-6 p-6">
-          <p className="text-sm font-medium mb-2" style={{ color: colors.menuTextoPrincipal }}>
+          <p className="text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             ¿Dónde guardar?
           </p>
           <div className="flex gap-4 mb-4">
@@ -75,7 +74,7 @@ export default function SubirImagenesPage() {
                 checked={preset === 'productos'}
                 onChange={() => setPreset('productos')}
               />
-              <span style={{ color: colors.menuTextoPrincipal }}>Productos</span>
+              <span style={{ color: 'var(--menu-texto-principal)' }}>Productos</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -84,10 +83,10 @@ export default function SubirImagenesPage() {
                 checked={preset === 'servicios'}
                 onChange={() => setPreset('servicios')}
               />
-              <span style={{ color: colors.menuTextoPrincipal }}>Servicios</span>
+              <span style={{ color: 'var(--menu-texto-principal)' }}>Servicios</span>
             </label>
           </div>
-          <p className="text-xs mb-4" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
             Preset: <strong>{presetNombre}</strong>
           </p>
 
@@ -108,9 +107,9 @@ export default function SubirImagenesPage() {
         </Card>
 
         {error && (
-          <Card className="mb-6 p-4" style={{ borderColor: colors.danger }}>
-            <p className="text-sm" style={{ color: colors.danger }}>{error}</p>
-            <p className="text-xs mt-2" style={{ color: colors.encabezadosAlterno }}>
+          <Card className="mb-6 p-4" style={{ borderColor: 'var(--danger)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
               Revisa que en tu .env tengas NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_PRODUCTOS (y _SERVICIOS si usas servicios). En Cloudinary el preset debe ser Unsigned.
             </p>
           </Card>
@@ -119,7 +118,7 @@ export default function SubirImagenesPage() {
         {urls.length > 0 && (
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+              <h2 className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                 URLs generadas ({urls.length})
               </h2>
               <Button size="sm" variant="outline" onClick={copiarTodas}>
@@ -130,7 +129,7 @@ export default function SubirImagenesPage() {
               {urls.map((url, i) => (
                 <li key={i} className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono flex-shrink-0" style={{ color: colors.encabezadosAlterno }}>
+                    <span className="text-xs font-mono flex-shrink-0" style={{ color: 'var(--encabezados-alterno)' }}>
                       {i + 1}.
                     </span>
                     <a
@@ -138,7 +137,7 @@ export default function SubirImagenesPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm truncate flex-1 hover:underline"
-                      style={{ color: colors.enlacesTextosInteractivos }}
+                      style={{ color: 'var(--enlaces-textos-interactivos)' }}
                     >
                       {url}
                     </a>
@@ -154,12 +153,12 @@ export default function SubirImagenesPage() {
                     src={url}
                     alt={`Preview ${i + 1}`}
                     className="h-20 w-20 object-cover rounded border"
-                    style={{ borderColor: colors.fondosSuaves }}
+                    style={{ borderColor: 'var(--fondos-suaves)' }}
                   />
                 </li>
               ))}
             </ul>
-            <p className="text-xs mt-4" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-xs mt-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Usa estas URLs en el campo <strong>imagenes</strong> al crear o editar un producto en tu backend.
             </p>
           </Card>

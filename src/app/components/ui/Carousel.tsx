@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { colors } from '../../utils/colors';
 
 export default function Carousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -68,24 +67,24 @@ export default function Carousel() {
               <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
                 <div 
                   className="max-w-4xl w-full rounded-xl p-8 md:p-12 text-center transform transition-all duration-1000"
-                  style={{ backgroundColor: '#710014' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+                  style={{ backgroundColor: 'var(--botones-principales)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
                 >
-                  <h2 className="text-elegant-display mb-4 uppercase" style={{ color: colors.fondosSuaves }}>
+                  <h2 className="text-elegant-display mb-4 uppercase" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                     {slide.title}
                   </h2>
-                  <p className="text-lead mb-4" style={{ color: '#F2F1ED' }}>
+                    <p className="text-lead mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                     {slide.subtitle.split('.')[0]}
                   </p>
                   {slide.subtitle.includes('.') && slide.subtitle.split('.').length > 1 && (
-                    <p className="text-base mb-8" style={{ color: '#F2F1ED' }}>
+                    <p className="text-base mb-8" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                       {slide.subtitle.split('.').slice(1).join('.')}
                     </p>
                   )}
                   <button
                     className="px-8 py-3 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: '#2A2A2A', color: '#F2F1ED' }}
+                    style={{ backgroundColor: 'var(--encabezados-alterno)', color: 'var(--texto-fondo-oscuro)' }}
                   >
                     Explorar {slide.title.split(' ')[0]}
                   </button>

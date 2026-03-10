@@ -6,7 +6,6 @@ import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { colors } from '../../../../utils/colors';
 
 export default function SeguimientosClientePage() {
   const router = useRouter();
@@ -21,10 +20,10 @@ export default function SeguimientosClientePage() {
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Seguimientos Post-Servicio
             </h1>
-            <p className="text-lead" style={{ color: colors.encabezadosAlterno }}>
+            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
               Aquí puedes ver el seguimiento que realizamos después de tus servicios
             </p>
           </div>
@@ -47,10 +46,10 @@ export default function SeguimientosClientePage() {
           </Card>
 
           <Card className="mt-6">
-            <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               ¿Necesitas Ayuda?
             </h2>
-            <p className="mb-4" style={{ color: colors.encabezadosAlterno }}>
+            <p className="mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Si tienes alguna duda sobre tu servicio o necesitas asistencia, no dudes en contactarnos.
               Estamos aquí para ayudarte y garantizar tu satisfacción completa.
             </p>

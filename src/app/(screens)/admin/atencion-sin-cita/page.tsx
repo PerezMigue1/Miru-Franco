@@ -7,7 +7,6 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
-import { colors } from '../../../utils/colors';
 
 export default function AtencionSinCitaPage() {
   const turnos = [
@@ -26,26 +25,26 @@ export default function AtencionSinCitaPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>En Espera</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>2</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Espera</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>En Atención</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>1</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Atención</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>1</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: colors.encabezadosAlterno }}>Tiempo Promedio</p>
-            <p className="text-3xl font-bold" style={{ color: colors.menuTextoPrincipal }}>25 min</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo Promedio</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>25 min</p>
           </div>
         </Card>
       </div>
 
       <Card>
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Lista de Turnos
         </h2>
         <Table headers={['Posición', 'Cliente', 'Hora de Llegada', 'Servicio', 'Estado', 'Tiempo de Espera', 'Acciones']}>
@@ -85,7 +84,7 @@ export default function AtencionSinCitaPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar Nuevo Turno
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

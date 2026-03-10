@@ -8,7 +8,6 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
-import { colors } from '../../../utils/colors';
 import { getCategoryColor } from '../../../utils/categoryColors';
 
 export default function VentaLocalPage() {
@@ -36,7 +35,7 @@ export default function VentaLocalPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Nueva Venta
           </h2>
           <div className="space-y-4">
@@ -62,7 +61,7 @@ export default function VentaLocalPage() {
         </Card>
 
         <Card>
-          <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Productos Disponibles
           </h2>
           <div className="space-y-3">
@@ -70,13 +69,13 @@ export default function VentaLocalPage() {
               <div
                 key={producto.id}
                 className="flex items-center justify-between p-3 rounded-lg"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <div>
-                  <p className="font-semibold" style={{ color: colors.menuTextoPrincipal }}>
+                  <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                     {producto.nombre}
                   </p>
-                  <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     {producto.precio} • Stock: {producto.stock}
                   </p>
                 </div>
@@ -90,7 +89,7 @@ export default function VentaLocalPage() {
       </div>
 
       <Card>
-        <h2 className="text-page-title mb-4" style={{ color: colors.menuTextoPrincipal }}>
+        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Ventas de Hoy
         </h2>
         <Table headers={['Cliente', 'Productos', 'Total', 'Método de Pago', 'Fecha', 'Acciones']}>

@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { colors } from '../../utils/colors';
 
 interface BadgeProps {
   children: ReactNode;
@@ -18,24 +17,24 @@ export default function Badge({
 }: BadgeProps) {
   const variants = {
     default: {
-      bg: colors.tarjetasPaneles,
-      text: colors.textoFondoOscuro,
+      bg: 'var(--logo-branding)',
+      text: 'var(--texto-fondo-oscuro)',
     },
     success: {
-      bg: colors.success,
-      text: colors.textoFondoOscuro,
+      bg: 'var(--success)',
+      text: 'var(--texto-fondo-oscuro)',
     },
     warning: {
-      bg: colors.warning,
-      text: colors.textoFondoOscuro,
+      bg: 'var(--warning)',
+      text: 'var(--texto-fondo-oscuro)',
     },
     danger: {
-      bg: colors.danger,
-      text: colors.textoFondoOscuro,
+      bg: 'var(--danger)',
+      text: 'var(--texto-fondo-oscuro)',
     },
     info: {
-      bg: colors.enlacesTextosInteractivos,
-      text: colors.textoFondoOscuro,
+      bg: 'var(--enlaces-textos-interactivos)',
+      text: 'var(--texto-fondo-oscuro)',
     },
   };
 

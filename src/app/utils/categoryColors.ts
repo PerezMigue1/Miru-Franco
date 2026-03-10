@@ -1,53 +1,45 @@
 /**
- * Mapeo de categorías a variantes de colores
- * Asigna diferentes colores de la paleta a cada categoría para mejor diferenciación visual
+ * Colores para badges por tipo de dato.
+ * Solo 2 colores por dato.
+ *
+ * - Categoría: sin categoría → un color; con categoría → otro color.
+ * - Estado (disponible/agotado): 2 colores fijos.
+ * - Descuento: 2 colores (sin descuento / con descuento).
  */
 
 export type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
-export const getCategoryColor = (categoria: string): BadgeVariant => {
-  const categoriaLower = categoria.toLowerCase().trim();
-  
-  // Mapeo de categorías a colores - ordenado por prioridad
-  const categoryMap: Record<string, BadgeVariant> = {
-    // Servicios
-    'corte': 'info',
-    'color': 'info',
-    'coloración': 'info',
-    'químico': 'warning',
-    'depilación': 'danger',
-    'tratamiento': 'success',
-    'peinado': 'default',
-    'alaciado': 'warning',
-    'nanoplastía': 'warning',
-    'nanoplastia': 'warning',
-    
-    // Productos
-    'cuidado': 'info',
-    
-    // Estados y tipos
-    'venta': 'success',
-    'uso interno': 'warning',
-    'disponible': 'success',
-    'bajo': 'warning',
-    'agotado': 'danger',
-  };
+/** 2 colores para categoría: sin categoría / con categoría. */
+const CATEGORIA_SIN: BadgeVariant = 'default';
+const CATEGORIA_CON: BadgeVariant = 'info';
 
-  // Buscar coincidencia exacta primero
-  if (categoryMap[categoriaLower]) {
-    return categoryMap[categoriaLower];
-  }
+/** 2 colores para estado de disponibilidad. */
+const ESTADO_DISPONIBLE: BadgeVariant = 'success';
+const ESTADO_AGOTADO: BadgeVariant = 'danger';
 
-  // Buscar coincidencia parcial
-  for (const [key, variant] of Object.entries(categoryMap)) {
-    if (categoriaLower.includes(key) || key.includes(categoriaLower)) {
-      return variant;
-    }
-  }
+/** 2 colores para descuento: sin descuento (success, distinto a categoria/estado) / con descuento. */
+const DESCUENTO_SIN: BadgeVariant = 'success';
+const DESCUENTO_CON: BadgeVariant = 'warning';
 
-  // Asignación por hash para categorías no mapeadas (consistente)
-  const hash = categoriaLower.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const variants: BadgeVariant[] = ['default', 'info', 'success', 'warning', 'danger'];
-  return variants[hash % variants.length];
-};
+/**
+ * Color para categoría. Solo 2: sin categoría → default; con categoría → info.
+ */
+export function getCategoryColor(categoria: string): BadgeVariant {
+  if (!categoria || typeof categoria !== 'string' || !categoria.trim()) return CATEGORIA_SIN;
+  return CATEGORIA_CON;
+}
 
+/**
+ * Color para estado disponible/agotado. Solo 2 colores.
+ */
+export function getEstadoColor(disponible: boolean): BadgeVariant {
+  return disponible ? ESTADO_DISPONIBLE : ESTADO_AGOTADO;
+}
+
+/**
+ * Color para descuento. Solo 2: sin descuento → default; con descuento → warning.
+ */
+export function getDescuentoColor(porcentaje: number): BadgeVariant {
+  if (!porcentaje || porcentaje <= 0) return DESCUENTO_SIN;
+  return DESCUENTO_CON;
+}

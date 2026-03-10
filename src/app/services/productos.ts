@@ -33,6 +33,8 @@ export interface Producto {
     precioOriginal?: string;
     stock: number;
     disponible: boolean;
+    /** fecha_caducidad TIMESTAMP(3) - ISO string o null */
+    fechaCaducidad?: string | null;
   }>;
   caracteristicas?: string[];
   ingredientes?: string;
@@ -92,13 +94,19 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
   const id = raw.id ?? raw._id ?? '';
   const presentacionesRaw = Array.isArray(raw.presentaciones) ? raw.presentaciones : undefined;
   const presentacionesNormalizadas = Array.isArray(raw.presentaciones)
-    ? raw.presentaciones.map((p: Record<string, unknown>) => ({
-        tamaño: String(p.tamaño ?? p.tamanio ?? ''),
-        precio: normalizarPrecio(p.precio as string | number | undefined),
-        precioOriginal: p.precioOriginal != null ? normalizarPrecio(p.precioOriginal as string | number) : undefined,
-        stock: Number(p.stock ?? 0),
-        disponible: Boolean(p.disponible ?? (Number(p.stock ?? 0) > 0)),
-      }))
+    ? raw.presentaciones.map((p: Record<string, unknown>) => {
+        const fechaRaw = p.fecha_caducidad ?? p.fechaCaducidad;
+        const fechaCaducidad =
+          fechaRaw != null && typeof fechaRaw === 'string' ? fechaRaw : null;
+        return {
+          tamaño: String(p.tamaño ?? p.tamanio ?? ''),
+          precio: normalizarPrecio(p.precio as string | number | undefined),
+          precioOriginal: p.precioOriginal != null ? normalizarPrecio(p.precioOriginal as string | number) : undefined,
+          stock: Number(p.stock ?? 0),
+          disponible: Boolean(p.disponible ?? (Number(p.stock ?? 0) > 0)),
+          fechaCaducidad: fechaCaducidad ?? undefined,
+        };
+      })
     : undefined;
   const totalStockPresentaciones = presentacionesNormalizadas?.reduce((sum, p) => sum + p.stock, 0) ?? 0;
   const algunaPresentacionDisponible = presentacionesNormalizadas?.some(
@@ -282,6 +290,8 @@ export interface ProductoPayload {
     precioOriginal?: string | number;
     stock?: number;
     disponible?: boolean;
+    /** fecha_caducidad TIMESTAMP(3) - ISO string o null */
+    fecha_caducidad?: string | null;
   }>;
 }
 
@@ -399,6 +409,113 @@ export async function aplicarDescuentoPorMarca(
   );
   if (filtrados.length === 0) {
     return { success: false, error: `No hay productos con la marca "${marcaTrim}".` };
+  }
+
+  let actualizados = 0;
+  for (const p of filtrados) {
+    if (!p.presentaciones?.length) continue;
+    const presentacionesConDescuento = p.presentaciones.map((pr) => {
+      const precioOrig = precioANumero(pr.precioOriginal ?? undefined) || precioANumero(pr.precio);
+      const nuevoPrecio = Math.round(precioOrig * (1 - pct / 100) * 100) / 100;
+      return {
+        tamanio: pr.tamaño,
+        precio: nuevoPrecio,
+        precioOriginal: precioOrig,
+        stock: pr.stock,
+        disponible: pr.disponible,
+      };
+    });
+    const payload: ProductoPayload = {
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      descuento: pct,
+      categoria: p.categoria,
+      marca: p.marca,
+      presentaciones: presentacionesConDescuento,
+    };
+    try {
+      await updateProducto(p.id, payload);
+      actualizados++;
+    } catch {
+      // Siguiente producto
+    }
+  }
+  return { success: true, actualizados };
+}
+
+export type DescuentoGlobalResult =
+  | { success: true; actualizados: number; mensaje?: string }
+  | { success: false; error: string };
+
+/**
+ * Aplica un porcentaje de descuento global filtrando por marca y/o categoría.
+ * - Solo marca: descuento a todos los productos de esa marca.
+ * - Solo categoría: descuento a todos los productos de esa categoría.
+ * - Marca y categoría: descuento solo a productos que cumplan ambos (ej. AVYNA + Cuidado del cabello).
+ * Si el backend tiene POST /api/productos/descuento-global con { marca?, categoria?, porcentaje }, lo usa; si no, aplica producto por producto.
+ */
+export async function aplicarDescuentoGlobal(params: {
+  marca?: string;
+  categoria?: string;
+  porcentaje: number;
+}): Promise<DescuentoGlobalResult> {
+  const base = getBackendBaseUrl();
+  const marcaTrim = params.marca?.trim() ?? '';
+  const categoriaTrim = params.categoria?.trim() ?? '';
+  if (!marcaTrim && !categoriaTrim) {
+    return { success: false, error: 'Indica al menos una marca o una categoría.' };
+  }
+  const pct = Math.max(0, Math.min(100, Number(params.porcentaje) || 0));
+  if (pct === 0) return { success: false, error: 'El porcentaje debe ser mayor que 0.' };
+
+  try {
+    const res = await fetch(`${base}/api/productos/descuento-global`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        marca: marcaTrim || undefined,
+        categoria: categoriaTrim || undefined,
+        porcentaje: pct,
+      }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { actualizados?: number; message?: string };
+      return {
+        success: true,
+        actualizados: typeof data.actualizados === 'number' ? data.actualizados : 0,
+        mensaje: data.message,
+      };
+    }
+    if (res.status === 404 || res.status === 501) {
+      // Backend no tiene el endpoint: aplicar producto por producto
+    } else {
+      const text = await res.text();
+      let msg = `Error ${res.status}`;
+      try {
+        const j = JSON.parse(text);
+        msg = (j.message ?? j.error ?? msg) as string;
+      } catch {
+        if (text) msg = text.slice(0, 120);
+      }
+      return { success: false, error: msg };
+    }
+  } catch {
+    // Red de fallo: continuar con fallback
+  }
+
+  const { data: productos, error: listError } = await getProductosSinRedirigir({ incluirNoDisponibles: true });
+  if (listError) return { success: false, error: listError };
+  const filtrados = productos.filter((p) => {
+    const cumpleMarca = !marcaTrim || (p.marca && p.marca.trim().toLowerCase() === marcaTrim.toLowerCase());
+    const cumpleCategoria = !categoriaTrim || (p.categoria && p.categoria.trim().toLowerCase() === categoriaTrim.toLowerCase());
+    return cumpleMarca && cumpleCategoria;
+  });
+  if (filtrados.length === 0) {
+    const filtros: string[] = [];
+    if (marcaTrim) filtros.push(`marca "${marcaTrim}"`);
+    if (categoriaTrim) filtros.push(`categoría "${categoriaTrim}"`);
+    return { success: false, error: `No hay productos con ${filtros.join(' y ')}.` };
   }
 
   let actualizados = 0;

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Modo oscuro controlado por clase .dark en <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Nueva Paleta de Colores */
   --fondo-general: #DCC8B6;
@@ -8,18 +11,28 @@
   --header-footer: #161616;
   --menu-texto-principal: #710014;
   --warning: #D98E04;
-  --danger: #590C0C;
+  --danger: #710014;
   --success: #6E7D57;
   --encabezados-alterno: #2A2A2A;
   --hover: #A64B63;
   --botones-principales: #710014;
   --texto-fondo-oscuro: #F2F1ED;
-  --enlaces-textos-interactivos: #243B5A;
+  --enlaces-textos-interactivos: #4A7BA7;
   --fondos-suaves: #d0b29c;
-  --iconografia: #243B5A;
-  
+  --iconografia: #BFA181;
+  --hero-brand-color: #161616;
+  --hero-tagline-color: #2A2A2A;
+  --borde-sutil: rgba(255, 255, 255, 0.1);
+  --borde-visible: rgba(255, 255, 255, 0.2);
+  --borde-secundario: rgba(255, 255, 255, 0.3);
+  --texto-fondo-oscuro-70: rgba(242, 241, 237, 0.7);
+  --texto-fondo-oscuro-80: rgba(242, 241, 237, 0.8);
+  --texto-fondo-oscuro-10: rgba(242, 241, 237, 0.1);
+
   --background: var(--fondo-general);
   --foreground: var(--menu-texto-principal);
+  --input-bg: #F2F1ED;
+  --menu-lateral-bg: #FFFFFF;
   
   /* ========== SISTEMA TIPOGRÁFICO ========== */
   
@@ -27,6 +40,7 @@
   --font-family-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-family-mono: var(--font-geist-mono), 'Courier New', monospace;
   --font-family-serif: var(--font-playfair-display), 'Times New Roman', serif;
+  --font-family-script: var(--font-great-vibes), cursive;
   
   /* Escala Tipográfica (basada en ratio 1.25) */
   --font-size-xs: 0.75rem;      /* 12px */
@@ -59,6 +73,25 @@
   --font-weight-bold: 700;
 }
 
+/* Modo oscuro - solo colores oscuros de la paleta */
+.dark {
+  --fondo-general: #161616;
+  --tarjetas-paneles: #2A2A2A;
+  --fondos-suaves: #1f1f1f;
+  --menu-texto-principal: #FFFFFF;
+  --encabezados-alterno: #B38E6F;
+  --background: #161616;
+  --foreground: #710014;
+  --texto-fondo-oscuro: #FFFFFF;
+  --input-bg: #1f1f1f;
+  --texto-fondo-oscuro-70: rgba(255, 255, 255, 0.7);
+  --texto-fondo-oscuro-80: rgba(255, 255, 255, 0.8);
+  --texto-fondo-oscuro-10: rgba(255, 255, 255, 0.1);
+  --menu-lateral-bg: #710014;
+  --hero-brand-color: var(--texto-fondo-oscuro);
+  --hero-tagline-color: rgba(242, 241, 237, 0.85);
+}
+
 @theme inline {
   /* Fuentes */
   --font-sans: var(--font-geist-sans);
@@ -87,7 +120,7 @@
 }
 
 body {
-  background: #DCC8B6;
+  background: var(--fondo-general);
   color: var(--menu-texto-principal);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-base);
@@ -121,6 +154,21 @@ body {
 
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-enter {
+  animation: toast-enter 0.3s ease-out;
 }
 
 /* ========== CLASES DE UTILIDAD TIPOGRÁFICA ========== */
@@ -290,6 +338,60 @@ p {
   .text-elegant-quote {
     font-size: var(--font-size-2xl);
   }
+}
+
+/* Hero marca MIRÚ Franco - tipografía fuerte y decorada (presencia emprendedora) */
+.text-brand-miru {
+  font-family: var(--font-family-serif);
+  font-size: clamp(2.75rem, 7.5vw, 5rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-rendering: optimizeLegibility;
+}
+.text-brand-franco {
+  font-family: var(--font-family-script);
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+.text-brand-tagline {
+  font-family: var(--font-family-sans);
+  font-size: clamp(0.75rem, 1.8vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Color del logo para MIRÚ Franco */
+.text-brand-gold {
+  color: var(--logo-branding);
+}
+
+/* Hero decorations */
+.hero-flourish {
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--logo-branding), transparent);
+  opacity: 0.7;
+}
+.hero-ornament {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--logo-branding);
+  opacity: 0.8;
+}
+.hero-bg-gradient {
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(191, 161, 129, 0.25), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(163, 107, 31, 0.12), transparent 50%),
+    linear-gradient(180deg, var(--fondo-general) 0%, var(--fondos-suaves) 100%);
+}
+.dark .hero-bg-gradient {
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(113, 0, 20, 0.2), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(113, 0, 20, 0.15), transparent 50%),
+    var(--fondo-general);
 }
 
 /* Elegant Hero con text-shadow para fondos oscuros */

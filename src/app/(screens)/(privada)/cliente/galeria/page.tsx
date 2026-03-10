@@ -5,7 +5,6 @@ import PublicLayout from '../../../../components/layouts/PublicLayout';
 import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
-import { colors } from '../../../../utils/colors';
 import { getCategoryColor } from '../../../../utils/categoryColors';
 
 export default function GaleriaPage() {
@@ -26,10 +25,10 @@ export default function GaleriaPage() {
     <PublicLayout>
       <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
         <div className="text-center mb-12">
-          <h1 className="text-hero mb-4" style={{ color: colors.menuTextoPrincipal }}>
+          <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Galería de Trabajos
           </h1>
-          <p className="text-lead max-w-2xl mx-auto" style={{ color: colors.encabezadosAlterno }}>
+          <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
             Conoce algunos de nuestros trabajos realizados. Todos son trabajos reales de clientas satisfechas.
           </p>
         </div>
@@ -44,7 +43,7 @@ export default function GaleriaPage() {
             >
               <div
                 className="aspect-square flex items-center justify-center"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <p className="text-4xl">📸</p>
               </div>
@@ -54,7 +53,7 @@ export default function GaleriaPage() {
                     {trabajo.categoria}
                   </Badge>
                 </div>
-                <p className="text-sm" style={{ color: colors.encabezadosAlterno }}>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   {trabajo.descripcion}
                 </p>
               </div>
@@ -71,14 +70,14 @@ export default function GaleriaPage() {
             <div className="text-center">
               <div
                 className="aspect-square flex items-center justify-center mb-4 rounded-lg"
-                style={{ backgroundColor: colors.fondosSuaves }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <p className="text-9xl">📸</p>
               </div>
-              <p className="text-lg mb-2" style={{ color: colors.menuTextoPrincipal }}>
+              <p className="text-lg mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                 {trabajos.find(t => t.id === trabajoSeleccionado)?.categoria}
               </p>
-              <p style={{ color: colors.encabezadosAlterno }}>
+              <p style={{ color: 'var(--encabezados-alterno)' }}>
                 {trabajos.find(t => t.id === trabajoSeleccionado)?.descripcion}
               </p>
             </div>
