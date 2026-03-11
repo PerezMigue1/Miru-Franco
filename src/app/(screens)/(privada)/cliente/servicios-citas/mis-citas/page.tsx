@@ -104,7 +104,7 @@ export default function MisCitasPage() {
               <TableCell>{cita.especialista}</TableCell>
               <TableCell>{cita.precio}</TableCell>
               <TableCell>
-                <Badge variant={obtenerVariantEstado(cita.estado) as any}>
+                <Badge variant={obtenerVariantEstado(cita.estado)}>
                   {cita.estado}
                 </Badge>
               </TableCell>

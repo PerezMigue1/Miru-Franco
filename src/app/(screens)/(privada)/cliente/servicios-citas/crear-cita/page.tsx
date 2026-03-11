@@ -31,7 +31,7 @@ function CrearCitaContent() {
 
   useEffect(() => {
     if (!servicioId) {
-      setLoadingServicio(false);
+      queueMicrotask(() => setLoadingServicio(false));
       return;
     }
     getServicioPorId(servicioId).then((s) => {

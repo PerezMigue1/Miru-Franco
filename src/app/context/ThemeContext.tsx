@@ -18,8 +18,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const initial: Theme = stored ?? (prefersDark ? 'dark' : 'dark');
-    setTheme(initial);
     document.documentElement.classList.toggle('dark', initial === 'dark');
+    queueMicrotask(() => setTheme(initial));
   }, []);
 
   const toggleTheme = () => {

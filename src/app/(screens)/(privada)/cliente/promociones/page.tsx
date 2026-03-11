@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import PublicLayout from '../../../../components/layouts/PublicLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
@@ -8,8 +7,6 @@ import Badge from '../../../../components/ui/Badge';
 import { showAlert } from '../../../../utils/toast';
 
 export default function PromocionesPage() {
-  const router = useRouter();
-  
   const promociones = [
     { id: 1, titulo: 'Descuento de Verano', descripcion: '20% de descuento en todos los servicios', fechaFin: '2024-02-29', activa: true },
     { id: 2, titulo: 'Paquete Completo', descripcion: 'Corte + Tratamiento por solo $600', fechaFin: '2024-01-31', activa: true },

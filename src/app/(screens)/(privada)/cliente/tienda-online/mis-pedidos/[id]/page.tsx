@@ -1,15 +1,12 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
-import PageHeader from '../../../../../../components/ui/PageHeader';
-import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../../../components/ui/Table';
 export default function DetallePedidoPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
 
   const pedido = {
@@ -85,7 +82,7 @@ export default function DetallePedidoPage() {
             <p className="font-mono text-lg mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
               {pedido.id}
             </p>
-            <Badge variant={obtenerVariantEstado(pedido.estado) as any} size="lg">
+            <Badge variant={obtenerVariantEstado(pedido.estado)} size="lg">
               {formatearEstado(pedido.estado)}
             </Badge>
           </div>

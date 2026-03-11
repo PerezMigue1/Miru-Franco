@@ -7,7 +7,6 @@ import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
-import Badge from '../../../../components/ui/Badge';
 import { showAlert, showConfirm } from '../../../../utils/toast';
 
 interface CartItem {
@@ -18,6 +17,46 @@ interface CartItem {
   imagen?: string;
   stock: boolean;
   seleccionado: boolean;
+}
+
+function ResumenCompraCard({
+  subtotal,
+  envio,
+  total,
+  count,
+}: {
+  subtotal: number;
+  envio: number;
+  total: number;
+  count: number;
+}) {
+  return (
+    <Card>
+      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        Resumen de Compra
+      </h3>
+      <div className="space-y-3 mb-4">
+        <div className="flex justify-between text-sm">
+          <span style={{ color: 'var(--encabezados-alterno)' }}>Productos ({count}):</span>
+          <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+            ${subtotal.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+          <span className="font-semibold" style={{ color: envio === 0 ? 'var(--success)' : 'var(--menu-texto-principal)' }}>
+            {envio === 0 ? 'Gratis' : `$${envio.toLocaleString()}`}
+          </span>
+        </div>
+        <div className="border-t pt-3 flex justify-between" style={{ borderColor: 'var(--fondos-suaves)' }}>
+          <span className="font-bold text-lg" style={{ color: 'var(--menu-texto-principal)' }}>Total:</span>
+          <span className="font-bold text-lg" style={{ color: 'var(--menu-texto-principal)' }}>
+            ${total.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export default function CarritoPage() {
@@ -33,7 +72,7 @@ export default function CarritoPage() {
   const [metodoEntrega, setMetodoEntrega] = useState('');
   const [fechaEntrega, setFechaEntrega] = useState('');
   const [metodoPago, setMetodoPago] = useState('');
-  const [datosPago, setDatosPago] = useState<any>({});
+  const [datosPago, setDatosPago] = useState<Record<string, unknown>>({});
 
   // Cargar carrito desde localStorage al montar
   useEffect(() => {
@@ -42,11 +81,11 @@ export default function CarritoPage() {
       try {
         const itemsGuardados = JSON.parse(carritoGuardado);
         if (itemsGuardados.length > 0) {
-          const itemsConSeleccion = itemsGuardados.map((item: any) => ({
+          const itemsConSeleccion = itemsGuardados.map((item: CartItem & { seleccionado?: boolean }) => ({
             ...item,
             seleccionado: item.seleccionado !== undefined ? item.seleccionado : true
           }));
-          setItems(itemsConSeleccion);
+          queueMicrotask(() => setItems(itemsConSeleccion));
         }
       } catch (error) {
         console.error('Error al cargar el carrito:', error);
@@ -110,35 +149,6 @@ export default function CarritoPage() {
   const subtotal = itemsSeleccionados.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
   const envio = costoEnvio;
   const total = subtotal + envio;
-
-  // Componente de Resumen
-  const ResumenCompra = () => (
-    <Card>
-      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-        Resumen de Compra
-      </h3>
-      <div className="space-y-3 mb-4">
-        <div className="flex justify-between text-sm">
-          <span style={{ color: 'var(--encabezados-alterno)' }}>Productos ({itemsSeleccionados.length}):</span>
-          <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-            ${subtotal.toLocaleString()}
-          </span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
-          <span className="font-semibold" style={{ color: envio === 0 ? 'var(--success)' : 'var(--menu-texto-principal)' }}>
-            {envio === 0 ? 'Gratis' : `$${envio.toLocaleString()}`}
-          </span>
-        </div>
-        <div className="border-t pt-3 flex justify-between" style={{ borderColor: 'var(--fondos-suaves)' }}>
-          <span className="font-bold text-lg" style={{ color: 'var(--menu-texto-principal)' }}>Total:</span>
-          <span className="font-bold text-lg" style={{ color: 'var(--menu-texto-principal)' }}>
-            ${total.toLocaleString()}
-          </span>
-        </div>
-      </div>
-    </Card>
-  );
 
   if (items.length === 0) {
     return (
@@ -735,7 +745,14 @@ export default function CarritoPage() {
 
             {/* Columna lateral - Resumen */}
             <div className="lg:col-span-1">
-              {paso < 5 && <ResumenCompra />}
+              {paso < 5 && (
+                <ResumenCompraCard
+                  subtotal={subtotal}
+                  envio={envio}
+                  total={total}
+                  count={itemsSeleccionados.length}
+                />
+              )}
             </div>
           </div>
         </div>

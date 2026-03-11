@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import PublicLayout from '../../../../components/layouts/PublicLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
@@ -12,7 +11,6 @@ import Badge from '../../../../components/ui/Badge';
 import { showAlert } from '../../../../utils/toast';
 
 export default function CotizacionesPage() {
-  const router = useRouter();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   const paquetes = [

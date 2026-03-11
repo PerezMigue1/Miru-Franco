@@ -108,7 +108,7 @@ export default function MisPedidosPage() {
               <TableCell className="font-semibold">${pedido.total.toLocaleString()}</TableCell>
               <TableCell>{pedido.metodoPago}</TableCell>
               <TableCell>
-                <Badge variant={obtenerVariantEstado(pedido.estado) as any}>
+                <Badge variant={obtenerVariantEstado(pedido.estado)}>
                   {formatearEstado(pedido.estado)}
                 </Badge>
               </TableCell>

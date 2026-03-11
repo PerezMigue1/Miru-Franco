@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
-import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
@@ -55,7 +54,7 @@ export default function DetalleMiCitaPage() {
             >
               Detalle de la Cita
             </h1>
-            <Badge variant={obtenerVariantEstado(cita.estado) as any} size="lg">
+            <Badge variant={obtenerVariantEstado(cita.estado)} size="lg">
               {cita.estado}
             </Badge>
           </div>

@@ -91,7 +91,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const timersRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
   }, []);
 
   const showToast = useCallback((message: string, type: ToastType = 'info', duration = 4000) => {

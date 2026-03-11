@@ -7,7 +7,6 @@ import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
-import Badge from '../../../../../components/ui/Badge';
 function CalendarioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

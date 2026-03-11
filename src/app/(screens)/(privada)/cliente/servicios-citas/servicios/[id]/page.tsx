@@ -20,8 +20,10 @@ export default function DetalleServicioPage() {
 
   useEffect(() => {
     if (!id) {
-      setNotFound(true);
-      setLoading(false);
+      queueMicrotask(() => {
+        setNotFound(true);
+        setLoading(false);
+      });
       return;
     }
     getServicioPorId(id).then((s) => {

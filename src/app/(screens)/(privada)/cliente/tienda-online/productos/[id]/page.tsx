@@ -24,8 +24,10 @@ export default function DetalleProductoPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
     getProductoPorId(id)
       .then((p) => {
         if (!cancelled) {

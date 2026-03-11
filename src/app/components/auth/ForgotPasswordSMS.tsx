@@ -71,9 +71,9 @@ export default function ForgotPasswordSMS({
           return prev - 1;
         });
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error enviando SMS:', error);
-      setErrors({ phone: error.message || 'Error al enviar código SMS' });
+      setErrors({ phone: error instanceof Error ? error.message : 'Error al enviar código SMS' });
     } finally {
       setIsLoading(false);
     }
@@ -90,9 +90,9 @@ export default function ForgotPasswordSMS({
       const { api } = await import('../../services');
       const result = await api.verifySMSCode(phone, code);
       onCodeVerified?.(result.email || phone);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error verificando código:', error);
-      setErrors({ code: error.message || 'El código es incorrecto. Intenta nuevamente.' });
+      setErrors({ code: error instanceof Error ? error.message : 'El código es incorrecto. Intenta nuevamente.' });
     } finally {
       setIsLoading(false);
     }

@@ -13,7 +13,7 @@ export default function TerminosPage() {
       } else {
         window.history.back();
       }
-    } catch (error) {
+    } catch {
       // Si no se puede cerrar, intentar regresar en el historial
       if (window.history.length > 1) {
         window.history.back();
@@ -67,7 +67,7 @@ export default function TerminosPage() {
             <section>
               <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>1. ACEPTACIÓN DE LOS TÉRMINOS</h2>
               <p className="mb-4">
-                El acceso y uso del sitio web y aplicación móvil de Miru Franco Salón Beauty (en adelante "la Plataforma") implica la aceptación plena y sin reservas de los presentes Términos y Condiciones, los cuales regulan el acceso, navegación, uso, compra de productos, reserva de servicios y cualquier transacción realizada a través de la Plataforma.
+                El acceso y uso del sitio web y aplicación móvil de Miru Franco Salón Beauty (en adelante &quot;la Plataforma&quot;) implica la aceptación plena y sin reservas de los presentes Términos y Condiciones, los cuales regulan el acceso, navegación, uso, compra de productos, reserva de servicios y cualquier transacción realizada a través de la Plataforma.
               </p>
               <p>
                 Si el usuario no está de acuerdo con las condiciones aquí establecidas, deberá abstenerse de utilizar los servicios.
@@ -87,7 +87,7 @@ export default function TerminosPage() {
             <section>
               <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>3. IDENTIFICACIÓN DEL RESPONSABLE</h2>
               <p>
-                El responsable de la operación del sitio y del tratamiento de los datos personales es Mildred Rubí Franco Martínez, titular del establecimiento comercial "Miru Franco Salón Beauty", con domicilio y contacto indicados al inicio del presente documento.
+                El responsable de la operación del sitio y del tratamiento de los datos personales es Mildred Rubí Franco Martínez, titular del establecimiento comercial &quot;Miru Franco Salón Beauty&quot;, con domicilio y contacto indicados al inicio del presente documento.
               </p>
             </section>
 

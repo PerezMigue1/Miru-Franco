@@ -49,8 +49,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setItems(loadFromStorage());
-    setMounted(true);
+    queueMicrotask(() => {
+      setItems(loadFromStorage());
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
