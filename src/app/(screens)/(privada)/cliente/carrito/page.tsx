@@ -19,6 +19,11 @@ interface CartItem {
   seleccionado: boolean;
 }
 
+type DatosPago = {
+  fechaEspecifica?: string;
+  horario?: string;
+};
+
 function ResumenCompraCard({
   subtotal,
   envio,
@@ -72,7 +77,7 @@ export default function CarritoPage() {
   const [metodoEntrega, setMetodoEntrega] = useState('');
   const [fechaEntrega, setFechaEntrega] = useState('');
   const [metodoPago, setMetodoPago] = useState('');
-  const [datosPago, setDatosPago] = useState<Record<string, unknown>>({});
+  const [datosPago, setDatosPago] = useState<DatosPago>({});
 
   // Cargar carrito desde localStorage al montar
   useEffect(() => {

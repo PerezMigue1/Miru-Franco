@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Card from '../../../components/ui/Card';
@@ -556,11 +557,14 @@ export default function BaseDatosPage() {
                   />
                 ) : (
                   previewUrl && (
-                    <img
+                    <Image
                       src={previewUrl}
                       alt="Diagrama ER"
+                      width={800}
+                      height={600}
                       className="max-w-full h-auto"
                       style={{ display: 'block' }}
+                      unoptimized
                     />
                   )
                 )}

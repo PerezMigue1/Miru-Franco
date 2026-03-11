@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useState } from 'react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
@@ -67,10 +68,13 @@ export default function CarritoComprasPage() {
                       style={{ backgroundColor: 'var(--fondos-suaves)' }}
                     >
                       {item.imagen ? (
-                        <img
+                        <Image
                           src={item.imagen}
                           alt={item.nombre}
+                          width={256}
+                          height={256}
                           className="w-full h-full object-contain"
+                          unoptimized
                         />
                       ) : (
                         <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>

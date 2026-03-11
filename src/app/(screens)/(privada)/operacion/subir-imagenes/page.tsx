@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import { subirImagenesCloudinary, PRESET_PRODUCTOS, PRESET_SERVICIOS } from '../../../../utils/cloudinary';
 import Card from '../../../../components/ui/Card';
@@ -146,11 +147,14 @@ export default function SubirImagenesPage() {
                       {copiado === i ? '¡Copiado!' : 'Copiar'}
                     </Button>
                   </div>
-                  <img
+                  <Image
                     src={url}
                     alt={`Preview ${i + 1}`}
+                    width={80}
+                    height={80}
                     className="h-20 w-20 object-cover rounded border"
                     style={{ borderColor: 'var(--fondos-suaves)' }}
+                    unoptimized
                   />
                 </li>
               ))}

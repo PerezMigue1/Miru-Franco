@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
@@ -511,10 +512,13 @@ export default function CatalogoProductosPage() {
                     style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
                     {(producto.imagenes?.[0] ?? producto.imagen) ? (
-                      <img
+                      <Image
                         src={producto.imagenes?.[0] ?? producto.imagen}
                         alt={producto.nombre}
+                        width={400}
+                        height={400}
                         className="w-full h-full object-contain"
+                        unoptimized
                       />
                     ) : (
                       <span style={{ color: 'var(--menu-texto-principal)' }}>Imagen del Producto</span>

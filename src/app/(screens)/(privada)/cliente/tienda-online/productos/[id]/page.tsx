@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
@@ -123,14 +124,6 @@ export default function DetalleProductoPage() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-full mx-auto px-2 sm:px-3 lg:px-4 relative">
-        <div className="absolute top-0 right-2 sm:right-4 z-10 hidden sm:block">
-          <img
-            src="/logo-mj.jpg"
-            alt="Logo"
-            className="w-28 h-28 sm:w-32 sm:h-40 lg:w-36 lg:h-36 object-contain"
-          />
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <div className="space-y-3 sm:space-y-4">
             <div
@@ -141,10 +134,13 @@ export default function DetalleProductoPage() {
               }}
             >
               {(producto.imagenes?.[0] ?? producto.imagen) ? (
-                <img
+                <Image
                   src={producto.imagenes?.[0] ?? producto.imagen}
                   alt={producto.nombre}
+                  width={600}
+                  height={600}
                   className="w-full h-full object-contain"
+                  unoptimized
                 />
               ) : (
                 <span className="text-sm sm:text-base" style={{ color: 'var(--menu-texto-principal)' }}>

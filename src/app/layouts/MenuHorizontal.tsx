@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
 
 export default function MenuHorizontal() {
   const pathname = usePathname();
@@ -11,37 +10,30 @@ export default function MenuHorizontal() {
     { 
       name: 'L\'Oréal', 
       href: '/marcas/loreal',
-      logo: '/images/logos/loreal.png'
     },
     { 
       name: 'Kerastase', 
       href: '/marcas/kerastase',
-      logo: '/images/logos/kerastase.png'
     },
     { 
       name: 'Revlon', 
       href: '/marcas/revlon',
-      logo: '/images/logos/revlon.png'
     },
     { 
       name: 'Schwarzkopf', 
       href: '/marcas/schwarzkopf',
-      logo: '/images/logos/schwarzkopf.png'
     },
     { 
       name: 'Wella', 
       href: '/marcas/wella',
-      logo: '/images/logos/wella.png'
     },
     { 
       name: 'Matrix', 
       href: '/marcas/matrix',
-      logo: '/images/logos/matrix.png'
     },
     { 
       name: 'Pantene', 
       href: '/marcas/pantene',
-      logo: '/images/logos/pantene.png'
     },
   ];
 
@@ -108,21 +100,6 @@ export default function MenuHorizontal() {
                   }
                 }}
               >
-                <div className="relative w-5 h-5 flex-shrink-0">
-                  <Image
-                    src={marca.logo}
-                    alt={marca.name}
-                    fill
-                    className="object-contain"
-                    style={{ 
-                      filter: isActive 
-                        ? 'brightness(0) invert(1)' 
-                        : 'brightness(0) invert(1)',
-                      opacity: isActive ? 1 : 0.8
-                    }}
-                    unoptimized
-                  />
-                </div>
                 <span className="font-semibold text-sm">
                   {marca.name}
                 </span>
