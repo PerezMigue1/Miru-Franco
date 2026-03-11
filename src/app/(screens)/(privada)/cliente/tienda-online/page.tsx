@@ -513,7 +513,7 @@ export default function CatalogoProductosPage() {
                   >
                     {(producto.imagenes?.[0] ?? producto.imagen) ? (
                       <Image
-                        src={producto.imagenes?.[0] ?? producto.imagen}
+                        src={(producto.imagenes?.[0] ?? producto.imagen) as string}
                         alt={producto.nombre}
                         width={400}
                         height={400}
