@@ -7,12 +7,15 @@ export const getBackendBase = (): string => {
   // Usar variable de entorno (requerida)
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   
-  // Si no hay URL configurada, lanzar error
+  // Si no hay URL configurada:
+  // - En build/SSR (server) no debemos romper el build (GitHub Actions / Vercel) → devolver vacío.
+  // - En el navegador sí es un error de configuración → lanzar error para que se vea rápido.
   if (!apiUrl) {
+    if (typeof window === 'undefined') return '';
     throw new Error(
       'NEXT_PUBLIC_API_URL no está configurada. ' +
-      'Por favor configura la variable de entorno NEXT_PUBLIC_API_URL en tu archivo .env.local. ' +
-      'Ejemplo: NEXT_PUBLIC_API_URL=https://tu-backend.com'
+        'Por favor configura la variable de entorno NEXT_PUBLIC_API_URL en tu archivo .env.local. ' +
+        'Ejemplo: NEXT_PUBLIC_API_URL=https://tu-backend.com'
     );
   }
   
