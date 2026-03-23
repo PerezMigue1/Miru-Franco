@@ -10,10 +10,11 @@ import Card from '../../../../../components/ui/Card';
 import Input from '../../../../../components/ui/Input';
 import Modal from '../../../../../components/ui/Modal';
 import { useCart, type CartItem } from '../../../../../context/CartContext';
+import { hasValidToken } from '../../../../../utils/security';
 
 export default function CarritoComprasPage() {
   const router = useRouter();
-  const { items, updateQuantity, removeItem } = useCart();
+  const { items, updateQuantity, removeItem, loading: cartLoading } = useCart();
   const [itemToRemove, setItemToRemove] = useState<CartItem | null>(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
@@ -22,14 +23,14 @@ export default function CarritoComprasPage() {
 
   const handleRemoveConfirm = () => {
     if (itemToRemove) {
-      removeItem(itemToRemove.id);
+      void removeItem(itemToRemove.id);
       setItemToRemove(null);
     }
   };
 
   const handleQuantityChange = (item: CartItem, value: number) => {
     const qty = Math.max(1, Math.min(999, Math.floor(value) || 1));
-    updateQuantity(item.id, qty);
+    void updateQuantity(item.id, qty);
   };
 
   return (
@@ -47,6 +48,12 @@ export default function CarritoComprasPage() {
           title="Carrito de Compras"
           subtitle="Revisa tus productos antes de finalizar la compra"
         />
+
+        {cartLoading && (
+          <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+            Sincronizando carrito…
+          </p>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
@@ -120,6 +127,7 @@ export default function CarritoComprasPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={cartLoading}
                               onClick={() => handleQuantityChange(item, item.cantidad - 1)}
                             >
                               -
@@ -127,6 +135,7 @@ export default function CarritoComprasPage() {
                             <Input
                               type="number"
                               value={item.cantidad}
+                              disabled={cartLoading}
                               onChange={(e) => handleQuantityChange(item, parseInt(e.target.value, 10))}
                               className="w-20 text-center"
                               min={1}
@@ -135,6 +144,7 @@ export default function CarritoComprasPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={cartLoading}
                               onClick={() => handleQuantityChange(item, item.cantidad + 1)}
                             >
                               +
@@ -191,13 +201,26 @@ export default function CarritoComprasPage() {
                   </div>
                 </div>
               </div>
+              {!hasValidToken() && items.length > 0 && (
+                <p className="text-sm mb-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}>
+                  Para <strong>pagar y generar tu pedido</strong> en el sistema necesitas{' '}
+                  <strong>iniciar sesión</strong>. Te pediremos la cuenta antes del checkout.
+                </p>
+              )}
               <Button
                 fullWidth
                 size="lg"
-                onClick={() => router.push('/cliente/tienda-online/checkout')}
-                disabled={items.length === 0}
+                onClick={() => {
+                  const destino = '/cliente/tienda-online/checkout';
+                  if (!hasValidToken()) {
+                    router.push(`/login?returnUrl=${encodeURIComponent(destino)}`);
+                    return;
+                  }
+                  router.push(destino);
+                }}
+                disabled={items.length === 0 || cartLoading}
               >
-                Proceder al Checkout
+                {hasValidToken() ? 'Continuar compra' : 'Iniciar sesión y continuar'}
               </Button>
               <Button
                 fullWidth

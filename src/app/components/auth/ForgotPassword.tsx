@@ -8,12 +8,14 @@ interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
   onEmailSent?: (email: string) => void;
   onSwitchToSecurityQuestions?: () => void;
+  onSwitchToSMS?: () => void;
 }
 
 export default function ForgotPassword({ 
   onSwitchToLogin,
   onEmailSent,
-  onSwitchToSecurityQuestions
+  onSwitchToSecurityQuestions,
+  onSwitchToSMS
 }: ForgotPasswordProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -204,14 +206,26 @@ export default function ForgotPassword({
           )}
         </form>
 
-        {onSwitchToSecurityQuestions && (
+        {(onSwitchToSecurityQuestions || onSwitchToSMS) && (
           <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--borde-sutil)' }}>
             <p className="text-center text-sm mb-4 text-texto-fondo-oscuro">
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2">
+              {onSwitchToSMS && (
+                <button
+                  type="button"
+                  onClick={onSwitchToSMS}
+                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
+                  style={{ borderColor: 'var(--borde-secundario)' }}
+                  disabled={isLoading}
+                >
+                  Recuperar por SMS
+                </button>
+              )}
               {onSwitchToSecurityQuestions && (
                 <button
+                  type="button"
                   onClick={onSwitchToSecurityQuestions}
                   className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
                   style={{ borderColor: 'var(--borde-secundario)' }}

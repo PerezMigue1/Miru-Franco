@@ -154,7 +154,6 @@ export interface CrearUsuarioPayload {
   telefono?: string;
   fechaNacimiento?: string;
   preguntaSeguridad?: { pregunta: string; respuesta: string };
-  direccion?: { calle: string; numero: string; colonia: string; codigoPostal: string; referencia?: string };
   perfilCapilar?: { tipoCabello: string; tieneAlergias: boolean; alergias?: string; tratamientosQuimicos: boolean; tratamientos?: string };
   aceptaAvisoPrivacidad?: boolean;
   recibePromociones?: boolean;
@@ -174,7 +173,6 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
     telefono = '',
     fechaNacimiento = '2000-01-01',
     preguntaSeguridad = { pregunta: '¿Cuál es el nombre de tu mascota favorita?', respuesta: 'Por definir' },
-    direccion = { calle: 'Por definir', numero: 'S/N', colonia: 'Por definir', codigoPostal: '00000', referencia: '' },
     perfilCapilar = { tipoCabello: 'liso', tieneAlergias: false, tratamientosQuimicos: false },
     aceptaAvisoPrivacidad = true,
     recibePromociones = false,
@@ -187,12 +185,12 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
     telefono: telefono || 'Por definir',
     fechaNacimiento: fechaNacimiento.includes('T') ? fechaNacimiento : `${fechaNacimiento}T00:00:00.000Z`,
     preguntaSeguridad,
-    direccion,
     perfilCapilar,
     aceptaAvisoPrivacidad: Boolean(aceptaAvisoPrivacidad),
     recibePromociones: Boolean(recibePromociones),
     confirmado: payload.confirmado ?? true, // Usuarios creados por admin pueden iniciar sesión sin verificación
   };
+  // No enviar dirección embebida: DireccionUsuario se gestiona aparte tras crear el usuario.
   // No enviar "rol" si el backend lo rechaza en el POST; asignar rol después con PATCH /api/usuarios/:id/rol
 
   const res = await apiClient.post<Record<string, unknown>>(

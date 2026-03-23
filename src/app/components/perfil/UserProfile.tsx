@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Button from '../ui/Button';
 import { clearAuthData } from '../../utils/security';
 import { showAlert } from '../../utils/toast';
 import { api } from '../../services/auth';
+import PerfilDatosForm from './PerfilDatosForm';
+import { mergePerfilEnLocalStorage, patchMiPerfil } from '../../services/perfil';
+import { subirFotoPerfilCloudinary } from '../../utils/cloudinary';
+import { normalizarUrlImagenExterna } from '../../utils/normalizarUrlImagen';
 
 interface UserInfo {
   id?: string;
   nombre: string;
   email: string;
+  telefono?: string;
+  /** URL pública de la foto (Cloudinary u otro) */
+  foto?: string;
   rol: string;
   rolRaw?: string;
   desde: string;
@@ -53,74 +61,109 @@ interface ProfileCard {
   alert?: boolean;
 }
 
-interface InfoListItem {
-  id: string;
-  title: string;
-  description?: string;
-  icon: React.ReactNode;
-  verified?: boolean;
-}
-
 export default function UserProfile() {
   const router = useRouter();
   const [logoutAllLoading, setLogoutAllLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dismissBanner, setDismissBanner] = useState(false);
   const [activeSection, setActiveSection] = useState<ActiveSection>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarFotoUploading, setAvatarFotoUploading] = useState(false);
+  const [avatarFotoError, setAvatarFotoError] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo>({
     nombre: '',
     email: '',
+    telefono: '',
     rol: 'Cliente',
     desde: '',
   });
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const result = await api.getProfile();
-        if (result.success && result.data) {
-          const rawRole: string = String(result.data.rol ?? (result.data as { role?: string }).role ?? 'usuario');
+  const refreshUserFromApi = useCallback(async () => {
+    try {
+      const result = await api.getProfile();
+      if (result.success && result.data) {
+        const rawRole: string = String(result.data.rol ?? (result.data as { role?: string }).role ?? 'usuario');
+        const normalized = normalizeRole(rawRole);
+        const displayRole = roleLabel(normalized);
+        const createdAt = result.data.creadoEn ? new Date(result.data.creadoEn) : undefined;
+        const desde = createdAt ? String(createdAt.getFullYear()) : '';
+
+        setUser({
+          id: result.data.id,
+          nombre: result.data.nombre || '',
+          email: result.data.email || '',
+          telefono: result.data.telefono || '',
+          foto: normalizarUrlImagenExterna(result.data.foto) || '',
+          rol: displayRole,
+          rolRaw: rawRole,
+          desde,
+        });
+        // Header y menú leen `localStorage.user`; tras Google a veces solo hay token hasta que /me responde.
+        mergePerfilEnLocalStorage(result.data);
+        return;
+      }
+    } catch {
+      /* sigue a localStorage */
+    }
+
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser) as Record<string, unknown>;
+          const rawRole = (parsed.rol as string) || (parsed.role as string) || 'usuario';
           const normalized = normalizeRole(rawRole);
           const displayRole = roleLabel(normalized);
-          const createdAt = result.data.creadoEn ? new Date(result.data.creadoEn) : undefined;
-          const desde = createdAt ? String(createdAt.getFullYear()) : '';
-
           setUser({
-            id: result.data.id,
-            nombre: result.data.nombre || '',
-            email: result.data.email || '',
+            id: String(parsed.id ?? parsed._id ?? ''),
+            nombre: String(parsed.nombre ?? parsed.name ?? ''),
+            email: String(parsed.email ?? ''),
+            telefono: String(parsed.telefono ?? ''),
+            foto: normalizarUrlImagenExterna(
+              String(parsed.foto ?? parsed.avatarUrl ?? parsed.picture ?? parsed.photo ?? '')
+            ),
             rol: displayRole,
             rolRaw: rawRole,
-            desde,
+            desde: String(parsed.desde ?? ''),
           });
-          return;
-        }
-      } catch {
-        // Fallback a localStorage
-      }
-
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const parsed = JSON.parse(storedUser) as Record<string, unknown>;
-            const rawRole = (parsed.rol as string) || (parsed.role as string) || 'usuario';
-            const normalized = normalizeRole(rawRole);
-            const displayRole = roleLabel(normalized);
-            setUser({
-              id: String(parsed.id ?? parsed._id ?? ''),
-              nombre: String(parsed.nombre ?? parsed.name ?? ''),
-              email: String(parsed.email ?? ''),
-              rol: displayRole,
-              rolRaw: rawRole,
-              desde: String(parsed.desde ?? ''),
-            });
-          } catch { /* ignore */ }
+        } catch {
+          /* ignore */
         }
       }
-    };
-    loadProfile();
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshUserFromApi();
+  }, [refreshUserFromApi]);
+
+  const openAvatarFotoPicker = useCallback(() => {
+    setAvatarFotoError(null);
+    avatarFileInputRef.current?.click();
+  }, []);
+
+  const handleAvatarFotoSelected = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      setAvatarFotoError(null);
+      setAvatarFotoUploading(true);
+      try {
+        const url = await subirFotoPerfilCloudinary(file);
+        const updated = await patchMiPerfil({ foto: url });
+        const nextUrl =
+          normalizarUrlImagenExterna(updated.foto?.trim() ? updated.foto.trim() : url) || url;
+        mergePerfilEnLocalStorage(updated, nextUrl);
+        setUser((prev) => ({ ...prev, foto: nextUrl }));
+        await refreshUserFromApi();
+      } catch (e) {
+        setAvatarFotoError(e instanceof Error ? e.message : 'No se pudo subir la foto');
+      } finally {
+        setAvatarFotoUploading(false);
+        if (avatarFileInputRef.current) avatarFileInputRef.current.value = '';
+      }
+    },
+    [refreshUserFromApi]
+  );
 
   const handleLogoutAllSessions = async () => {
     setLogoutAllLoading(true);
@@ -151,11 +194,14 @@ export default function UserProfile() {
     ? user.nombre.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : 'U';
 
+  /** URL de foto lista para next/image (corrige &#x2F; etc. si el API la devuelve escapada). */
+  const fotoPerfilSrc = normalizarUrlImagenExterna(user.foto);
+
   const cards: ProfileCard[] = [
     {
       id: 'info',
       title: 'Información personal',
-      subtitle: 'Nombre, email y datos de contacto.',
+      subtitle: 'Foto de perfil, nombre, teléfono y datos capilares.',
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
@@ -260,50 +306,6 @@ export default function UserProfile() {
     return true;
   });
 
-  const informacionPersonalItems: InfoListItem[] = [
-    {
-      id: 'datos-personales',
-      title: 'Datos personales',
-      description: user.nombre || '—',
-      verified: true,
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: LINK_BLUE }}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'datos-fiscales',
-      title: 'Datos fiscales',
-      description: 'Los datos que usamos para calcular impuestos y emitir la facturación.',
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: LINK_BLUE }}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'actividad-laboral',
-      title: 'Actividad laboral',
-      description: 'Acerca de tu ocupación principal.',
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: LINK_BLUE }}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'vinculos-cercanos',
-      title: 'Vínculos Cercanos',
-      description: 'Personas que están relacionadas contigo y con tu cuenta.',
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: LINK_BLUE }}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-    },
-  ];
-
   const sidebarItems: { id: SidebarItem; label: string; href?: string; icon: React.ReactNode }[] = [
     { id: 'perfil', label: 'Mi perfil', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /> },
     { id: 'pedidos', label: 'Mis pedidos', href: '/cliente/tienda-online/mis-pedidos', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /> },
@@ -401,19 +403,78 @@ export default function UserProfile() {
       <main className="flex-1 min-w-0 p-6 lg:p-8 bg-[var(--fondo-general)]">
         {/* Cabecera usuario */}
         <div className="mb-8">
-          <div className="flex items-center gap-6 mb-6">
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold shrink-0 bg-[var(--tarjetas-paneles)] text-[var(--texto-fondo-oscuro)]"
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
+            <input
+              ref={avatarFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden
+              disabled={avatarFotoUploading}
+              onChange={(e) => void handleAvatarFotoSelected(e.target.files?.[0] ?? null)}
+            />
+            <button
+              type="button"
+              onClick={openAvatarFotoPicker}
+              disabled={avatarFotoUploading}
+              className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 border-2 border-[var(--fondos-suaves)] bg-[var(--tarjetas-paneles)] cursor-pointer ring-offset-2 ring-offset-[var(--fondo-general)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--enlaces-textos-interactivos)] group disabled:opacity-60 disabled:cursor-wait"
+              title={fotoPerfilSrc ? 'Cambiar foto (elegir archivo)' : 'Elegir foto de perfil'}
+              aria-label={fotoPerfilSrc ? 'Cambiar foto de perfil, elegir archivo' : 'Elegir foto de perfil'}
             >
-              {initials}
-            </div>
-            <div>
+              {fotoPerfilSrc ? (
+                <Image
+                  src={fotoPerfilSrc}
+                  alt={user.nombre ? `Foto de ${user.nombre}` : 'Foto de perfil'}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                  unoptimized={
+                    fotoPerfilSrc.includes('http') && !fotoPerfilSrc.includes('res.cloudinary.com')
+                  }
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[var(--texto-fondo-oscuro)]">
+                  {initials}
+                </div>
+              )}
+              <span
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors pointer-events-none"
+                aria-hidden
+              >
+                <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-semibold px-1 text-center leading-tight">
+                  {avatarFotoUploading ? '…' : 'Elegir'}
+                </span>
+              </span>
+            </button>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold mb-1 text-[var(--menu-texto-principal)]">
                 {user.nombre || '—'}
               </h1>
               <p className="text-sm text-[var(--encabezados-alterno)]">
                 {user.email || '—'}
               </p>
+              <button
+                type="button"
+                onClick={openAvatarFotoPicker}
+                disabled={avatarFotoUploading}
+                className="mt-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+                style={{ color: LINK_BLUE }}
+              >
+                {avatarFotoUploading
+                  ? 'Subiendo foto…'
+                  : fotoPerfilSrc
+                    ? 'Cambiar foto de perfil'
+                    : 'Elegir foto de perfil'}
+              </button>
+              <p className="text-xs mt-1 text-[var(--encabezados-alterno)]">
+                Pulsa el círculo o el enlace de arriba para elegir una imagen (no abre otra pantalla).
+              </p>
+              {avatarFotoError && (
+                <p className="text-xs mt-2 text-red-600 dark:text-red-400" role="alert">
+                  {avatarFotoError}
+                </p>
+              )}
             </div>
           </div>
 
@@ -461,10 +522,11 @@ export default function UserProfile() {
           )}
         </div>
 
-        {/* Sub-vista: Administra tu información */}
+        {/* Editar datos personales y perfil capilar */}
         {activeSection === 'informacion-personal' && (
           <div className="mb-8">
             <button
+              type="button"
               onClick={() => setActiveSection(null)}
               className="flex items-center gap-2 mb-6 text-sm font-medium hover:opacity-80 transition-opacity"
               style={{ color: LINK_BLUE }}
@@ -475,39 +537,9 @@ export default function UserProfile() {
               Volver
             </button>
             <h2 className="text-2xl font-bold mb-6 text-[var(--menu-texto-principal)]">
-              Administra tu información
+              Información personal
             </h2>
-            <div className="rounded-lg border border-[var(--fondos-suaves)] overflow-hidden bg-[var(--tarjetas-paneles)]">
-              {informacionPersonalItems.map((item) => (
-                <button
-                  key={item.id}
-                  className="w-full flex items-center gap-4 p-4 text-left hover:bg-[var(--fondos-suaves)] transition-colors border-b border-[var(--fondos-suaves)] last:border-b-0"
-                >
-                  <div className="relative shrink-0">
-                    {item.icon}
-                    {item.verified && (
-                      <span
-                        className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: 'var(--success)' }}
-                      >
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[var(--menu-texto-principal)]">{item.title}</p>
-                    {item.description && (
-                      <p className="text-sm text-[var(--encabezados-alterno)] truncate">{item.description}</p>
-                    )}
-                  </div>
-                  <svg className="w-5 h-5 shrink-0 text-[var(--encabezados-alterno)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ))}
-            </div>
+            <PerfilDatosForm onSaved={() => void refreshUserFromApi()} />
           </div>
         )}
 
@@ -584,15 +616,14 @@ export default function UserProfile() {
                 <div className="mb-3">
                   <p className="text-sm text-[var(--encabezados-alterno)]">Teléfono</p>
                   <p className="text-base font-semibold text-[var(--menu-texto-principal)]">
-                    {/* Cuando tengas teléfono real en el perfil, reemplaza este placeholder */}
-                    — 
+                    {user.telefono?.trim() ? user.telefono : '—'}
                   </p>
                 </div>
                 <hr className="border-t border-[var(--fondos-suaves)] mb-3" />
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => router.push('/cliente/mi-perfil')}
+                  onClick={() => setActiveSection('informacion-personal')}
                   className="px-4 py-1.5 text-sm font-medium"
                   style={{
                     borderColor: LINK_BLUE,
@@ -620,8 +651,8 @@ export default function UserProfile() {
                   </div>
                 </div>
                 <div className="mb-3">
-                  <p className="text-sm text-[var(--encabezados-alterno)]">Nombre de usuario</p>
-                  <p className="text-base font-semibold text-[var(--menu-texto-principal)]">
+                  <p className="text-sm text-[var(--encabezados-alterno)]">ID de cuenta</p>
+                  <p className="text-base font-semibold text-[var(--menu-texto-principal)] break-all text-sm">
                     {user.id || '—'}
                   </p>
                 </div>
@@ -629,7 +660,7 @@ export default function UserProfile() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => router.push('/cliente/mi-perfil')}
+                  onClick={() => setActiveSection('informacion-personal')}
                   className="px-4 py-1.5 text-sm font-medium"
                   style={{
                     borderColor: LINK_BLUE,

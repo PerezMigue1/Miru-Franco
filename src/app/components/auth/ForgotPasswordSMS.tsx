@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ForgotPasswordSMSProps {
   onSwitchToLogin?: () => void;
   onSwitchToEmail?: () => void;
   onSwitchToSecurityQuestions?: () => void;
-  onCodeVerified?: (phone: string) => void;
+  /** Llamado con email y token cuando el OTP es correcto (backend devuelve { success, token, email }) */
+  onCodeVerified?: (email: string, token: string) => void;
 }
 
 export default function ForgotPasswordSMS({ 
@@ -17,10 +18,26 @@ export default function ForgotPasswordSMS({
 }: ForgotPasswordSMSProps) {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
-  const [errors, setErrors] = useState<{ phone?: string; code?: string }>({});
+  const [errors, setErrors] = useState<{ phone?: string; code?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const t = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(t);
+    }
+    if (countdown === 0) {
+      setCountdown(null);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.phone;
+        return next;
+      });
+    }
+  }, [countdown]);
 
   const validatePhone = () => {
     const newErrors: { phone?: string } = {};
@@ -50,30 +67,50 @@ export default function ForgotPasswordSMS({
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validatePhone()) return;
-    
+    if (!validatePhone() || countdown !== null) return;
     setIsLoading(true);
-    
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.phone;
+      delete next.general;
+      return next;
+    });
     try {
       const { api } = await import('../../services');
-      await api.sendSMSCode(phone);
-      setCodeSent(true);
-      setTimeLeft(300); // 5 minutos en segundos
-      
-      // Contador regresivo
-      const interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
+      const result = await api.sendSMSCode(phone);
+      if (result.success) {
+        setCodeSent(true);
+        // Mensaje genérico para evitar enumeración de cuentas.
+        setErrors({
+          general: 'Si el numero esta registrado, se envio el codigo de verificacion por SMS.',
         });
-      }, 1000);
+        setTimeLeft(300);
+        const interval = setInterval(() => {
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setErrors({
+          general: result.message || 'Si el numero esta registrado, se envio el codigo de verificacion por SMS.',
+        });
+      }
     } catch (error: unknown) {
+      const err = error as Error & { status?: number; retryAfter?: number };
+      if (err.status === 429) {
+        const wait = err.retryAfter ?? 60;
+        setCountdown(wait);
+        setErrors({ phone: `Demasiados intentos. Espera ${wait} segundos.` });
+      } else {
+        setErrors({
+          general: 'Si el numero esta registrado, se envio el codigo de verificacion por SMS.',
+        });
+      }
       console.error('Error enviando SMS:', error);
-      setErrors({ phone: error instanceof Error ? error.message : 'Error al enviar código SMS' });
     } finally {
       setIsLoading(false);
     }
@@ -81,18 +118,25 @@ export default function ForgotPasswordSMS({
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateCode()) return;
-    
     setIsLoading(true);
-    
+    setErrors((prev) => ({ ...prev, code: undefined, general: undefined }));
     try {
       const { api } = await import('../../services');
       const result = await api.verifySMSCode(phone, code);
-      onCodeVerified?.(result.email || phone);
+      if (result.success && result.token && result.email) {
+        onCodeVerified?.(result.email, result.token);
+      } else {
+        setErrors({ code: result.error || result.message || 'Codigo incorrecto o expirado. Solicita uno nuevo.' });
+      }
     } catch (error: unknown) {
+      const err = error as Error & { status?: number };
       console.error('Error verificando código:', error);
-      setErrors({ code: error instanceof Error ? error.message : 'El código es incorrecto. Intenta nuevamente.' });
+      if (err.status === 400) {
+        setErrors({ code: 'Codigo incorrecto o expirado. Solicita uno nuevo.' });
+      } else {
+        setErrors({ code: error instanceof Error ? error.message : 'No se pudo verificar el codigo. Intenta nuevamente.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +160,11 @@ export default function ForgotPasswordSMS({
           </p>
           
           <form onSubmit={handleVerifyCode} className="space-y-5">
+            {errors.general && (
+              <div className="mb-4 p-3 rounded-lg border" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
+                <p className="text-sm text-center" style={{ color: '#F2F1ED' }}>{errors.general}</p>
+              </div>
+            )}
             <div>
               <label 
                 htmlFor="code" 
@@ -222,6 +271,11 @@ export default function ForgotPasswordSMS({
         </p>
         
         <form onSubmit={handleSendCode} className="space-y-5">
+          {errors.general && (
+            <div className="p-3 rounded-lg border" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
+              <p className="text-sm text-center" style={{ color: '#F2F1ED' }}>{errors.general}</p>
+            </div>
+          )}
           <div>
             <label 
               htmlFor="phone" 
@@ -269,14 +323,21 @@ export default function ForgotPasswordSMS({
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || countdown !== null}
             className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#710014' }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
           >
-            {isLoading ? 'Enviando...' : 'Enviar Código SMS'}
+            {isLoading ? 'Enviando...' : countdown !== null ? `Espera ${countdown}s` : 'Enviar Código SMS'}
           </button>
+          {countdown !== null && countdown > 0 && (
+            <div className="mt-4 p-3 rounded-lg border" style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)', borderColor: 'var(--warning)' }}>
+              <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
+                ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+              </p>
+            </div>
+          )}
         </form>
 
         {(onSwitchToEmail || onSwitchToSecurityQuestions) && (

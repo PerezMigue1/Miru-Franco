@@ -28,6 +28,12 @@
   --texto-fondo-oscuro-70: rgba(242, 241, 237, 0.7);
   --texto-fondo-oscuro-80: rgba(242, 241, 237, 0.8);
   --texto-fondo-oscuro-10: rgba(242, 241, 237, 0.1);
+  /* Tarjetas internas checkout (evita blanco puro en modo oscuro) */
+  --superficie-elevada: #ffffff;
+  /* Checkout entrega: borde opción seleccionada y enlaces (claro = vino / enlace coherente) */
+  --checkout-entrega-borde-seleccion: var(--botones-principales);
+  /* Modo claro: enlace tipo botón vino; en oscuro se fuerza azul abajo */
+  --checkout-entrega-enlace: var(--botones-principales);
 
   --background: var(--fondo-general);
   --foreground: var(--menu-texto-principal);
@@ -76,18 +82,22 @@
 /* Modo oscuro - solo colores oscuros de la paleta */
 .dark {
   --fondo-general: #161616;
-  --tarjetas-paneles: #2A2A2A;
+  --tarjetas-paneles: #2a2a2a;
   --fondos-suaves: #1f1f1f;
-  --menu-texto-principal: #FFFFFF;
-  --encabezados-alterno: #B38E6F;
+  --menu-texto-principal: #ffffff;
+  --encabezados-alterno: #b38e6f;
   --background: #161616;
   --foreground: #710014;
-  --texto-fondo-oscuro: #FFFFFF;
+  --texto-fondo-oscuro: #ffffff;
   --input-bg: #1f1f1f;
   --texto-fondo-oscuro-70: rgba(255, 255, 255, 0.7);
   --texto-fondo-oscuro-80: rgba(255, 255, 255, 0.8);
   --texto-fondo-oscuro-10: rgba(255, 255, 255, 0.1);
   --menu-lateral-bg: #710014;
+  --superficie-elevada: #2a2a2a;
+  --checkout-entrega-borde-seleccion: #a64b63;
+  --checkout-entrega-enlace: #4a7ba7;
+  --enlaces-textos-interactivos: #4a7ba7;
   --hero-brand-color: var(--texto-fondo-oscuro);
   --hero-tagline-color: rgba(242, 241, 237, 0.85);
 }

@@ -9,15 +9,17 @@ import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import {
   importarDatos,
-  exportarDatos,
   descargarDiagrama,
   obtenerDiagrama,
-  TABLAS_DISPONIBLES,
-  TABLAS_EXPORTABLES,
+  listarTablasDirectas,
+  exportarDirecto,
+  obtenerColumnasDirectas,
   type ResultadoImportacion,
   type FormatoDiagrama,
+  type OpcionesExportDirecto,
 } from '../../../services/database';
 import { mermaidToSvg, svgToPngBlob } from '../../../utils/mermaidRender';
+import JSZip from 'jszip';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
 import { getUsuarios, getUsuarioById, type Usuario } from '../../../services/usuarios';
 import { getServicios, type Servicio } from '../../../services/servicios';
@@ -44,12 +46,6 @@ const FORMATOS_EXPORT = [
   { value: 'json', label: 'JSON' },
 ] as const;
 
-/** Opciones de exportación: tablas individuales o base de datos completa */
-const OPCIONES_EXPORT = [
-  { value: 'todos', label: 'Base de datos completa (todas las tablas)' },
-  ...TABLAS_EXPORTABLES.map((t) => ({ value: t.value, label: t.label })),
-];
-
 const FORMATOS_DIAGRAMA: { value: FormatoDiagrama; label: string }[] = [
   { value: 'mermaid', label: 'Mermaid (.mmd)' },
   { value: 'svg', label: 'SVG' },
@@ -62,6 +58,17 @@ const MODULOS_CONSULTAR = [
   { id: 'servicios' as const, label: 'Servicios', description: 'Catálogo de servicios' },
   { id: 'clientes' as const, label: 'Clientes CRM', description: 'Clientes' },
 ];
+
+/** Mapeo nombre entidad en diagrama ER → id del módulo en Consultar datos */
+const ENTIDAD_A_MODULO: Record<string, string> = {
+  productos: 'inventario',
+  usuario: 'usuarios',
+  usuarios: 'usuarios',
+  servicio: 'servicios',
+  servicios: 'servicios',
+  cliente: 'clientes',
+  clientes: 'clientes',
+};
 
 const ACCESOS_INSERTAR = [
   { label: 'Nuevo producto', href: '/admin/productos/nuevo', description: 'Crear producto' },
@@ -76,14 +83,70 @@ const ACCESOS_ELIMINAR = [
   { label: 'Servicios', href: '/admin/servicios', description: 'Eliminar servicios' },
 ];
 
+const STORAGE_KEY_HISTORIAL_EXPORT = 'base-datos-historial-exportaciones';
+const STORAGE_KEY_ULTIMA_EXPORT_LEGACY = 'base-datos-ultima-exportacion';
+const MAX_HISTORIAL = 50;
+// Automatización de tareas eliminada; se mantiene solo el historial de exportaciones.
+
+type EntradaHistorialExport = {
+  id: string;
+  fecha: string;
+  tabla: string;
+  formato: 'csv' | 'json';
+  etiqueta: string;
+  /** 'directo' = conexión directa BD; omitido = backend */
+  origen?: 'backend' | 'directo';
+  /** Opciones de export (columnas, fechas, solo activos) para «Descargar de nuevo» */
+  opciones?: OpcionesExportDirecto;
+};
+
+function loadHistorialExportaciones(): EntradaHistorialExport[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_HISTORIAL_EXPORT);
+    if (raw) {
+      const data = JSON.parse(raw) as EntradaHistorialExport[];
+      if (Array.isArray(data)) return data.slice(0, MAX_HISTORIAL);
+    }
+    const legacy = localStorage.getItem(STORAGE_KEY_ULTIMA_EXPORT_LEGACY);
+    if (legacy) {
+      const one = JSON.parse(legacy) as { fecha?: string; tabla?: string; formato?: string; etiqueta?: string };
+      if (one?.fecha && one?.tabla && one?.formato) {
+        const entry: EntradaHistorialExport = {
+          id: one.fecha,
+          fecha: one.fecha,
+          tabla: one.tabla,
+          formato: one.formato as 'csv' | 'json',
+          etiqueta: one.etiqueta ?? `${one.tabla} (${one.formato})`,
+        };
+        localStorage.removeItem(STORAGE_KEY_ULTIMA_EXPORT_LEGACY);
+        saveHistorialExportaciones([entry]);
+        return [entry];
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function saveHistorialExportaciones(historial: EntradaHistorialExport[]): void {
+  try {
+    const toSave = historial.slice(0, MAX_HISTORIAL);
+    localStorage.setItem(STORAGE_KEY_HISTORIAL_EXPORT, JSON.stringify(toSave));
+  } catch {
+    // ignore
+  }
+}
+
 export default function BaseDatosPage() {
-  const [tablaImport, setTablaImport] = useState('productos');
+  const [tablaImport, setTablaImport] = useState('');
   const [archivoImport, setArchivoImport] = useState<File | null>(null);
   const [importando, setImportando] = useState(false);
   const [resultadoImport, setResultadoImport] = useState<ResultadoImportacion | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [tablaExport, setTablaExport] = useState('productos');
+  const [tablaExport, setTablaExport] = useState('');
   const [formatoExport, setFormatoExport] = useState<'csv' | 'json'>('csv');
   const [exportando, setExportando] = useState(false);
   const [errorExport, setErrorExport] = useState<string | null>(null);
@@ -103,6 +166,94 @@ export default function BaseDatosPage() {
   const [loadingModulo, setLoadingModulo] = useState<string | null>(null);
   const [errorModulo, setErrorModulo] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<{ modulo: string; id: string } | null>(null);
+  const [historialExportaciones, setHistorialExportaciones] = useState<EntradaHistorialExport[]>([]);
+  const [diagramaMensaje, setDiagramaMensaje] = useState<string | null>(null);
+
+  const [tablasDirectas, setTablasDirectas] = useState<string[]>([]);
+  const [loadingTablasDirectas, setLoadingTablasDirectas] = useState(false);
+
+  /** Export con opciones (solo cuando se elige una tabla concreta) */
+  const [columnasTabla, setColumnasTabla] = useState<string[]>([]);
+  const [columnasSeleccionadas, setColumnasSeleccionadas] = useState<string[]>([]);
+  const [loadingColumnas, setLoadingColumnas] = useState(false);
+  const [exportFechaDesde, setExportFechaDesde] = useState('');
+  const [exportFechaHasta, setExportFechaHasta] = useState('');
+  const [exportSoloActivos, setExportSoloActivos] = useState(false);
+
+  /** Estadísticas rápidas (totales) – actualmente ocultas en la UI */
+  const [statsProductos, setStatsProductos] = useState<number | null>(null);
+  const [statsUsuarios, setStatsUsuarios] = useState<number | null>(null);
+  const [statsClientes, setStatsClientes] = useState<number | null>(null);
+  const [statsServicios, setStatsServicios] = useState<number | null>(null);
+
+  const refConsultarSection = useRef<HTMLDivElement>(null);
+  const diagramaMensajeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    setHistorialExportaciones(loadHistorialExportaciones());
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (diagramaMensajeTimeoutRef.current) clearTimeout(diagramaMensajeTimeoutRef.current);
+    };
+  }, []);
+
+  /** Carga de estadísticas rápidas al entrar en el módulo. */
+  React.useEffect(() => {
+    let cancelled = false;
+    const loadStats = async () => {
+      try {
+        const [productosRes, usuariosRes, serviciosRes] = await Promise.all([
+          getProductosSinRedirigir({ incluirNoDisponibles: true }),
+          getUsuarios(),
+          getServicios(),
+        ]);
+        if (cancelled) return;
+        setStatsProductos(productosRes.data.length);
+        const enriched = await Promise.all(
+          usuariosRes.map((u) => getUsuarioById(u.id).catch(() => u))
+        );
+        if (cancelled) return;
+        const soloPersonal = enriched.filter((u) => esRolPersonal(u.rol));
+        setStatsUsuarios(soloPersonal.length);
+        const soloClientes = enriched.filter((u) => String(u.rol || '').toLowerCase() === 'cliente');
+        setStatsClientes(soloClientes.length);
+        setStatsServicios(serviciosRes.data.length);
+      } catch {
+        // silencioso; la UI de estadísticas está oculta
+      }
+    };
+    loadStats();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Al elegir una tabla concreta, cargar sus columnas para «Export con opciones». */
+  React.useEffect(() => {
+    if (!tablaExport || tablaExport === '__todas__') {
+      setColumnasTabla([]);
+      setColumnasSeleccionadas([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingColumnas(true);
+    obtenerColumnasDirectas(tablaExport).then((res) => {
+      if (cancelled) return;
+      setLoadingColumnas(false);
+      if (res.success && res.columnas.length) {
+        setColumnasTabla(res.columnas);
+        setColumnasSeleccionadas(res.columnas);
+      } else {
+        setColumnasTabla([]);
+        setColumnasSeleccionadas([]);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tablaExport]);
 
   const toggleFila = (modulo: string, id: string) => {
     setExpandedRow((prev) =>
@@ -112,6 +263,10 @@ export default function BaseDatosPage() {
 
   const handleImportar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tablaImport) {
+      setResultadoImport({ success: false, error: 'Selecciona una tabla de destino' });
+      return;
+    }
     if (!archivoImport) {
       setResultadoImport({ success: false, error: 'Selecciona un archivo CSV o JSON' });
       return;
@@ -156,64 +311,170 @@ export default function BaseDatosPage() {
     return true;
   };
 
-  /** Guarda varios archivos en una carpeta elegida por el usuario (si el navegador lo soporta). */
-  const guardarEnCarpeta = async (
-    archivos: Array<{ filename: string; blob: Blob }>
+  /** Pide la carpeta al usuario. Debe llamarse desde el gesto del usuario. Retorna null si el navegador no soporta; lanza si el usuario cancela (AbortError). */
+  const pedirCarpeta = async (): Promise<FileSystemDirectoryHandle | null> => {
+    if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return null;
+    const handle = await (window as Window & { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
+      .showDirectoryPicker();
+    return handle;
+  };
+
+  /** Escribe un solo archivo en la carpeta (para mantener el gesto del usuario cerca de cada getFileHandle). */
+  const escribirUnArchivoEnCarpeta = async (
+    dirHandle: FileSystemDirectoryHandle,
+    filename: string,
+    blob: Blob
+  ): Promise<void> => {
+    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  };
+
+  /** Ejecuta la exportación por conexión directa a la BD. dirHandle: carpeta elegida; se crea dentro una subcarpeta "backup-bd_YYYY-MM-DD" con todos los archivos. Si falla, se usa ZIP. opciones solo se aplica cuando se exporta una sola tabla. */
+  const runExport = async (
+    tabla: string,
+    formato: 'csv' | 'json',
+    tablasDirectasOverride?: string[],
+    dirHandle?: FileSystemDirectoryHandle | null,
+    opciones?: OpcionesExportDirecto
   ): Promise<boolean> => {
-    if (typeof window !== 'undefined' && 'showDirectoryPicker' in window && archivos.length > 0) {
-      try {
-        const dirHandle = await (window as Window & { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-          .showDirectoryPicker();
-        for (const { filename, blob } of archivos) {
-          const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
-          const writable = await fileHandle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-        }
-        return true;
-      } catch (err) {
-        if ((err as { name?: string }).name === 'AbortError') return false;
-        throw err;
+    setErrorExport(null);
+    try {
+      const list = tabla === '__todas__' ? (tablasDirectasOverride ?? tablasDirectas) : [tabla];
+      if (list.length === 0) {
+        setErrorExport('Carga las tablas primero o elige una tabla.');
+        return false;
       }
+      const nombreSubcarpeta = `backup-bd_${new Date().toISOString().slice(0, 10)}`;
+      const archivos: Array<{ filename: string; blob: Blob }> = [];
+      let carpetaFallida = false;
+      let subCarpeta: FileSystemDirectoryHandle | null = null;
+      const usarOpciones = list.length === 1 && opciones;
+      for (const t of list) {
+        const res = await exportarDirecto(t, formato, usarOpciones ? opciones : undefined);
+        if (!res.success) {
+          setErrorExport(`Error en ${t}: ${res.error}`);
+          return false;
+        }
+        if (dirHandle && !carpetaFallida) {
+          try {
+            if (!subCarpeta) {
+              subCarpeta = await dirHandle.getDirectoryHandle(nombreSubcarpeta, { create: true });
+            }
+            await escribirUnArchivoEnCarpeta(subCarpeta, res.filename, res.blob);
+          } catch {
+            carpetaFallida = true;
+            archivos.push({ filename: res.filename, blob: res.blob });
+          }
+        } else {
+          archivos.push({ filename: res.filename, blob: res.blob });
+        }
+      }
+      if (archivos.length > 1) {
+        const zip = new JSZip();
+        for (const { filename, blob } of archivos) {
+          zip.file(filename, blob);
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const zipName = `backup-bd_${new Date().toISOString().slice(0, 10)}.zip`;
+        await guardarArchivo(zipBlob, zipName);
+      } else if (archivos.length === 1) {
+        await guardarArchivo(archivos[0].blob, archivos[0].filename);
+      }
+      return true;
+    } catch (err) {
+      setErrorExport(err instanceof Error ? err.message : 'Error al exportar');
+      return false;
     }
-    return false;
   };
 
   const handleExportar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setExportando(true);
-    setErrorExport(null);
-    try {
-      if (tablaExport === 'todos') {
-        const archivos: Array<{ filename: string; blob: Blob }> = [];
-        for (const t of TABLAS_EXPORTABLES) {
-          const res = await exportarDatos(t.value, formatoExport);
-          if (res.success) {
-            archivos.push({ filename: res.filename, blob: res.blob });
-          } else {
-            setErrorExport(`Error en ${t.label}: ${res.error}`);
-            return;
-          }
-        }
-        const guardadoConDialogo = await guardarEnCarpeta(archivos);
-        if (!guardadoConDialogo) {
-          for (const a of archivos) {
-            await guardarArchivo(a.blob, a.filename);
-          }
-        }
-      } else {
-        const res = await exportarDatos(tablaExport, formatoExport);
-        if (res.success) {
-          await guardarArchivo(res.blob, res.filename);
-        } else {
-          setErrorExport(res.error);
-        }
-      }
-    } catch (err) {
-      setErrorExport(err instanceof Error ? err.message : 'Error al exportar');
-    } finally {
-      setExportando(false);
+    if (!tablaExport) {
+      setErrorExport('Carga las tablas y elige una opción.');
+      return;
     }
+    let dirHandle: FileSystemDirectoryHandle | null = null;
+    if (tablaExport === '__todas__') {
+      try {
+        dirHandle = await pedirCarpeta();
+      } catch (err) {
+        if ((err as { name?: string }).name === 'AbortError') return;
+        setErrorExport(err instanceof Error ? err.message : 'Error al elegir carpeta');
+        return;
+      }
+    }
+    const tieneOpciones =
+      tablaExport !== '__todas__' &&
+      (columnasSeleccionadas.length < columnasTabla.length ||
+        !!exportFechaDesde ||
+        !!exportFechaHasta ||
+        exportSoloActivos);
+    const opciones: OpcionesExportDirecto | undefined = tieneOpciones
+      ? {
+          ...(columnasSeleccionadas.length < columnasTabla.length ? { columnas: columnasSeleccionadas } : {}),
+          ...(exportFechaDesde ? { fechaDesde: exportFechaDesde } : {}),
+          ...(exportFechaHasta ? { fechaHasta: exportFechaHasta } : {}),
+          ...(exportSoloActivos ? { soloActivos: true } : {}),
+        }
+      : undefined;
+
+    setExportando(true);
+    const ok = await runExport(tablaExport, formatoExport, undefined, dirHandle, opciones);
+    if (ok) {
+      const etiqueta =
+        tablaExport === '__todas__' ? 'Todas las tablas' : tablaExport;
+      const nuevaEntrada: EntradaHistorialExport = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        fecha: new Date().toISOString(),
+        tabla: tablaExport,
+        formato: formatoExport,
+        etiqueta: `${etiqueta} (${formatoExport.toUpperCase()})`,
+        origen: 'directo',
+        ...(opciones && Object.keys(opciones).length > 0 ? { opciones } : {}),
+      };
+      const nuevoHistorial = [nuevaEntrada, ...historialExportaciones];
+      saveHistorialExportaciones(nuevoHistorial);
+      setHistorialExportaciones(nuevoHistorial);
+    }
+    setExportando(false);
+  };
+
+  // Automatización de tareas eliminada: ejecutarTarea ya no se utiliza.
+
+  const handleDescargarDeNuevo = async (entrada: EntradaHistorialExport) => {
+    setExportando(true);
+    if (entrada.tabla === '__todas__') {
+      const res = await listarTablasDirectas();
+      const list = res.success ? res.tablas : [];
+      if (list.length === 0) {
+        setErrorExport('No se pudo cargar la lista de tablas para repetir la exportación.');
+        setExportando(false);
+        return;
+      }
+      await runExport('__todas__', entrada.formato, list, undefined, undefined);
+    } else {
+      await runExport(entrada.tabla, entrada.formato, undefined, undefined, entrada.opciones);
+    }
+    setExportando(false);
+  };
+
+  const cargarTablasDirectas = async () => {
+    setLoadingTablasDirectas(true);
+    setErrorExport(null);
+    const res = await listarTablasDirectas();
+    if (res.success) {
+      setTablasDirectas(res.tablas);
+      setTablaExport(res.tablas.length ? '__todas__' : '');
+      setTablaImport((prev) => (prev || !res.tablas.length ? prev : res.tablas[0]));
+    } else {
+      setErrorExport(res.error);
+      setTablasDirectas([]);
+      setTablaExport('');
+      setTablaImport('');
+    }
+    setLoadingTablasDirectas(false);
   };
 
   const handleDescargarDiagrama = async (e: React.FormEvent) => {
@@ -335,6 +596,43 @@ export default function BaseDatosPage() {
     if (nuevo) cargarModulo(nuevo);
   };
 
+  /** Extrae nombre de entidad desde un elemento del SVG (id o texto). */
+  const extraerEntidadDelNodo = (el: EventTarget | null): string | null => {
+    if (!el || !(el instanceof Element)) return null;
+    let current: Element | null = el as Element;
+    const entidades = Object.keys(ENTIDAD_A_MODULO).sort((a, b) => b.length - a.length);
+    while (current) {
+      const id = (current.getAttribute?.('id') ?? '').toLowerCase();
+      for (const e of entidades) {
+        if (id.includes(e)) return e;
+      }
+      const rawText = (current.textContent ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+      for (const e of entidades) {
+        if (rawText === e || rawText.startsWith(e + ' ') || rawText.endsWith(' ' + e) || rawText.startsWith(e + '{')) return e;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  };
+
+  const handleDiagramaClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!previewSvg) return;
+    const entidad = extraerEntidadDelNodo(e.target);
+    if (!entidad) return;
+    const moduloId = ENTIDAD_A_MODULO[entidad];
+    if (!moduloId || !MODULOS_CONSULTAR.some((m) => m.id === moduloId)) return;
+    refConsultarSection.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setModuloExpandido(moduloId);
+    cargarModulo(moduloId);
+    const label = MODULOS_CONSULTAR.find((m) => m.id === moduloId)?.label ?? entidad;
+    setDiagramaMensaje(`Mostrando: ${label}`);
+    if (diagramaMensajeTimeoutRef.current) clearTimeout(diagramaMensajeTimeoutRef.current);
+    diagramaMensajeTimeoutRef.current = setTimeout(() => {
+      setDiagramaMensaje(null);
+      diagramaMensajeTimeoutRef.current = null;
+    }, 3000);
+  };
+
   const tienePreview = previewUrl || previewSvg;
 
   const DetalleCampo = ({
@@ -358,7 +656,7 @@ export default function BaseDatosPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="px-4 md:px-8 lg:px-12">
         <header
           className="rounded-2xl mb-8 px-6 py-6"
           style={{
@@ -375,22 +673,79 @@ export default function BaseDatosPage() {
           </p>
         </header>
 
-        <div className="space-y-8">
-          {/* Importar - oculto */}
-          {false && (
+        {/* Estadísticas + Automatización (actualmente ocultas) */}
+        {false && (
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card variant="elevated" padding="md">
+              <p className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                Productos
+              </p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                {statsProductos ?? '—'}
+              </p>
+            </Card>
+            <Card variant="elevated" padding="md">
+              <p className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                Usuarios (personal)
+              </p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                {statsUsuarios ?? '—'}
+              </p>
+            </Card>
+            <Card variant="elevated" padding="md">
+              <p className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                Clientes
+              </p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                {statsClientes ?? '—'}
+              </p>
+            </Card>
+            <Card variant="elevated" padding="md">
+              <p className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                Servicios
+              </p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                {statsServicios ?? '—'}
+              </p>
+            </Card>
+          </div>
+
+          <div className="w-full" />
+        </div>
+        )}
+
+        <div className="space-y-6">
+          {/* Importar */}
+          {true && (
             <Card variant="elevated" padding="lg">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
                 📥 Importar datos
               </h2>
               <form onSubmit={handleImportar} className="space-y-4">
                 <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={cargarTablasDirectas}
+                    disabled={loadingTablasDirectas}
+                  >
+                    {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
+                  </Button>
+                </div>
+                <div>
                   <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
                     Tabla
                   </label>
                   <Select
-                    options={TABLAS_DISPONIBLES.map((t) => ({ value: t.value, label: t.label }))}
+                    options={
+                      tablasDirectas.length === 0
+                        ? [{ value: '', label: '— Carga las tablas de la BD —' }]
+                        : tablasDirectas.map((t) => ({ value: t, label: t }))
+                    }
                     value={tablaImport}
                     onChange={(e) => setTablaImport(e.target.value)}
+                    disabled={tablasDirectas.length === 0}
                   />
                 </div>
                 <div>
@@ -409,6 +764,12 @@ export default function BaseDatosPage() {
                       color: 'var(--menu-texto-principal)',
                     }}
                   />
+                  {tablaImport === 'usuarios' && (
+                    <p className="mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Recomendación: evita importar la columna <code className="bg-black/10 px-1 rounded">password</code> con hash bcrypt.
+                      Si el hash se guarda como texto plano, el usuario no podrá iniciar sesión y puede bloquear su cuenta por intentos.
+                    </p>
+                  )}
                 </div>
                 <Button type="submit" disabled={importando}>
                   {importando ? 'Importando…' : 'Importar'}
@@ -462,21 +823,42 @@ export default function BaseDatosPage() {
             </Card>
           )}
 
-          {/* Exportar */}
+          {/* Exportar (solo conexión directa a la BD) */}
           <Card variant="elevated" padding="lg">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
               📤 Exportar datos
             </h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+              Conexión directa a la BD con <code className="text-xs bg-black/10 px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-black/10 px-1 rounded">public</code>.
+            </p>
             <form onSubmit={handleExportar} className="space-y-4">
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={cargarTablasDirectas}
+                  disabled={loadingTablasDirectas}
+                >
+                  {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
+                </Button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
-                    Tabla o base completa
+                    Tabla o todas
                   </label>
                   <Select
-                    options={OPCIONES_EXPORT}
-                    value={tablaExport}
+                    options={
+                      tablasDirectas.length === 0
+                        ? [{ value: '', label: '— Carga las tablas primero —' }]
+                        : [
+                            { value: '__todas__', label: 'Todas las tablas' },
+                            ...tablasDirectas.map((t) => ({ value: t, label: t })),
+                          ]
+                    }
+                    value={tablasDirectas.length === 0 ? '' : tablaExport}
                     onChange={(e) => setTablaExport(e.target.value)}
+                    disabled={tablasDirectas.length === 0}
                   />
                 </div>
                 <div>
@@ -490,13 +872,183 @@ export default function BaseDatosPage() {
                   />
                 </div>
               </div>
-              <Button type="submit" disabled={exportando}>
+
+              {/* Export con opciones: solo para una tabla concreta */}
+              {tablaExport && tablaExport !== '__todas__' && (
+                <div
+                  className="rounded-lg border p-4 space-y-4"
+                  style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)' }}
+                >
+                  <h3 className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    Export con opciones
+                  </h3>
+                  {loadingColumnas ? (
+                    <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Cargando columnas…
+                    </p>
+                  ) : columnasTabla.length > 0 ? (
+                    <>
+                      <div>
+                        <label className="block mb-2 font-medium text-xs" style={{ color: 'var(--menu-texto-principal)' }}>
+                          Columnas a exportar
+                        </label>
+                        <div className="flex gap-2 mb-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setColumnasSeleccionadas(columnasTabla)}
+                          >
+                            Todas
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setColumnasSeleccionadas([])}
+                          >
+                            Ninguna
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                          {columnasTabla.map((col) => (
+                            <label
+                              key={col}
+                              className="inline-flex items-center gap-1.5 text-sm cursor-pointer"
+                              style={{ color: 'var(--menu-texto-principal)' }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={columnasSeleccionadas.includes(col)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setColumnasSeleccionadas((prev) => [...prev, col].sort());
+                                  } else {
+                                    setColumnasSeleccionadas((prev) => prev.filter((c) => c !== col));
+                                  }
+                                }}
+                                className="rounded"
+                              />
+                              <span className="font-mono text-xs">{col}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block mb-1 text-xs font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                            Fecha desde
+                          </label>
+                          <input
+                            type="date"
+                            value={exportFechaDesde}
+                            onChange={(e) => setExportFechaDesde(e.target.value)}
+                            className="w-full rounded border px-3 py-2 text-sm"
+                            style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)', backgroundColor: 'var(--fondo-general)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-xs font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                            Fecha hasta
+                          </label>
+                          <input
+                            type="date"
+                            value={exportFechaHasta}
+                            onChange={(e) => setExportFechaHasta(e.target.value)}
+                            className="w-full rounded border px-3 py-2 text-sm"
+                            style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)', backgroundColor: 'var(--fondo-general)' }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                          <input
+                            type="checkbox"
+                            checked={exportSoloActivos}
+                            onChange={(e) => setExportSoloActivos(e.target.checked)}
+                            className="rounded"
+                          />
+                          Solo registros activos
+                        </label>
+                        <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                          (tablas con columna <code className="bg-black/10 px-1 rounded">activo</code> o <code className="bg-black/10 px-1 rounded">estado</code>)
+                        </p>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={
+                  exportando ||
+                  tablasDirectas.length === 0 ||
+                  (tablaExport !== '__todas__' && tablaExport !== '' && columnasSeleccionadas.length === 0)
+                }
+              >
                 {exportando ? 'Exportando…' : 'Descargar'}
               </Button>
               <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                En Chrome/Edge podrás elegir la carpeta donde guardar. Base completa crea un archivo por tabla.
+                Todas las tablas: en Chrome/Edge eliges la carpeta y se crea dentro una subcarpeta «backup-bd_AAAA-MM-DD» con todos los archivos; en otros navegadores se descarga un ZIP (al descomprimirlo obtienes esa misma estructura).
               </p>
             </form>
+            {historialExportaciones.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Historial de exportaciones
+                </h3>
+                <div
+                  className="overflow-x-auto rounded-lg border"
+                  style={{
+                    borderColor: 'var(--encabezados-alterno)',
+                    maxHeight: '260px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  <table className="w-full text-sm">
+                    <thead style={{ backgroundColor: 'var(--encabezados-alterno)' }}>
+                      <tr>
+                        <th className="px-4 py-2 text-left font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+                          Fecha
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+                          Exportación
+                        </th>
+                        <th className="px-4 py-2 text-right font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+                          Acción
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                      {historialExportaciones.map((entrada) => (
+                        <tr key={entrada.id} style={{ backgroundColor: 'var(--fondo-general)' }}>
+                          <td className="px-4 py-3 whitespace-nowrap" style={{ color: 'var(--menu-texto-principal)' }}>
+                            {new Date(entrada.fecha).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                          <td className="px-4 py-3" style={{ color: 'var(--menu-texto-principal)' }}>
+                            {entrada.etiqueta}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={exportando}
+                              onClick={() => handleDescargarDeNuevo(entrada)}
+                            >
+                              Descargar de nuevo
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Se guardan las últimas {MAX_HISTORIAL} exportaciones. «Descargar de nuevo» genera un export actual con las mismas opciones.
+                </p>
+              </div>
+            )}
             {errorExport && (
               <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>
                 {errorExport}
@@ -550,22 +1102,46 @@ export default function BaseDatosPage() {
                   Vista previa
                 </p>
                 {previewSvg ? (
-                  <div
-                    className="max-w-full"
-                    style={{ minHeight: '150px' }}
-                    dangerouslySetInnerHTML={{ __html: previewSvg }}
-                  />
+                  <>
+                    <p className="text-xs mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Haz clic en una entidad (tabla) para ver sus datos en la sección Consultar datos.
+                    </p>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={handleDiagramaClick}
+                      onKeyDown={(ev) => {
+                        if (ev.key === 'Enter' || ev.key === ' ') ev.preventDefault();
+                      }}
+                      className="max-w-full cursor-pointer select-none"
+                      style={{ minHeight: '150px' }}
+                      dangerouslySetInnerHTML={{ __html: previewSvg }}
+                    />
+                    {diagramaMensaje && (
+                      <p
+                        className="text-sm mt-2 font-medium animate-pulse"
+                        style={{ color: 'var(--hover)' }}
+                      >
+                        {diagramaMensaje}
+                      </p>
+                    )}
+                  </>
                 ) : (
                   previewUrl && (
-                    <Image
-                      src={previewUrl}
-                      alt="Diagrama ER"
-                      width={800}
-                      height={600}
-                      className="max-w-full h-auto"
-                      style={{ display: 'block' }}
-                      unoptimized
-                    />
+                    <>
+                      <p className="text-xs mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                        Vista previa en PNG. Usa formato Mermaid o SVG para el diagrama interactivo.
+                      </p>
+                      <Image
+                        src={previewUrl}
+                        alt="Diagrama ER"
+                        width={800}
+                        height={600}
+                        className="max-w-full h-auto"
+                        style={{ display: 'block' }}
+                        unoptimized
+                      />
+                    </>
                   )
                 )}
               </div>
@@ -577,11 +1153,14 @@ export default function BaseDatosPage() {
             )}
           </Card>
 
+          {/* Sección Schemas eliminada */}
+
           {/* Consultar */}
-          <Card variant="elevated" padding="lg">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-              🔍 Consultar datos
-            </h2>
+          <div ref={refConsultarSection}>
+            <Card variant="elevated" padding="lg">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                🔍 Consultar datos
+              </h2>
             <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Selecciona un módulo para cargar y ver los datos:
             </p>
@@ -653,23 +1232,17 @@ export default function BaseDatosPage() {
                                             borderBottom: `1px solid ${'var(--encabezados-alterno)'}`,
                                           }}
                                         >
-                                          <DetalleCampo label="ID" value={idStr} />
-                                          <DetalleCampo label="Nombre" value={p.nombre} />
-                                          <DetalleCampo label="Categoría" value={p.categoria} />
-                                          <DetalleCampo label="Marca" value={p.marca} />
-                                          <DetalleCampo label="Precio" value={p.precio} />
-                                          <DetalleCampo label="Precio original" value={p.precioOriginal} />
-                                          <DetalleCampo label="Stock" value={p.stock ? 'Sí' : 'No'} />
-                                          <DetalleCampo label="Stock cantidad" value={p.stockCantidad} />
-                                          <DetalleCampo label="Presentación" value={p.presentacion} />
-                                          <DetalleCampo label="Descuento (%)" value={p.descuento} />
-                                          <DetalleCampo label="Nuevo" value={p.nuevo ? 'Sí' : 'No'} />
-                                          <DetalleCampo label="Cruelty free" value={p.crueltyFree ? 'Sí' : 'No'} />
-                                          <DetalleCampo label="Descripción" value={p.descripcion} fullWidth />
-                                          <DetalleCampo label="Descripción larga" value={p.descripcionLarga} fullWidth />
-                                          <DetalleCampo label="Ingredientes" value={p.ingredientes} fullWidth />
-                                          <DetalleCampo label="Modo de uso" value={p.modoUso} fullWidth />
-                                          <DetalleCampo label="Resultado" value={p.resultado} fullWidth />
+                                      <div>
+                                        <span
+                                          className="text-xs font-semibold uppercase"
+                                          style={{ color: 'var(--encabezados-alterno)' }}
+                                        >
+                                          ID
+                                        </span>
+                                        <p className="text-sm mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>
+                                          {idStr ?? '—'}
+                                        </p>
+                                      </div>
                                           {p.caracteristicas && p.caracteristicas.length > 0 && (
                                             <div className="col-span-full">
                                               <span className="text-xs font-semibold uppercase" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -917,6 +1490,7 @@ export default function BaseDatosPage() {
               ))}
             </div>
           </Card>
+          </div>
 
           {/* Insertar - oculto */}
           {false && (

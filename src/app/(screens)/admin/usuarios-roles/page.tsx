@@ -59,11 +59,6 @@ export default function UsuariosRolesPage() {
   const [verificandoEmail, setVerificandoEmail] = useState(false);
   const [emailYaRegistrado, setEmailYaRegistrado] = useState(false);
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [formCalle, setFormCalle] = useState('');
-  const [formNumero, setFormNumero] = useState('');
-  const [formColonia, setFormColonia] = useState('');
-  const [formCodigoPostal, setFormCodigoPostal] = useState('');
-  const [formReferencia, setFormReferencia] = useState('');
   const [formTipoCabello, setFormTipoCabello] = useState('liso');
   const [formTieneAlergias, setFormTieneAlergias] = useState(false);
   const [formAlergias, setFormAlergias] = useState('');
@@ -190,11 +185,6 @@ export default function UsuariosRolesPage() {
     setFormFechaNacimiento('');
     setFormPregunta('');
     setFormRespuesta('');
-    setFormCalle('');
-    setFormNumero('');
-    setFormColonia('');
-    setFormCodigoPostal('');
-    setFormReferencia('');
     setFormTipoCabello('liso');
     setFormTieneAlergias(false);
     setFormAlergias('');
@@ -226,16 +216,6 @@ export default function UsuariosRolesPage() {
         preguntaSeguridad: formPregunta.trim()
           ? { pregunta: formPregunta.trim(), respuesta: formRespuesta.trim() }
           : undefined,
-        direccion:
-          formCalle.trim() || formColonia.trim()
-            ? {
-                calle: formCalle.trim() || 'Por definir',
-                numero: formNumero.trim() || 'S/N',
-                colonia: formColonia.trim() || 'Por definir',
-                codigoPostal: formCodigoPostal.trim() || '00000',
-                referencia: formReferencia.trim() || undefined,
-              }
-            : undefined,
         perfilCapilar: {
           tipoCabello: formTipoCabello,
           tieneAlergias: formTieneAlergias,
@@ -679,50 +659,9 @@ export default function UsuariosRolesPage() {
             </div>
           </div>
 
-          <div>
-            <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
-              Dirección
-            </h3>
-            <div className={gridForm}>
-              <Input
-                label="Calle"
-                value={formCalle}
-                onChange={(e) => setFormCalle(e.target.value)}
-                placeholder="Calle"
-                fullWidth
-              />
-              <Input
-                label="Número"
-                value={formNumero}
-                onChange={(e) => setFormNumero(e.target.value)}
-                placeholder="Núm."
-                fullWidth
-              />
-              <Input
-                label="Colonia"
-                value={formColonia}
-                onChange={(e) => setFormColonia(e.target.value)}
-                placeholder="Colonia"
-                fullWidth
-              />
-              <Input
-                label="Código Postal"
-                value={formCodigoPostal}
-                onChange={(e) => setFormCodigoPostal(e.target.value)}
-                placeholder="CP"
-                fullWidth
-              />
-              <div className="sm:col-span-2">
-                <Input
-                  label="Referencia"
-                  value={formReferencia}
-                  onChange={(e) => setFormReferencia(e.target.value)}
-                  placeholder="Entre calles, indicaciones"
-                  fullWidth
-                />
-              </div>
-            </div>
-          </div>
+          <p className="text-xs -mt-2 mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
+            Las direcciones de envío ya no se registran aquí: el usuario las agrega después (tabla <code className="text-[11px]">direcciones_usuario</code>).
+          </p>
 
           <div>
             <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>

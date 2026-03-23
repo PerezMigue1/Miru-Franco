@@ -1,6 +1,15 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { saveToken } from '../utils/security';
+import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
+import { emitMiruUserStorageUpdated } from '../utils/userStorageSync';
+import {
+  getMiPerfil,
+  mergePerfilEnLocalStorage,
+  normalizarPerfilUsuario,
+  unwrapUsuarioPayload,
+  type PerfilUsuarioCompleto,
+} from './perfil';
 
 export interface LoginResponse {
   success: boolean;
@@ -74,7 +83,9 @@ export interface SMSResponse {
   success?: boolean;
   message?: string;
   email?: string;
+  token?: string;
   error?: string;
+  retryAfter?: number;
 }
 
 export interface SecurityQuestionsResponse {
@@ -124,8 +135,18 @@ const saveAuthData = (data: { token?: string; user?: unknown; usuario?: unknown 
       saveToken(data.token);
       const userData = data.user ?? data.usuario;
       if (userData) {
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('user', JSON.stringify(normalizarUsuarioAlmacenado(userData)));
+        emitMiruUserStorageUpdated();
       }
+      // Perfil completo (foto, etc.): el login suele no traer `foto`; /api/auth/me sí.
+      void (async () => {
+        try {
+          const perfil = await getMiPerfil();
+          mergePerfilEnLocalStorage(perfil);
+        } catch {
+          /* sin /me o red: se completa al entrar a /perfil */
+        }
+      })();
     } else {
       if (process.env.NODE_ENV === 'development') {
         console.warn('[Auth] No se recibió token en la respuesta');
@@ -227,13 +248,7 @@ export const api = {
       pregunta: string;
       respuesta: string;
     };
-    direccion: {
-      calle: string;
-      numero: string;
-      colonia: string;
-      codigoPostal: string;
-      referencia?: string;
-    };
+    // Sin dirección embebida: se usan registros DireccionUsuario después del alta.
     perfilCapilar: {
       tipoCabello: string;
       tieneAlergias: boolean;
@@ -328,20 +343,26 @@ export const api = {
     );
   },
 
-  async sendSMSCode(_phone: string): Promise<SMSResponse> {
-    // Esta funcionalidad aún no está implementada en el backend
-    return {
-      success: false,
-      message: 'Funcionalidad SMS aún no disponible'
-    };
+  /** Enviar OTP por SMS para recuperación de contraseña. Backend: POST /api/usuarios/enviar-codigo-recuperacion-sms */
+  async sendSMSCode(phone: string): Promise<SMSResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    const data = await apiClient.post<SMSResponse>(
+      '/api/usuarios/enviar-codigo-recuperacion-sms',
+      { phone: phone.replace(/\s/g, '').trim() },
+      BACKEND_BASE
+    );
+    return data;
   },
 
-  async verifySMSCode(_phone: string, _code: string): Promise<SMSResponse> {
-    // Esta funcionalidad aún no está implementada en el backend
-    return {
-      success: false,
-      message: 'Funcionalidad SMS aún no disponible'
-    };
+  /** Verificar OTP SMS y obtener token de reset. Backend: POST /api/usuarios/verificar-codigo-recuperacion-sms → { success, token, email } */
+  async verifySMSCode(phone: string, codigo: string): Promise<SMSResponse> {
+    const BACKEND_BASE = getBackendBaseUrl();
+    const data = await apiClient.post<SMSResponse>(
+      '/api/usuarios/verificar-codigo-recuperacion-sms',
+      { phone: phone.replace(/\s/g, '').trim(), codigo },
+      BACKEND_BASE
+    );
+    return data;
   },
 
   // ❌ DEPRECADO: Este método usa GET /api/pregunta-seguridad (solo para registro)
@@ -606,19 +627,23 @@ export const api = {
     }
   },
 
-  // ✅ Obtener perfil del usuario (incluye rol y otros campos basicos)
+  /**
+   * Perfil del usuario autenticado (alineado con Prisma `Usuario` + opcional `direcciones`).
+   * GET `/api/auth/me` — el backend debe devolver los campos del modelo o un subconjunto.
+   */
   async getProfile(): Promise<{
     success: boolean;
-    data?: { id: string; nombre?: string; email?: string; rol?: string; creadoEn?: string | Date; telefono?: string };
+    data?: PerfilUsuarioCompleto;
     error?: string;
   }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
-      const data = await apiClient.get<{ success: boolean; data?: { id: string; nombre: string; email: string; rol?: string }; error?: string }>(
-        '/api/auth/me',
-        BACKEND_BASE
-      );
-      return data;
+      const raw = await apiClient.get<unknown>('/api/auth/me', BACKEND_BASE);
+      const obj = unwrapUsuarioPayload(raw);
+      if (!obj) {
+        return { success: false, error: 'Respuesta de perfil no reconocida' };
+      }
+      return { success: true, data: normalizarPerfilUsuario(obj) };
     } catch (error) {
       console.error('Error al obtener perfil:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al obtener perfil';

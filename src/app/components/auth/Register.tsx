@@ -3,6 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { validatePassword, sanitizeInput, sanitizeEmail, hasDangerousCharacters } from '../../utils/security';
+import {
+  esTelefonoMexicoValido,
+  mensajeTelefonoInvalido,
+  normalizarTelefonoRegistro,
+  MENSAJE_FORMATO_TELEFONO,
+  sanitizarEntradaTelefono10,
+} from '../../utils/phone';
 import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
 
@@ -36,14 +43,7 @@ export default function Register({
     birthDate: '',
     securityQuestion: '',
     
-    // Paso 2: Dirección
-    street: '',
-    number: '',
-    colony: '',
-    postalCode: '',
-    reference: '',
-    
-    // Paso 3: Perfil capilar
+    // Paso 2: Perfil capilar (las direcciones van en DireccionUsuario, fuera del registro)
     hairType: '',
     hasAllergies: null as boolean | null,
     allergies: '',
@@ -141,10 +141,10 @@ export default function Register({
       }
     }
     
-    if (!formData.phone) {
+    if (!formData.phone.trim()) {
       newErrors.phone = 'El teléfono es requerido';
-    } else if (!/^\+?[\d\s-()]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'El teléfono no es válido';
+    } else if (!esTelefonoMexicoValido(formData.phone)) {
+      newErrors.phone = mensajeTelefonoInvalido();
     }
     
     // ✅ Usar validación centralizada de seguridad con todos los datos del usuario
@@ -156,10 +156,6 @@ export default function Register({
         email: formData.email,
         telefono: formData.phone,
         fechaNacimiento: formData.birthDate,
-        direccion: {
-          calle: formData.street,
-          colonia: formData.colony,
-        },
         preguntaSeguridad: {
           respuesta: securityAnswer,
         },
@@ -209,42 +205,6 @@ export default function Register({
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateStep2 = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.street.trim()) {
-      newErrors.street = 'La calle es requerida';
-    } else if (hasDangerousCharacters(formData.street)) {
-      newErrors.street = 'La calle no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
-    }
-    
-    if (!formData.number.trim()) {
-      newErrors.number = 'El número es requerido';
-    } else if (hasDangerousCharacters(formData.number)) {
-      newErrors.number = 'El número no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
-    }
-    
-    if (!formData.colony.trim()) {
-      newErrors.colony = 'La colonia es requerida';
-    } else if (hasDangerousCharacters(formData.colony)) {
-      newErrors.colony = 'La colonia no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
-    }
-    
-    if (!formData.postalCode) {
-      newErrors.postalCode = 'El código postal es requerido';
-    } else if (!/^\d{5}$/.test(formData.postalCode)) {
-      newErrors.postalCode = 'El código postal debe tener 5 dígitos';
-    }
-    
-    // Validar referencia si existe (campo opcional)
-    if (formData.reference && formData.reference.trim() && hasDangerousCharacters(formData.reference)) {
-      newErrors.reference = 'La referencia no puede contener caracteres especiales peligrosos (<, >, script, etc.)';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
     
@@ -283,7 +243,7 @@ export default function Register({
     
     // ✅ Validar caracteres peligrosos en tiempo real para campos de texto
     if (typeof value === 'string') {
-      const textFieldsToValidate = ['name', 'street', 'colony', 'number', 'reference', 'allergies', 'chemicalTreatments'];
+      const textFieldsToValidate = ['name', 'allergies', 'chemicalTreatments'];
       if (textFieldsToValidate.includes(field)) {
         if (value.trim() && hasDangerousCharacters(value)) {
           // Mostrar error pero permitir que el usuario vea lo que escribió
@@ -320,10 +280,6 @@ export default function Register({
         email: formData.email,
         telefono: formData.phone,
         fechaNacimiento: formData.birthDate,
-        direccion: {
-          calle: formData.street,
-          colonia: formData.colony,
-        },
         preguntaSeguridad: {
           respuesta: securityAnswer,
         },
@@ -405,45 +361,19 @@ export default function Register({
   }, []);
 
   const handleNext = () => {
-    if (currentStep === 1 && !validateStep1()) return;
-    if (currentStep === 2 && !validateStep2()) return;
-    
-    // Si vamos al paso 3, resetear todos los campos del paso 3 para que estén desmarcados
-    if (currentStep === 2) {
-      setFormData(prev => ({
-        ...prev,
-        hairType: '',
-        hasAllergies: null,
-        allergies: '',
-        hasChemicalTreatments: null,
-        chemicalTreatments: '',
-        acceptTerms: false,
-        receivePromotions: false,
-      }));
-    }
-    
-    setCurrentStep(prev => prev + 1);
-  };
-
-  const handleSkip = () => {
-    if (currentStep === 2) {
-      // Omitir dirección, continuar al paso 3
-      // Resetear todos los campos del paso 3 para que estén desmarcados
-      setFormData(prev => ({
-        ...prev,
-        hairType: '',
-        hasAllergies: null,
-        allergies: '',
-        hasChemicalTreatments: null,
-        chemicalTreatments: '',
-        acceptTerms: false,
-        receivePromotions: false,
-      }));
-      setCurrentStep(3);
-    } else if (currentStep === 3) {
-      // Omitir perfil capilar, finalizar registro
-      handleSubmit(true);
-    }
+    if (currentStep !== 1) return;
+    if (!validateStep1()) return;
+    setFormData((prev) => ({
+      ...prev,
+      hairType: '',
+      hasAllergies: null,
+      allergies: '',
+      hasChemicalTreatments: null,
+      chemicalTreatments: '',
+      acceptTerms: false,
+      receivePromotions: false,
+    }));
+    setCurrentStep(2);
   };
 
   const handleSubmit = async (skipValidation = false) => {
@@ -507,18 +437,11 @@ export default function Register({
         nombre: sanitizeInput(formData.name),
         email: sanitizeEmail(formData.email), // Email solo se normaliza, no escapa HTML
         password: formData.password, // Las contraseñas no se sanitizan (se hashean en el backend)
-        telefono: formData.phone.replace(/[^\d\s\-\+\(\)]/g, ''), // Solo números y caracteres permitidos
+        telefono: normalizarTelefonoRegistro(formData.phone),
         fechaNacimiento: formData.birthDate, // Las fechas no necesitan sanitización
         preguntaSeguridad: {
           pregunta: sanitizeInput(selectedQuestionText || ''), // Texto completo de la pregunta
           respuesta: sanitizeInput(securityAnswer || '') // Respuesta del usuario
-        },
-        direccion: {
-          calle: sanitizeInput(formData.street || ''),
-          numero: sanitizeInput(formData.number || ''),
-          colonia: sanitizeInput(formData.colony || ''),
-          codigoPostal: formData.postalCode.replace(/\D/g, ''), // Solo números
-          referencia: sanitizeInput(formData.reference || ''),
         },
         perfilCapilar: {
           tipoCabello: formData.hairType === 'lacio' ? 'liso' : 
@@ -713,8 +636,30 @@ export default function Register({
         <input
           type="tel"
           id="phone"
+          inputMode="tel"
+          autoComplete="tel"
           value={formData.phone}
-          onChange={(e) => handleChange('phone', e.target.value)}
+          onChange={(e) => handleChange('phone', sanitizarEntradaTelefono10(e.target.value))}
+          onBlur={(e) => {
+            const v = sanitizarEntradaTelefono10(e.target.value);
+            if (!v) {
+              setErrors((prev) => {
+                const next = { ...prev };
+                delete next.phone;
+                return next;
+              });
+              return;
+            }
+            if (!esTelefonoMexicoValido(v)) {
+              setErrors((prev) => ({ ...prev, phone: mensajeTelefonoInvalido() }));
+            } else {
+              setErrors((prev) => {
+                const next = { ...prev };
+                delete next.phone;
+                return next;
+              });
+            }
+          }}
           className={`w-full px-4 py-3 rounded-lg border ${
             errors.phone 
               ? 'border-red-500 dark:border-red-600' 
@@ -723,11 +668,15 @@ export default function Register({
               style={{ 
                 backgroundColor: '#f2f1ed', 
                 color: '#161616',
-                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
+                borderColor: errors.phone ? '#590C0C' : 'rgba(255,255,255,0.2)'
               }}
-          placeholder="+52 123 456 7890"
+          placeholder="5512345678"
+          maxLength={10}
           disabled={isLoading}
         />
+        <p className="mt-1 text-xs opacity-80" style={{ color: '#F2F1ED' }}>
+          {MENSAJE_FORMATO_TELEFONO}
+        </p>
         {errors.phone && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.phone}
@@ -1053,175 +1002,15 @@ export default function Register({
     </div>
   );
 
-  // Renderizado del Paso 2: Dirección
-  const renderStep2 = () => (
-    <div className="space-y-5">
-      <h3 className="text-lg font-semibold mb-4" style={{ color: '#F2F1ED' }}>
-        Dirección de Entrega
-      </h3>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label 
-            htmlFor="street" 
-                className="block text-sm font-medium mb-2"
-                style={{ color: '#F2F1ED' }}
-          >
-            Calle
-          </label>
-          <input
-            type="text"
-            id="street"
-            value={formData.street}
-            onChange={(e) => handleChange('street', e.target.value)}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.street 
-                ? 'border-red-500 dark:border-red-600' 
-                : 'border-zinc-300 dark:border-zinc-700'
-            } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
-            placeholder="Calle"
-            disabled={isLoading}
-          />
-          {errors.street && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.street}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label 
-            htmlFor="number" 
-                className="block text-sm font-medium mb-2"
-                style={{ color: '#F2F1ED' }}
-          >
-            Número
-          </label>
-          <input
-            type="text"
-            id="number"
-            value={formData.number}
-            onChange={(e) => handleChange('number', e.target.value)}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.number 
-                ? 'border-red-500 dark:border-red-600' 
-                : 'border-zinc-300 dark:border-zinc-700'
-            } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
-            placeholder="123"
-            disabled={isLoading}
-          />
-          {errors.number && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.number}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label 
-          htmlFor="colony" 
-                className="block text-sm font-medium mb-2"
-                style={{ color: '#F2F1ED' }}
-        >
-          Colonia
-        </label>
-        <input
-          type="text"
-          id="colony"
-          value={formData.colony}
-          onChange={(e) => handleChange('colony', e.target.value)}
-          className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors"
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.name ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
-          placeholder="Colonia"
-          disabled={isLoading}
-        />
-        {errors.colony && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.colony}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label 
-          htmlFor="postalCode" 
-                className="block text-sm font-medium mb-2"
-                style={{ color: '#F2F1ED' }}
-        >
-          Código Postal
-        </label>
-        <input
-          type="text"
-          id="postalCode"
-          value={formData.postalCode}
-          onChange={(e) => {
-            const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-            handleChange('postalCode', value);
-          }}
-          className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#f2f1ed', 
-            color: '#161616',
-            borderColor: errors.postalCode ? '#590C0C' : 'rgba(255,255,255,0.2)'
-          }}
-          placeholder="12345"
-          maxLength={5}
-          disabled={isLoading}
-        />
-        {errors.postalCode && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.postalCode}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label 
-          htmlFor="reference" 
-                className="block text-sm font-medium mb-2"
-                style={{ color: '#F2F1ED' }}
-        >
-          Referencia (Opcional)
-        </label>
-        <textarea
-          id="reference"
-          value={formData.reference}
-          onChange={(e) => handleChange('reference', e.target.value)}
-          rows={2}
-          className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors resize-none"
-          style={{ 
-            backgroundColor: '#f2f1ed', 
-            color: '#161616',
-            borderColor: 'rgba(255,255,255,0.2)'
-          }}
-          placeholder="Ej: Entre calle A y calle B, casa azul"
-          disabled={isLoading}
-        />
-      </div>
-    </div>
-  );
-
-  // Renderizado del Paso 3: Perfil Capilar
+  // Renderizado del Paso 2: Perfil Capilar
   const renderStep3 = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold mb-4" style={{ color: '#F2F1ED' }}>
+      <h3 className="text-lg font-semibold mb-2" style={{ color: '#F2F1ED' }}>
         Cuéntanos sobre tu cabello
       </h3>
+      <p className="text-sm mb-4 opacity-90" style={{ color: '#F2F1ED' }}>
+        Las direcciones de envío las podrás agregar después desde tu perfil o al comprar en línea.
+      </p>
 
       <div>
         <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">
@@ -1479,7 +1268,7 @@ export default function Register({
             Crear Cuenta
           </h2>
           <div className="flex items-center justify-center gap-2 mb-4">
-            {[1, 2, 3].map((step) => (
+            {[1, 2].map((step) => (
               <div key={step} className="flex items-center">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
@@ -1494,7 +1283,7 @@ export default function Register({
                 >
                   {step < currentStep ? '✓' : step}
                 </div>
-                {step < 3 && (
+                {step < 2 && (
                   <div
                     className="w-12 h-1"
                     style={{
@@ -1509,15 +1298,14 @@ export default function Register({
         
         <form onSubmit={(e) => {
           e.preventDefault();
-          if (currentStep === 3) {
+          if (currentStep === 2) {
             handleSubmit();
           } else {
             handleNext();
           }
         }} className="space-y-5">
           {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
+          {currentStep === 2 && renderStep3()}
 
           {errors.general && (
             <div className="mb-4">
@@ -1541,7 +1329,7 @@ export default function Register({
               </button>
             )}
             
-            {currentStep < 3 ? (
+            {currentStep < 2 ? (
               <button
                 type="submit"
                 disabled={isLoading}

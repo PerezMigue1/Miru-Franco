@@ -4,6 +4,8 @@ import { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getToken } from '../../utils/security';
+import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmacenado';
+import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 
@@ -73,12 +75,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           router.replace('/403');
           return;
         }
-        const rolBackend = res.data?.rol ?? getRolFromUser(res.data as Record<string, unknown>);
+        const rolBackend = res.data?.rol ?? getRolFromUser(res.data as unknown as Record<string, unknown>);
         if (checkAdminAndAllow(rolBackend)) {
           // Opcional: actualizar localStorage para no tener que llamar a /me en cada carga
           if (res.data && typeof window !== 'undefined') {
             const current = userJson ? JSON.parse(userJson) as Record<string, unknown> : {};
-            localStorage.setItem('user', JSON.stringify({ ...current, ...res.data, rol: rolBackend ?? current.rol, role: rolBackend ?? current.role }));
+            localStorage.setItem(
+              'user',
+              JSON.stringify(
+                normalizarUsuarioAlmacenado({
+                  ...current,
+                  ...res.data,
+                  rol: rolBackend ?? current.rol,
+                  role: rolBackend ?? current.role,
+                })
+              )
+            );
+            emitMiruUserStorageUpdated();
           }
           return;
         }

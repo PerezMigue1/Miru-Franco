@@ -28,10 +28,6 @@ export const validatePassword = (
     email?: string;
     telefono?: string;
     fechaNacimiento?: string;
-    direccion?: {
-      calle?: string;
-      colonia?: string;
-    };
     preguntaSeguridad?: {
       respuesta?: string;
     };
@@ -93,21 +89,6 @@ export const validatePassword = (
       const dia = fecha.getDate().toString();
       if (password.includes(año) || password.includes(dia)) {
         errors.push('La contraseña no puede contener tu fecha de nacimiento');
-      }
-    }
-    
-    if (userData.direccion) {
-      if (userData.direccion.calle) {
-        const calleLower = userData.direccion.calle.toLowerCase();
-        if (passwordLower.includes(calleLower)) {
-          errors.push('La contraseña no puede contener tu dirección');
-        }
-      }
-      if (userData.direccion.colonia) {
-        const coloniaLower = userData.direccion.colonia.toLowerCase();
-        if (passwordLower.includes(coloniaLower)) {
-          errors.push('La contraseña no puede contener tu dirección');
-        }
       }
     }
     
@@ -304,7 +285,7 @@ export const handleSecurityError = (error: unknown, response?: Response): {
  * Obtiene headers de autenticación
  */
 export const getAuthHeaders = (): HeadersInit => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? getToken() : null;
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),

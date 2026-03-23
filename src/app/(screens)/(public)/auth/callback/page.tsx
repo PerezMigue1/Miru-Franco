@@ -5,6 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '../../../../services/client';
 import { getBackendBaseUrl } from '../../../../services/config';
 import { saveToken } from '../../../../utils/security';
+import { normalizarUsuarioAlmacenado } from '../../../../utils/normalizarUsuarioAlmacenado';
+import { emitMiruUserStorageUpdated } from '../../../../utils/userStorageSync';
+import { api } from '../../../../services/auth';
+import { mergePerfilEnLocalStorage } from '../../../../services/perfil';
 
 function AuthCallbackContent() {
   const searchParams = useSearchParams();
@@ -76,9 +80,20 @@ function AuthCallbackContent() {
             // Opcional: Guardar información del usuario si viene en la respuesta (user o usuario)
             const userData = (data as { user?: unknown; usuario?: unknown }).user ?? (data as { user?: unknown; usuario?: unknown }).usuario;
             if (userData) {
-              localStorage.setItem('user', JSON.stringify(userData));
+              localStorage.setItem('user', JSON.stringify(normalizarUsuarioAlmacenado(userData)));
+              emitMiruUserStorageUpdated();
             }
-            
+
+            // Completar nombre/foto/rol en localStorage (Google suele mandar poco en el primer JSON).
+            try {
+              const prof = await api.getProfile();
+              if (prof.success && prof.data) {
+                mergePerfilEnLocalStorage(prof.data);
+              }
+            } catch {
+              /* sin red o /me: el header se actualizará al entrar a /perfil */
+            }
+
             setStatus('success');
             setMessage('¡Autenticación exitosa! Redirigiendo...');
             

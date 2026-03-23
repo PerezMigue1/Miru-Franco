@@ -1,12 +1,22 @@
 'use client';
 
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
+import {
+  ButtonHTMLAttributes,
+  cloneElement,
+  isValidElement,
+  MouseEvent,
+  ReactElement,
+  ReactNode,
+} from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'outline' | 'chip';
   size?: 'sm' | 'md' | 'lg';
   children: ReactNode;
   fullWidth?: boolean;
+  /** Si es true, el hijo único recibe los estilos del botón (p. ej. `<Link>`). */
+  asChild?: boolean;
 }
 
 export default function Button({
@@ -14,7 +24,9 @@ export default function Button({
   size = 'md',
   children,
   fullWidth = false,
+  asChild = false,
   className = '',
+  type = 'button',
   ...props
 }: ButtonProps) {
   const baseStyles = 'font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -67,35 +79,76 @@ export default function Button({
   const sizeStyle = sizes[size];
   const widthStyle = fullWidth ? 'w-full' : '';
 
+  const mergedClassName = `${baseStyles} ${sizeStyle} ${widthStyle} ${className}`.trim();
+
+  const baseInlineStyle: CSSProperties = {
+    backgroundColor: variantStyle.bg,
+    color: variantStyle.text,
+    border: variant === 'outline' && 'border' in variantStyle ? `2px solid ${variantStyle.border}` : 'none',
+  };
+
+  const applyHoverEnter = (el: HTMLElement) => {
+    if (!props.disabled) {
+      el.style.backgroundColor = variantStyle.hover;
+      if (variant === 'outline') {
+        if ('border' in variantStyle && variantStyle.border) {
+          el.style.borderColor = variantStyle.hover;
+        }
+        el.style.color = 'var(--texto-fondo-oscuro)';
+      }
+    }
+  };
+
+  const applyHoverLeave = (el: HTMLElement) => {
+    if (!props.disabled) {
+      el.style.backgroundColor = variantStyle.bg;
+      if (variant === 'outline') {
+        if ('border' in variantStyle && variantStyle.border) {
+          el.style.borderColor = variantStyle.border;
+        }
+        el.style.color = variantStyle.text;
+      }
+    }
+  };
+
+  if (asChild) {
+    if (!isValidElement(children)) {
+      console.warn('Button asChild requiere un único elemento React como hijo.');
+      return null;
+    }
+    const child = children as ReactElement<{
+      className?: string;
+      style?: CSSProperties;
+      onMouseEnter?: (e: MouseEvent<HTMLElement>) => void;
+      onMouseLeave?: (e: MouseEvent<HTMLElement>) => void;
+    }>;
+    const childClass = [mergedClassName, child.props.className].filter(Boolean).join(' ');
+    const childStyle = { ...baseInlineStyle, ...child.props.style };
+
+    return cloneElement(child, {
+      className: childClass,
+      style: childStyle,
+      onMouseEnter: (e: MouseEvent<HTMLElement>) => {
+        applyHoverEnter(e.currentTarget);
+        child.props.onMouseEnter?.(e);
+      },
+      onMouseLeave: (e: MouseEvent<HTMLElement>) => {
+        applyHoverLeave(e.currentTarget);
+        child.props.onMouseLeave?.(e);
+      },
+    });
+  }
+
   return (
     <button
-      className={`${baseStyles} ${sizeStyle} ${widthStyle} ${className}`}
-      style={{
-        backgroundColor: variantStyle.bg,
-        color: variantStyle.text,
-        border: variant === 'outline' && 'border' in variantStyle ? `2px solid ${variantStyle.border}` : 'none',
-      }}
+      type={type}
+      className={mergedClassName}
+      style={baseInlineStyle}
       onMouseEnter={(e) => {
-        if (!props.disabled) {
-          e.currentTarget.style.backgroundColor = variantStyle.hover;
-          if (variant === 'outline') {
-            if ('border' in variantStyle && variantStyle.border) {
-              e.currentTarget.style.borderColor = variantStyle.hover;
-            }
-            e.currentTarget.style.color = 'var(--texto-fondo-oscuro)';
-          }
-        }
+        applyHoverEnter(e.currentTarget);
       }}
       onMouseLeave={(e) => {
-        if (!props.disabled) {
-          e.currentTarget.style.backgroundColor = variantStyle.bg;
-          if (variant === 'outline') {
-            if ('border' in variantStyle && variantStyle.border) {
-              e.currentTarget.style.borderColor = variantStyle.border;
-            }
-            e.currentTarget.style.color = variantStyle.text;
-          }
-        }
+        applyHoverLeave(e.currentTarget);
       }}
       {...props}
     >

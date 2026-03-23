@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
@@ -8,71 +9,48 @@ import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
 import Input from '../../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../../components/ui/Table';
+import { listarPedidos, etiquetaEstadoPedido, varianteBadgeEstadoPedido } from '../../../../../services/ecommerce';
+import type { PedidoApi } from '../../../../../services/ecommerce';
+
 export default function MisPedidosPage() {
   const router = useRouter();
+  const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
+  const [counts, setCounts] = useState<Record<number, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState('');
 
-  const pedidos = [
-    {
-      id: 'PED-2024-001',
-      fecha: '2024-02-15',
-      productos: 3,
-      total: 930,
-      estado: 'en-proceso',
-      metodoPago: 'Tarjeta',
-    },
-    {
-      id: 'PED-2024-002',
-      fecha: '2024-02-10',
-      productos: 2,
-      total: 530,
-      estado: 'enviado',
-      metodoPago: 'PayPal',
-    },
-    {
-      id: 'PED-2024-003',
-      fecha: '2024-02-05',
-      productos: 1,
-      total: 350,
-      estado: 'entregado',
-      metodoPago: 'Tarjeta',
-    },
-    {
-      id: 'PED-2024-004',
-      fecha: '2024-01-28',
-      productos: 4,
-      total: 1200,
-      estado: 'entregado',
-      metodoPago: 'Transferencia',
-    },
-  ];
-
-  const obtenerVariantEstado = (estado: string) => {
-    switch (estado) {
-      case 'en-proceso':
-        return 'warning';
-      case 'enviado':
-        return 'info';
-      case 'entregado':
-        return 'success';
-      case 'cancelado':
-        return 'danger';
-      default:
-        return 'default';
-    }
-  };
-
-  const formatearEstado = (estado: string) => {
-    const estados: { [key: string]: string } = {
-      'en-proceso': 'En Proceso',
-      'enviado': 'Enviado',
-      'entregado': 'Entregado',
-      'cancelado': 'Cancelado',
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await listarPedidos();
+        if (cancelled) return;
+        setPedidos(list);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Error al cargar pedidos');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
-    return estados[estado] || estado;
-  };
+  }, []);
 
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
+  const filtrados = pedidos.filter((p) => {
+    if (!filtro.trim()) return true;
+    const q = filtro.toLowerCase();
+    return (
+      String(p.id).includes(q) ||
+      (p.creadoEn && p.creadoEn.toLowerCase().includes(q)) ||
+      (p.estado && p.estado.toLowerCase().includes(q))
+    );
+  });
+
+  const formatearFecha = (fecha: string | undefined) => {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleDateString('es-MX', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -82,70 +60,71 @@ export default function MisPedidosPage() {
   return (
     <ModuleLayout>
       <PageHeader
-        title="Mis Pedidos"
+        title="Mis pedidos"
         subtitle="Consulta el estado de todos tus pedidos"
         actions={
-          <Button onClick={() => router.push('/cliente/tienda-online')}>
-            + Nuevo Pedido
-          </Button>
+          <Button onClick={() => router.push('/cliente/tienda-online')}>+ Nuevo pedido</Button>
         }
       />
 
+      {error && (
+        <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
+          <p style={{ color: 'var(--danger)' }}>{error}</p>
+        </Card>
+      )}
+
       <div className="mb-6">
-        <Input 
-          placeholder="Buscar pedido por número, fecha..." 
-          className="w-full max-w-md" 
+        <Input
+          placeholder="Buscar por número, fecha o estado…"
+          className="w-full max-w-md"
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
         />
       </div>
 
-      <Card>
-        <Table headers={['Número de Pedido', 'Fecha', 'Productos', 'Total', 'Método de Pago', 'Estado', 'Acciones']}>
-          {pedidos.map((pedido) => (
-            <TableRow key={pedido.id}>
-              <TableCell className="font-mono font-semibold">{pedido.id}</TableCell>
-              <TableCell>{formatearFecha(pedido.fecha)}</TableCell>
-              <TableCell>{pedido.productos} producto{pedido.productos > 1 ? 's' : ''}</TableCell>
-              <TableCell className="font-semibold">${pedido.total.toLocaleString()}</TableCell>
-              <TableCell>{pedido.metodoPago}</TableCell>
-              <TableCell>
-                <Badge variant={obtenerVariantEstado(pedido.estado)}>
-                  {formatearEstado(pedido.estado)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => router.push(`/cliente/tienda-online/mis-pedidos/${pedido.id}`)}
-                >
-                  Ver Detalle
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </Table>
-      </Card>
-
-      {pedidos.length === 0 && (
+      {loading ? (
+        <Card className="text-center py-12">
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando pedidos…</p>
+        </Card>
+      ) : filtrados.length === 0 ? (
         <Card className="text-center py-12">
           <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            No tienes pedidos realizados
+            {pedidos.length === 0 ? 'No tienes pedidos realizados' : 'Ningún pedido coincide con la búsqueda'}
           </p>
-          <Button onClick={() => router.push('/cliente/tienda-online')}>
-            Explorar Productos
-          </Button>
+          <Button onClick={() => router.push('/cliente/tienda-online')}>Explorar productos</Button>
+        </Card>
+      ) : (
+        <Card>
+          <Table
+            headers={['Número', 'Fecha', 'Total', 'Método de pago', 'Estado', 'Acciones']}
+          >
+            {filtrados.map((pedido) => (
+              <TableRow key={pedido.id}>
+                <TableCell className="font-mono font-semibold">#{pedido.id}</TableCell>
+                <TableCell>{formatearFecha(pedido.creadoEn)}</TableCell>
+                <TableCell className="font-semibold">
+                  ${pedido.total.toLocaleString()} {pedido.moneda}
+                </TableCell>
+                <TableCell>{pedido.metodoPago ?? '—'}</TableCell>
+                <TableCell>
+                  <Badge variant={varianteBadgeEstadoPedido(pedido.estado)}>
+                    {etiquetaEstadoPedido(pedido.estado)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => router.push(`/cliente/tienda-online/mis-pedidos/${pedido.id}`)}
+                  >
+                    Ver detalle
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
         </Card>
       )}
     </ModuleLayout>
   );
 }
-
-
-
-
-
-
-
-
-
-

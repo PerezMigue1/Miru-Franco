@@ -1,0 +1,743 @@
+/**
+ * E-commerce: carrito, pedidos, pagos, envíos, etc.
+ * Rutas alineadas con el backend Nest (/api/...). Cuerpos en camelCase (Prisma/TS).
+ */
+
+import { apiClient } from './client';
+import { getBackendBaseUrl } from './config';
+
+const BASE = () => getBackendBaseUrl();
+
+function num(v: unknown, fallback = 0): number {
+  if (v == null) return fallback;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function str(v: unknown): string {
+  return v == null ? '' : String(v);
+}
+
+function unwrapArray<T>(res: unknown): T[] {
+  if (Array.isArray(res)) return res as T[];
+  if (res && typeof res === 'object') {
+    const o = res as Record<string, unknown>;
+    const inner = o.data ?? o.items ?? o.carritoItems ?? o.pedidos ?? o.result;
+    if (Array.isArray(inner)) return inner as T[];
+  }
+  return [];
+}
+
+function unwrapObject<T extends Record<string, unknown>>(res: unknown): T | null {
+  if (!res || typeof res !== 'object') return null;
+  const o = res as Record<string, unknown>;
+  const inner = (o.data ?? o.pedido ?? o.item ?? o.envio ?? o.factura ?? o.pago ?? o.valoracion ?? o.devolucion ?? o.notificacion) as unknown;
+  if (inner && typeof inner === 'object' && !Array.isArray(inner)) return inner as T;
+  if (o.id != null || o.pedidoId != null) return o as T;
+  return null;
+}
+
+// --- Carrito ---
+
+export interface CarritoItemApi {
+  id: number;
+  cantidad: number;
+  precioReferencia?: number | null;
+  activo?: boolean;
+  productoId: number;
+  presentacionId: number;
+  creadoEn?: string;
+  actualizadoEn?: string;
+  /** Si el GET expande producto */
+  producto?: { nombre?: string; imagenes?: string[]; marca?: string };
+  presentacion?: { tamanio?: string; precio?: number | string };
+}
+
+function normalizarCarritoItem(raw: Record<string, unknown>): CarritoItemApi {
+  return {
+    id: num(raw.id),
+    cantidad: num(raw.cantidad, 1),
+    precioReferencia: raw.precioReferencia != null ? num(raw.precioReferencia) : raw.precio_referencia != null ? num(raw.precio_referencia) : null,
+    activo: raw.activo !== false,
+    productoId: num(raw.productoId ?? raw.producto_id),
+    presentacionId: num(raw.presentacionId ?? raw.presentacion_id),
+    creadoEn: str(raw.creadoEn ?? raw.creado_en),
+    actualizadoEn: str(raw.actualizadoEn ?? raw.actualizado_en),
+    producto:
+      raw.producto && typeof raw.producto === 'object'
+        ? (raw.producto as CarritoItemApi['producto'])
+        : undefined,
+    presentacion:
+      raw.presentacion && typeof raw.presentacion === 'object'
+        ? (raw.presentacion as CarritoItemApi['presentacion'])
+        : undefined,
+  };
+}
+
+export async function listarCarrito(): Promise<CarritoItemApi[]> {
+  const res = await apiClient.get<unknown>('/api/carrito', BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarCarritoItem(r));
+}
+
+export async function obtenerCarritoItem(id: number): Promise<CarritoItemApi | null> {
+  const res = await apiClient.get<unknown>(`/api/carrito/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarCarritoItem(o) : null;
+}
+
+export interface CrearCarritoItemPayload {
+  productoId: number;
+  presentacionId: number;
+  cantidad: number;
+  precioReferencia?: number;
+}
+
+export async function crearCarritoItem(payload: CrearCarritoItemPayload): Promise<CarritoItemApi> {
+  const res = await apiClient.post<unknown>('/api/carrito', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && typeof o === 'object' && o.id != null) return normalizarCarritoItem(o);
+  throw new Error('No se pudo crear el ítem del carrito');
+}
+
+export async function actualizarCarritoItem(
+  id: number,
+  payload: Partial<{ cantidad: number; activo: boolean; precioReferencia: number }>
+): Promise<CarritoItemApi> {
+  const res = await apiClient.put<unknown>(`/api/carrito/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && typeof o === 'object' && o.id != null) return normalizarCarritoItem(o);
+  throw new Error('No se pudo actualizar el ítem del carrito');
+}
+
+export async function eliminarCarritoItem(id: number): Promise<void> {
+  await apiClient.delete<void>(`/api/carrito/${id}`, BASE());
+}
+
+// --- Pedidos ---
+
+export type EstadoPedidoUi =
+  | 'borrador'
+  | 'pendiente_pago'
+  | 'pagado'
+  | 'preparando'
+  | 'enviado'
+  | 'entregado'
+  | 'cancelado';
+
+export interface PedidoApi {
+  id: number;
+  estado: EstadoPedidoUi;
+  subtotal: number;
+  costoEnvio: number;
+  impuestos: number;
+  descuento: number;
+  total: number;
+  moneda: string;
+  direccionTextoCompleta?: string | null;
+  notasCliente?: string | null;
+  metodoPago?: string | null;
+  referenciaPago?: string | null;
+  pagadoEn?: string | null;
+  creadoEn?: string;
+  actualizadoEn?: string;
+  usuarioId?: string;
+  direccionEnvioId?: string | null;
+}
+
+function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
+  return {
+    id: num(raw.id),
+    estado: (str(raw.estado) || 'borrador') as EstadoPedidoUi,
+    subtotal: num(raw.subtotal),
+    costoEnvio: num(raw.costoEnvio ?? raw.costo_envio),
+    impuestos: num(raw.impuestos),
+    descuento: num(raw.descuento),
+    total: num(raw.total),
+    moneda: str(raw.moneda) || 'MXN',
+    direccionTextoCompleta: raw.direccionTextoCompleta != null ? str(raw.direccionTextoCompleta) : raw.direccion_texto_completa != null ? str(raw.direccion_texto_completa) : null,
+    notasCliente: raw.notasCliente != null ? str(raw.notasCliente) : raw.notas_cliente != null ? str(raw.notas_cliente) : null,
+    metodoPago: raw.metodoPago != null ? str(raw.metodoPago) : raw.metodo_pago != null ? str(raw.metodo_pago) : null,
+    referenciaPago: raw.referenciaPago != null ? str(raw.referenciaPago) : raw.referencia_pago != null ? str(raw.referencia_pago) : null,
+    pagadoEn: raw.pagadoEn != null ? str(raw.pagadoEn) : raw.pagado_en != null ? str(raw.pagado_en) : null,
+    creadoEn: str(raw.creadoEn ?? raw.creado_en),
+    actualizadoEn: str(raw.actualizadoEn ?? raw.actualizado_en),
+    usuarioId: str(raw.usuarioId ?? raw.usuario_id),
+    direccionEnvioId: raw.direccionEnvioId != null ? str(raw.direccionEnvioId) : raw.direccion_envio_id != null ? str(raw.direccion_envio_id) : null,
+  };
+}
+
+export async function listarPedidos(): Promise<PedidoApi[]> {
+  const res = await apiClient.get<unknown>('/api/pedidos', BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarPedido(r));
+}
+
+export async function obtenerPedido(id: number): Promise<PedidoApi | null> {
+  const res = await apiClient.get<unknown>(`/api/pedidos/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarPedido(o) : null;
+}
+
+export interface CrearPedidoPayload {
+  estado?: EstadoPedidoUi;
+  subtotal: number;
+  costoEnvio: number;
+  impuestos: number;
+  descuento: number;
+  total: number;
+  moneda?: string;
+  direccionTextoCompleta?: string;
+  notasCliente?: string;
+  metodoPago?: string;
+  direccionEnvioId?: string;
+}
+
+export async function crearPedido(payload: CrearPedidoPayload): Promise<PedidoApi> {
+  const res = await apiClient.post<unknown>('/api/pedidos', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarPedido(o);
+  throw new Error('No se pudo crear el pedido');
+}
+
+export async function actualizarPedido(id: number, payload: Partial<CrearPedidoPayload>): Promise<PedidoApi> {
+  const res = await apiClient.put<unknown>(`/api/pedidos/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarPedido(o);
+  throw new Error('No se pudo actualizar el pedido');
+}
+
+export async function eliminarPedido(id: number): Promise<void> {
+  await apiClient.delete<void>(`/api/pedidos/${id}`, BASE());
+}
+
+// --- Ítems de pedido ---
+
+export interface PedidoItemApi {
+  id: number;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  nombreProducto?: string | null;
+  tamanio?: string | null;
+  pedidoId: number;
+  productoId: number;
+  presentacionId: number;
+}
+
+function normalizarPedidoItem(raw: Record<string, unknown>): PedidoItemApi {
+  return {
+    id: num(raw.id),
+    cantidad: num(raw.cantidad, 1),
+    precioUnitario: num(raw.precioUnitario ?? raw.precio_unitario),
+    subtotal: num(raw.subtotal),
+    nombreProducto: raw.nombreProducto != null ? str(raw.nombreProducto) : raw.nombre_producto != null ? str(raw.nombre_producto) : null,
+    tamanio: raw.tamanio != null ? str(raw.tamanio) : raw.tamaño != null ? str(raw.tamaño) : null,
+    pedidoId: num(raw.pedidoId ?? raw.pedido_id),
+    productoId: num(raw.productoId ?? raw.producto_id),
+    presentacionId: num(raw.presentacionId ?? raw.presentacion_id),
+  };
+}
+
+export async function listarPedidoItems(pedidoId: number): Promise<PedidoItemApi[]> {
+  const res = await apiClient.get<unknown>(`/api/pedidos/${pedidoId}/items`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarPedidoItem(r));
+}
+
+export interface CrearPedidoItemPayload {
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  nombreProducto?: string;
+  tamanio?: string;
+  productoId: number;
+  presentacionId: number;
+}
+
+export async function crearPedidoItem(pedidoId: number, payload: CrearPedidoItemPayload): Promise<PedidoItemApi> {
+  const res = await apiClient.post<unknown>(`/api/pedidos/${pedidoId}/items`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarPedidoItem(o);
+  throw new Error('No se pudo añadir el producto al pedido');
+}
+
+export async function actualizarPedidoItem(
+  pedidoId: number,
+  itemId: number,
+  payload: Partial<CrearPedidoItemPayload>
+): Promise<PedidoItemApi> {
+  const res = await apiClient.put<unknown>(`/api/pedidos/${pedidoId}/items/${itemId}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarPedidoItem(o);
+  throw new Error('No se pudo actualizar el ítem del pedido');
+}
+
+export async function eliminarPedidoItem(pedidoId: number, itemId: number): Promise<void> {
+  await apiClient.delete<void>(`/api/pedidos/${pedidoId}/items/${itemId}`, BASE());
+}
+
+// --- Pagos ---
+
+export interface PagoApi {
+  id: number;
+  intentoNumero: number;
+  monto: number;
+  moneda: string;
+  metodo: string;
+  proveedor?: string | null;
+  estado: string;
+  referenciaExterna?: string | null;
+  pedidoId: number;
+}
+
+function normalizarPago(raw: Record<string, unknown>): PagoApi {
+  return {
+    id: num(raw.id),
+    intentoNumero: num(raw.intentoNumero ?? raw.intento_numero, 1),
+    monto: num(raw.monto),
+    moneda: str(raw.moneda) || 'MXN',
+    metodo: str(raw.metodo),
+    proveedor: raw.proveedor != null ? str(raw.proveedor) : null,
+    estado: str(raw.estado) || 'pendiente',
+    referenciaExterna: raw.referenciaExterna != null ? str(raw.referenciaExterna) : raw.referencia_externa != null ? str(raw.referencia_externa) : null,
+    pedidoId: num(raw.pedidoId ?? raw.pedido_id),
+  };
+}
+
+export async function listarPagosPorPedido(pedidoId: number): Promise<PagoApi[]> {
+  const res = await apiClient.get<unknown>(`/api/pagos/pedido/${pedidoId}`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarPago(r));
+}
+
+export async function obtenerPago(id: number): Promise<PagoApi | null> {
+  const res = await apiClient.get<unknown>(`/api/pagos/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarPago(o) : null;
+}
+
+export interface CrearPagoPayload {
+  intentoNumero?: number;
+  monto: number;
+  moneda?: string;
+  metodo: string;
+  proveedor?: string;
+  estado?: string;
+  referenciaExterna?: string;
+  pedidoId: number;
+}
+
+export async function crearPago(payload: CrearPagoPayload): Promise<PagoApi> {
+  const res = await apiClient.post<unknown>('/api/pagos', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarPago(o);
+  throw new Error('No se pudo registrar el pago');
+}
+
+export async function actualizarPagoParcial(id: number, payload: Partial<CrearPagoPayload>): Promise<PagoApi> {
+  const res = await apiClient.patch<unknown>(`/api/pagos/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarPago(o);
+  throw new Error('No se pudo actualizar el pago');
+}
+
+// --- Historial estados pedido ---
+
+export interface HistorialEstadoPedidoApi {
+  id: number;
+  estadoAnterior?: string | null;
+  estadoNuevo: string;
+  origen?: string | null;
+  creadoEn?: string;
+  pedidoId: number;
+}
+
+export async function listarHistorialPedido(pedidoId: number): Promise<HistorialEstadoPedidoApi[]> {
+  const res = await apiClient.get<unknown>(`/api/historial-estados-pedido/pedido/${pedidoId}`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => ({
+    id: num(r.id),
+    estadoAnterior: r.estadoAnterior != null ? str(r.estadoAnterior) : r.estado_anterior != null ? str(r.estado_anterior) : null,
+    estadoNuevo: str(r.estadoNuevo ?? r.estado_nuevo),
+    origen: r.origen != null ? str(r.origen) : null,
+    creadoEn: str(r.creadoEn ?? r.creado_en),
+    pedidoId: num(r.pedidoId ?? r.pedido_id),
+  }));
+}
+
+// --- Envíos ---
+
+export interface EnvioApi {
+  id: number;
+  empresaEnvio?: string | null;
+  numeroGuia?: string | null;
+  estadoEnvio: string;
+  fechaEnvio?: string | null;
+  fechaEntrega?: string | null;
+  notas?: string | null;
+  pedidoId: number;
+}
+
+function normalizarEnvio(raw: Record<string, unknown>): EnvioApi {
+  return {
+    id: num(raw.id),
+    empresaEnvio: raw.empresaEnvio != null ? str(raw.empresaEnvio) : raw.empresa_envio != null ? str(raw.empresa_envio) : null,
+    numeroGuia: raw.numeroGuia != null ? str(raw.numeroGuia) : raw.numero_guia != null ? str(raw.numero_guia) : null,
+    estadoEnvio: str(raw.estadoEnvio ?? raw.estado_envio) || 'preparando',
+    fechaEnvio: raw.fechaEnvio != null ? str(raw.fechaEnvio) : raw.fecha_envio != null ? str(raw.fecha_envio) : null,
+    fechaEntrega: raw.fechaEntrega != null ? str(raw.fechaEntrega) : raw.fecha_entrega != null ? str(raw.fecha_entrega) : null,
+    notas: raw.notas != null ? str(raw.notas) : null,
+    pedidoId: num(raw.pedidoId ?? raw.pedido_id),
+  };
+}
+
+export async function listarEnviosPorPedido(pedidoId: number): Promise<EnvioApi[]> {
+  const res = await apiClient.get<unknown>(`/api/envios/pedido/${pedidoId}`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarEnvio(r));
+}
+
+export async function obtenerEnvio(id: number): Promise<EnvioApi | null> {
+  const res = await apiClient.get<unknown>(`/api/envios/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarEnvio(o) : null;
+}
+
+// --- Facturas ---
+
+export interface FacturaApi {
+  id: number;
+  uuidFiscal?: string | null;
+  folio?: string | null;
+  serie?: string | null;
+  xmlUrl?: string | null;
+  pdfUrl?: string | null;
+  estado?: string | null;
+  pedidoId: number;
+  creadoEn?: string;
+}
+
+function normalizarFactura(r: Record<string, unknown>): FacturaApi {
+  return {
+    id: num(r.id),
+    uuidFiscal: str(r.uuidFiscal ?? r.uuid_fiscal) || null,
+    folio: r.folio != null ? str(r.folio) : null,
+    serie: r.serie != null ? str(r.serie) : null,
+    xmlUrl: str(r.xmlUrl ?? r.xml_url) || null,
+    pdfUrl: str(r.pdfUrl ?? r.pdf_url) || null,
+    estado: r.estado != null ? str(r.estado) : null,
+    pedidoId: num(r.pedidoId ?? r.pedido_id),
+    creadoEn: str(r.creadoEn ?? r.creado_en),
+  };
+}
+
+export async function listarFacturasPorPedido(pedidoId: number): Promise<FacturaApi[]> {
+  const res = await apiClient.get<unknown>(`/api/facturas/pedido/${pedidoId}`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarFactura(r));
+}
+
+export async function obtenerFactura(id: number): Promise<FacturaApi | null> {
+  const res = await apiClient.get<unknown>(`/api/facturas/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarFactura(o) : null;
+}
+
+export interface CrearFacturaPayload {
+  pedidoId: number;
+  uuidFiscal?: string;
+  folio?: string;
+  serie?: string;
+  xmlUrl?: string;
+  pdfUrl?: string;
+  estado?: string;
+}
+
+export async function crearFactura(payload: CrearFacturaPayload): Promise<FacturaApi> {
+  const res = await apiClient.post<unknown>('/api/facturas', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarFactura(o);
+  throw new Error('No se pudo crear la factura');
+}
+
+export async function actualizarFactura(id: number, payload: Partial<CrearFacturaPayload>): Promise<FacturaApi> {
+  const res = await apiClient.put<unknown>(`/api/facturas/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarFactura(o);
+  throw new Error('No se pudo actualizar la factura');
+}
+
+export async function eliminarFactura(id: number): Promise<void> {
+  await apiClient.delete<void>(`/api/facturas/${id}`, BASE());
+}
+
+/** Todas las facturas ligadas a los pedidos del usuario autenticado. */
+export async function listarFacturasDelCliente(): Promise<FacturaApi[]> {
+  const pedidos = await listarPedidos();
+  const todas: FacturaApi[] = [];
+  for (const p of pedidos) {
+    const facs = await listarFacturasPorPedido(p.id);
+    todas.push(...facs);
+  }
+  return todas;
+}
+
+// --- Valoraciones ---
+
+export interface ValoracionApi {
+  id: number;
+  puntuacion: number;
+  comentario?: string | null;
+  creadoEn?: string;
+  usuarioId?: string;
+  productoId: number;
+  pedidoId: number;
+}
+
+function normalizarValoracion(r: Record<string, unknown>): ValoracionApi {
+  return {
+    id: num(r.id),
+    puntuacion: num(r.puntuacion, 0),
+    comentario: r.comentario != null ? str(r.comentario) : null,
+    creadoEn: str(r.creadoEn ?? r.creado_en),
+    usuarioId: str(r.usuarioId ?? r.usuario_id),
+    productoId: num(r.productoId ?? r.producto_id),
+    pedidoId: num(r.pedidoId ?? r.pedido_id),
+  };
+}
+
+export async function listarValoracionesProducto(productoId: number): Promise<ValoracionApi[]> {
+  const res = await apiClient.get<unknown>(`/api/valoraciones/producto/${productoId}`, {
+    customBase: BASE(),
+    skipAuth: true,
+  });
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarValoracion(r));
+}
+
+export async function obtenerValoracion(id: number): Promise<ValoracionApi | null> {
+  const res = await apiClient.get<unknown>(`/api/valoraciones/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarValoracion(o) : null;
+}
+
+export interface CrearValoracionPayload {
+  puntuacion: number;
+  comentario?: string;
+  productoId: number;
+  pedidoId: number;
+}
+
+export async function crearValoracion(payload: CrearValoracionPayload): Promise<ValoracionApi> {
+  const res = await apiClient.post<unknown>('/api/valoraciones', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarValoracion(o);
+  throw new Error('No se pudo crear la valoración');
+}
+
+export async function actualizarValoracion(
+  id: number,
+  payload: Partial<Pick<CrearValoracionPayload, 'puntuacion' | 'comentario'>>
+): Promise<ValoracionApi> {
+  const res = await apiClient.put<unknown>(`/api/valoraciones/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarValoracion(o);
+  throw new Error('No se pudo actualizar la valoración');
+}
+
+export async function eliminarValoracion(id: number): Promise<void> {
+  await apiClient.delete<void>(`/api/valoraciones/${id}`, BASE());
+}
+
+/** Etiquetas para UI (pedidos / mis compras). */
+export function etiquetaEstadoPedido(estado: string): string {
+  const m: Record<string, string> = {
+    borrador: 'Borrador',
+    pendiente_pago: 'Pendiente de pago',
+    pagado: 'Pagado',
+    preparando: 'Preparando',
+    enviado: 'Enviado',
+    entregado: 'Entregado',
+    cancelado: 'Cancelado',
+  };
+  return m[estado] ?? estado.replace(/_/g, ' ');
+}
+
+export type BadgeVariant = 'default' | 'warning' | 'info' | 'success' | 'danger';
+
+export function varianteBadgeEstadoPedido(estado: string): BadgeVariant {
+  switch (estado) {
+    case 'pendiente_pago':
+    case 'borrador':
+      return 'warning';
+    case 'pagado':
+    case 'preparando':
+      return 'info';
+    case 'enviado':
+      return 'info';
+    case 'entregado':
+      return 'success';
+    case 'cancelado':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+export async function listarValoracionesPedido(pedidoId: number): Promise<ValoracionApi[]> {
+  const res = await apiClient.get<unknown>(`/api/valoraciones/pedido/${pedidoId}`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarValoracion(r));
+}
+
+/** Pedidos del usuario que incluyen el producto (para elegir `pedido_id` al valorar). */
+export async function listarPedidosQueIncluyenProducto(productoId: number): Promise<PedidoApi[]> {
+  const pedidos = await listarPedidos();
+  const elegibles: PedidoApi[] = [];
+  for (const p of pedidos) {
+    if (p.estado === 'cancelado' || p.estado === 'borrador') continue;
+    try {
+      const items = await listarPedidoItems(p.id);
+      if (items.some((i) => i.productoId === productoId)) elegibles.push(p);
+    } catch {
+      /* ignorar */
+    }
+  }
+  return elegibles;
+}
+
+// --- Devoluciones ---
+
+export interface DevolucionApi {
+  id: number;
+  motivo?: string | null;
+  estado: string;
+  monto?: number | null;
+  creadoEn?: string;
+  actualizadoEn?: string;
+  pedidoId: number;
+  pedidoItemId?: number | null;
+  pagoId?: number | null;
+}
+
+function normalizarDevolucion(r: Record<string, unknown>): DevolucionApi {
+  return {
+    id: num(r.id),
+    motivo: r.motivo != null ? str(r.motivo) : null,
+    estado: str(r.estado) || 'pendiente',
+    monto: r.monto != null ? num(r.monto) : null,
+    creadoEn: str(r.creadoEn ?? r.creado_en),
+    actualizadoEn: str(r.actualizadoEn ?? r.actualizado_en),
+    pedidoId: num(r.pedidoId ?? r.pedido_id),
+    pedidoItemId:
+      r.pedidoItemId != null ? num(r.pedidoItemId) : r.pedido_item_id != null ? num(r.pedido_item_id) : null,
+    pagoId: r.pagoId != null ? num(r.pagoId) : r.pago_id != null ? num(r.pago_id) : null,
+  };
+}
+
+export async function listarDevolucionesPedido(pedidoId: number): Promise<DevolucionApi[]> {
+  const res = await apiClient.get<unknown>(`/api/devoluciones/pedido/${pedidoId}`, BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarDevolucion(r));
+}
+
+export async function obtenerDevolucion(id: number): Promise<DevolucionApi | null> {
+  const res = await apiClient.get<unknown>(`/api/devoluciones/${id}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarDevolucion(o) : null;
+}
+
+export interface CrearDevolucionPayload {
+  pedidoId: number;
+  motivo?: string;
+  estado?: string;
+  monto?: number;
+  pedidoItemId?: number;
+  pagoId?: number;
+}
+
+export async function crearDevolucion(payload: CrearDevolucionPayload): Promise<DevolucionApi> {
+  const res = await apiClient.post<unknown>('/api/devoluciones', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarDevolucion(o);
+  throw new Error('No se pudo crear la devolución');
+}
+
+export async function actualizarDevolucion(
+  id: number,
+  payload: Partial<CrearDevolucionPayload>
+): Promise<DevolucionApi> {
+  const res = await apiClient.put<unknown>(`/api/devoluciones/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarDevolucion(o);
+  throw new Error('No se pudo actualizar la devolución');
+}
+
+export async function eliminarDevolucion(id: number): Promise<void> {
+  await apiClient.delete<void>(`/api/devoluciones/${id}`, BASE());
+}
+
+export async function listarDevolucionesDelCliente(): Promise<DevolucionApi[]> {
+  const pedidos = await listarPedidos();
+  const todas: DevolucionApi[] = [];
+  for (const p of pedidos) {
+    const list = await listarDevolucionesPedido(p.id);
+    todas.push(...list);
+  }
+  return todas;
+}
+
+// --- Notificaciones ---
+
+export interface NotificacionApi {
+  id: string;
+  tipo: string;
+  titulo: string;
+  mensaje: string;
+  leida: boolean;
+  creadoEn?: string;
+  usuarioId?: string;
+}
+
+function normalizarNotificacion(r: Record<string, unknown>): NotificacionApi {
+  return {
+    id: str(r.id),
+    tipo: str(r.tipo),
+    titulo: str(r.titulo),
+    mensaje: str(r.mensaje),
+    leida: Boolean(r.leida),
+    creadoEn: str(r.creadoEn ?? r.creado_en),
+    usuarioId: str(r.usuarioId ?? r.usuario_id),
+  };
+}
+
+export async function listarNotificaciones(): Promise<NotificacionApi[]> {
+  const res = await apiClient.get<unknown>('/api/notificaciones', BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarNotificacion(r));
+}
+
+export async function obtenerNotificacion(id: string): Promise<NotificacionApi | null> {
+  const res = await apiClient.get<unknown>(`/api/notificaciones/${encodeURIComponent(id)}`, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  return o ? normalizarNotificacion(o) : null;
+}
+
+export interface CrearNotificacionPayload {
+  tipo: string;
+  titulo: string;
+  mensaje: string;
+  usuarioId: string;
+  metadata?: Record<string, unknown>;
+}
+
+export async function crearNotificacion(payload: CrearNotificacionPayload): Promise<NotificacionApi> {
+  const res = await apiClient.post<unknown>('/api/notificaciones', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarNotificacion(o);
+  throw new Error('No se pudo crear la notificación');
+}
+
+export async function actualizarNotificacion(
+  id: string,
+  payload: Partial<{ tipo: string; titulo: string; mensaje: string; leida: boolean }>
+): Promise<NotificacionApi> {
+  const res = await apiClient.put<unknown>(`/api/notificaciones/${encodeURIComponent(id)}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarNotificacion(o);
+  throw new Error('No se pudo actualizar la notificación');
+}
+
+export async function eliminarNotificacion(id: string): Promise<void> {
+  await apiClient.delete<void>(`/api/notificaciones/${encodeURIComponent(id)}`, BASE());
+}

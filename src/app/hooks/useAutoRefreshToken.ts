@@ -112,9 +112,13 @@ export function useAutoRefreshToken() {
 
     // Verificar cada 30 segundos para detectar rápidamente nuevas sesiones
     intervalRef.current = setInterval(checkTokenStatus, 30 * 1000);
-    checkTokenStatus();
+    // No llamar refresh en el mismo tick que la carga: evita 401/condiciones de carrera al recargar la página
+    const firstCheck = window.setTimeout(() => {
+      void checkTokenStatus();
+    }, 4000);
 
     return () => {
+      window.clearTimeout(firstCheck);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }

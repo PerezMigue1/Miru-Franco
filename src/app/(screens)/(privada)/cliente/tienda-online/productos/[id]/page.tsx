@@ -9,7 +9,18 @@ import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Input from '../../../../../../components/ui/Input';
 import { getProductoPorId, type Producto } from '../../../../../../services/productos';
+import {
+  listarValoracionesProducto,
+  listarPedidosQueIncluyenProducto,
+  crearValoracion,
+  type ValoracionApi,
+  type PedidoApi,
+} from '../../../../../../services/ecommerce';
 import { useCart } from '../../../../../../context/CartContext';
+import { showAlert, showToast } from '../../../../../../utils/toast';
+import { hasValidToken } from '../../../../../../utils/security';
+import Select from '../../../../../../components/ui/Select';
+import Textarea from '../../../../../../components/ui/Textarea';
 
 export default function DetalleProductoPage() {
   const params = useParams();
@@ -21,7 +32,48 @@ export default function DetalleProductoPage() {
   const [cantidad, setCantidad] = useState(1);
   const [presentacionSeleccionada, setPresentacionSeleccionada] = useState('');
   const [mensajeAñadido, setMensajeAñadido] = useState(false);
+  const [valoraciones, setValoraciones] = useState<ValoracionApi[]>([]);
+  const [pedidosParaValorar, setPedidosParaValorar] = useState<PedidoApi[]>([]);
+  const [pedidoValoracion, setPedidoValoracion] = useState('');
+  const [puntuacion, setPuntuacion] = useState('5');
+  const [comentarioValoracion, setComentarioValoracion] = useState('');
+  const [enviandoValoracion, setEnviandoValoracion] = useState(false);
   const { addItem } = useCart();
+
+  const productoIdNum = producto ? Number(producto.id) : NaN;
+
+  useEffect(() => {
+    if (!Number.isFinite(productoIdNum) || productoIdNum <= 0) return;
+    let cancelled = false;
+    listarValoracionesProducto(productoIdNum)
+      .then((rows) => {
+        if (!cancelled) setValoraciones(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setValoraciones([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productoIdNum]);
+
+  useEffect(() => {
+    if (!hasValidToken() || !Number.isFinite(productoIdNum) || productoIdNum <= 0) {
+      setPedidosParaValorar([]);
+      return;
+    }
+    let cancelled = false;
+    listarPedidosQueIncluyenProducto(productoIdNum)
+      .then((peds) => {
+        if (!cancelled) setPedidosParaValorar(peds);
+      })
+      .catch(() => {
+        if (!cancelled) setPedidosParaValorar([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productoIdNum]);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,39 +102,88 @@ export default function DetalleProductoPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  const manejarAgregarCarrito = () => {
+  const manejarAgregarCarrito = async () => {
     if (!producto) return;
     const presActual = producto.presentaciones?.find((p) => p.tamaño === presentacionSeleccionada);
     const disponibleParaCarrito =
       producto.stock && (producto.presentaciones ? (presActual?.disponible ?? false) : true);
     if (!disponibleParaCarrito) return;
-    const presIndex = producto.presentaciones?.findIndex((p) => p.tamaño === presentacionSeleccionada) ?? -1;
-    const precioNum = producto.presentaciones?.length && presActual
-      ? (typeof presActual.precio === 'string'
-          ? parseFloat(String(presActual.precio).replace(/[^0-9.]/g, '')) || 0
-          : 0)
-      : (typeof producto.precio === 'string'
-          ? parseFloat(producto.precio.replace(/[^0-9.]/g, '')) || 0
-          : 0);
-    // Id único por presentación: producto con presentaciones usa id + índice para que 250ml y 1000ml sean líneas distintas
-    const itemId =
-      producto.presentaciones?.length && presIndex >= 0
-        ? `${producto.id}-pres-${presIndex}`
-        : producto.id;
-    addItem({
-      id: itemId,
-      nombre: producto.nombre,
-      precio: precioNum,
-      cantidad,
-      imagen: producto.imagenes?.[0] ?? producto.imagen,
-      presentacion: producto.presentaciones?.length ? presentacionSeleccionada : undefined,
-    });
-    setMensajeAñadido(true);
-    setTimeout(() => setMensajeAñadido(false), 3000);
+
+    const productoIdNum = Number(producto.id);
+    if (!Number.isFinite(productoIdNum) || productoIdNum <= 0) {
+      void showAlert('No se pudo identificar el producto.');
+      return;
+    }
+
+    let presentacionId = 0;
+    if (producto.presentaciones?.length) {
+      if (!presActual?.id || presActual.id <= 0) {
+        void showAlert(
+          'Falta el id de presentación en el catálogo. Verifica que el backend devuelva `id` en cada presentación.'
+        );
+        return;
+      }
+      presentacionId = presActual.id;
+    } else {
+      void showAlert('Este producto no tiene presentaciones; no se puede añadir al carrito.');
+      return;
+    }
+
+    const precioNum =
+      typeof presActual.precio === 'string'
+        ? parseFloat(String(presActual.precio).replace(/[^0-9.]/g, '')) || 0
+        : 0;
+
+    try {
+      await addItem({
+        nombre: producto.nombre,
+        precio: precioNum,
+        cantidad,
+        imagen: producto.imagenes?.[0] ?? producto.imagen,
+        presentacion: presentacionSeleccionada,
+        productoId: productoIdNum,
+        presentacionId,
+      });
+      setMensajeAñadido(true);
+      setTimeout(() => setMensajeAñadido(false), 3000);
+    } catch (e) {
+      void showAlert(e instanceof Error ? e.message : 'No se pudo añadir al carrito');
+    }
   };
 
   const manejarComprarAhora = () => {
     router.push(`/cliente/tienda-online/checkout?producto=${id}&cantidad=${cantidad}`);
+  };
+
+  const enviarValoracion = async () => {
+    if (!producto || !Number.isFinite(productoIdNum)) return;
+    const pid = parseInt(pedidoValoracion, 10);
+    if (!Number.isFinite(pid)) {
+      void showAlert('Elige el pedido con el que compraste este producto.');
+      return;
+    }
+    const stars = parseInt(puntuacion, 10);
+    if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
+      void showAlert('La puntuación debe ser entre 1 y 5.');
+      return;
+    }
+    setEnviandoValoracion(true);
+    try {
+      await crearValoracion({
+        productoId: productoIdNum,
+        pedidoId: pid,
+        puntuacion: stars,
+        comentario: comentarioValoracion.trim() || undefined,
+      });
+      showToast('Gracias por tu reseña', 'success');
+      setComentarioValoracion('');
+      const rows = await listarValoracionesProducto(productoIdNum);
+      setValoraciones(rows);
+    } catch (e) {
+      void showAlert(e instanceof Error ? e.message : 'No se pudo guardar la reseña (¿ya valoraste este producto?)');
+    } finally {
+      setEnviandoValoracion(false);
+    }
   };
 
   if (loading) {
@@ -179,7 +280,7 @@ export default function DetalleProductoPage() {
                   <div className="flex gap-2 flex-wrap">
                     {producto.presentaciones.map((pres) => (
                       <button
-                        key={pres.tamaño}
+                        key={pres.id ?? pres.tamaño}
                         onClick={() => setPresentacionSeleccionada(pres.tamaño)}
                         disabled={!pres.disponible}
                         className={`
@@ -362,6 +463,100 @@ export default function DetalleProductoPage() {
             )}
           </Card>
         </div>
+
+        <Card className="p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6">
+          <h2
+            className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b"
+            style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}
+          >
+            Opiniones
+          </h2>
+          {valoraciones.length === 0 ? (
+            <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+              Sé el primero en opinar (o aún no hay reseñas públicas).
+            </p>
+          ) : (
+            <ul className="space-y-4 mb-6">
+              {valoraciones.map((v) => (
+                <li key={v.id} className="text-sm border-b pb-3 last:border-0" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                  <div className="mb-1" style={{ color: 'var(--botones-principales)' }}>
+                    {'★'.repeat(Math.min(5, Math.max(0, v.puntuacion)))}
+                    <span className="ml-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Pedido #{v.pedidoId}
+                    </span>
+                  </div>
+                  {v.comentario && (
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{v.comentario}</p>
+                  )}
+                  <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {v.creadoEn ? new Date(v.creadoEn).toLocaleDateString('es-MX') : ''}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {hasValidToken() && pedidosParaValorar.length > 0 && (
+            <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+              <h3 className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                Dejar reseña
+              </h3>
+              <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                Una reseña por producto y usuario. Elige el pedido donde compraste este artículo.
+              </p>
+              <Select
+                label="Pedido"
+                value={pedidoValoracion}
+                onChange={(e) => setPedidoValoracion(e.target.value)}
+                options={[
+                  { value: '', label: 'Selecciona pedido…' },
+                  ...pedidosParaValorar.map((p) => ({
+                    value: String(p.id),
+                    label: `#${p.id} — ${new Date(p.creadoEn ?? '').toLocaleDateString('es-MX')}`,
+                  })),
+                ]}
+                fullWidth
+              />
+              <Select
+                label="Puntuación"
+                value={puntuacion}
+                onChange={(e) => setPuntuacion(e.target.value)}
+                options={[
+                  { value: '5', label: '5 estrellas' },
+                  { value: '4', label: '4 estrellas' },
+                  { value: '3', label: '3 estrellas' },
+                  { value: '2', label: '2 estrellas' },
+                  { value: '1', label: '1 estrella' },
+                ]}
+                fullWidth
+              />
+              <Textarea
+                label="Comentario (opcional)"
+                value={comentarioValoracion}
+                onChange={(e) => setComentarioValoracion(e.target.value)}
+                rows={3}
+                fullWidth
+              />
+              <Button onClick={() => void enviarValoracion()} disabled={enviandoValoracion}>
+                {enviandoValoracion ? 'Enviando…' : 'Publicar reseña'}
+              </Button>
+            </div>
+          )}
+
+          {hasValidToken() && pedidosParaValorar.length === 0 && producto && (
+            <p className="text-sm mt-4 pt-4 border-t" style={{ color: 'var(--encabezados-alterno)', borderColor: 'var(--fondos-suaves)' }}>
+              Para valorar necesitas un pedido que incluya este producto.{' '}
+              <button
+                type="button"
+                className="underline font-medium"
+                style={{ color: 'var(--botones-principales)' }}
+                onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}
+              >
+                Ver mis pedidos
+              </button>
+            </p>
+          )}
+        </Card>
 
         {(producto.modoUso || producto.resultado) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">

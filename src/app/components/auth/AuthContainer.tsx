@@ -7,11 +7,11 @@ import Register from './Register';
 import ForgotPassword from './ForgotPassword';
 import ForgotPasswordOTP from './ForgotPasswordOTP';
 import ForgotPasswordSecurityQuestions from './ForgotPasswordSecurityQuestions';
+import ForgotPasswordSMS from './ForgotPasswordSMS';
 import ResetPassword from './ResetPassword';
 import EnlaceEnviado from './EnlaceEnviado';
 
-
-type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-otp' | 'forgot-security' | 'reset-password' | 'enlace-enviado';
+type AuthView = 'login' | 'register' | 'forgot-email' | 'forgot-otp' | 'forgot-security' | 'forgot-sms' | 'reset-password' | 'enlace-enviado';
 
 interface AuthContainerProps {
   initialView?: AuthView;
@@ -85,6 +85,15 @@ export default function AuthContainer({
     setCurrentView('reset-password');
   };
 
+  const handleSMSCodeVerified = (email: string, token: string) => {
+    setRecoveryIdentifier(email);
+    localStorage.setItem('resetPasswordToken', token);
+    localStorage.setItem('resetPasswordEmail', email);
+    localStorage.setItem('resetPasswordExpires', String(Date.now() + 10 * 60 * 1000));
+    sessionStorage.setItem('resetToken', token);
+    setCurrentView('reset-password');
+  };
+
   const handlePasswordReset = () => {
     // Después de restablecer la contraseña, redirigir al login
     setTimeout(() => {
@@ -114,6 +123,16 @@ export default function AuthContainer({
           onSwitchToLogin={handleSwitchToLogin}
           onEmailSent={handleEmailSent}
           onSwitchToSecurityQuestions={() => setCurrentView('forgot-security')}
+          onSwitchToSMS={() => setCurrentView('forgot-sms')}
+        />
+      )}
+
+      {currentView === 'forgot-sms' && (
+        <ForgotPasswordSMS
+          onSwitchToLogin={handleSwitchToLogin}
+          onSwitchToEmail={() => setCurrentView('forgot-email')}
+          onSwitchToSecurityQuestions={() => setCurrentView('forgot-security')}
+          onCodeVerified={handleSMSCodeVerified}
         />
       )}
 
@@ -133,6 +152,7 @@ export default function AuthContainer({
         <ForgotPasswordSecurityQuestions
           onSwitchToLogin={handleSwitchToLogin}
           onSwitchToEmail={() => setCurrentView('forgot-email')}
+          onSwitchToSMS={() => setCurrentView('forgot-sms')}
           onQuestionsVerified={handleSecurityQuestionsVerified}
         />
       )}

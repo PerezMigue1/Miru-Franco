@@ -82,14 +82,17 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     if (segments.length === 1) return [...base, { label: 'Área de cliente' }];
 
     const section = segments[1];
+
     const sectionLabels: Record<string, { label: string; href: string }> = {
       'tienda-online': { label: 'Tienda online', href: '/cliente/tienda-online' },
       galeria: { label: 'Galería', href: '/cliente/galeria' },
-      'mi-perfil': { label: 'Mi perfil', href: '/cliente/mi-perfil' },
+      'mi-perfil': { label: 'Mi perfil', href: '/perfil' },
+      direcciones: { label: 'Mis direcciones', href: '/cliente/direcciones' },
       carrito: { label: 'Carrito', href: '/cliente/carrito' },
       cotizaciones: { label: 'Cotizaciones', href: '/cliente/cotizaciones' },
       devoluciones: { label: 'Devoluciones', href: '/cliente/devoluciones' },
       facturas: { label: 'Facturas', href: '/cliente/facturas' },
+      notificaciones: { label: 'Notificaciones', href: '/cliente/notificaciones' },
       garantias: { label: 'Garantías', href: '/cliente/garantias' },
       promociones: { label: 'Promociones', href: '/cliente/promociones' },
       seguimientos: { label: 'Seguimientos', href: '/cliente/seguimientos' },
@@ -100,6 +103,11 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
 
     const sectionInfo = sectionLabels[section];
     if (!sectionInfo) return [...base];
+
+    // Direcciones: Inicio → Mi perfil (/perfil) → Mis direcciones
+    if (section === 'direcciones') {
+      return [...base, { label: 'Mi perfil', href: '/perfil' }, { label: 'Mis direcciones' }];
+    }
 
     // Nivel 2 = sección real del sitio (Tienda online, Galería, Servicios y citas, etc.)
     const items: BreadcrumbItem[] = [...base, { label: sectionInfo.label, href: sectionInfo.href }];
@@ -140,9 +148,9 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     return items;
   }
 
-  // Perfil
+  // Perfil (pantalla única de cuenta)
   if (first === 'perfil') {
-    const perfil: BreadcrumbItem[] = [...base, { label: 'Perfil', href: '/perfil' }];
+    const perfil: BreadcrumbItem[] = [...base, { label: 'Mi perfil', href: '/perfil' }];
     if (segments[1]) {
       const rolLabels: Record<string, string> = {
         administrador: 'Administrador',

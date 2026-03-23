@@ -28,6 +28,8 @@ export interface Producto {
   stockCantidad?: number;
   /** Para detalle: presentaciones/variedades (cada una tiene stock y disponible) */
   presentaciones?: Array<{
+    /** `producto_presentaciones.id` en BD */
+    id?: number;
     tamaño: string;
     precio: string;
     precioOriginal?: string;
@@ -98,7 +100,13 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
         const fechaRaw = p.fecha_caducidad ?? p.fechaCaducidad;
         const fechaCaducidad =
           fechaRaw != null && typeof fechaRaw === 'string' ? fechaRaw : null;
+        const presIdRaw = p.id ?? p.presentacion_id ?? p.presentacionId;
+        const presId =
+          presIdRaw != null && Number.isFinite(Number(presIdRaw)) && Number(presIdRaw) > 0
+            ? Number(presIdRaw)
+            : undefined;
         return {
+          id: presId,
           tamaño: String(p.tamaño ?? p.tamanio ?? ''),
           precio: normalizarPrecio(p.precio as string | number | undefined),
           precioOriginal: p.precioOriginal != null ? normalizarPrecio(p.precioOriginal as string | number) : undefined,

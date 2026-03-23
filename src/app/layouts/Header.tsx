@@ -9,6 +9,8 @@ import MenuHamburguesa from './MenuHamburguesa';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import { clearAuthData, getToken } from '../utils/security';
 import { useCart } from '../context/CartContext';
+import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
+import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
 
 export default function Header() {
   const router = useRouter();
@@ -20,25 +22,47 @@ export default function Header() {
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('Usuario');
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const notificationsCount = 0; // Cambia este valor cuando tengas notificaciones
 
-  // Actualizar estado de sesión al montar y al cambiar de ruta (p. ej. tras login)
-  useEffect(() => {
+  const syncUserFromStorage = () => {
     const token = getToken();
-    setIsLoggedIn(!!(token && token.trim()));
-    if (typeof window !== 'undefined' && token) {
-      try {
-        const raw = localStorage.getItem('user');
-        if (raw) {
-          const user = JSON.parse(raw) as { nombre?: string; name?: string };
-          const name = user?.nombre || user?.name || 'Usuario';
-          setUserName(name);
-        }
-      } catch {
-        setUserName('Usuario');
-      }
+    const logged = !!(token && token.trim());
+    setIsLoggedIn(logged);
+    if (typeof window === 'undefined' || !logged) {
+      setUserName('Usuario');
+      setUserAvatarUrl(null);
+      return;
     }
+    try {
+      const raw = localStorage.getItem('user');
+      if (!raw) {
+        setUserName('Usuario');
+        setUserAvatarUrl(null);
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      const user = normalizarUsuarioAlmacenado(parsed);
+      const name = String(user.nombre ?? 'Usuario').trim() || 'Usuario';
+      setUserName(name);
+      const foto = String(user.foto ?? '').trim();
+      setUserAvatarUrl(foto || null);
+    } catch {
+      setUserName('Usuario');
+      setUserAvatarUrl(null);
+    }
+  };
+
+  // Sesión, nombre y foto al montar, al navegar y cuando otro módulo actualiza `localStorage.user`
+  useEffect(() => {
+    syncUserFromStorage();
   }, [pathname]);
+
+  useEffect(() => {
+    const onUserUpdated = () => syncUserFromStorage();
+    window.addEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
+    return () => window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
+  }, []);
 
   // Cerrar menú usuario al hacer clic fuera
   useEffect(() => {
@@ -200,9 +224,27 @@ export default function Header() {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    {userAvatarUrl ? (
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-white/25">
+                        <Image
+                          src={userAvatarUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="32px"
+                          unoptimized
+                        />
+                      </div>
+                    ) : (
+                      <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    )}
                     <span className="text-base font-medium max-w-[120px] truncate">{userName}</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -217,10 +259,30 @@ export default function Header() {
                       <div className="px-4 pt-4 pb-3">
                         <div className="flex items-center gap-3 mb-2">
                           <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0"
-                            style={{ backgroundColor: 'var(--hover)', color: 'var(--texto-fondo-oscuro)' }}
+                            className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-lg"
+                            style={
+                              userAvatarUrl
+                                ? undefined
+                                : { backgroundColor: 'var(--hover)', color: 'var(--texto-fondo-oscuro)' }
+                            }
                           >
-                            {userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
+                            {userAvatarUrl ? (
+                              <Image
+                                src={userAvatarUrl}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                                unoptimized
+                              />
+                            ) : (
+                              userName
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .slice(0, 2)
+                                .toUpperCase() || 'U'
+                            )}
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-base truncate text-gray-900 dark:text-white">{userName}</p>

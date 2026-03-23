@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import PublicLayout from '../../../../components/layouts/PublicLayout';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -9,301 +10,258 @@ import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import Badge from '../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
-import { showAlert } from '../../../../utils/toast';
+import {
+  listarDevolucionesDelCliente,
+  listarPedidos,
+  listarPedidoItems,
+  crearDevolucion,
+  etiquetaEstadoPedido,
+  type DevolucionApi,
+  type PedidoApi,
+  type PedidoItemApi,
+} from '../../../../services/ecommerce';
+import { hasValidToken } from '../../../../utils/security';
+import { showAlert, showToast } from '../../../../utils/toast';
 
 export default function DevolucionesPage() {
+  const [lista, setLista] = useState<DevolucionApi[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
+  const [items, setItems] = useState<PedidoItemApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [productoSeleccionado, setProductoSeleccionado] = useState<string>('');
+  const [pedidoId, setPedidoId] = useState('');
+  const [itemId, setItemId] = useState('');
+  const [motivo, setMotivo] = useState('');
+  const [monto, setMonto] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
-  // Información del cliente (en producción vendría de la sesión/autenticación)
-  const clienteInfo = {
-    id: 'CLI-001',
-    nombre: 'María González',
-    telefono: '555-1234-5678',
-    email: 'maria@ejemplo.com',
+  const cargar = async () => {
+    if (!hasValidToken()) {
+      setError('Inicia sesión para gestionar devoluciones.');
+      setLoading(false);
+      return;
+    }
+    try {
+      const [devs, peds] = await Promise.all([listarDevolucionesDelCliente(), listarPedidos()]);
+      setLista(devs);
+      setPedidos(peds.filter((p) => p.estado !== 'cancelado' && p.estado !== 'borrador'));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al cargar');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Productos comprados por el cliente (historial de compras)
-  const productosComprados = [
-    { 
-      id: '1', 
-      productoId: 1,
-      nombre: 'Shampoo Avina', 
-      pedido: 'PED-001', 
-      fechaCompra: '2024-01-15', 
-      precio: '$350',
-      cantidad: 2,
-      estado: 'entregado'
-    },
-    { 
-      id: '2', 
-      productoId: 2,
-      nombre: 'Acondicionador Tech Italy', 
-      pedido: 'PED-001', 
-      fechaCompra: '2024-01-15', 
-      precio: '$380',
-      cantidad: 1,
-      estado: 'entregado'
-    },
-    { 
-      id: '3', 
-      productoId: 3,
-      nombre: 'Mascarilla Alfaparf', 
-      pedido: 'PED-002', 
-      fechaCompra: '2024-01-10', 
-      precio: '$450',
-      cantidad: 1,
-      estado: 'entregado'
-    },
-  ];
+  useEffect(() => {
+    void cargar();
+  }, []);
 
-  const productoActual = productosComprados.find(p => p.id === productoSeleccionado);
+  useEffect(() => {
+    const pid = parseInt(pedidoId, 10);
+    if (!Number.isFinite(pid)) {
+      setItems([]);
+      setItemId('');
+      return;
+    }
+    let cancelled = false;
+    listarPedidoItems(pid)
+      .then((rows) => {
+        if (!cancelled) {
+          setItems(rows);
+          setItemId('');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pedidoId]);
 
-  const solicitudes = [
-    { 
-      id: 1, 
-      producto: 'Shampoo Avina', 
-      pedido: 'PED-001',
-      cliente: clienteInfo.nombre,
-      motivo: 'Producto incorrecto', 
-      fecha: '2024-01-15', 
-      estado: 'pendiente' 
-    },
-    { 
-      id: 2, 
-      producto: 'Acondicionador Tech Italy', 
-      pedido: 'PED-001',
-      cliente: clienteInfo.nombre,
-      motivo: 'Equivocación', 
-      fecha: '2024-01-14', 
-      estado: 'procesado' 
-    },
-  ];
+  const enviar = async () => {
+    const pid = parseInt(pedidoId, 10);
+    if (!Number.isFinite(pid)) {
+      void showAlert('Selecciona un pedido.');
+      return;
+    }
+    const iid = itemId ? parseInt(itemId, 10) : NaN;
+    if (!Number.isFinite(iid)) {
+      void showAlert('Selecciona una línea del pedido (producto).');
+      return;
+    }
+    if (!motivo.trim()) {
+      void showAlert('Describe el motivo de la devolución o cambio.');
+      return;
+    }
+    setEnviando(true);
+    try {
+      await crearDevolucion({
+        pedidoId: pid,
+        pedidoItemId: iid,
+        motivo: motivo.trim(),
+        estado: 'pendiente',
+        monto: monto.trim() ? parseFloat(monto.replace(/,/g, '')) : undefined,
+      });
+      showToast('Solicitud registrada.', 'success');
+      setMostrarFormulario(false);
+      setPedidoId('');
+      setItemId('');
+      setMotivo('');
+      setMonto('');
+      await cargar();
+    } catch (e) {
+      void showAlert(e instanceof Error ? e.message : 'No se pudo crear la solicitud');
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   return (
-    <PublicLayout>
-      <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Devoluciones y Cambios
-            </h1>
-            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
-              Solicita cambios de productos. Recuerda que solo se realizan cambios, no reembolsos en efectivo.
-            </p>
-          </div>
-
-          {/* Información del Cliente */}
-          <Card className="mb-6">
-            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Información del Cliente
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Nombre:</p>
-                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                  {clienteInfo.nombre}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>ID Cliente:</p>
-                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                  {clienteInfo.id}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono:</p>
-                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                  {clienteInfo.telefono}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="mb-6">
-            <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                Política de Cambios:
-              </h3>
-              <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                <li>• El producto debe estar sellado y sin abrir</li>
-                <li>• El producto debe estar en las mismas condiciones en que fue entregado</li>
-                <li>• Solo se aceptan cambios, no devoluciones de dinero</li>
-                <li>• Puedes cambiar por otro producto de igual o diferente valor</li>
-              </ul>
-            </div>
-
-            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Mis Solicitudes de Cambio
-            </h2>
-            <Table headers={['Producto', 'Pedido', 'Cliente', 'Motivo', 'Fecha', 'Estado']}>
-              {solicitudes.map((solicitud) => (
-                <TableRow key={solicitud.id}>
-                  <TableCell className="font-semibold">{solicitud.producto}</TableCell>
-                  <TableCell>
-                    <Badge variant="info" size="sm">{solicitud.pedido}</Badge>
-                  </TableCell>
-                  <TableCell>{solicitud.cliente}</TableCell>
-                  <TableCell>{solicitud.motivo}</TableCell>
-                  <TableCell>{solicitud.fecha}</TableCell>
-                  <TableCell>
-                    <Badge variant={solicitud.estado === 'procesado' ? 'success' : 'warning'}>
-                      {solicitud.estado === 'procesado' ? 'Procesado' : 'Pendiente'}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </Table>
-          </Card>
-
-          {!mostrarFormulario ? (
-            <Card>
-              <div className="text-center">
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Solicitar Cambio de Producto
-                </h2>
-                <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Si necesitas cambiar un producto, completa el siguiente formulario
-                </p>
-                <Button onClick={() => setMostrarFormulario(true)}>
-                  Nueva Solicitud
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <Card>
-              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                Nueva Solicitud de Cambio
-              </h2>
-              <div className="space-y-4">
-                <Select
-                  label="Selecciona el Producto a Cambiar"
-                  options={[
-                    { value: '', label: '-- Selecciona un producto --' },
-                    ...productosComprados.map(p => ({
-                      value: p.id,
-                      label: `${p.nombre} - Pedido: ${p.pedido} (${p.fechaCompra})`
-                    }))
-                  ]}
-                  value={productoSeleccionado}
-                  onChange={(e) => setProductoSeleccionado(e.target.value)}
-                  fullWidth
-                />
-
-                {productoActual && (
-                  <Card className="p-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                    <h3 className="font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
-                      Información del Producto Seleccionado:
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p style={{ color: 'var(--encabezados-alterno)' }}>Producto:</p>
-                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                          {productoActual.nombre}
-                        </p>
-                      </div>
-                      <div>
-                        <p style={{ color: 'var(--encabezados-alterno)' }}>Número de Pedido:</p>
-                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                          {productoActual.pedido}
-                        </p>
-                      </div>
-                      <div>
-                        <p style={{ color: 'var(--encabezados-alterno)' }}>Fecha de Compra:</p>
-                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                          {productoActual.fechaCompra}
-                        </p>
-                      </div>
-                      <div>
-                        <p style={{ color: 'var(--encabezados-alterno)' }}>Precio:</p>
-                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                          {productoActual.precio}
-                        </p>
-                      </div>
-                      <div>
-                        <p style={{ color: 'var(--encabezados-alterno)' }}>Cantidad:</p>
-                        <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                          {productoActual.cantidad}
-                        </p>
-                      </div>
-                      <div>
-                        <p style={{ color: 'var(--encabezados-alterno)' }}>Estado:</p>
-                        <Badge variant="success" size="sm">{productoActual.estado}</Badge>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-
-                <Select
-                  label="Motivo del Cambio"
-                  options={[
-                    { value: 'incorrecto', label: 'Producto Incorrecto' },
-                    { value: 'equivocacion', label: 'Equivocación' },
-                    { value: 'defectuoso', label: 'Producto Defectuoso' },
-                    { value: 'talla', label: 'Talla/Modelo Incorrecto' },
-                    { value: 'otro', label: 'Otro' },
-                  ]}
-                  fullWidth
-                />
-                <Input 
-                  label="Producto de Reemplazo Deseado" 
-                  placeholder="Nombre del producto que deseas recibir" 
-                  fullWidth 
-                />
-                <Textarea 
-                  label="Descripción Adicional" 
-                  placeholder="Detalles adicionales sobre el cambio..." 
-                  rows={3} 
-                  fullWidth 
-                />
-                <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                    Información que se enviará:
-                  </p>
-                  <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                    <li>• Cliente: {clienteInfo.nombre} ({clienteInfo.id})</li>
-                    {productoActual && (
-                      <>
-                        <li>• Producto: {productoActual.nombre}</li>
-                        <li>• Pedido: {productoActual.pedido}</li>
-                        <li>• Fecha de compra: {productoActual.fechaCompra}</li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    fullWidth 
-                    onClick={() => {
-                      setMostrarFormulario(false);
-                      setProductoSeleccionado('');
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    fullWidth 
-                    disabled={!productoSeleccionado}
-                    onClick={() => {
-                      if (!productoSeleccionado) {
-                        showAlert('Por favor selecciona un producto');
-                        return;
-                      }
-                      showAlert(`Solicitud de cambio enviada para:\n\nCliente: ${clienteInfo.nombre}\nProducto: ${productoActual?.nombre}\nPedido: ${productoActual?.pedido}`);
-                      setMostrarFormulario(false);
-                      setProductoSeleccionado('');
-                    }}
-                  >
-                    Enviar Solicitud
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
+    <ModuleLayout>
+      <div className="max-w-4xl mx-auto py-4">
+        <div className="text-center mb-8">
+          <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+            Devoluciones y cambios
+          </h1>
+          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
+            Solicitudes registradas en el sistema según tus pedidos
+          </p>
         </div>
+
+        {error && (
+          <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
+            <p className="mb-2" style={{ color: 'var(--danger)' }}>{error}</p>
+            {!hasValidToken() && (
+              <Link href="/login" className="text-sm font-semibold underline" style={{ color: 'var(--botones-principales)' }}>
+                Iniciar sesión
+              </Link>
+            )}
+          </Card>
+        )}
+
+        <Card className="mb-6 p-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+          <h3 className="font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+            Política
+          </h3>
+          <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            <li>• Producto sellado y en condiciones aceptables según política del salón</li>
+            <li>• Los cambios se gestionan con el equipo; el estado lo actualiza administración</li>
+          </ul>
+        </Card>
+
+        {loading ? (
+          <Card className="p-8 text-center">
+            <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
+          </Card>
+        ) : (
+          <>
+            <Card className="mb-6">
+              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                Mis solicitudes
+              </h2>
+              <Table headers={['ID', 'Pedido', 'Estado', 'Monto', 'Motivo', 'Registro']}>
+                {lista.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
+                      No hay devoluciones registradas.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  lista.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-mono">#{d.id}</TableCell>
+                      <TableCell className="font-mono">#{d.pedidoId}</TableCell>
+                      <TableCell>
+                        <Badge variant={d.estado === 'aprobada' || d.estado === 'completada' ? 'success' : 'warning'}>
+                          {d.estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{d.monto != null ? `$${d.monto.toLocaleString()}` : '—'}</TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        <span title={d.motivo ?? ''}>{d.motivo ?? '—'}</span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {d.creadoEn ? new Date(d.creadoEn).toLocaleString('es-MX') : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </Table>
+            </Card>
+
+            {!mostrarFormulario ? (
+              <Card>
+                <div className="text-center">
+                  <Button onClick={() => setMostrarFormulario(true)} disabled={!hasValidToken() || pedidos.length === 0}>
+                    Nueva solicitud
+                  </Button>
+                  {hasValidToken() && pedidos.length === 0 && (
+                    <p className="text-sm mt-4" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Necesitas al menos un pedido.{' '}
+                      <Link href="/cliente/tienda-online/mis-pedidos" className="underline font-medium">
+                        Ver pedidos
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Nueva solicitud
+                </h2>
+                <div className="space-y-4 max-w-lg">
+                  <Select
+                    label="Pedido"
+                    value={pedidoId}
+                    onChange={(e) => setPedidoId(e.target.value)}
+                    options={[
+                      { value: '', label: 'Selecciona…' },
+                      ...pedidos.map((p) => ({
+                        value: String(p.id),
+                        label: `#${p.id} — ${etiquetaEstadoPedido(p.estado)}`,
+                      })),
+                    ]}
+                    fullWidth
+                  />
+                  <Select
+                    label="Producto (línea del pedido)"
+                    value={itemId}
+                    onChange={(e) => setItemId(e.target.value)}
+                    disabled={!pedidoId}
+                    options={[
+                      { value: '', label: items.length ? 'Selecciona línea…' : 'Sin líneas o cargando…' },
+                      ...items.map((it) => ({
+                        value: String(it.id),
+                        label: `${it.nombreProducto ?? 'Producto'} ×${it.cantidad} (${it.tamanio ?? '—'})`,
+                      })),
+                    ]}
+                    fullWidth
+                  />
+                  <Input
+                    label="Monto reclamado (opcional)"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="0.00"
+                    fullWidth
+                  />
+                  <Textarea label="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={4} fullWidth />
+                  <div className="flex gap-3">
+                    <Button variant="outline" fullWidth onClick={() => setMostrarFormulario(false)} disabled={enviando}>
+                      Cancelar
+                    </Button>
+                    <Button fullWidth onClick={() => void enviar()} disabled={enviando}>
+                      {enviando ? 'Enviando…' : 'Enviar'}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </>
+        )}
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
-

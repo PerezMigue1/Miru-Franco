@@ -146,7 +146,13 @@ class ApiClient {
                   const newHeaders = { ...headers, 'Authorization': `Bearer ${refreshData.token}` };
                   const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers: newHeaders, credentials: 'include' });
                   if (retryRes.ok) {
-                    return (await retryRes.json()) as T;
+                    const retryBody = await retryRes.text();
+                    if (!retryBody?.trim()) return {} as T;
+                    try {
+                      return JSON.parse(retryBody) as T;
+                    } catch {
+                      throw new Error('La respuesta del servidor no es JSON válido.');
+                    }
                   }
                   if (retryRes.status === 401) {
                     errorText = await retryRes.text();
@@ -203,9 +209,30 @@ class ApiClient {
               const email = errorData.email || '';
               window.location.replace(`/verificar-email?email=${encodeURIComponent(email)}`);
             } else {
-              // Error genérico de autenticación - limpiar y redirigir al login (replace para no apilar historial)
-              clearAuthData();
-              window.location.replace('/login');
+              // No borrar sesión en 401 ambiguo (cuerpo vacío, "Unauthorized" genérico, fallos de red/proxy).
+              // Solo cerrar si el backend indica explícitamente token/sesión inválida o expirada.
+              const msg = lowerMessage.trim();
+              const sesionInvalidaExplicita =
+                msg.length > 0 &&
+                (msg.includes('expirado') ||
+                  msg.includes('expirad') ||
+                  msg.includes('inválido') ||
+                  msg.includes('invalid') ||
+                  msg.includes('revocado') ||
+                  msg.includes('inactividad') ||
+                  msg.includes('sesión expirada') ||
+                  msg.includes('sesion expirada') ||
+                  msg.includes('otro dispositivo') ||
+                  msg.includes('cerrada desde otro dispositivo') ||
+                  msg.includes('nueva sesión en otro dispositivo') ||
+                  msg.includes('jwt') ||
+                  msg.includes('malformed') ||
+                  msg.includes('token expirado'));
+
+              if (sesionInvalidaExplicita && !isRecentLogin) {
+                clearAuthData();
+                window.location.replace('/login');
+              }
             }
           } else if (typeof window !== 'undefined' && isLoginPage) {
             // Si estamos en la página de login, solo limpiar el token si existe
@@ -347,8 +374,16 @@ class ApiClient {
         throw error;
       }
 
-      const data = await response.json();
-      return data as T;
+      // 200/201 con cuerpo vacío o 204: evitar fallo de response.json()
+      const okText = await response.text();
+      if (!okText?.trim()) {
+        return {} as T;
+      }
+      try {
+        return JSON.parse(okText) as T;
+      } catch {
+        throw new Error('La respuesta del servidor no es JSON válido.');
+      }
     } catch (error) {
       console.error(`[API] Error en ${url}:`, error);
       
@@ -367,12 +402,22 @@ class ApiClient {
     }
   }
 
-  async get<T>(endpoint: string, customBase?: string): Promise<T> {
-    // Construir URL completa: customBase + endpoint
-    // Si customBase ya incluye el endpoint, usarlo directamente
+  /** GET con base opcional. Puedes pasar `{ customBase, skipAuth: true }` para rutas públicas. */
+  async get<T>(
+    endpoint: string,
+    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean }
+  ): Promise<T> {
+    let customBase: string | undefined;
+    let skipAuth = false;
+    if (typeof customBaseOrOptions === 'string') {
+      customBase = customBaseOrOptions;
+    } else if (customBaseOrOptions && typeof customBaseOrOptions === 'object') {
+      customBase = customBaseOrOptions.customBase;
+      skipAuth = Boolean(customBaseOrOptions.skipAuth);
+    }
     const url = customBase ? `${customBase}${endpoint}` : undefined;
     console.log(`[API Client] GET - endpoint: ${endpoint}, customBase: ${customBase}, constructed url: ${url}`);
-    return this.request<T>(endpoint, { method: 'GET', endpoint: url });
+    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth });
   }
 
   async post<T>(endpoint: string, body?: unknown, customBase?: string): Promise<T> {

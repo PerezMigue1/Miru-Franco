@@ -99,3 +99,18 @@ import { api } from '../services/auth';
 const result = await api.login(email, password);
 ```
 
+## Perfil de usuario (Prisma)
+
+El front usa `perfil.ts` y `api.getProfile()` con el modelo `Usuario` y la relación `direcciones` → `DireccionUsuario`.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/auth/me` | Perfil completo (campos de `usuarios`; opcional array `direcciones`) |
+| PATCH | `/api/auth/me` | Actualizar datos propios (nombre, telefono, fechaNacimiento, tipoCabello, colorNatural, colorActual, productosUsados, alergias, aceptaAvisoPrivacidad, recibePromociones) |
+| GET | `/api/direcciones-usuario` | Listar direcciones del usuario autenticado |
+| POST | `/api/direcciones-usuario` | Crear dirección (cuerpo alineado con `DireccionUsuario`) |
+| PUT (o PATCH si el servidor responde 405) | `/api/direcciones-usuario/:id` | Actualizar |
+| DELETE | `/api/direcciones-usuario/:id` | Eliminar |
+
+Los nombres en JSON pueden ser **camelCase** o **snake_case** (`codigo_postal`, etc.); el front normaliza al leer.
+
