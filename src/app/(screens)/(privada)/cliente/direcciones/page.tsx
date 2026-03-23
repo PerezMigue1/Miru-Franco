@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import PublicLayout from '../../../../components/layouts/PublicLayout';
 import Breadcrumb from '../../../../components/ui/Breadcrumb';
@@ -41,7 +41,7 @@ function returnUrlSeguro(raw: string | null): string | null {
   return raw;
 }
 
-export default function DireccionesPage() {
+function DireccionesPageContent() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -369,5 +369,21 @@ export default function DireccionesPage() {
         </div>
       </div>
     </PublicLayout>
+  );
+}
+
+export default function DireccionesPage() {
+  return (
+    <Suspense
+      fallback={
+        <PublicLayout>
+          <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
+            <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
+          </div>
+        </PublicLayout>
+      }
+    >
+      <DireccionesPageContent />
+    </Suspense>
   );
 }
