@@ -26,6 +26,9 @@ jobs:
           fi
           echo "DAST apuntará a la URL configurada en DAST_TARGET_URL"
 
+      - name: Clean previous local report
+        run: rm -f report_html.html
+
       # Escaneo DAST contra la URL desplegada (definida en el secreto DAST_TARGET_URL)
       - name: OWASP ZAP Baseline Scan (deployed app)
         uses: zaproxy/action-baseline@v0.14.0
@@ -33,6 +36,15 @@ jobs:
           target: ${{ secrets.DAST_TARGET_URL }}
           cmd_options: '-a -j'
         continue-on-error: true
+
+      - name: Validate fresh ZAP report exists
+        run: |
+          if [ ! -f report_html.html ]; then
+            echo "No se generó report_html.html nuevo"
+            exit 1
+          fi
+          echo "Reporte generado correctamente:"
+          ls -l report_html.html
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
