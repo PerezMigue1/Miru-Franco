@@ -11,22 +11,29 @@ const ThemeContext = createContext<{
 
 const STORAGE_KEY = 'theme';
 
+const applyThemeToDocument = (theme: Theme) => {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial: Theme = stored ?? (prefersDark ? 'dark' : 'dark');
-    document.documentElement.classList.toggle('dark', initial === 'dark');
-    queueMicrotask(() => setTheme(initial));
+    const initial: Theme = stored ?? (prefersDark ? 'dark' : 'light');
+    applyThemeToDocument(initial);
+    setTheme(initial);
   }, []);
 
   const toggleTheme = () => {
-    const next: Theme = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    localStorage.setItem(STORAGE_KEY, next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
+    setTheme((prev) => {
+      const next: Theme = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem(STORAGE_KEY, next);
+      applyThemeToDocument(next);
+      return next;
+    });
   };
 
   return (

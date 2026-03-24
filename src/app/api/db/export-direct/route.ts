@@ -63,8 +63,68 @@ export async function GET(request: NextRequest) {
   const fechaDesde = searchParams.get('fechaDesde') ?? '';
   const fechaHasta = searchParams.get('fechaHasta') ?? '';
   const soloActivos = searchParams.get('soloActivos') === 'true';
+  const explainColumna = searchParams.get('columna') ?? '';
+  const explainValor = searchParams.get('valor') ?? '';
 
   try {
+    if (meta === 'activity') {
+      const activity = await pool.query<{
+        pid: number;
+        usename: string;
+        datname: string;
+        state: string | null;
+        wait_event_type: string | null;
+        wait_event: string | null;
+        query_start: string | null;
+        query: string | null;
+      }>(
+        `SELECT pid,
+                usename,
+                datname,
+                state,
+                wait_event_type,
+                wait_event,
+                query_start::text,
+                query
+         FROM pg_stat_activity
+         WHERE datname = current_database()
+         ORDER BY query_start DESC
+         LIMIT 50`
+      );
+      return NextResponse.json({ rows: activity.rows });
+    }
+
+    if (meta === 'locks') {
+      const locks = await pool.query<{
+        pid: number;
+        locktype: string;
+        mode: string;
+        granted: boolean;
+        relation: string | null;
+        state: string | null;
+        wait_event_type: string | null;
+        wait_event: string | null;
+        query: string | null;
+      }>(
+        `SELECT l.pid,
+                l.locktype,
+                l.mode,
+                l.granted,
+                COALESCE(c.relname, l.relation::regclass::text) AS relation,
+                a.state,
+                a.wait_event_type,
+                a.wait_event,
+                a.query
+         FROM pg_locks l
+         LEFT JOIN pg_stat_activity a ON a.pid = l.pid
+         LEFT JOIN pg_class c ON c.oid = l.relation
+         WHERE a.datname = current_database()
+         ORDER BY l.granted ASC, l.pid ASC
+         LIMIT 100`
+      );
+      return NextResponse.json({ rows: locks.rows });
+    }
+
     if (!tabla) {
       const listResult = await pool.query<{ table_name: string }>(
         `SELECT table_name FROM information_schema.tables 
@@ -127,6 +187,33 @@ export async function GET(request: NextRequest) {
         identity: r.is_identity === 'YES' || r.is_generated === 'ALWAYS' || r.is_generated === 'BY DEFAULT',
       }));
       return NextResponse.json({ columnas });
+    }
+
+    if (meta === 'explain') {
+      const colResult = await pool.query<{ column_name: string }>(
+        `SELECT column_name FROM information_schema.columns 
+         WHERE table_schema = 'public' AND table_name = $1 
+         ORDER BY ordinal_position`,
+        [tabla]
+      );
+      const columnasReales = colResult.rows.map((r) => r.column_name);
+      if (!columnasReales.length) {
+        return NextResponse.json({ error: 'Tabla sin columnas o inexistente' }, { status: 404 });
+      }
+
+      let query = `SELECT * FROM "${tabla}" LIMIT 200`;
+      let explainParams: unknown[] = [];
+      if (explainColumna && explainValor && columnasReales.includes(explainColumna)) {
+        query = `SELECT * FROM "${tabla}" WHERE "${explainColumna}" = $1 LIMIT 200`;
+        explainParams = [explainValor];
+      }
+
+      const explain = await pool.query<{ "QUERY PLAN": unknown }>(
+        `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${query}`,
+        explainParams
+      );
+      const plan = explain.rows?.[0]?.["QUERY PLAN"] ?? null;
+      return NextResponse.json({ plan, query });
     }
 
     if (formato !== 'json' && formato !== 'csv') {

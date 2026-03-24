@@ -292,6 +292,29 @@ export type ColumnaSchemaDirecta = {
   identity: boolean;
 };
 
+export type ActivityRowDirecta = {
+  pid: number;
+  usename: string;
+  datname: string;
+  state: string | null;
+  wait_event_type: string | null;
+  wait_event: string | null;
+  query_start: string | null;
+  query: string | null;
+};
+
+export type LockRowDirecta = {
+  pid: number;
+  locktype: string;
+  mode: string;
+  granted: boolean;
+  relation: string | null;
+  state: string | null;
+  wait_event_type: string | null;
+  wait_event: string | null;
+  query: string | null;
+};
+
 /**
  * Obtiene el esquema (columnas con metadatos) de una tabla usando conexión directa.
  * GET /api/db/export-direct?tabla=X&meta=schema
@@ -317,6 +340,81 @@ export async function obtenerSchemaDirecto(
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error al conectar';
     return { success: false, error: msg };
+  }
+}
+
+/**
+ * Actividad actual de conexiones/sesiones.
+ * GET /api/db/export-direct?meta=activity
+ */
+export async function obtenerActividadDirecta(): Promise<
+  { success: true; rows: ActivityRowDirecta[] } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=activity`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as ActivityRowDirecta[] };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+/**
+ * Locks actuales en la base de datos.
+ * GET /api/db/export-direct?meta=locks
+ */
+export async function obtenerLocksDirectos(): Promise<
+  { success: true; rows: LockRowDirecta[] } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=locks`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as LockRowDirecta[] };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+/**
+ * EXPLAIN ANALYZE sobre una tabla (opcional filtro columna=valor).
+ * GET /api/db/export-direct?meta=explain&tabla=X&columna=Y&valor=Z
+ */
+export async function obtenerExplainDirecto(
+  tabla: string,
+  columna?: string,
+  valor?: string
+): Promise<
+  { success: true; plan: unknown; query: string } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const params = new URLSearchParams({ meta: 'explain', tabla });
+    if (columna && valor) {
+      params.set('columna', columna);
+      params.set('valor', valor);
+    }
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?${params.toString()}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, plan: data.plan, query: String(data.query ?? '') };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
   }
 }
 

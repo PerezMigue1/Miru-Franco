@@ -14,9 +14,14 @@ import {
   listarTablasDirectas,
   exportarDirecto,
   obtenerColumnasDirectas,
+  obtenerActividadDirecta,
+  obtenerLocksDirectos,
+  obtenerExplainDirecto,
   type ResultadoImportacion,
   type FormatoDiagrama,
   type OpcionesExportDirecto,
+  type ActivityRowDirecta,
+  type LockRowDirecta,
 } from '../../../services/database';
 import { mermaidToSvg, svgToPngBlob } from '../../../utils/mermaidRender';
 import JSZip from 'jszip';
@@ -185,6 +190,17 @@ export default function BaseDatosPage() {
   const [statsUsuarios, setStatsUsuarios] = useState<number | null>(null);
   const [statsClientes, setStatsClientes] = useState<number | null>(null);
   const [statsServicios, setStatsServicios] = useState<number | null>(null);
+
+  /** Supervisión de rendimiento (actividad, locks, explain). */
+  const [loadingRendimiento, setLoadingRendimiento] = useState(false);
+  const [errorRendimiento, setErrorRendimiento] = useState<string | null>(null);
+  const [actividadRows, setActividadRows] = useState<ActivityRowDirecta[]>([]);
+  const [locksRows, setLocksRows] = useState<LockRowDirecta[]>([]);
+  const [explainTabla, setExplainTabla] = useState('servicios');
+  const [explainColumna, setExplainColumna] = useState('');
+  const [explainValor, setExplainValor] = useState('');
+  const [explainQuery, setExplainQuery] = useState('');
+  const [explainPlan, setExplainPlan] = useState<unknown>(null);
 
   const refConsultarSection = useRef<HTMLDivElement>(null);
   const diagramaMensajeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -475,6 +491,47 @@ export default function BaseDatosPage() {
       setTablaImport('');
     }
     setLoadingTablasDirectas(false);
+  };
+
+  const cargarActividadBd = async () => {
+    setLoadingRendimiento(true);
+    setErrorRendimiento(null);
+    const res = await obtenerActividadDirecta();
+    if (res.success) {
+      setActividadRows(res.rows);
+    } else {
+      setErrorRendimiento(res.error);
+    }
+    setLoadingRendimiento(false);
+  };
+
+  const cargarLocksBd = async () => {
+    setLoadingRendimiento(true);
+    setErrorRendimiento(null);
+    const res = await obtenerLocksDirectos();
+    if (res.success) {
+      setLocksRows(res.rows);
+    } else {
+      setErrorRendimiento(res.error);
+    }
+    setLoadingRendimiento(false);
+  };
+
+  const cargarExplainBd = async () => {
+    setLoadingRendimiento(true);
+    setErrorRendimiento(null);
+    const res = await obtenerExplainDirecto(
+      explainTabla,
+      explainColumna.trim() || undefined,
+      explainValor.trim() || undefined
+    );
+    if (res.success) {
+      setExplainPlan(res.plan);
+      setExplainQuery(res.query);
+    } else {
+      setErrorRendimiento(res.error);
+    }
+    setLoadingRendimiento(false);
   };
 
   const handleDescargarDiagrama = async (e: React.FormEvent) => {
@@ -1053,6 +1110,133 @@ export default function BaseDatosPage() {
               <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>
                 {errorExport}
               </p>
+            )}
+          </Card>
+
+          {/* Supervisión de rendimiento */}
+          <Card variant="elevated" padding="lg">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+              🧪 Supervisión de rendimiento
+            </h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+              Consulta actividad, locks y EXPLAIN con datos reales de la BD para documentar evidencia en tu reporte.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <Button type="button" variant="outline" onClick={cargarActividadBd} disabled={loadingRendimiento}>
+                {loadingRendimiento ? 'Cargando…' : 'Ver actividad/conexiones'}
+              </Button>
+              <Button type="button" variant="outline" onClick={cargarLocksBd} disabled={loadingRendimiento}>
+                {loadingRendimiento ? 'Cargando…' : 'Ver locks/transacciones'}
+              </Button>
+              <Button type="button" variant="outline" onClick={cargarExplainBd} disabled={loadingRendimiento}>
+                {loadingRendimiento ? 'Cargando…' : 'Ejecutar EXPLAIN'}
+              </Button>
+            </div>
+
+            <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)' }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                Configuración de EXPLAIN
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Tabla</label>
+                  <Select
+                    options={
+                      tablasDirectas.length
+                        ? tablasDirectas.map((t) => ({ value: t, label: t }))
+                        : [{ value: explainTabla, label: explainTabla }]
+                    }
+                    value={explainTabla}
+                    onChange={(e) => setExplainTabla(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Columna (opcional)</label>
+                  <input
+                    value={explainColumna}
+                    onChange={(e) => setExplainColumna(e.target.value)}
+                    placeholder="ej. categoria"
+                    className="w-full rounded border px-3 py-2 text-sm"
+                    style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Valor (opcional)</label>
+                  <input
+                    value={explainValor}
+                    onChange={(e) => setExplainValor(e.target.value)}
+                    placeholder="ej. Alaciados"
+                    className="w-full rounded border px-3 py-2 text-sm"
+                    style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {errorRendimiento && (
+              <p className="mb-3 text-sm" style={{ color: 'var(--danger)' }}>
+                {errorRendimiento}
+              </p>
+            )}
+
+            {actividadRows.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Actividad / conexiones</p>
+                <div className="max-h-56 overflow-y-auto">
+                  <Table headers={['PID', 'Usuario', 'Estado', 'Wait', 'Query']}>
+                    {actividadRows.slice(0, 30).map((r) => (
+                      <TableRow key={`${r.pid}-${r.query_start ?? 'x'}`}>
+                        <TableCell>{r.pid}</TableCell>
+                        <TableCell>{r.usename}</TableCell>
+                        <TableCell>{r.state ?? '—'}</TableCell>
+                        <TableCell>{r.wait_event_type ?? '—'}</TableCell>
+                        <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {locksRows.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Locks / transacciones</p>
+                <div className="max-h-56 overflow-y-auto">
+                  <Table headers={['PID', 'Relación', 'Modo', 'Granted', 'Query']}>
+                    {locksRows.slice(0, 40).map((r, idx) => (
+                      <TableRow key={`${r.pid}-${r.locktype}-${idx}`}>
+                        <TableCell>{r.pid}</TableCell>
+                        <TableCell>{r.relation ?? '—'}</TableCell>
+                        <TableCell>{r.mode}</TableCell>
+                        <TableCell>{r.granted ? 'Sí' : 'No'}</TableCell>
+                        <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {Boolean(explainPlan) && (
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>EXPLAIN</p>
+                {explainQuery && (
+                  <p className="text-xs mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                    Consulta analizada: <code className="bg-black/10 px-1 rounded">{explainQuery}</code>
+                  </p>
+                )}
+                <pre
+                  className="rounded border p-3 text-xs overflow-auto max-h-64"
+                  style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(0,0,0,0.35)', color: 'var(--texto-fondo-oscuro)' }}
+                >
+{JSON.stringify(explainPlan, null, 2)}
+                </pre>
+                <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Interpretación rápida: revisa si aparece <code className="bg-black/10 px-1 rounded">Seq Scan</code> (escaneo completo)
+                  o <code className="bg-black/10 px-1 rounded">Index Scan</code> (uso de índice), junto con el tiempo total.
+                </p>
+              </div>
             )}
           </Card>
 

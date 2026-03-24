@@ -37,43 +37,43 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
+
+    const baseHeaders = [
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+      },
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block',
+      },
+    ];
+
+    // En desarrollo, Next.js usa scripts/runtime que pueden romperse con CSP estricto.
+    // Dejamos CSP solo en producción para evitar pantallas "cargando" por bloqueo de scripts.
+    const cspHeader = {
+      key: 'Content-Security-Policy',
+      value:
+        "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' https://vercel.live; script-src-attr 'none'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://logos-world.net https://*.googleusercontent.com; connect-src 'self' http://localhost:3000 http://localhost:3001 https://api.cloudinary.com https://backend-miru-franco.vercel.app; frame-src 'self' https://vercel.live; upgrade-insecure-requests;",
+    };
+
     return [
       {
         source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
-          },
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
-          },
-          {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' https://vercel.live; script-src-attr 'none'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://logos-world.net https://*.googleusercontent.com; connect-src 'self' http://localhost:3000 http://localhost:3001 https://api.cloudinary.com https://backend-miru-franco.vercel.app; frame-src 'self' https://vercel.live; upgrade-insecure-requests;",
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
+        headers: isDev ? baseHeaders : [...baseHeaders, cspHeader],
       },
     ];
   },
