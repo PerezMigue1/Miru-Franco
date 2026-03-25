@@ -67,7 +67,7 @@ const nextConfig: NextConfig = {
     const cspHeader = {
       key: 'Content-Security-Policy',
       value:
-        "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' https://vercel.live; script-src-attr 'none'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://logos-world.net https://*.googleusercontent.com; connect-src 'self' http://localhost:3000 http://localhost:3001 https://api.cloudinary.com https://backend-miru-franco.vercel.app; frame-src 'self' https://vercel.live; upgrade-insecure-requests;",
+        "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://vercel.live; script-src-attr 'none'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://logos-world.net https://*.googleusercontent.com; connect-src 'self' http://localhost:3000 http://localhost:3001 https://api.cloudinary.com https://backend-miru-franco.vercel.app; frame-src 'self' https://vercel.live; upgrade-insecure-requests;",
     };
 
     return [
