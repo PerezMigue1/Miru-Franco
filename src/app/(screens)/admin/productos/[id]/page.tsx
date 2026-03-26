@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
 import Card from '../../../../components/ui/Card';
@@ -28,6 +28,10 @@ function calcularPrecioDesdeDescuento(precioOriginal: number, descuento: number)
 function parseNumero(str: string | undefined): number {
   if (!str) return 0;
   return parseFloat(str.replace(/[^0-9.]/g, '')) || 0;
+}
+
+function limpiarTexto(value: string | undefined): string {
+  return String(value ?? '').replace(/\u0000/g, '');
 }
 
 export default function ProductoDetalleAdminPage() {
@@ -76,6 +80,41 @@ export default function ProductoDetalleAdminPage() {
       fechaCaducidad: string;
     }>
   >([]);
+  const initialSnapshotRef = useRef<string>('');
+
+  const buildSnapshot = (nextPresentaciones?: Array<{
+    tamanio: string;
+    precioOriginal: string;
+    precio: string;
+    stock: string;
+    disponible: boolean;
+    fechaCaducidad: string;
+  }>) =>
+    JSON.stringify({
+      nombre: limpiarTexto(nombre),
+      descripcion: limpiarTexto(descripcion),
+      descripcionLarga: limpiarTexto(descripcionLarga),
+      categoria: limpiarTexto(categoria),
+      marca: limpiarTexto(marca),
+      descuentoStr: String(descuentoStr ?? ''),
+      disponible: Boolean(disponible),
+      nuevo: Boolean(nuevo),
+      crueltyFree: Boolean(crueltyFree),
+      caracteristicasText: limpiarTexto(caracteristicasText),
+      ingredientes: limpiarTexto(ingredientes),
+      modoUso: limpiarTexto(modoUso),
+      resultado: limpiarTexto(resultado),
+      imagenesText: limpiarTexto(imagenesText),
+      imagenesEditadas: Boolean(imagenesEditadas),
+      presentaciones: (nextPresentaciones ?? presentaciones).map((pr) => ({
+        tamanio: limpiarTexto(pr.tamanio),
+        precioOriginal: String(pr.precioOriginal ?? ''),
+        precio: String(pr.precio ?? ''),
+        stock: String(pr.stock ?? ''),
+        disponible: Boolean(pr.disponible),
+        fechaCaducidad: String(pr.fechaCaducidad ?? ''),
+      })),
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -100,8 +139,7 @@ export default function ProductoDetalleAdminPage() {
           setDisponible(p.stock);
           setImagenesText((p.imagenes ?? (p.imagen ? [p.imagen] : []))?.join('\n'));
           setImagenesEditadas(false);
-          setPresentaciones(
-            (p.presentaciones ?? []).map((pr) => {
+          const mappedPresentaciones = (p.presentaciones ?? []).map((pr) => {
               const base = parseNumero(pr.precioOriginal ?? pr.precio);
               const precioConDescuento = calcularPrecioDesdeDescuento(base, p.descuento ?? 0);
               const fc = pr.fechaCaducidad;
@@ -118,8 +156,33 @@ export default function ProductoDetalleAdminPage() {
                 disponible: pr.disponible ?? true,
                 fechaCaducidad,
               };
-            })
-          );
+            });
+          setPresentaciones(mappedPresentaciones);
+          initialSnapshotRef.current = JSON.stringify({
+            nombre: limpiarTexto(p.nombre),
+            descripcion: limpiarTexto(p.descripcion ?? ''),
+            descripcionLarga: limpiarTexto(p.descripcionLarga ?? ''),
+            categoria: limpiarTexto(p.categoria ?? ''),
+            marca: limpiarTexto(p.marca ?? ''),
+            descuentoStr: String(p.descuento ?? 0),
+            disponible: Boolean(p.stock),
+            nuevo: Boolean(p.nuevo ?? false),
+            crueltyFree: Boolean(p.crueltyFree ?? false),
+            caracteristicasText: limpiarTexto((p.caracteristicas ?? []).join('\n')),
+            ingredientes: limpiarTexto(p.ingredientes ?? ''),
+            modoUso: limpiarTexto(p.modoUso ?? ''),
+            resultado: limpiarTexto(p.resultado ?? ''),
+            imagenesText: limpiarTexto((p.imagenes ?? (p.imagen ? [p.imagen] : []))?.join('\n') ?? ''),
+            imagenesEditadas: false,
+            presentaciones: mappedPresentaciones.map((pr) => ({
+              tamanio: limpiarTexto(pr.tamanio),
+              precioOriginal: String(pr.precioOriginal ?? ''),
+              precio: String(pr.precio ?? ''),
+              stock: String(pr.stock ?? ''),
+              disponible: Boolean(pr.disponible),
+              fechaCaducidad: String(pr.fechaCaducidad ?? ''),
+            })),
+          });
         }
       })
       .catch((err) => {
@@ -263,56 +326,116 @@ export default function ProductoDetalleAdminPage() {
 
   const handleGuardar = async () => {
     if (!producto) return;
+    const currentSnapshot = buildSnapshot();
+    if (initialSnapshotRef.current && initialSnapshotRef.current === currentSnapshot) {
+      setError(null);
+      setSuccessMessage('No hay cambios por guardar.');
+      setTimeout(() => setSuccessMessage(null), 2500);
+      return;
+    }
     setSaving(true);
     setError(null);
     setSuccessMessage(null);
     try {
       const descuentoNum = parseFloat(descuentoStr) || 0;
-      const payload: ProductoPayload = {
-        nombre,
-        descripcion,
-        descripcionLarga: descripcionLarga.trim() || undefined,
-        categoria,
-        marca: marca.trim() || undefined,
-        descuento: descuentoNum || 0,
-        nuevo,
-        crueltyFree,
-        caracteristicas: caracteristicasText
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean),
-        ingredientes: ingredientes.trim() || undefined,
-        modoUso: modoUso.trim() || undefined,
-        resultado: resultado.trim() || undefined,
-        presentaciones:
-          presentaciones.length > 0
-            ? presentaciones.map((pr) => {
-                const stockNum = parseInt(pr.stock || '0', 10);
-                const disponible = pr.disponible && stockNum > 0;
-                const fc = pr.fechaCaducidad?.trim();
-                const fechaCaducidad = fc ? new Date(fc + 'T00:00:00').toISOString() : undefined;
-                const precioStr = String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0';
-                const precioOrigStr = String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || '0';
-                return {
-                  tamanio: pr.tamanio,
-                  precio: precioStr,
-                  precioOriginal: precioOrigStr || undefined,
-                  stock: pr.disponible ? stockNum : 0,
-                  disponible,
-                  ...(fechaCaducidad ? { fechaCaducidad } : {}),
-                };
-              })
-            : undefined,
-        imagenes: imagenesEditadas
-          ? imagenesText
-              .split('\n')
-              .map((l) => l.trim())
-              .filter(Boolean)
-          : undefined,
-      };
-      const actualizado = await updateProducto(producto.id, payload);
+      const payload: Partial<ProductoPayload> = {};
+      const initialObj = (initialSnapshotRef.current
+        ? JSON.parse(initialSnapshotRef.current)
+        : {}) as Record<string, unknown>;
+
+      const nombreVal = limpiarTexto(nombre);
+      if (nombreVal !== String(initialObj.nombre ?? '')) payload.nombre = nombreVal;
+
+      const descripcionVal = limpiarTexto(descripcion);
+      if (descripcionVal !== String(initialObj.descripcion ?? '')) payload.descripcion = descripcionVal;
+
+      const descripcionLargaVal = limpiarTexto(descripcionLarga).trim();
+      if (descripcionLargaVal !== String(initialObj.descripcionLarga ?? '')) {
+        payload.descripcionLarga = descripcionLargaVal || undefined;
+      }
+
+      const categoriaVal = limpiarTexto(categoria);
+      if (categoriaVal !== String(initialObj.categoria ?? '')) payload.categoria = categoriaVal;
+
+      const marcaVal = limpiarTexto(marca).trim();
+      if (marcaVal !== String(initialObj.marca ?? '')) payload.marca = marcaVal || undefined;
+
+      if (String(descuentoStr ?? '') !== String(initialObj.descuentoStr ?? '')) payload.descuento = descuentoNum || 0;
+      if (Boolean(nuevo) !== Boolean(initialObj.nuevo)) payload.nuevo = nuevo;
+      if (Boolean(crueltyFree) !== Boolean(initialObj.crueltyFree)) payload.crueltyFree = crueltyFree;
+
+      const caracteristicasVal = caracteristicasText
+        .split('\n')
+        .map((l) => limpiarTexto(l).trim())
+        .filter(Boolean);
+      const caracteristicasIni = String(initialObj.caracteristicasText ?? '')
+        .split('\n')
+        .map((l) => limpiarTexto(l).trim())
+        .filter(Boolean);
+      if (JSON.stringify(caracteristicasVal) !== JSON.stringify(caracteristicasIni)) {
+        payload.caracteristicas = caracteristicasVal;
+      }
+
+      const ingredientesVal = limpiarTexto(ingredientes).trim();
+      if (ingredientesVal !== String(initialObj.ingredientes ?? '')) payload.ingredientes = ingredientesVal || undefined;
+
+      const modoUsoVal = limpiarTexto(modoUso).trim();
+      if (modoUsoVal !== String(initialObj.modoUso ?? '')) payload.modoUso = modoUsoVal || undefined;
+
+      const resultadoVal = limpiarTexto(resultado).trim();
+      if (resultadoVal !== String(initialObj.resultado ?? '')) payload.resultado = resultadoVal || undefined;
+
+      const imagenesVal = imagenesText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      const imagenesIni = String(initialObj.imagenesText ?? '')
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (imagenesEditadas && JSON.stringify(imagenesVal) !== JSON.stringify(imagenesIni)) {
+        payload.imagenes = imagenesVal;
+      }
+
+      const presentacionesVal = presentaciones.map((pr) => {
+        const stockNum = parseInt(pr.stock || '0', 10);
+        const disp = pr.disponible && stockNum > 0;
+        const fc = pr.fechaCaducidad?.trim();
+        // Enviar como YYYY-MM-DD (input date) y que el backend lo convierta a Date.
+        const fechaCaducidad = fc || undefined;
+        const precioStr = String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0';
+        const precioOrigStr = String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || '0';
+        return {
+          tamanio: limpiarTexto(pr.tamanio),
+          precio: precioStr,
+          precioOriginal: precioOrigStr || undefined,
+          stock: pr.disponible ? stockNum : 0,
+          disponible: disp,
+          ...(fechaCaducidad ? { fechaCaducidad } : {}),
+        };
+      });
+      const presentacionesIni = ((initialObj.presentaciones as Array<Record<string, unknown>> | undefined) ?? []).map((pr) => ({
+        tamanio: String(pr.tamanio ?? ''),
+        precio: String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0',
+        precioOriginal: String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || undefined,
+        stock: parseInt(String(pr.stock ?? '0'), 10) || 0,
+        disponible: Boolean(pr.disponible),
+        ...(String(pr.fechaCaducidad ?? '').trim()
+          ? { fechaCaducidad: new Date(String(pr.fechaCaducidad).trim() + 'T00:00:00').toISOString() }
+          : {}),
+      }));
+      if (JSON.stringify(presentacionesVal) !== JSON.stringify(presentacionesIni)) {
+        payload.presentaciones = presentacionesVal;
+      }
+
+      if (Object.keys(payload).length === 0) {
+        setSuccessMessage('No hay cambios por guardar.');
+        return;
+      }
+      const actualizado = await updateProducto(producto.id, payload as ProductoPayload);
       setProducto(actualizado);
       setSuccessMessage('Producto actualizado correctamente.');
+      initialSnapshotRef.current = currentSnapshot;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar los cambios');
     } finally {

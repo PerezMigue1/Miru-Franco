@@ -315,6 +315,70 @@ export type LockRowDirecta = {
   query: string | null;
 };
 
+export type DbSummaryDirecta = {
+  bytes: number;
+  sizeMB: number;
+  totalConexiones: number;
+  conexionesActivas: number;
+  totalTablas: number;
+  version: string;
+  uptimeSeconds: number;
+  estadoBd: string;
+  cacheHitRatio: number;
+  transaccionesPorSegundo: number;
+};
+
+export type TableSizeDirecta = {
+  schemaname: string;
+  tablename: string;
+  size_mb: string;
+};
+
+export type RealtimeMetricsDirecta = {
+  timestamp: string;
+  qps: number;
+  activeConnections: number;
+  avgResponseMs: number;
+};
+
+export type SlowQueryDirecta = {
+  pid: number;
+  usename: string;
+  state: string | null;
+  durationMs: number;
+  query: string | null;
+};
+
+export type TopCostlyQueryDirecta = {
+  query: string;
+  calls: number;
+  total_exec_time_ms: number;
+  mean_exec_time_ms: number;
+};
+
+export type TableStatDirecta = {
+  schemaname: string;
+  relname: string;
+  seq_scan: string;
+  idx_scan: string;
+  n_live_tup: string;
+  n_dead_tup: string;
+  n_tup_ins: string;
+  n_tup_upd: string;
+  n_tup_del: string;
+  last_vacuum: string | null;
+  last_autovacuum: string | null;
+};
+
+export type IndexStatDirecta = {
+  schemaname: string;
+  tablename: string;
+  indexname: string;
+  idx_scan: string;
+  seq_scan: string;
+  eficiencia: string;
+};
+
 /**
  * Obtiene el esquema (columnas con metadatos) de una tabla usando conexión directa.
  * GET /api/db/export-direct?tabla=X&meta=schema
@@ -382,6 +446,124 @@ export async function obtenerLocksDirectos(): Promise<
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
     return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as LockRowDirecta[] };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+export async function obtenerResumenBdDirecto(): Promise<
+  { success: true; data: DbSummaryDirecta } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=db_summary`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, data: data as DbSummaryDirecta };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+export async function obtenerTableStatsDirecto(): Promise<
+  { success: true; rows: TableStatDirecta[] } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=table_stats`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as TableStatDirecta[] };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+export async function obtenerIndexStatsDirecto(): Promise<
+  { success: true; rows: IndexStatDirecta[] } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=index_stats`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as IndexStatDirecta[] };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+export async function obtenerTableSizesDirecto(): Promise<
+  { success: true; rows: TableSizeDirecta[] } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=table_size`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as TableSizeDirecta[] };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+export async function obtenerRealtimeMetricsDirecto(): Promise<
+  { success: true; data: RealtimeMetricsDirecta } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=realtime_metrics`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return { success: true, data: data as RealtimeMetricsDirecta };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+  }
+}
+
+export async function obtenerQueryInsightsDirecto(): Promise<
+  {
+    success: true;
+    slowQueries: SlowQueryDirecta[];
+    topCostlyQueries: TopCostlyQueryDirecta[];
+    pgStatStatementsEnabled: boolean;
+  } | { success: false; error: string }
+> {
+  const token = getToken();
+  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  try {
+    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=query_insights`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    return {
+      success: true,
+      slowQueries: (Array.isArray(data.slowQueries) ? data.slowQueries : []) as SlowQueryDirecta[],
+      topCostlyQueries: (Array.isArray(data.topCostlyQueries) ? data.topCostlyQueries : []) as TopCostlyQueryDirecta[],
+      pgStatStatementsEnabled: Boolean(data.pgStatStatementsEnabled),
+    };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
   }

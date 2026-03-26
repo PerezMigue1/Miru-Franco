@@ -17,11 +17,22 @@ import {
   obtenerActividadDirecta,
   obtenerLocksDirectos,
   obtenerExplainDirecto,
+  obtenerResumenBdDirecto,
+  obtenerTableStatsDirecto,
+  obtenerIndexStatsDirecto,
+  obtenerRealtimeMetricsDirecto,
+  obtenerQueryInsightsDirecto,
   type ResultadoImportacion,
   type FormatoDiagrama,
   type OpcionesExportDirecto,
   type ActivityRowDirecta,
   type LockRowDirecta,
+  type DbSummaryDirecta,
+  type TableStatDirecta,
+  type IndexStatDirecta,
+  type RealtimeMetricsDirecta,
+  type SlowQueryDirecta,
+  type TopCostlyQueryDirecta,
 } from '../../../services/database';
 import { mermaidToSvg, svgToPngBlob } from '../../../utils/mermaidRender';
 import JSZip from 'jszip';
@@ -30,6 +41,37 @@ import { getUsuarios, getUsuarioById, type Usuario } from '../../../services/usu
 import { getServicios, type Servicio } from '../../../services/servicios';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
+import {
+  Activity,
+  Brain,
+  ChartNoAxesColumn,
+  CircleAlert,
+  CircleCheck,
+  Clock3,
+  Database,
+  Download,
+  FolderKanban,
+  GitCompareArrows,
+  HardDrive,
+  Layers,
+  Lock,
+  Network,
+  ShieldAlert,
+  TableProperties,
+  Table2,
+  Upload,
+  Users,
+} from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 const ROLES_PERSONAL = ['admin', 'estilista', 'empleado', 'becario'] as const;
 function esRolPersonal(rol: string): boolean {
@@ -196,7 +238,21 @@ export default function BaseDatosPage() {
   const [errorRendimiento, setErrorRendimiento] = useState<string | null>(null);
   const [actividadRows, setActividadRows] = useState<ActivityRowDirecta[]>([]);
   const [locksRows, setLocksRows] = useState<LockRowDirecta[]>([]);
-  const [explainTabla, setExplainTabla] = useState('servicios');
+  const [dbSummary, setDbSummary] = useState<DbSummaryDirecta | null>(null);
+  const [tableStats, setTableStats] = useState<TableStatDirecta[]>([]);
+  const [indexStats, setIndexStats] = useState<IndexStatDirecta[]>([]);
+  const [realtimeSeries, setRealtimeSeries] = useState<RealtimeMetricsDirecta[]>([]);
+  const [slowQueries, setSlowQueries] = useState<SlowQueryDirecta[]>([]);
+  const [topCostlyQueries, setTopCostlyQueries] = useState<TopCostlyQueryDirecta[]>([]);
+  const [pgStatStatementsEnabled, setPgStatStatementsEnabled] = useState(true);
+  const [vistaTablasMonitoreo, setVistaTablasMonitoreo] = useState<'tabla' | 'grafica'>('tabla');
+  const [vistaIndicesMonitoreo, setVistaIndicesMonitoreo] = useState<'tabla' | 'grafica'>('tabla');
+  const [vistaPrincipal, setVistaPrincipal] = useState<'operaciones' | 'monitoreo' | 'diagrama' | 'consultar'>('operaciones');
+  const [vistaOperaciones, setVistaOperaciones] = useState<'importar' | 'exportar'>('importar');
+  const [vistaMonitoreo, setVistaMonitoreo] = useState<'resumen' | 'tablas' | 'indices' | 'actividad' | 'locks' | 'explain'>('resumen');
+  const [menuLateralOculto, setMenuLateralOculto] = useState(true);
+  const [ultimaActualizacionMonitoreo, setUltimaActualizacionMonitoreo] = useState<Date | null>(null);
+  const [explainTabla, setExplainTabla] = useState('catalogo.servicios');
   const [explainColumna, setExplainColumna] = useState('');
   const [explainValor, setExplainValor] = useState('');
   const [explainQuery, setExplainQuery] = useState('');
@@ -493,17 +549,18 @@ export default function BaseDatosPage() {
     setLoadingTablasDirectas(false);
   };
 
-  const cargarActividadBd = async () => {
-    setLoadingRendimiento(true);
-    setErrorRendimiento(null);
-    const res = await obtenerActividadDirecta();
+  const cargarTablasParaMonitoreo = React.useCallback(async () => {
+    if (loadingTablasDirectas) return;
+    setLoadingTablasDirectas(true);
+    const res = await listarTablasDirectas();
     if (res.success) {
-      setActividadRows(res.rows);
-    } else {
-      setErrorRendimiento(res.error);
+      setTablasDirectas(res.tablas);
+      if (res.tablas.length > 0 && !res.tablas.includes(explainTabla)) {
+        setExplainTabla(res.tablas[0]);
+      }
     }
-    setLoadingRendimiento(false);
-  };
+    setLoadingTablasDirectas(false);
+  }, [loadingTablasDirectas, explainTabla]);
 
   const cargarLocksBd = async () => {
     setLoadingRendimiento(true);
@@ -533,6 +590,61 @@ export default function BaseDatosPage() {
     }
     setLoadingRendimiento(false);
   };
+
+  const cargarDashboardMonitoreo = async () => {
+    setLoadingRendimiento(true);
+    setErrorRendimiento(null);
+    const [summaryRes, activityRes, locksRes, tableStatsRes, indexStatsRes, realtimeRes, insightsRes] = await Promise.all([
+      obtenerResumenBdDirecto(),
+      obtenerActividadDirecta(),
+      obtenerLocksDirectos(),
+      obtenerTableStatsDirecto(),
+      obtenerIndexStatsDirecto(),
+      obtenerRealtimeMetricsDirecto(),
+      obtenerQueryInsightsDirecto(),
+    ]);
+
+    if (summaryRes.success) setDbSummary(summaryRes.data);
+    if (activityRes.success) setActividadRows(activityRes.rows);
+    if (locksRes.success) setLocksRows(locksRes.rows);
+    if (tableStatsRes.success) setTableStats(tableStatsRes.rows);
+    if (indexStatsRes.success) setIndexStats(indexStatsRes.rows);
+    if (realtimeRes.success) {
+      setRealtimeSeries((prev) => [...prev, realtimeRes.data].slice(-36));
+    }
+    if (insightsRes.success) {
+      setSlowQueries(insightsRes.slowQueries);
+      setTopCostlyQueries(insightsRes.topCostlyQueries);
+      setPgStatStatementsEnabled(insightsRes.pgStatStatementsEnabled);
+    }
+
+    const error =
+      (!summaryRes.success && summaryRes.error) ||
+      (!activityRes.success && activityRes.error) ||
+      (!locksRes.success && locksRes.error) ||
+      (!tableStatsRes.success && tableStatsRes.error) ||
+      (!indexStatsRes.success && indexStatsRes.error) ||
+      (!realtimeRes.success && realtimeRes.error) ||
+      (!insightsRes.success && insightsRes.error) ||
+      null;
+    setErrorRendimiento(error);
+    if (!error) setUltimaActualizacionMonitoreo(new Date());
+    setLoadingRendimiento(false);
+  };
+
+  React.useEffect(() => {
+    cargarDashboardMonitoreo();
+    const id = setInterval(() => {
+      cargarDashboardMonitoreo();
+    }, 10000);
+    return () => clearInterval(id);
+  }, []);
+
+  React.useEffect(() => {
+    if (vistaPrincipal === 'monitoreo' && vistaMonitoreo === 'explain' && tablasDirectas.length === 0) {
+      void cargarTablasParaMonitoreo();
+    }
+  }, [vistaPrincipal, vistaMonitoreo, tablasDirectas.length, cargarTablasParaMonitoreo]);
 
   const handleDescargarDiagrama = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -678,6 +790,7 @@ export default function BaseDatosPage() {
     if (!entidad) return;
     const moduloId = ENTIDAD_A_MODULO[entidad];
     if (!moduloId || !MODULOS_CONSULTAR.some((m) => m.id === moduloId)) return;
+    setVistaPrincipal('consultar');
     refConsultarSection.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setModuloExpandido(moduloId);
     cargarModulo(moduloId);
@@ -691,6 +804,177 @@ export default function BaseDatosPage() {
   };
 
   const tienePreview = previewUrl || previewSvg;
+  const locksPendientes = locksRows.filter((l) => !l.granted).length;
+  const tablasConDead = tableStats.filter((t) => Number(t.n_dead_tup || 0) > 10).length;
+  const indicesBajos = indexStats.filter((i) => Number(i.eficiencia || 0) < 40).length;
+  const saludGeneral = Math.max(
+    0,
+    100 -
+      Math.min(60, tableStats.reduce((acc, t) => acc + Number(t.n_dead_tup || 0), 0) > 0 ? 20 : 0) -
+      Math.min(20, locksPendientes * 5)
+  );
+  const actividadPorEstado = actividadRows.reduce<Record<string, number>>((acc, row) => {
+    const state = String(row.state || 'unknown');
+    acc[state] = (acc[state] || 0) + 1;
+    return acc;
+  }, {});
+  const totalActividad = Math.max(1, actividadRows.length);
+  const locksPorModo = locksRows.reduce<Record<string, number>>((acc, row) => {
+    const mode = String(row.mode || 'unknown');
+    acc[mode] = (acc[mode] || 0) + 1;
+    return acc;
+  }, {});
+  const maxDeadTuples = Math.max(1, ...tableStats.map((t) => Number(t.n_dead_tup || 0)));
+  const explainJson = (explainPlan as { Plan?: { 'Node Type'?: string; 'Actual Total Time'?: number } }[]) || [];
+  const explainRootNode = explainJson?.[0]?.Plan?.['Node Type'] ?? 'Sin plan';
+  const explainTime = Number(explainJson?.[0]?.Plan?.['Actual Total Time'] ?? 0);
+  const conexionesActivasActual = dbSummary?.conexionesActivas ?? actividadRows.filter((r) => r.state === 'active').length;
+  const totalConexionesActual = Math.max(1, dbSummary?.totalConexiones ?? actividadRows.length);
+  const usoConexionesPct = (conexionesActivasActual / totalConexionesActual) * 100;
+  const rendimientoTiempoReal = Math.max(
+    0,
+    100 - Math.min(35, locksPendientes * 8) - Math.min(25, indicesBajos * 5) - (usoConexionesPct > 85 ? 10 : 0)
+  );
+  const estadoSistema = saludGeneral >= 85 && rendimientoTiempoReal >= 85
+    ? 'Optimo'
+    : saludGeneral >= 65 && rendimientoTiempoReal >= 65
+      ? 'Atencion'
+      : 'Critico';
+  const estadoSistemaColor = estadoSistema === 'Optimo'
+    ? 'var(--success)'
+    : estadoSistema === 'Atencion'
+      ? 'var(--warning)'
+      : 'var(--danger)';
+  const formateador = new Intl.NumberFormat('es-MX');
+  const uptimeTotal = Number(dbSummary?.uptimeSeconds ?? 0);
+  const uptimeDias = Math.floor(uptimeTotal / 86400);
+  const uptimeHoras = Math.floor((uptimeTotal % 86400) / 3600);
+  const uptimeMin = Math.floor((uptimeTotal % 3600) / 60);
+  const uptimeLabel = `${uptimeDias}d ${uptimeHoras}h ${uptimeMin}m`;
+  const latestRealtime = realtimeSeries[realtimeSeries.length - 1] ?? null;
+  const chartHeight = 90;
+  const chartWidth = 100;
+  const qpsSeries = realtimeSeries.map((p) => p.qps);
+  const connSeries = realtimeSeries.map((p) => p.activeConnections);
+  const respSeries = realtimeSeries.map((p) => p.avgResponseMs);
+  const tableChartData = tableStats.slice(0, 20).map((t) => ({
+    tabla: t.relname,
+    vivas: Number(t.n_live_tup || 0),
+    obsoletas: Number(t.n_dead_tup || 0),
+  }));
+  const tableChartMaxRaw = Math.max(
+    10,
+    ...tableChartData.map((d) => Math.max(d.vivas, d.obsoletas))
+  );
+  const tableChartMax = Math.ceil(tableChartMaxRaw / 10) * 10;
+  const tableChartTicks = Array.from(
+    { length: Math.floor(tableChartMax / 10) + 1 },
+    (_, i) => i * 10
+  );
+  const maxQps = Math.max(1, ...qpsSeries);
+  const maxRespMs = Math.max(1, ...respSeries);
+  const buildLineFromSeries = (values: number[]) => {
+    const max = Math.max(1, ...values);
+    return values
+      .map((v, i) => {
+        const x = values.length <= 1 ? 0 : (i / (values.length - 1)) * chartWidth;
+        const y = chartHeight - (v / max) * chartHeight;
+        return `${x.toFixed(2)},${Math.max(0, Math.min(chartHeight, y)).toFixed(2)}`;
+      })
+      .join(' ');
+  };
+  const tabsMonitoreo = [
+    { id: 'resumen' as const, label: 'Monitoreo y rendimiento', icon: Database, hint: 'Estado global' },
+    { id: 'tablas' as const, label: 'Tablas', icon: Table2, hint: 'Salud de tablas' },
+    { id: 'indices' as const, label: 'Índices', icon: ChartNoAxesColumn, hint: 'Eficiencia' },
+    { id: 'actividad' as const, label: 'Actividad', icon: Activity, hint: 'Sesiones vivas' },
+    { id: 'locks' as const, label: 'Locks', icon: Lock, hint: 'Contención' },
+    { id: 'explain' as const, label: 'EXPLAIN', icon: Brain, hint: 'Plan de consulta' },
+  ];
+  const tabMonitoreoActual = tabsMonitoreo.find((t) => t.id === vistaMonitoreo);
+  const totalIndices = Math.max(1, indexStats.length);
+  const indicesOptimos = indexStats.filter((i) => Number(i.eficiencia || 0) >= 80).length;
+  const indicesMedios = indexStats.filter((i) => Number(i.eficiencia || 0) >= 40 && Number(i.eficiencia || 0) < 80).length;
+  const indicesBajosCount = indexStats.filter((i) => Number(i.eficiencia || 0) < 40).length;
+  const DonutKpi = ({
+    value,
+    max,
+    color,
+  }: {
+    value: number;
+    max: number;
+    color: string;
+  }) => {
+    const safeMax = Math.max(1, max);
+    const pct = Math.max(0, Math.min(100, (value / safeMax) * 100));
+    const radius = 18;
+    const circumference = 2 * Math.PI * radius;
+    const dash = (pct / 100) * circumference;
+    return (
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden>
+        <circle cx="22" cy="22" r={radius} fill="none" stroke="var(--fondos-suaves)" strokeWidth="5" />
+        <circle
+          cx="22"
+          cy="22"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference - dash}`}
+          transform="rotate(-90 22 22)"
+        />
+      </svg>
+    );
+  };
+  const DonutCategoria = ({
+    title,
+    value,
+    color,
+  }: {
+    title: string;
+    value: number;
+    color: string;
+  }) => {
+    const radius = 24;
+    const size = 60;
+    const circumference = 2 * Math.PI * radius;
+    const pct = Math.max(0, Math.min(100, (value / totalIndices) * 100));
+    const dash = (pct / 100) * circumference;
+    return (
+      <div className="flex items-center gap-3">
+        <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden>
+          <circle cx="30" cy="30" r={radius} fill="none" stroke="var(--fondos-suaves)" strokeWidth="7" />
+          <circle
+            cx="30"
+            cy="30"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circumference - dash}`}
+            transform="rotate(-90 30 30)"
+          />
+          <text x="30" y="34" textAnchor="middle" style={{ fill: 'var(--menu-texto-principal)', fontSize: 11, fontWeight: 700 }}>
+            {value}
+          </text>
+        </svg>
+        <div>
+          <p className="text-xs font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{title}</p>
+          <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{pct.toFixed(1)}%</p>
+        </div>
+      </div>
+    );
+  };
+  const colorDeadTuples = (dead: number): string =>
+    dead > 40 ? 'var(--danger)' : dead > 10 ? 'var(--warning)' : 'var(--success)';
+  const colorEficiencia = (eff: number): string =>
+    eff < 40 ? 'var(--danger)' : eff < 80 ? 'var(--warning)' : 'var(--success)';
+  const colorWait = (wait: string | null): string =>
+    wait ? 'var(--warning)' : 'var(--success)';
+  const colorGranted = (granted: boolean): string =>
+    granted ? 'var(--success)' : 'var(--danger)';
 
   const DetalleCampo = ({
     label,
@@ -722,12 +1006,7 @@ export default function BaseDatosPage() {
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
           }}
         >
-          <p className="text-sm font-medium uppercase tracking-wider opacity-80 mb-1">Módulo de base de datos</p>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Importar, exportar y gestionar datos</h1>
-          <p className="text-base opacity-90 max-w-xl">
-            Importa datos desde archivos CSV/JSON, exporta datos del sistema y accede a las pantallas de consulta,
-            inserción y eliminación.
-          </p>
+          <h1 className="text-2xl md:text-3xl font-bold">Gestor de Base de Datos</h1>
         </header>
 
         {/* Estadísticas + Automatización (actualmente ocultas) */}
@@ -772,12 +1051,130 @@ export default function BaseDatosPage() {
         </div>
         )}
 
-        <div className="space-y-6">
+        <div className="relative space-y-6 overflow-hidden">
+          <button
+            type="button"
+            aria-label="Mostrar menú"
+            onMouseEnter={() => setMenuLateralOculto(false)}
+            className="absolute left-0 top-6 z-40 h-10 w-8 rounded-r-lg border border-l-0 text-sm"
+            style={{
+              borderColor: 'var(--encabezados-alterno)',
+              backgroundColor: 'var(--fondo-general)',
+              color: 'var(--menu-texto-principal)',
+            }}
+          >
+            ☰
+          </button>
+          <div
+            className="absolute top-0 left-0 h-full w-4 z-40"
+            onMouseEnter={() => setMenuLateralOculto(false)}
+          />
+
+          {!menuLateralOculto && (
+            <>
+              <aside
+                className="absolute top-0 left-0 h-full w-[280px] z-50 p-4 overflow-y-auto"
+                style={{ backgroundColor: 'var(--fondo-general)', borderRight: `1px solid ${'var(--encabezados-alterno)'}` }}
+                onMouseEnter={() => setMenuLateralOculto(false)}
+                onMouseLeave={() => setMenuLateralOculto(true)}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    Secciones
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setMenuLateralOculto(true)}
+                    className="text-sm px-2 py-1 rounded border"
+                    style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { id: 'operaciones' as const, label: 'Operaciones' },
+                    { id: 'monitoreo' as const, label: 'Monitoreo' },
+                    { id: 'diagrama' as const, label: 'Diagrama ER' },
+                    { id: 'consultar' as const, label: 'Consultar datos' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setVistaPrincipal(item.id);
+                        setMenuLateralOculto(true);
+                      }}
+                      className="w-full text-left rounded px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: vistaPrincipal === item.id ? 'var(--hover)' : 'transparent',
+                        color: 'var(--menu-texto-principal)',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                {vistaPrincipal === 'operaciones' && (
+                  <div className="mt-4 pt-3 border-t space-y-1" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                    {[
+                      { id: 'importar' as const, label: 'Importar datos' },
+                      { id: 'exportar' as const, label: 'Exportar datos' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setVistaOperaciones(item.id);
+                          setMenuLateralOculto(true);
+                        }}
+                        className="w-full text-left rounded px-3 py-2 text-sm"
+                        style={{
+                          backgroundColor: vistaOperaciones === item.id ? 'rgba(24, 108, 131, 0.16)' : 'transparent',
+                          color: 'var(--menu-texto-principal)',
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </aside>
+            </>
+          )}
+
+          <div className="space-y-6">
+          {vistaPrincipal === 'operaciones' && (
+            <Card variant="elevated" padding="md">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'importar' as const, label: 'Importación' },
+                  { id: 'exportar' as const, label: 'Exportación' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setVistaOperaciones(item.id)}
+                    className="px-3 py-1.5 rounded-full text-sm font-medium border"
+                    style={{
+                      borderColor: 'var(--encabezados-alterno)',
+                      backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent',
+                      color: 'var(--menu-texto-principal)',
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+
           {/* Importar */}
-          {true && (
+          {vistaPrincipal === 'operaciones' && vistaOperaciones === 'importar' && (
             <Card variant="elevated" padding="lg">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                📥 Importar datos
+                <Upload size={18} />
+                Importar datos
               </h2>
               <form onSubmit={handleImportar} className="space-y-4">
                 <div>
@@ -881,9 +1278,11 @@ export default function BaseDatosPage() {
           )}
 
           {/* Exportar (solo conexión directa a la BD) */}
+          {vistaPrincipal === 'operaciones' && vistaOperaciones === 'exportar' && (
           <Card variant="elevated" padding="lg">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-              📤 Exportar datos
+              <Download size={18} />
+              Exportar datos
             </h2>
             <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Conexión directa a la BD con <code className="text-xs bg-black/10 px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-black/10 px-1 rounded">public</code>.
@@ -1112,67 +1511,283 @@ export default function BaseDatosPage() {
               </p>
             )}
           </Card>
+          )}
 
           {/* Supervisión de rendimiento */}
+          {vistaPrincipal === 'monitoreo' && (
           <Card variant="elevated" padding="lg">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-              🧪 Supervisión de rendimiento
-            </h2>
-            <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-              Consulta actividad, locks y EXPLAIN con datos reales de la BD para documentar evidencia en tu reporte.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              <Button type="button" variant="outline" onClick={cargarActividadBd} disabled={loadingRendimiento}>
-                {loadingRendimiento ? 'Cargando…' : 'Ver actividad/conexiones'}
-              </Button>
-              <Button type="button" variant="outline" onClick={cargarLocksBd} disabled={loadingRendimiento}>
-                {loadingRendimiento ? 'Cargando…' : 'Ver locks/transacciones'}
-              </Button>
-              <Button type="button" variant="outline" onClick={cargarExplainBd} disabled={loadingRendimiento}>
-                {loadingRendimiento ? 'Cargando…' : 'Ejecutar EXPLAIN'}
-              </Button>
-            </div>
-
-            <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)' }}>
-              <p className="text-xs font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                Configuración de EXPLAIN
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Tabla</label>
-                  <Select
-                    options={
-                      tablasDirectas.length
-                        ? tablasDirectas.map((t) => ({ value: t, label: t }))
-                        : [{ value: explainTabla, label: explainTabla }]
-                    }
-                    value={explainTabla}
-                    onChange={(e) => setExplainTabla(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Columna (opcional)</label>
-                  <input
-                    value={explainColumna}
-                    onChange={(e) => setExplainColumna(e.target.value)}
-                    placeholder="ej. categoria"
-                    className="w-full rounded border px-3 py-2 text-sm"
-                    style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Valor (opcional)</label>
-                  <input
-                    value={explainValor}
-                    onChange={(e) => setExplainValor(e.target.value)}
-                    placeholder="ej. Alaciados"
-                    className="w-full rounded border px-3 py-2 text-sm"
-                    style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
-                  />
-                </div>
+            <div className="rounded-xl border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24, 108, 131, 0.08)' }}>
+              <div className="flex flex-wrap gap-2">
+                {tabsMonitoreo.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setVistaMonitoreo(item.id)}
+                      className="px-3 py-2 rounded-lg text-sm font-medium border transition-all"
+                      style={{
+                        borderColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'var(--encabezados-alterno)',
+                        backgroundColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'transparent',
+                        color: 'var(--menu-texto-principal)',
+                        boxShadow: vistaMonitoreo === item.id ? '0 2px 10px rgba(24,108,131,0.25)' : 'none',
+                      }}
+                    >
+                      <Icon size={14} className="inline-block mr-1 mb-[1px]" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-2 text-xs flex flex-wrap items-center gap-3" style={{ color: 'var(--encabezados-alterno)' }}>
+                <span>Vista activa: <strong style={{ color: 'var(--menu-texto-principal)' }}>{tabMonitoreoActual?.label}</strong></span>
+                <span>{tabMonitoreoActual?.hint}</span>
+                <span>Actualización: {ultimaActualizacionMonitoreo ? ultimaActualizacionMonitoreo.toLocaleTimeString('es-MX') : '—'}</span>
               </div>
             </div>
+
+
+            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+              <Button size="sm" type="button" variant="outline" onClick={cargarDashboardMonitoreo} disabled={loadingRendimiento}>
+                {loadingRendimiento ? 'Actualizando…' : 'Actualizar'}
+              </Button>
+              {vistaMonitoreo === 'locks' && (
+                <Button size="sm" type="button" variant="outline" onClick={cargarLocksBd} disabled={loadingRendimiento}>
+                  {loadingRendimiento ? 'Cargando…' : 'Refrescar locks'}
+                </Button>
+              )}
+              {vistaMonitoreo === 'explain' && (
+                <Button size="sm" type="button" variant="outline" onClick={cargarExplainBd} disabled={loadingRendimiento}>
+                  {loadingRendimiento ? 'Cargando…' : 'Ejecutar EXPLAIN'}
+                </Button>
+              )}
+            </div>
+
+            {vistaMonitoreo === 'resumen' && (
+              <>
+                <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.07)' }}>
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
+                    Estado y salud
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado del sistema</p>
+                      <p className="text-4xl md:text-5xl font-extrabold leading-none mt-1" style={{ color: estadoSistemaColor }}>
+                        {estadoSistema}
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Salud</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <div>
+                          <p className="text-4xl md:text-5xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
+                            {saludGeneral}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>/100</p>
+                        </div>
+                        <DonutKpi value={saludGeneral} max={100} color={saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)'} />
+                      </div>
+                      <div className="w-full h-2 rounded mt-2" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <div className="h-full rounded" style={{ width: `${saludGeneral}%`, backgroundColor: saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)' }} />
+                      </div>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Versión PostgreSQL</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {dbSummary?.version ?? '—'}
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Uptime servidor</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {uptimeLabel}
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><HardDrive size={12} />Tamaño total BD</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formateador.format(dbSummary?.sizeMB ?? 0)} MB
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><TableProperties size={12} />Número de tablas</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formateador.format(dbSummary?.totalTablas ?? tableStats.length)}
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Cache hit ratio</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <p className="text-2xl font-bold" style={{ color: (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)' }}>
+                          {(dbSummary?.cacheHitRatio ?? 0).toFixed(2)}%
+                        </p>
+                        <DonutKpi value={dbSummary?.cacheHitRatio ?? 0} max={100} color={(dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)'} />
+                      </div>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><GitCompareArrows size={12} />Transacciones por segundo</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {(dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}
+                      </p>
+                    </Card>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(89,12,12,0.05)' }}>
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
+                    Rendimiento en tiempo real
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Consultas por segundo</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
+                          {(latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}
+                        </p>
+                        <DonutKpi value={latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0} max={Math.max(1, maxQps)} color="var(--success)" />
+                      </div>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Conexiones activas</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
+                          {formateador.format(latestRealtime?.activeConnections ?? conexionesActivasActual)}
+                        </p>
+                        <DonutKpi value={latestRealtime?.activeConnections ?? conexionesActivasActual} max={Math.max(1, totalConexionesActual)} color="var(--warning)" />
+                      </div>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo prom. respuesta</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
+                          {(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms
+                        </p>
+                        <DonutKpi value={latestRealtime?.avgResponseMs ?? 0} max={Math.max(1, maxRespMs)} color="var(--danger)" />
+                      </div>
+                    </Card>
+                  </div>
+
+                  <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                    <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Serie temporal (actualiza cada 10s)
+                    </p>
+                    {realtimeSeries.length > 1 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>QPS</p>
+                          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-24 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                            <polyline fill="none" stroke="var(--success)" strokeWidth="1.8" points={buildLineFromSeries(qpsSeries)} />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Conexiones activas</p>
+                          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-24 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                            <polyline fill="none" stroke="var(--warning)" strokeWidth="1.8" points={buildLineFromSeries(connSeries)} />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo respuesta (ms)</p>
+                          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-24 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                            <polyline fill="none" stroke="var(--danger)" strokeWidth="1.8" points={buildLineFromSeries(respSeries)} />
+                          </svg>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                        Esperando suficientes puntos para dibujar la gráfica.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                      <span className="inline-flex items-center gap-1"><CircleCheck size={12} />QPS</span>
+                      <span className="inline-flex items-center gap-1"><Users size={12} />Conexiones</span>
+                      <span className="inline-flex items-center gap-1"><Clock3 size={12} />Respuesta</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Consultas lentas ahora</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formateador.format(slowQueries.length)}
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Top costosas disponibles</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formateador.format(topCostlyQueries.length)}
+                      </p>
+                    </Card>
+                    <Card variant="elevated" padding="md">
+                      <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado de analítica SQL</p>
+                      <p className="text-xl font-bold mt-1" style={{ color: pgStatStatementsEnabled ? 'var(--success)' : 'var(--warning)' }}>
+                        {pgStatStatementsEnabled ? 'Activa' : 'Limitada'}
+                      </p>
+                    </Card>
+                  </div>
+                </div>
+
+              </>
+            )}
+
+            {vistaMonitoreo === 'resumen' && (tableStats.length > 0 || indexStats.length > 0 || locksRows.length > 0) && (
+              <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(89, 12, 12, 0.08)' }}>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Alertas activas</p>
+                <ul className="text-sm space-y-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                  {locksPendientes > 0 && (
+                    <li className="inline-flex items-center gap-1"><ShieldAlert size={14} />Critico: hay {locksPendientes} lock(s) en espera.</li>
+                  )}
+                  {tablasConDead > 0 && (
+                    <li className="inline-flex items-center gap-1"><CircleAlert size={14} />Atencion: {tablasConDead} tabla(s) con registros obsoletos altos.</li>
+                  )}
+                  {indicesBajos > 0 && (
+                    <li className="inline-flex items-center gap-1"><CircleAlert size={14} />Atencion: {indicesBajos} indice(s) con eficiencia baja (&lt;40%).</li>
+                  )}
+                  {locksPendientes === 0 && tablasConDead === 0 && indicesBajos === 0 && <li className="inline-flex items-center gap-1"><CircleCheck size={14} />Sin alertas criticas en este momento.</li>}
+                </ul>
+              </div>
+            )}
+
+            {vistaMonitoreo === 'explain' && (
+              <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Configuración de EXPLAIN
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Tabla</label>
+                    <Select
+                      options={
+                        tablasDirectas.length
+                          ? tablasDirectas.map((t) => ({ value: t, label: t }))
+                          : [{ value: explainTabla, label: explainTabla }]
+                      }
+                      value={explainTabla}
+                      onChange={(e) => setExplainTabla(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Columna (opcional)</label>
+                    <input
+                      value={explainColumna}
+                      onChange={(e) => setExplainColumna(e.target.value)}
+                      placeholder="ej. categoria"
+                      className="w-full rounded border px-3 py-2 text-sm"
+                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Valor (opcional)</label>
+                    <input
+                      value={explainValor}
+                      onChange={(e) => setExplainValor(e.target.value)}
+                      placeholder="ej. Alaciados"
+                      className="w-full rounded border px-3 py-2 text-sm"
+                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {errorRendimiento && (
               <p className="mb-3 text-sm" style={{ color: 'var(--danger)' }}>
@@ -1180,17 +1795,271 @@ export default function BaseDatosPage() {
               </p>
             )}
 
-            {actividadRows.length > 0 && (
+            {vistaMonitoreo === 'tablas' && tableStats.length > 0 && (
               <div className="mb-4">
+                <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.06)' }}>
+                  <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Lectura rápida</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <Badge size="sm" variant="success">Verde: filas vivas</Badge>
+                    <Badge size="sm" variant="danger">Rojo: filas obsoletas</Badge>
+                    <Badge size="sm" variant="warning">Atención: dead tuples &gt; 10</Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Layers size={12} />Total tablas</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{tableStats.length}</p>
+                      <DonutKpi value={tableStats.length} max={Math.max(1, dbSummary?.totalTablas ?? tableStats.length)} color="var(--hover)" />
+                    </div>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><CircleAlert size={12} />Con obsoletos altos</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{tablasConDead}</p>
+                      <DonutKpi value={tablasConDead} max={Math.max(1, tableStats.length)} color="var(--warning)" />
+                    </div>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>🧮 Máx. dead tuples</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{maxDeadTuples}</p>
+                      <DonutKpi value={maxDeadTuples} max={Math.max(100, maxDeadTuples)} color="var(--danger)" />
+                    </div>
+                  </Card>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Estado de tablas</p>
+                  <div className="inline-flex rounded border overflow-hidden" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                    <button type="button" className="px-3 py-1 text-xs" onClick={() => setVistaTablasMonitoreo('tabla')}
+                      style={{ backgroundColor: vistaTablasMonitoreo === 'tabla' ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      Tabla
+                    </button>
+                    <button type="button" className="px-3 py-1 text-xs" onClick={() => setVistaTablasMonitoreo('grafica')}
+                      style={{ backgroundColor: vistaTablasMonitoreo === 'grafica' ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      Grafica
+                    </button>
+                  </div>
+                </div>
+                {vistaTablasMonitoreo === 'tabla' ? (
+                  <div className="max-h-72 overflow-y-auto">
+                    <Table headers={['Tabla', 'Registros', 'Obsoletos', 'Seq', 'Idx', 'Estado']}>
+                      {tableStats.slice(0, 20).map((t) => {
+                        const live = Number(t.n_live_tup || 0);
+                        const dead = Number(t.n_dead_tup || 0);
+                        const estado = dead > 40 ? 'Crítico' : dead > 10 ? 'Atención' : 'Óptimo';
+                        const variant = dead > 40 ? 'danger' : dead > 10 ? 'warning' : 'success';
+                        const seq = Number(t.seq_scan || 0);
+                        const idx = Number(t.idx_scan || 0);
+                        return (
+                          <TableRow key={`${t.schemaname}.${t.relname}`}>
+                            <TableCell>{t.schemaname}.{t.relname}</TableCell>
+                            <TableCell style={{ color: live > 0 ? 'var(--success)' : 'var(--encabezados-alterno)', fontWeight: 700 }}>{live}</TableCell>
+                            <TableCell style={{ color: colorDeadTuples(dead), fontWeight: 700 }}>{dead}</TableCell>
+                            <TableCell style={{ color: seq > idx ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: seq > idx ? 700 : 500 }}>{seq}</TableCell>
+                            <TableCell style={{ color: idx >= seq ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: idx >= seq ? 700 : 500 }}>{idx}</TableCell>
+                            <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border p-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                    <ResponsiveContainer width="100%" height={520}>
+                      <BarChart
+                        layout="vertical"
+                        data={tableChartData}
+                        margin={{ top: 8, right: 20, left: 10, bottom: 8 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" />
+                        <XAxis
+                          type="number"
+                          domain={[0, tableChartMax]}
+                          ticks={tableChartTicks}
+                          tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="tabla"
+                          width={140}
+                          tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }}
+                        />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: 'var(--fondo-general)', border: '1px solid var(--encabezados-alterno)' }}
+                          labelStyle={{ color: 'var(--menu-texto-principal)' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="vivas" fill="var(--success)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="obsoletas" fill="var(--danger)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            )}
+            {vistaMonitoreo === 'tablas' && tableStats.length === 0 && (
+              <div className="rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)' }}>
+                No hay métricas de tablas disponibles todavía.
+              </div>
+            )}
+
+            {vistaMonitoreo === 'indices' && indexStats.length > 0 && (
+              <div className="mb-4">
+                <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.06)' }}>
+                  <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Lectura rápida</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <DonutCategoria title="Óptima (≥ 80%)" value={indicesOptimos} color="var(--success)" />
+                    <DonutCategoria title="Media (40% - 79%)" value={indicesMedios} color="var(--warning)" />
+                    <DonutCategoria title="Baja (< 40%)" value={indicesBajosCount} color="var(--danger)" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><ChartNoAxesColumn size={12} />Índices analizados</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{indexStats.length}</p>
+                      <DonutKpi value={indexStats.length} max={Math.max(1, indexStats.length)} color="var(--hover)" />
+                    </div>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><CircleAlert size={12} />Eficiencia baja</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{indicesBajos}</p>
+                      <DonutKpi value={indicesBajos} max={Math.max(1, indexStats.length)} color="var(--danger)" />
+                    </div>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><CircleCheck size={12} />Eficiencia promedio</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {indexStats.length ? (indexStats.reduce((acc, i) => acc + Number(i.eficiencia || 0), 0) / indexStats.length).toFixed(1) : 0}%
+                      </p>
+                      <DonutKpi value={indexStats.length ? (indexStats.reduce((acc, i) => acc + Number(i.eficiencia || 0), 0) / indexStats.length) : 0} max={100} color="var(--success)" />
+                    </div>
+                  </Card>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Uso de índices</p>
+                  <div className="inline-flex rounded border overflow-hidden" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                    <button type="button" className="px-3 py-1 text-xs" onClick={() => setVistaIndicesMonitoreo('tabla')}
+                      style={{ backgroundColor: vistaIndicesMonitoreo === 'tabla' ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      Tabla
+                    </button>
+                    <button type="button" className="px-3 py-1 text-xs" onClick={() => setVistaIndicesMonitoreo('grafica')}
+                      style={{ backgroundColor: vistaIndicesMonitoreo === 'grafica' ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      Grafica
+                    </button>
+                  </div>
+                </div>
+                {vistaIndicesMonitoreo === 'tabla' ? (
+                  <div className="max-h-72 overflow-y-auto">
+                    <Table headers={['Indice', 'Tabla', 'Idx scan', 'Seq scan', 'Eficiencia %', 'Estado']}>
+                      {indexStats.slice(0, 20).map((i) => {
+                        const eff = Number(i.eficiencia || 0);
+                        const variant = eff < 40 ? 'danger' : eff < 80 ? 'warning' : 'success';
+                        const estado = eff < 40 ? 'Baja' : eff < 80 ? 'Media' : 'Óptima';
+                        const idxScan = Number(i.idx_scan || 0);
+                        const seqScan = Number(i.seq_scan || 0);
+                        return (
+                          <TableRow key={`${i.schemaname}.${i.indexname}`}>
+                            <TableCell>{i.indexname}</TableCell>
+                            <TableCell>{i.schemaname}.{i.tablename}</TableCell>
+                            <TableCell style={{ color: idxScan >= seqScan ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: idxScan >= seqScan ? 700 : 500 }}>{idxScan}</TableCell>
+                            <TableCell style={{ color: seqScan > idxScan ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: seqScan > idxScan ? 700 : 500 }}>{seqScan}</TableCell>
+                            <TableCell style={{ color: colorEficiencia(eff), fontWeight: 700 }}>{eff.toFixed(2)}%</TableCell>
+                            <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border p-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                    <ResponsiveContainer width="100%" height={420}>
+                      <BarChart
+                        layout="vertical"
+                        data={indexStats.slice(0, 12).map((i) => ({
+                          indice: i.indexname,
+                          eficiencia: Math.max(0, Math.min(100, Number(i.eficiencia || 0))),
+                        }))}
+                        margin={{ top: 8, right: 20, left: 10, bottom: 8 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" />
+                        <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
+                        <YAxis type="category" dataKey="indice" width={160} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: 'var(--fondo-general)', border: '1px solid var(--encabezados-alterno)' }}
+                          labelStyle={{ color: 'var(--menu-texto-principal)' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="eficiencia" fill="var(--hover)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            )}
+            {vistaMonitoreo === 'indices' && indexStats.length === 0 && (
+              <div className="rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)' }}>
+                No hay métricas de índices disponibles todavía.
+              </div>
+            )}
+
+            {vistaMonitoreo === 'actividad' && actividadRows.length > 0 && (
+              <div className="mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Users size={12} />Sesiones totales</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{formateador.format(actividadRows.length)}</p>
+                      <DonutKpi value={actividadRows.length} max={Math.max(1, totalConexionesActual)} color="var(--hover)" />
+                    </div>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Activity size={12} />Sesiones activas</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formateador.format(actividadRows.filter((r) => r.state === 'active').length)}
+                      </p>
+                      <DonutKpi value={actividadRows.filter((r) => r.state === 'active').length} max={Math.max(1, actividadRows.length)} color="var(--warning)" />
+                    </div>
+                  </Card>
+                </div>
+                <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                  <p className="text-sm font-semibold mb-2 inline-flex items-center gap-1" style={{ color: 'var(--menu-texto-principal)' }}><ChartNoAxesColumn size={14} />Distribución de actividad</p>
+                  <div className="space-y-2">
+                    {Object.entries(actividadPorEstado).map(([estado, cantidad]) => {
+                      const pct = (cantidad / totalActividad) * 100;
+                      return (
+                        <div key={estado}>
+                          <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                            <span>{estado}</span>
+                            <span>{cantidad}</span>
+                          </div>
+                          <div className="w-full h-2 rounded" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                            <div className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: 'var(--hover)' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
                 <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Actividad / conexiones</p>
                 <div className="max-h-56 overflow-y-auto">
                   <Table headers={['PID', 'Usuario', 'Estado', 'Wait', 'Query']}>
                     {actividadRows.slice(0, 30).map((r) => (
                       <TableRow key={`${r.pid}-${r.query_start ?? 'x'}`}>
-                        <TableCell>{r.pid}</TableCell>
+                        <TableCell style={{ color: 'var(--hover)', fontWeight: 700 }}>{r.pid}</TableCell>
                         <TableCell>{r.usename}</TableCell>
-                        <TableCell>{r.state ?? '—'}</TableCell>
-                        <TableCell>{r.wait_event_type ?? '—'}</TableCell>
+                        <TableCell>
+                          <Badge size="sm" variant={r.state === 'active' ? 'success' : r.state === 'idle' ? 'info' : 'warning'}>
+                            {r.state ?? '—'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell style={{ color: colorWait(r.wait_event_type), fontWeight: r.wait_event_type ? 700 : 500 }}>
+                          {r.wait_event_type ?? '—'}
+                        </TableCell>
                         <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
                       </TableRow>
                     ))}
@@ -1198,18 +2067,64 @@ export default function BaseDatosPage() {
                 </div>
               </div>
             )}
+            {vistaMonitoreo === 'actividad' && actividadRows.length === 0 && (
+              <div className="rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)' }}>
+                Sin sesiones activas para mostrar en este momento.
+              </div>
+            )}
 
-            {locksRows.length > 0 && (
+            {vistaMonitoreo === 'locks' && locksRows.length > 0 && (
               <div className="mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Lock size={12} />Locks pendientes</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{locksPendientes}</p>
+                      <DonutKpi value={locksPendientes} max={Math.max(1, locksRows.length)} color="var(--danger)" />
+                    </div>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><CircleCheck size={12} />Locks concedidos</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{locksRows.length - locksPendientes}</p>
+                      <DonutKpi value={locksRows.length - locksPendientes} max={Math.max(1, locksRows.length)} color="var(--success)" />
+                    </div>
+                  </Card>
+                </div>
+                <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>🧱 Locks por modo</p>
+                  <div className="space-y-2">
+                    {Object.entries(locksPorModo).slice(0, 6).map(([modo, cantidad]) => {
+                      const pct = (cantidad / Math.max(1, locksRows.length)) * 100;
+                      return (
+                        <div key={modo}>
+                          <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                            <span>{modo}</span>
+                            <span>{cantidad}</span>
+                          </div>
+                          <div className="w-full h-2 rounded" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                            <div className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: 'var(--warning)' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
                 <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Locks / transacciones</p>
                 <div className="max-h-56 overflow-y-auto">
                   <Table headers={['PID', 'Relación', 'Modo', 'Granted', 'Query']}>
                     {locksRows.slice(0, 40).map((r, idx) => (
                       <TableRow key={`${r.pid}-${r.locktype}-${idx}`}>
-                        <TableCell>{r.pid}</TableCell>
+                        <TableCell style={{ color: 'var(--hover)', fontWeight: 700 }}>{r.pid}</TableCell>
                         <TableCell>{r.relation ?? '—'}</TableCell>
-                        <TableCell>{r.mode}</TableCell>
-                        <TableCell>{r.granted ? 'Sí' : 'No'}</TableCell>
+                        <TableCell>
+                          <Badge size="sm" variant={r.mode.toLowerCase().includes('exclusive') ? 'warning' : 'info'}>
+                            {r.mode}
+                          </Badge>
+                        </TableCell>
+                        <TableCell style={{ color: colorGranted(r.granted), fontWeight: 700 }}>
+                          {r.granted ? 'Sí' : 'No'}
+                        </TableCell>
                         <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
                       </TableRow>
                     ))}
@@ -1217,9 +2132,34 @@ export default function BaseDatosPage() {
                 </div>
               </div>
             )}
+            {vistaMonitoreo === 'locks' && locksRows.length === 0 && (
+              <div className="rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)' }}>
+                Sin locks reportados actualmente.
+              </div>
+            )}
 
-            {Boolean(explainPlan) && (
+            {vistaMonitoreo === 'explain' && (
               <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Brain size={12} />Nodo principal</p>
+                    <p className="text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{explainRootNode}</p>
+                  </Card>
+                  <Card variant="elevated" padding="md">
+                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Clock3 size={12} />Tiempo total</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{explainTime.toFixed(3)} ms</p>
+                      <DonutKpi value={explainTime} max={Math.max(1, maxRespMs, explainTime)} color="var(--danger)" />
+                    </div>
+                  </Card>
+                </div>
+                {!Boolean(explainPlan) && (
+                  <div className="rounded-lg border p-3 mb-3 text-sm" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)' }}>
+                    Ejecuta EXPLAIN para ver el plan y recomendaciones visuales.
+                  </div>
+                )}
+                {Boolean(explainPlan) && (
+                  <>
                 <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>EXPLAIN</p>
                 {explainQuery && (
                   <p className="text-xs mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -1236,14 +2176,19 @@ export default function BaseDatosPage() {
                   Interpretación rápida: revisa si aparece <code className="bg-black/10 px-1 rounded">Seq Scan</code> (escaneo completo)
                   o <code className="bg-black/10 px-1 rounded">Index Scan</code> (uso de índice), junto con el tiempo total.
                 </p>
+                  </>
+                )}
               </div>
             )}
           </Card>
+          )}
 
           {/* Diagrama ER */}
+          {vistaPrincipal === 'diagrama' && (
           <Card variant="elevated" padding="lg">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-              📊 Diagrama ER
+              <Network size={18} />
+              Diagrama ER
             </h2>
             <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Descarga el diagrama de entidad-relación del esquema de la base de datos.
@@ -1336,14 +2281,17 @@ export default function BaseDatosPage() {
               </p>
             )}
           </Card>
+          )}
 
           {/* Sección Schemas eliminada */}
 
           {/* Consultar */}
+          {vistaPrincipal === 'consultar' && (
           <div ref={refConsultarSection}>
             <Card variant="elevated" padding="lg">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                🔍 Consultar datos
+                <FolderKanban size={18} />
+                Consultar datos
               </h2>
             <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Selecciona un módulo para cargar y ver los datos:
@@ -1675,6 +2623,7 @@ export default function BaseDatosPage() {
             </div>
           </Card>
           </div>
+          )}
 
           {/* Insertar - oculto */}
           {false && (
@@ -1739,6 +2688,7 @@ export default function BaseDatosPage() {
               </div>
             </Card>
           )}
+          </div>
         </div>
       </div>
     </AdminLayout>

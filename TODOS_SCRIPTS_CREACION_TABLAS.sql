@@ -88,34 +88,34 @@ INSERT INTO "preguntas_disponibles" ("id", "pregunta", "activa") VALUES
 
 CREATE TABLE IF NOT EXISTS productos (
   id                SERIAL PRIMARY KEY,
-  nombre            VARCHAR(255) NOT NULL,
-  marca             VARCHAR(255) NOT NULL,
+  nombre            TEXT NOT NULL,
+  marca             TEXT NOT NULL,
   descripcion       VARCHAR(1000),
   descripcion_larga TEXT,
-  imagenes          TEXT[] DEFAULT '{}',
+  imagenes          TEXT[] DEFAULT ARRAY[]::TEXT[],
   descuento         INTEGER,
-  categoria         VARCHAR(100),
+  categoria         TEXT,
   nuevo             BOOLEAN NOT NULL DEFAULT FALSE,
   cruelty_free      BOOLEAN NOT NULL DEFAULT FALSE,
-  caracteristicas   TEXT[] DEFAULT '{}',
+  caracteristicas   TEXT[] DEFAULT ARRAY[]::TEXT[],
   ingredientes      TEXT,
   modo_uso          TEXT,
   resultado         TEXT,
-  creado_en         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  actualizado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  creado_en         TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en    TIMESTAMP(3) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS producto_presentaciones (
   id               SERIAL PRIMARY KEY,
-  producto_id      INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-  tamanio          VARCHAR(50) NOT NULL,
+  producto_id      INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  tamanio          TEXT NOT NULL,
   precio           DECIMAL(10,2) NOT NULL,
   precio_original  DECIMAL(10,2),
   stock            INTEGER NOT NULL DEFAULT 0,
   disponible       BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_caducidad  TIMESTAMP(3),
-  creado_en        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  actualizado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  creado_en        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en   TIMESTAMP(3) NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria);
@@ -127,19 +127,19 @@ CREATE INDEX IF NOT EXISTS idx_producto_presentaciones_producto_id ON producto_p
 
 CREATE TABLE IF NOT EXISTS servicios (
   id SERIAL PRIMARY KEY,
-  nombre VARCHAR(200) NOT NULL,
+  nombre TEXT NOT NULL,
   descripcion TEXT,
   descripcion_larga TEXT,
   precio DECIMAL(10,2) NOT NULL,
   duracion_minutos INT NOT NULL,
-  categoria VARCHAR(100) NOT NULL,
-  requiere_evaluacion BOOLEAN DEFAULT false,
-  imagen JSONB DEFAULT '[]',
-  incluye JSONB DEFAULT '[]',
-  recomendaciones JSONB DEFAULT '[]',
-  activo BOOLEAN DEFAULT true,
-  creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  categoria TEXT NOT NULL,
+  requiere_evaluacion BOOLEAN NOT NULL DEFAULT false,
+  imagen JSONB NOT NULL DEFAULT '[]',
+  incluye JSONB NOT NULL DEFAULT '[]',
+  recomendaciones JSONB NOT NULL DEFAULT '[]',
+  activo BOOLEAN NOT NULL DEFAULT true,
+  creado_en TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP(3) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS servicio_productos (
@@ -225,7 +225,7 @@ ADD COLUMN IF NOT EXISTS "ultima_actividad" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "tokens_revocados_desde" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "rol" TEXT NOT NULL DEFAULT 'cliente';
 
-ALTER TABLE productos ADD COLUMN IF NOT EXISTS imagenes TEXT[] DEFAULT '{}';
+ALTER TABLE productos ADD COLUMN IF NOT EXISTS imagenes TEXT[] DEFAULT ARRAY[]::TEXT[];
 
 CREATE INDEX IF NOT EXISTS "idx_usuarios_tokens_revocados_desde" ON "usuarios"("tokens_revocados_desde");
 CREATE INDEX IF NOT EXISTS "idx_usuarios_ultima_actividad" ON "usuarios"("ultima_actividad");

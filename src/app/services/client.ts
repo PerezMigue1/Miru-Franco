@@ -9,6 +9,8 @@ interface RequestOptions extends RequestInit {
   endpoint?: string;
   /** Si es true, en 403 no se redirige a /403; se lanza el error para que la página lo muestre */
   skip403Redirect?: boolean;
+  /** Si es true, en 500 no se redirige a /500; se lanza el error para que la página lo maneje */
+  skip500Redirect?: boolean;
 }
 
 class ApiClient {
@@ -16,7 +18,7 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    const { skipAuth = false, endpoint: customEndpoint, skip403Redirect = false, ...fetchOptions } = options;
+    const { skipAuth = false, endpoint: customEndpoint, skip403Redirect = false, skip500Redirect = false, ...fetchOptions } = options;
     
     // Calcular API_BASE en runtime para evitar problemas con builds cacheados
     // Usar getApiBaseUrl() que calcula en runtime en lugar de la constante
@@ -271,16 +273,28 @@ class ApiClient {
         
         // ✅ Manejar error 500 (Error interno del servidor)
         if (response.status === 500) {
+          const errorText = await response.text();
+          let errorData: { message?: string; error?: string };
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          const backendMessage =
+            errorData.message ||
+            errorData.error ||
+            'Error del servidor. Comprueba que el backend esté en marcha (ej. http://localhost:3001) e intenta de nuevo.';
+          const isProductosEndpoint = endpoint.startsWith('/api/productos');
           const isAuthPage = typeof window !== 'undefined' && (
             window.location.pathname === '/login' ||
             window.location.pathname === '/register' ||
             window.location.pathname.includes('/auth')
           );
-          // En login/registro no redirigir a /500: mostrar el error en el formulario
-          if (typeof window !== 'undefined' && !isAuthPage) {
+          // En login/registro y edición de productos no redirigir a /500: mostrar mensaje en UI.
+          if (typeof window !== 'undefined' && !skip500Redirect && !isAuthPage && !isProductosEndpoint) {
             window.location.replace('/500');
           }
-          throw new Error('Error del servidor. Comprueba que el backend esté en marcha (ej. http://localhost:3001) e intenta de nuevo.');
+          throw new Error(backendMessage);
         }
         
         // ✅ Manejar error 400 (Bad Request) - el cliente lanza error; las pantallas pueden redirigir a /400 si lo desean
@@ -405,19 +419,21 @@ class ApiClient {
   /** GET con base opcional. Puedes pasar `{ customBase, skipAuth: true }` para rutas públicas. */
   async get<T>(
     endpoint: string,
-    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean }
+    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean; skip500Redirect?: boolean }
   ): Promise<T> {
     let customBase: string | undefined;
     let skipAuth = false;
+    let skip500Redirect = false;
     if (typeof customBaseOrOptions === 'string') {
       customBase = customBaseOrOptions;
     } else if (customBaseOrOptions && typeof customBaseOrOptions === 'object') {
       customBase = customBaseOrOptions.customBase;
       skipAuth = Boolean(customBaseOrOptions.skipAuth);
+      skip500Redirect = Boolean(customBaseOrOptions.skip500Redirect);
     }
     const url = customBase ? `${customBase}${endpoint}` : undefined;
     console.log(`[API Client] GET - endpoint: ${endpoint}, customBase: ${customBase}, constructed url: ${url}`);
-    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth });
+    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect });
   }
 
   async post<T>(endpoint: string, body?: unknown, customBase?: string): Promise<T> {

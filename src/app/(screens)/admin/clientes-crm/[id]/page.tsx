@@ -10,7 +10,14 @@ import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Modal from '../../../../components/ui/Modal';
-import { getUsuarioById, updateUsuario, patchUsuarioEstado, type Usuario } from '../../../../services/usuarios';
+import {
+  getUsuarioById,
+  getUsuarioDatosRelacionados,
+  updateUsuario,
+  patchUsuarioEstado,
+  type Usuario,
+  type UsuarioDatosRelacionados,
+} from '../../../../services/usuarios';
 
 function formatearFecha(iso?: string | null): string {
   if (!iso) return '—';
@@ -20,6 +27,10 @@ function formatearFecha(iso?: string | null): string {
   } catch {
     return '—';
   }
+}
+
+function siNo(value?: boolean): string {
+  return value ? 'Sí' : 'No';
 }
 
 export default function ClienteDetallePage() {
@@ -33,6 +44,7 @@ export default function ClienteDetallePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rel, setRel] = useState<UsuarioDatosRelacionados>({ pedidos: [], notificaciones: [], direcciones: [] });
 
   const [formNombre, setFormNombre] = useState('');
   const [formTelefono, setFormTelefono] = useState('');
@@ -55,6 +67,13 @@ export default function ClienteDetallePage() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    getUsuarioDatosRelacionados(id)
+      .then((data) => {
+        if (!cancelled) setRel(data);
+      })
+      .catch(() => {
+        if (!cancelled) setRel({ pedidos: [], notificaciones: [], direcciones: [] });
       });
     return () => { cancelled = true; };
   }, [id]);
@@ -115,9 +134,15 @@ export default function ClienteDetallePage() {
     );
   }
 
-  const servicios: { id: number; servicio: string; fecha: string; especialista: string; precio: string; estado: string }[] = [];
-  const observaciones: string[] = [];
-
+  const servicios: { id: number; servicio: string; fecha: string; especialista: string; precio: string; estado: string }[] =
+    rel.pedidos.slice(0, 8).map((p) => ({
+      id: p.id,
+      servicio: `Pedido #${p.id}`,
+      fecha: formatearFecha(p.creadoEn),
+      especialista: '—',
+      precio: `$${(p.total || 0).toFixed(2)}`,
+      estado: p.estado,
+    }));
   return (
     <AdminLayout>
       <PageHeader
@@ -162,6 +187,106 @@ export default function ClienteDetallePage() {
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Rol</label>
                     <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.rol}</p>
                   </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Fecha de nacimiento</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.fechaNacimiento)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Google ID</label>
+                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.googleId || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Foto (URL)</label>
+                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.foto || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Acepta aviso privacidad</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{siNo(cliente.aceptaAvisoPrivacidad)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Recibe promociones</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{siNo(cliente.recibePromociones)}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Seguridad y Sesión
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Cuenta confirmada</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{siNo(cliente.confirmado !== false)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Intentos login fallidos</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.intentosLoginFallidos ?? 0}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Cuenta bloqueada hasta</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.cuentaBloqueadaHasta)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Último intento login</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.ultimoIntentoLogin)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Reset password expira</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.resetPasswordExpires)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>OTP expira</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.otpExpira)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Código OTP</label>
+                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.codigoOtp || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Reset password token</label>
+                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.resetPasswordToken || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Tokens revocados desde</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.tokensRevocadosDesde)}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Perfil Capilar y Salud
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Tipo de cabello</label>
+                    <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.tipoCabello || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Color natural</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorNatural || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Color actual</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorActual || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Productos usados</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.productosUsados || '—'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Alergias</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.alergias || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Pregunta de seguridad</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.preguntaSeguridad || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Respuesta de seguridad</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.respuestaSeguridad || '—'}</p>
+                  </div>
                 </div>
               </Card>
 
@@ -190,19 +315,46 @@ export default function ClienteDetallePage() {
 
               <Card>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Observaciones Importantes
+                  Direcciones Ligadas
                 </h2>
-                {observaciones.length > 0 ? (
+                {rel.direcciones.length > 0 ? (
                   <div className="space-y-2">
-                    {observaciones.map((obs, index) => (
-                      <div key={index} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                        <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{obs}</p>
+                    {rel.direcciones.map((d) => (
+                      <div key={d.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                          {d.esPrincipal ? 'Principal' : 'Secundaria'}
+                        </p>
+                        <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                          {[d.calle, d.coloniaBarrio, d.municipioAlcaldia, d.estado, d.codigoPostal].filter(Boolean).join(', ') || '—'}
+                        </p>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                    No hay observaciones registradas.
+                    No hay direcciones disponibles para este cliente.
+                  </p>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Observaciones Importantes
+                </h2>
+                {rel.notificaciones.length > 0 ? (
+                  <div className="space-y-2">
+                    {rel.notificaciones.slice(0, 8).map((n) => (
+                      <div key={n.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{n.titulo}</p>
+                        <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                          {n.tipo} · {formatearFecha(n.creadoEn)} · {n.leida ? 'Leída' : 'No leída'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
+                    No hay observaciones/notificaciones registradas.
                   </p>
                 )}
                 <div className="mt-4">
@@ -234,6 +386,14 @@ export default function ClienteDetallePage() {
                     <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                       {formatearFecha(cliente.creadoEn)}
                     </span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Pedidos ligados:</span>
+                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{rel.pedidos.length}</span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Direcciones ligadas:</span>
+                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{rel.direcciones.length}</span>
                   </div>
                 </div>
               </Card>

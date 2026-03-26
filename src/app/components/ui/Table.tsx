@@ -10,14 +10,17 @@ interface TableProps {
 
 export default function Table({ headers, children, className = '' }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-lg">
+    <div
+      className="overflow-x-auto rounded-xl border"
+      style={{ borderColor: 'var(--borde-sutil)', backgroundColor: 'var(--fondo-general)' }}
+    >
       <table className={`w-full ${className}`}>
         <thead>
           <tr style={{ backgroundColor: 'var(--encabezados-alterno)' }}>
             {headers.map((header, index) => (
               <th
                 key={index}
-                className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider"
+                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10"
                 style={{ color: 'var(--texto-fondo-oscuro)' }}
               >
                 {header}
@@ -78,7 +81,7 @@ export function TableCell({ children, className = '', colSpan, style }: TableCel
   return (
     <td
       colSpan={colSpan}
-      className={`px-6 py-4 whitespace-nowrap text-sm ${className}`}
+      className={`px-4 py-3 whitespace-nowrap text-sm ${className}`}
       style={{ color: 'var(--menu-texto-principal)', ...style }}
     >
       {children}

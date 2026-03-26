@@ -251,6 +251,9 @@ export const api = {
     // Sin dirección embebida: se usan registros DireccionUsuario después del alta.
     perfilCapilar: {
       tipoCabello: string;
+      colorNatural?: string;
+      colorActual?: string;
+      productosUsados?: string;
       tieneAlergias: boolean;
       alergias?: string;
       tratamientosQuimicos: boolean;

@@ -88,11 +88,19 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
       return;
     }
 
+    const nombreActual = nombre.trim();
+    const nombrePrevio = (perfil?.nombre ?? '').trim();
+    const nombreParaGuardar = nombreActual || nombrePrevio;
+    if (!nombreParaGuardar) {
+      setError('El nombre es obligatorio.');
+      return;
+    }
+
     setSaving(true);
     try {
       const tc = tipoCabello as TipoCabelloValor | '';
       await patchMiPerfil({
-        nombre: nombre.trim(),
+        nombre: nombreParaGuardar,
         telefono: telefono.trim() ? sanitizarEntradaTelefono10(telefono) : null,
         fechaNacimiento: fechaNacimiento.trim() || null,
         tipoCabello: tc === '' ? null : tc,
@@ -154,7 +162,6 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
           fullWidth
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          required
           disabled={loading || saving}
         />
         <Input

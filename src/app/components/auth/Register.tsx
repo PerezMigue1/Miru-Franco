@@ -45,6 +45,9 @@ export default function Register({
     
     // Paso 2: Perfil capilar (las direcciones van en DireccionUsuario, fuera del registro)
     hairType: '',
+    colorNatural: '',
+    colorActual: '',
+    productosUsados: '',
     hasAllergies: null as boolean | null,
     allergies: '',
     hasChemicalTreatments: null as boolean | null,
@@ -366,6 +369,9 @@ export default function Register({
     setFormData((prev) => ({
       ...prev,
       hairType: '',
+      colorNatural: '',
+      colorActual: '',
+      productosUsados: '',
       hasAllergies: null,
       allergies: '',
       hasChemicalTreatments: null,
@@ -448,6 +454,9 @@ export default function Register({
                       formData.hairType === 'ondulado' ? 'ondulado' :
                       formData.hairType === 'rizado' ? 'rizado' : 
                       formData.hairType || 'liso', // Fallback a 'liso' si está vacío
+          colorNatural: formData.colorNatural ? sanitizeInput(formData.colorNatural) : undefined,
+          colorActual: formData.colorActual ? sanitizeInput(formData.colorActual) : undefined,
+          productosUsados: formData.productosUsados ? sanitizeInput(formData.productosUsados) : undefined,
           tieneAlergias: formData.hasAllergies === true, // Boolean: true o false (no null)
           alergias: formData.hasAllergies === true ? sanitizeInput(formData.allergies) : undefined,
           tratamientosQuimicos: formData.hasChemicalTreatments === true, // Boolean: true o false (no null)
@@ -1037,6 +1046,51 @@ export default function Register({
             {errors.hairType}
           </p>
         )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>
+          Color natural (opcional)
+        </label>
+        <input
+          type="text"
+          value={formData.colorNatural}
+          onChange={(e) => handleChange('colorNatural', e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 transition-colors"
+          style={{ backgroundColor: '#f2f1ed', color: '#161616', borderColor: 'rgba(255,255,255,0.2)' }}
+          placeholder="Ej. Castaño oscuro"
+          disabled={isLoading}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>
+          Color actual (opcional)
+        </label>
+        <input
+          type="text"
+          value={formData.colorActual}
+          onChange={(e) => handleChange('colorActual', e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 transition-colors"
+          style={{ backgroundColor: '#f2f1ed', color: '#161616', borderColor: 'rgba(255,255,255,0.2)' }}
+          placeholder="Ej. Rubio cenizo"
+          disabled={isLoading}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>
+          Productos usados (opcional)
+        </label>
+        <input
+          type="text"
+          value={formData.productosUsados}
+          onChange={(e) => handleChange('productosUsados', e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 transition-colors"
+          style={{ backgroundColor: '#f2f1ed', color: '#161616', borderColor: 'rgba(255,255,255,0.2)' }}
+          placeholder="Ej. Shampoo sin sulfatos"
+          disabled={isLoading}
+        />
       </div>
 
       <div>
