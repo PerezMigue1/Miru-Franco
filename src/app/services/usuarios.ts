@@ -96,9 +96,13 @@ type ApiUsuarioRaw = Record<string, unknown> & {
   respuesta_seguridad?: string | null;
   perfilCapilar?: {
     tipoCabello?: string | null;
+    tipo_cabello?: string | null;
     colorNatural?: string | null;
+    color_natural?: string | null;
     colorActual?: string | null;
+    color_actual?: string | null;
     productosUsados?: string | null;
+    productos_usados?: string | null;
     alergias?: string | null;
   } | null;
   perfil_capilar?: {

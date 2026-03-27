@@ -16,7 +16,6 @@ import {
   obtenerColumnasDirectas,
   obtenerActividadDirecta,
   obtenerLocksDirectos,
-  obtenerExplainDirecto,
   obtenerResumenBdDirecto,
   obtenerTableStatsDirecto,
   obtenerIndexStatsDirecto,
@@ -43,7 +42,6 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import {
   Activity,
-  Brain,
   ChartNoAxesColumn,
   CircleAlert,
   CircleCheck,
@@ -249,14 +247,9 @@ export default function BaseDatosPage() {
   const [vistaIndicesMonitoreo, setVistaIndicesMonitoreo] = useState<'tabla' | 'grafica'>('tabla');
   const [vistaPrincipal, setVistaPrincipal] = useState<'operaciones' | 'monitoreo' | 'diagrama' | 'consultar'>('operaciones');
   const [vistaOperaciones, setVistaOperaciones] = useState<'importar' | 'exportar'>('importar');
-  const [vistaMonitoreo, setVistaMonitoreo] = useState<'resumen' | 'tablas' | 'indices' | 'actividad' | 'locks' | 'explain'>('resumen');
+  const [vistaMonitoreo, setVistaMonitoreo] = useState<'resumen' | 'tablas' | 'indices' | 'actividad' | 'locks'>('resumen');
   const [menuLateralOculto, setMenuLateralOculto] = useState(true);
   const [ultimaActualizacionMonitoreo, setUltimaActualizacionMonitoreo] = useState<Date | null>(null);
-  const [explainTabla, setExplainTabla] = useState('catalogo.servicios');
-  const [explainColumna, setExplainColumna] = useState('');
-  const [explainValor, setExplainValor] = useState('');
-  const [explainQuery, setExplainQuery] = useState('');
-  const [explainPlan, setExplainPlan] = useState<unknown>(null);
 
   const refConsultarSection = useRef<HTMLDivElement>(null);
   const diagramaMensajeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -549,42 +542,12 @@ export default function BaseDatosPage() {
     setLoadingTablasDirectas(false);
   };
 
-  const cargarTablasParaMonitoreo = React.useCallback(async () => {
-    if (loadingTablasDirectas) return;
-    setLoadingTablasDirectas(true);
-    const res = await listarTablasDirectas();
-    if (res.success) {
-      setTablasDirectas(res.tablas);
-      if (res.tablas.length > 0 && !res.tablas.includes(explainTabla)) {
-        setExplainTabla(res.tablas[0]);
-      }
-    }
-    setLoadingTablasDirectas(false);
-  }, [loadingTablasDirectas, explainTabla]);
-
   const cargarLocksBd = async () => {
     setLoadingRendimiento(true);
     setErrorRendimiento(null);
     const res = await obtenerLocksDirectos();
     if (res.success) {
       setLocksRows(res.rows);
-    } else {
-      setErrorRendimiento(res.error);
-    }
-    setLoadingRendimiento(false);
-  };
-
-  const cargarExplainBd = async () => {
-    setLoadingRendimiento(true);
-    setErrorRendimiento(null);
-    const res = await obtenerExplainDirecto(
-      explainTabla,
-      explainColumna.trim() || undefined,
-      explainValor.trim() || undefined
-    );
-    if (res.success) {
-      setExplainPlan(res.plan);
-      setExplainQuery(res.query);
     } else {
       setErrorRendimiento(res.error);
     }
@@ -639,12 +602,6 @@ export default function BaseDatosPage() {
     }, 10000);
     return () => clearInterval(id);
   }, []);
-
-  React.useEffect(() => {
-    if (vistaPrincipal === 'monitoreo' && vistaMonitoreo === 'explain' && tablasDirectas.length === 0) {
-      void cargarTablasParaMonitoreo();
-    }
-  }, [vistaPrincipal, vistaMonitoreo, tablasDirectas.length, cargarTablasParaMonitoreo]);
 
   const handleDescargarDiagrama = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -825,9 +782,6 @@ export default function BaseDatosPage() {
     return acc;
   }, {});
   const maxDeadTuples = Math.max(1, ...tableStats.map((t) => Number(t.n_dead_tup || 0)));
-  const explainJson = (explainPlan as { Plan?: { 'Node Type'?: string; 'Actual Total Time'?: number } }[]) || [];
-  const explainRootNode = explainJson?.[0]?.Plan?.['Node Type'] ?? 'Sin plan';
-  const explainTime = Number(explainJson?.[0]?.Plan?.['Actual Total Time'] ?? 0);
   const conexionesActivasActual = dbSummary?.conexionesActivas ?? actividadRows.filter((r) => r.state === 'active').length;
   const totalConexionesActual = Math.max(1, dbSummary?.totalConexiones ?? actividadRows.length);
   const usoConexionesPct = (conexionesActivasActual / totalConexionesActual) * 100;
@@ -889,7 +843,6 @@ export default function BaseDatosPage() {
     { id: 'indices' as const, label: 'Índices', icon: ChartNoAxesColumn, hint: 'Eficiencia' },
     { id: 'actividad' as const, label: 'Actividad', icon: Activity, hint: 'Sesiones vivas' },
     { id: 'locks' as const, label: 'Locks', icon: Lock, hint: 'Contención' },
-    { id: 'explain' as const, label: 'EXPLAIN', icon: Brain, hint: 'Plan de consulta' },
   ];
   const tabMonitoreoActual = tabsMonitoreo.find((t) => t.id === vistaMonitoreo);
   const totalIndices = Math.max(1, indexStats.length);
@@ -1556,11 +1509,6 @@ export default function BaseDatosPage() {
                   {loadingRendimiento ? 'Cargando…' : 'Refrescar locks'}
                 </Button>
               )}
-              {vistaMonitoreo === 'explain' && (
-                <Button size="sm" type="button" variant="outline" onClick={cargarExplainBd} disabled={loadingRendimiento}>
-                  {loadingRendimiento ? 'Cargando…' : 'Ejecutar EXPLAIN'}
-                </Button>
-              )}
             </div>
 
             {vistaMonitoreo === 'resumen' && (
@@ -1747,47 +1695,6 @@ export default function BaseDatosPage() {
               </div>
             )}
 
-            {vistaMonitoreo === 'explain' && (
-              <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)' }}>
-                <p className="text-xs font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Configuración de EXPLAIN
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Tabla</label>
-                    <Select
-                      options={
-                        tablasDirectas.length
-                          ? tablasDirectas.map((t) => ({ value: t, label: t }))
-                          : [{ value: explainTabla, label: explainTabla }]
-                      }
-                      value={explainTabla}
-                      onChange={(e) => setExplainTabla(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Columna (opcional)</label>
-                    <input
-                      value={explainColumna}
-                      onChange={(e) => setExplainColumna(e.target.value)}
-                      placeholder="ej. categoria"
-                      className="w-full rounded border px-3 py-2 text-sm"
-                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Valor (opcional)</label>
-                    <input
-                      value={explainValor}
-                      onChange={(e) => setExplainValor(e.target.value)}
-                      placeholder="ej. Alaciados"
-                      className="w-full rounded border px-3 py-2 text-sm"
-                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent', color: 'var(--menu-texto-principal)' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {errorRendimiento && (
               <p className="mb-3 text-sm" style={{ color: 'var(--danger)' }}>
@@ -2138,48 +2045,6 @@ export default function BaseDatosPage() {
               </div>
             )}
 
-            {vistaMonitoreo === 'explain' && (
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                  <Card variant="elevated" padding="md">
-                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Brain size={12} />Nodo principal</p>
-                    <p className="text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{explainRootNode}</p>
-                  </Card>
-                  <Card variant="elevated" padding="md">
-                    <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><Clock3 size={12} />Tiempo total</p>
-                    <div className="mt-1 flex items-center justify-between">
-                      <p className="text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{explainTime.toFixed(3)} ms</p>
-                      <DonutKpi value={explainTime} max={Math.max(1, maxRespMs, explainTime)} color="var(--danger)" />
-                    </div>
-                  </Card>
-                </div>
-                {!Boolean(explainPlan) && (
-                  <div className="rounded-lg border p-3 mb-3 text-sm" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)' }}>
-                    Ejecuta EXPLAIN para ver el plan y recomendaciones visuales.
-                  </div>
-                )}
-                {Boolean(explainPlan) && (
-                  <>
-                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>EXPLAIN</p>
-                {explainQuery && (
-                  <p className="text-xs mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Consulta analizada: <code className="bg-black/10 px-1 rounded">{explainQuery}</code>
-                  </p>
-                )}
-                <pre
-                  className="rounded border p-3 text-xs overflow-auto max-h-64"
-                  style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(0,0,0,0.35)', color: 'var(--texto-fondo-oscuro)' }}
-                >
-{JSON.stringify(explainPlan, null, 2)}
-                </pre>
-                <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Interpretación rápida: revisa si aparece <code className="bg-black/10 px-1 rounded">Seq Scan</code> (escaneo completo)
-                  o <code className="bg-black/10 px-1 rounded">Index Scan</code> (uso de índice), junto con el tiempo total.
-                </p>
-                  </>
-                )}
-              </div>
-            )}
           </Card>
           )}
 
