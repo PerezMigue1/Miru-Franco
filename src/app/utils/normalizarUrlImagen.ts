@@ -6,11 +6,24 @@ export function normalizarUrlImagenExterna(url: string | null | undefined): stri
   if (url == null) return '';
   let s = String(url).trim();
   if (!s) return '';
-  s = s
-    .replace(/&#x2f;/gi, '/')
-    .replace(/&#47;/g, '/')
-    .replace(/&amp;/g, '&')
-    .replace(/&#58;/g, ':');
+  for (let i = 0; i < 8; i++) {
+    const prev = s;
+    s = s
+      .replace(/&amp;/g, '&')
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+        const code = parseInt(hex, 16);
+        return Number.isFinite(code) && code >= 0 && code <= 0x10ffff
+          ? String.fromCodePoint(code)
+          : _;
+      })
+      .replace(/&#(\d+);/g, (_, dec) => {
+        const code = parseInt(dec, 10);
+        return Number.isFinite(code) && code >= 0 && code <= 0x10ffff
+          ? String.fromCodePoint(code)
+          : _;
+      });
+    if (s === prev) break;
+  }
   return s.trim();
 }
 

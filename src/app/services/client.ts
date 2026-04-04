@@ -300,7 +300,11 @@ class ApiClient {
         // ✅ Manejar error 400 (Bad Request) - el cliente lanza error; las pantallas pueden redirigir a /400 si lo desean
         if (response.status === 400) {
           const errorText = await response.text();
-          let errorData: { message?: string | string[]; error?: string; errors?: Record<string, string> };
+          let errorData: {
+            message?: string | string[];
+            error?: string;
+            errors?: Record<string, string | string[]>;
+          };
           try {
             errorData = JSON.parse(errorText);
           } catch {
@@ -311,13 +315,28 @@ class ApiClient {
             : Array.isArray(errorData.message)
               ? errorData.message.join(' | ')
               : (errorData.error || 'Solicitud incorrecta. Revisa los datos enviados.');
-          if (message === 'Bad Request' && errorData.errors && Object.keys(errorData.errors).length > 0) {
-            message = Object.entries(errorData.errors).map(([k, v]) => `${k}: ${v}`).join(' | ');
+          const errDetail =
+            errorData.errors && Object.keys(errorData.errors).length > 0
+              ? Object.entries(errorData.errors)
+                  .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                  .join(' | ')
+              : '';
+          if (errDetail) {
+            message =
+              message === 'Bad Request' || /revisa los campos|validaci/i.test(message)
+                ? errDetail
+                : `${message} — ${errDetail}`;
           }
-          const err = new Error(message) as Error & { status?: number; data?: unknown; validationErrors?: Record<string, string> };
+          const err = new Error(message) as Error & {
+            status?: number;
+            data?: unknown;
+            validationErrors?: Record<string, string | string[]>;
+          };
           err.status = 400;
           err.data = errorData;
-          err.validationErrors = errorData.errors || (typeof errorData.message === 'object' && Array.isArray(errorData.message) ? { general: errorData.message.join('; ') } : {});
+          err.validationErrors =
+            errorData.errors ||
+            (Array.isArray(errorData.message) ? { general: errorData.message } : {});
           throw err;
         }
         

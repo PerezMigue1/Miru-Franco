@@ -3,6 +3,7 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
 
 /** Producto normalizado para la UI (catálogo y detalle) */
 export interface Producto {
@@ -37,6 +38,9 @@ export interface Producto {
     disponible: boolean;
     /** fecha_caducidad TIMESTAMP(3) - ISO string o null */
     fechaCaducidad?: string | null;
+    /** URLs en `producto_presentaciones.imagenes` (no en tabla productos). */
+    imagen?: string;
+    imagenes?: string[];
   }>;
   caracteristicas?: string[];
   ingredientes?: string;
@@ -73,14 +77,18 @@ type ApiProductoRaw = Record<string, unknown> & {
   presentaciones?: Array<Record<string, unknown>>;
 };
 
-/** Extrae URL en string desde string o objeto (ej. Cloudinary). */
+/** Extrae URL en string desde string o objeto (ej. Cloudinary). Decodifica entidades HTML que rompen next/image. */
 function extraerUrlImagen(val: string | Record<string, unknown> | null | undefined): string | undefined {
   if (val == null) return undefined;
-  if (typeof val === 'string') return val.trim() || undefined;
+  if (typeof val === 'string') {
+    const n = normalizarUrlImagenExterna(val);
+    return n || undefined;
+  }
   if (typeof val === 'object' && val !== null) {
     const o = val as Record<string, unknown>;
     const url = (o.secure_url ?? o.url ?? o.src) as string | undefined;
-    return typeof url === 'string' && url.trim() ? url : undefined;
+    if (typeof url !== 'string' || !url.trim()) return undefined;
+    return normalizarUrlImagenExterna(url) || undefined;
   }
   return undefined;
 }
@@ -105,6 +113,13 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
           presIdRaw != null && Number.isFinite(Number(presIdRaw)) && Number(presIdRaw) > 0
             ? Number(presIdRaw)
             : undefined;
+        const presImgsRaw = p.imagenes;
+        const presImagenesArr = Array.isArray(presImgsRaw)
+          ? presImgsRaw.map((item) => extraerUrlImagen(item as string | Record<string, unknown>)).filter((u): u is string => !!u)
+          : [];
+        const presFirstImg = extraerUrlImagen(p.imagen as string | Record<string, unknown> | undefined);
+        const presImagenes = presImagenesArr.length ? presImagenesArr : presFirstImg ? [presFirstImg] : undefined;
+        const presImagen = presImagenes?.[0] ?? presFirstImg;
         return {
           id: presId,
           tamaño: String(p.tamaño ?? p.tamanio ?? ''),
@@ -113,6 +128,8 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
           stock: Number(p.stock ?? 0),
           disponible: Boolean(p.disponible ?? (Number(p.stock ?? 0) > 0)),
           fechaCaducidad: fechaCaducidad ?? undefined,
+          imagenes: presImagenes,
+          imagen: presImagen,
         };
       })
     : undefined;
@@ -146,11 +163,19 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
     : 0);
 
   const firstFromImagen = extraerUrlImagen(raw.imagen as string | Record<string, unknown> | undefined);
-  const imagenesArr = Array.isArray(raw.imagenes)
+  const imagenesArrProducto = Array.isArray(raw.imagenes)
     ? raw.imagenes.map((item) => extraerUrlImagen(item)).filter((u): u is string => !!u)
     : firstFromImagen ? [firstFromImagen] : undefined;
-  const imagenes = imagenesArr?.length ? imagenesArr : undefined;
-  const imagen = imagenes?.[0] ?? firstFromImagen;
+  const desdePresentaciones = (() => {
+    for (const pr of presentacionesNormalizadas ?? []) {
+      if (pr.imagenes?.length) return { imagenes: pr.imagenes, imagen: pr.imagenes[0] };
+      if (pr.imagen) return { imagenes: [pr.imagen] as string[], imagen: pr.imagen };
+    }
+    return { imagenes: undefined as string[] | undefined, imagen: undefined as string | undefined };
+  })();
+  const imagenes =
+    imagenesArrProducto?.length ? imagenesArrProducto : desdePresentaciones.imagenes;
+  const imagen = imagenes?.[0] ?? firstFromImagen ?? desdePresentaciones.imagen;
 
   return {
     id,
@@ -166,8 +191,13 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
     imagenes,
     stock: disponible,
     nuevo: Boolean(raw.nuevo),
-    crueltyFree: Boolean(raw.crueltyFree),
-    descripcionLarga: raw.descripcionLarga != null ? String(raw.descripcionLarga) : undefined,
+    crueltyFree: Boolean(raw.crueltyFree ?? (raw as Record<string, unknown>).cruelty_free),
+    descripcionLarga:
+      raw.descripcionLarga != null
+        ? String(raw.descripcionLarga)
+        : (raw as Record<string, unknown>).descripcion_larga != null
+          ? String((raw as Record<string, unknown>).descripcion_larga)
+          : undefined,
     stockCantidad: presentacionesRaw?.length ? totalStockPresentaciones : undefined,
     presentaciones: presentacionesNormalizadas,
     caracteristicas: Array.isArray(raw.caracteristicas) ? raw.caracteristicas.map(String) : undefined,
@@ -253,10 +283,12 @@ export async function getProductosParaDashboard(): Promise<Producto[]> {
 
 /**
  * Obtiene un producto por id. Intenta GET /api/productos/:id; si falla, usa el listado.
+ * Si el listado también falla, relanza el error del detalle (un solo mensaje, sin texto extra).
  */
 export async function getProductoPorId(id: string | number): Promise<Producto | null> {
   const BACKEND_BASE = getBackendBaseUrl();
   const idStr = String(id);
+  let errorDetalle: Error | null = null;
   try {
     const response = await apiClient.get<{ success?: boolean; data?: ApiProductoRaw }>(
       `/api/productos/${idStr}`,
@@ -266,11 +298,15 @@ export async function getProductoPorId(id: string | number): Promise<Producto | 
     if (obj?.data && typeof obj.data === 'object') {
       return normalizarProducto(obj.data as ApiProductoRaw);
     }
-  } catch {
-    // Fallback: listar y filtrar
+  } catch (e) {
+    errorDetalle = e instanceof Error ? e : new Error(String(e));
   }
-  const productos = await getProductos();
-  return productos.find((p) => String(p.id) === idStr) ?? null;
+  try {
+    const productos = await getProductos();
+    return productos.find((p) => String(p.id) === idStr) ?? null;
+  } catch {
+    throw errorDetalle ?? new Error('Error al cargar el producto');
+  }
 }
 
 /** Payload para crear/actualizar producto. Precio solo en presentaciones (modelo productos sin precio/precioOriginal). */
@@ -291,27 +327,146 @@ export interface ProductoPayload {
   ingredientes?: string;
   modoUso?: string;
   resultado?: string;
+  /** Solo si el backend aún guarda imágenes en `productos`; preferir `presentaciones[].imagenes`. */
   imagenes?: string[];
   presentaciones?: Array<{
+    id?: number;
     tamanio: string;
     precio: string | number;
     precioOriginal?: string | number;
     stock?: number;
     disponible?: boolean;
-    /** fecha_caducidad TIMESTAMP(3) - ISO string o null */
-    fecha_caducidad?: string | null;
+    fechaCaducidad?: string | null;
+    imagenes?: string[];
   }>;
+}
+
+/** Convierte YYYY-MM-DD a ISO para TIMESTAMP(3) en BD. */
+function fechaCaducidadParaApi(fecha: string): string | undefined {
+  const t = fecha.trim();
+  if (!t) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return `${t}T12:00:00.000Z`;
+  return t;
+}
+
+/** DECIMAL(10,2) en JSON: número con 2 decimales (Prisma/Nest suelen aceptarlo). */
+function redondearDecimal(n: number): number {
+  const x = Number.isFinite(n) ? n : 0;
+  return Math.round(x * 100) / 100;
+}
+
+/**
+ * Cuerpo JSON para el DTO de Nest (camelCase + forbidNonWhitelisted).
+ * Los nombres en BD siguen siendo snake_case vía Prisma @map; el API no acepta esas claves en el JSON.
+ */
+export function productoPayloadToApiBody(payload: ProductoPayload): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    nombre: payload.nombre,
+    descripcion: payload.descripcion,
+    categoria: (payload.categoria ?? '').trim(),
+    marca: (payload.marca ?? '').trim(),
+  };
+  if (payload.descuento !== undefined) {
+    body.descuento = Math.round(Number(payload.descuento)) || 0;
+  }
+  if (payload.nuevo !== undefined) body.nuevo = Boolean(payload.nuevo);
+  if (payload.crueltyFree !== undefined) body.crueltyFree = Boolean(payload.crueltyFree);
+  if (payload.caracteristicas !== undefined) {
+    body.caracteristicas = payload.caracteristicas;
+  }
+
+  const dl = payload.descripcionLarga?.trim();
+  if (dl) body.descripcionLarga = dl;
+
+  const ing = payload.ingredientes?.trim();
+  if (ing) body.ingredientes = ing;
+
+  const mu = payload.modoUso?.trim();
+  if (mu) body.modoUso = mu;
+
+  const res = payload.resultado?.trim();
+  if (res) body.resultado = res;
+
+  if (payload.presentaciones?.length) {
+    body.presentaciones = payload.presentaciones.map((pr) => {
+      const precioNum =
+        typeof pr.precio === 'number'
+          ? pr.precio
+          : parseFloat(String(pr.precio ?? '').replace(/[^0-9.]/g, '')) || 0;
+      let poNum = NaN;
+      if (pr.precioOriginal != null && pr.precioOriginal !== '') {
+        poNum =
+          typeof pr.precioOriginal === 'number'
+            ? pr.precioOriginal
+            : parseFloat(String(pr.precioOriginal).replace(/[^0-9.]/g, ''));
+      }
+      const row: Record<string, unknown> = {
+        tamanio: pr.tamanio,
+        precio: redondearDecimal(precioNum),
+        stock: Math.max(0, Math.round(Number(pr.stock ?? 0))),
+        disponible: Boolean(pr.disponible ?? true),
+        imagenes: Array.isArray(pr.imagenes) ? pr.imagenes : [],
+      };
+      const presId = pr.id != null ? Number(pr.id) : NaN;
+      if (Number.isInteger(presId) && presId >= 1) row.id = presId;
+      if (Number.isFinite(poNum) && poNum >= 0) {
+        row.precioOriginal = redondearDecimal(poNum);
+      }
+      if (pr.fechaCaducidad != null && String(pr.fechaCaducidad).trim()) {
+        const iso = fechaCaducidadParaApi(String(pr.fechaCaducidad).trim());
+        if (iso) row.fechaCaducidad = iso;
+      }
+      return row;
+    });
+  }
+
+  return body;
+}
+
+/** Fila ya normalizada (p. ej. desde admin) antes de enviar al API. */
+export type PresentacionNormalizadaPayload = {
+  id?: number;
+  tamanio: string;
+  precio: string;
+  precioOriginal?: string;
+  stock: number;
+  disponible: boolean;
+  fechaCaducidad?: string;
+  imagenes: string[];
+};
+
+/**
+ * Misma forma que antes (precio/precioOriginal como string numérico), sin `imagenes: []` vacío.
+ */
+export function serializarPresentacionesProducto(
+  rows: PresentacionNormalizadaPayload[]
+): NonNullable<ProductoPayload['presentaciones']> {
+  return rows.map((row) => {
+    const precioStr = String(row.precio ?? '').replace(/[^0-9.]/g, '') || '0';
+    const poRaw = row.precioOriginal != null ? String(row.precioOriginal).replace(/[^0-9.]/g, '') : '';
+    const base: NonNullable<ProductoPayload['presentaciones']>[number] = {
+      tamanio: row.tamanio,
+      precio: precioStr,
+      stock: row.stock,
+      disponible: row.disponible,
+    };
+    if (row.id != null) base.id = row.id;
+    if (poRaw) base.precioOriginal = poRaw;
+    if (row.fechaCaducidad) base.fechaCaducidad = row.fechaCaducidad;
+    if (row.imagenes.length > 0) base.imagenes = row.imagenes;
+    return base;
+  });
 }
 
 /**
  * Crea un producto. Requiere JWT y rol admin.
- * Sube antes las imágenes con subirImagenCloudinary y pasa las URLs en imagenes.
+ * Sube antes las imágenes con subirImagenCloudinary y pasa las URLs en `presentaciones[].imagenes`.
  */
 export async function createProducto(payload: ProductoPayload): Promise<Producto> {
   const BACKEND_BASE = getBackendBaseUrl();
   const response = await apiClient.post<{ success?: boolean; data?: ApiProductoRaw }>(
     '/api/productos',
-    payload,
+    productoPayloadToApiBody(payload),
     BACKEND_BASE
   );
   const obj = response as Record<string, unknown>;
@@ -324,7 +479,7 @@ export async function createProducto(payload: ProductoPayload): Promise<Producto
 
 /**
  * Actualiza un producto. Requiere JWT y rol admin.
- * Incluye imagenes con las URLs de Cloudinary.
+ * Incluye `presentaciones[].imagenes` (tabla producto_presentaciones).
  */
 export async function updateProducto(
   id: string | number,
@@ -333,7 +488,7 @@ export async function updateProducto(
   const BACKEND_BASE = getBackendBaseUrl();
   const response = await apiClient.put<{ success?: boolean; data?: ApiProductoRaw }>(
     `/api/productos/${id}`,
-    payload,
+    productoPayloadToApiBody(payload),
     BACKEND_BASE
   );
   const obj = response as Record<string, unknown>;

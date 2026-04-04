@@ -1,7 +1,7 @@
 -- =============================================================================
 -- SCRIPT MAESTRO: Creación / orden de tablas (PostgreSQL / Neon)
 -- Proyecto: backend-miru
--- Alineado con: prisma/schema.prisma (enero 2026)
+-- Alineado con: prisma/schema.prisma (abril 2026)
 --
 -- USO:
 --   • BD nueva: ejecutar en orden desde el inicio (o por secciones).
@@ -82,8 +82,43 @@ INSERT INTO "preguntas_disponibles" ("id", "pregunta", "activa") VALUES
 (gen_random_uuid()::text, '¿En qué calle creciste?', true);
 
 -- -----------------------------------------------------------------------------
+-- 1b. MÉTODOS DE PAGO GUARDADOS (tokenización; MetodoPagoUsuario en Prisma)
+--     Requiere: usuarios. Sin PAN ni CVV en BD.
+-- -----------------------------------------------------------------------------
+
+DO $$ BEGIN
+  CREATE TYPE "TipoTarjetaGuardada" AS ENUM ('credito', 'debito');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS metodos_pago_usuario (
+  id                 TEXT NOT NULL PRIMARY KEY,
+  proveedor          TEXT NOT NULL,
+  id_externo         TEXT NOT NULL,
+  marca              TEXT,
+  ultimos_4          VARCHAR(4) NOT NULL,
+  banco_nombre       TEXT,
+  exp_mes            INTEGER,
+  exp_anio           INTEGER,
+  tipo_tarjeta       "TipoTarjetaGuardada",
+  es_virtual         BOOLEAN NOT NULL DEFAULT FALSE,
+  etiqueta           TEXT,
+  es_predeterminada  BOOLEAN NOT NULL DEFAULT FALSE,
+  activo             BOOLEAN NOT NULL DEFAULT TRUE,
+  creado_en          TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  usuario_id         TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT metodos_pago_usuario_usuario_proveedor_id_externo_key UNIQUE (usuario_id, proveedor, id_externo)
+);
+
+CREATE INDEX IF NOT EXISTS metodos_pago_usuario_usuario_id_idx ON metodos_pago_usuario(usuario_id);
+CREATE INDEX IF NOT EXISTS metodos_pago_usuario_usuario_id_activo_idx ON metodos_pago_usuario(usuario_id, activo);
+
+-- -----------------------------------------------------------------------------
 -- 2. PRODUCTOS + PRESENTACIONES (= create_productos_tables alineado a Prisma)
---    Precio/stock/disponible van en producto_presentaciones, no en productos.
+--    Las imágenes van SOLO en producto_presentaciones (imagenes TEXT[]).
+--    productos NO tiene columna imagenes.
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS productos (
@@ -92,7 +127,6 @@ CREATE TABLE IF NOT EXISTS productos (
   marca             TEXT NOT NULL,
   descripcion       VARCHAR(1000),
   descripcion_larga TEXT,
-  imagenes          TEXT[] DEFAULT ARRAY[]::TEXT[],
   descuento         INTEGER,
   categoria         TEXT,
   nuevo             BOOLEAN NOT NULL DEFAULT FALSE,
@@ -109,6 +143,7 @@ CREATE TABLE IF NOT EXISTS producto_presentaciones (
   id               SERIAL PRIMARY KEY,
   producto_id      INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE ON UPDATE CASCADE,
   tamanio          TEXT NOT NULL,
+  imagenes         TEXT[] DEFAULT ARRAY[]::TEXT[],
   precio           DECIMAL(10,2) NOT NULL,
   precio_original  DECIMAL(10,2),
   stock            INTEGER NOT NULL DEFAULT 0,
@@ -192,9 +227,9 @@ CREATE TABLE IF NOT EXISTS "codigos_oauth" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "codigo" TEXT NOT NULL UNIQUE,
   "token" TEXT NOT NULL,
-  "expira_en" TIMESTAMP NOT NULL,
+  "expira_en" TIMESTAMP(3) NOT NULL,
   "usado" BOOLEAN NOT NULL DEFAULT false,
-  "creado_en" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS "idx_codigos_oauth_codigo" ON "codigos_oauth"("codigo");
@@ -225,13 +260,45 @@ ADD COLUMN IF NOT EXISTS "ultima_actividad" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "tokens_revocados_desde" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "rol" TEXT NOT NULL DEFAULT 'cliente';
 
-ALTER TABLE productos ADD COLUMN IF NOT EXISTS imagenes TEXT[] DEFAULT ARRAY[]::TEXT[];
-
 CREATE INDEX IF NOT EXISTS "idx_usuarios_tokens_revocados_desde" ON "usuarios"("tokens_revocados_desde");
 CREATE INDEX IF NOT EXISTS "idx_usuarios_ultima_actividad" ON "usuarios"("ultima_actividad");
 COMMENT ON COLUMN "usuarios"."ultima_actividad" IS 'Última actividad del usuario para verificar expiración por inactividad (15 minutos)';
 
 ALTER TABLE producto_presentaciones ADD COLUMN IF NOT EXISTS fecha_caducidad TIMESTAMP(3);
+ALTER TABLE producto_presentaciones ADD COLUMN IF NOT EXISTS imagenes TEXT[] DEFAULT ARRAY[]::TEXT[];
+
+-- Esquema antiguo: imagenes en productos; Prisma actual solo usa imagenes en presentaciones.
+ALTER TABLE productos DROP COLUMN IF EXISTS imagenes;
+
+-- metodos_pago_usuario (misma definición que sección 1b; por si solo se ejecutan parches)
+DO $$ BEGIN
+  CREATE TYPE "TipoTarjetaGuardada" AS ENUM ('credito', 'debito');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS metodos_pago_usuario (
+  id                 TEXT NOT NULL PRIMARY KEY,
+  proveedor          TEXT NOT NULL,
+  id_externo         TEXT NOT NULL,
+  marca              TEXT,
+  ultimos_4          VARCHAR(4) NOT NULL,
+  banco_nombre       TEXT,
+  exp_mes            INTEGER,
+  exp_anio           INTEGER,
+  tipo_tarjeta       "TipoTarjetaGuardada",
+  es_virtual         BOOLEAN NOT NULL DEFAULT FALSE,
+  etiqueta           TEXT,
+  es_predeterminada  BOOLEAN NOT NULL DEFAULT FALSE,
+  activo             BOOLEAN NOT NULL DEFAULT TRUE,
+  creado_en          TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  usuario_id         TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT metodos_pago_usuario_usuario_proveedor_id_externo_key UNIQUE (usuario_id, proveedor, id_externo)
+);
+
+CREATE INDEX IF NOT EXISTS metodos_pago_usuario_usuario_id_idx ON metodos_pago_usuario(usuario_id);
+CREATE INDEX IF NOT EXISTS metodos_pago_usuario_usuario_id_activo_idx ON metodos_pago_usuario(usuario_id, activo);
 
 -- =============================================================================
 -- 7. E-COMMERCE (direcciones_usuario, pedidos, carrito, pagos, etc.)
@@ -422,5 +489,6 @@ CREATE INDEX IF NOT EXISTS notificaciones_leida_idx ON notificaciones(leida);
 -- Referencias: drop_direccion_embebida_usuarios.sql,
 --               create_ecommerce_pedidos_y_relacionadas.sql,
 --               alter_producto_presentaciones_precio_a_decimal.sql (BD con precio VARCHAR),
---               remove_cupones_si_ya_existian.sql (solo si aplicó cupones viejos)
+--               remove_cupones_si_ya_existian.sql (solo si aplicó cupones viejos),
+--               prisma/migrations/* (move imagenes a presentaciones, metodos_pago_usuario)
 -- =============================================================================

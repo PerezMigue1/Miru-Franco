@@ -7,7 +7,12 @@ import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
-import { createProducto, getProductos, type ProductoPayload } from '../../../../services/productos';
+import {
+  createProducto,
+  getProductos,
+  serializarPresentacionesProducto,
+  type ProductoPayload,
+} from '../../../../services/productos';
 
 const AGREGAR_CAT = '__agregar_cat__';
 const AGREGAR_MARCA = '__agregar_marca__';
@@ -117,15 +122,25 @@ export default function NuevoProductoAdminPage() {
     setSaving(true);
     setError(null);
     try {
+      const urls = imagenesText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
       const payload: ProductoPayload = {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
         categoria: categoria.trim(),
         marca: marca.trim() || undefined,
-        imagenes: imagenesText
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean),
+        presentaciones: serializarPresentacionesProducto([
+          {
+            tamanio: 'Único',
+            precio: '0',
+            precioOriginal: '0',
+            stock: 0,
+            disponible,
+            imagenes: urls,
+          },
+        ]),
       };
       const creado = await createProducto(payload);
       router.push(`/admin/productos/${creado.id}`);
@@ -256,7 +271,7 @@ export default function NuevoProductoAdminPage() {
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              Imágenes (una URL por línea)
+              Imágenes de la presentación inicial (una URL por línea; se guardan en producto_presentaciones)
             </label>
             <textarea
               className="w-full rounded-md border px-3 py-2 text-sm"

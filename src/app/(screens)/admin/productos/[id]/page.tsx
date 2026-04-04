@@ -14,6 +14,7 @@ import {
   getProductoPorId,
   updateProducto,
   deleteProducto,
+  serializarPresentacionesProducto,
   type Producto,
   type ProductoPayload,
 } from '../../../../services/productos';
@@ -32,6 +33,43 @@ function parseNumero(str: string | undefined): number {
 
 function limpiarTexto(value: string | undefined): string {
   return String(value ?? '').replace(/\u0000/g, '');
+}
+
+type FilaPresentacion = {
+  presentacionId?: number;
+  tamanio: string;
+  precioOriginal: string;
+  precio: string;
+  stock: string;
+  disponible: boolean;
+  fechaCaducidad: string;
+  imagenesText: string;
+};
+
+function urlsDesdeImagenesText(text: string): string[] {
+  return limpiarTexto(text)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
+
+/** Forma estable para comparar y para armar el payload de cada presentación. */
+function presentacionNormalizada(pr: FilaPresentacion) {
+  const stockNum = parseInt(pr.stock || '0', 10);
+  const disp = pr.disponible && stockNum > 0;
+  const fc = pr.fechaCaducidad?.trim();
+  const precioStr = String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0';
+  const precioOrigStr = String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || '0';
+  return {
+    id: pr.presentacionId,
+    tamanio: limpiarTexto(pr.tamanio),
+    precio: precioStr,
+    precioOriginal: precioOrigStr || undefined,
+    stock: pr.disponible ? stockNum : 0,
+    disponible: disp,
+    fechaCaducidad: fc || undefined,
+    imagenes: urlsDesdeImagenesText(pr.imagenesText),
+  };
 }
 
 export default function ProductoDetalleAdminPage() {
@@ -59,8 +97,6 @@ export default function ProductoDetalleAdminPage() {
   const [ingredientes, setIngredientes] = useState('');
   const [modoUso, setModoUso] = useState('');
   const [resultado, setResultado] = useState('');
-  const [imagenesText, setImagenesText] = useState('');
-  const [imagenesEditadas, setImagenesEditadas] = useState(false);
   const [categoriasCatalogo, setCategoriasCatalogo] = useState<string[]>([]);
   const [marcasCatalogo, setMarcasCatalogo] = useState<string[]>([]);
   const [showAgregarCategoria, setShowAgregarCategoria] = useState(false);
@@ -69,27 +105,10 @@ export default function ProductoDetalleAdminPage() {
   const [nuevaMarcaVal, setNuevaMarcaVal] = useState('');
   const [categoriasEliminadas, setCategoriasEliminadas] = useState<string[]>([]);
   const [marcasEliminadas, setMarcasEliminadas] = useState<string[]>([]);
-  const [presentaciones, setPresentaciones] = useState<
-    Array<{
-      tamanio: string;
-      precioOriginal: string;
-      precio: string;
-      stock: string;
-      disponible: boolean;
-      /** YYYY-MM-DD para input date, vacío si no hay */
-      fechaCaducidad: string;
-    }>
-  >([]);
+  const [presentaciones, setPresentaciones] = useState<FilaPresentacion[]>([]);
   const initialSnapshotRef = useRef<string>('');
 
-  const buildSnapshot = (nextPresentaciones?: Array<{
-    tamanio: string;
-    precioOriginal: string;
-    precio: string;
-    stock: string;
-    disponible: boolean;
-    fechaCaducidad: string;
-  }>) =>
+  const buildSnapshot = (nextPresentaciones?: FilaPresentacion[]) =>
     JSON.stringify({
       nombre: limpiarTexto(nombre),
       descripcion: limpiarTexto(descripcion),
@@ -104,15 +123,15 @@ export default function ProductoDetalleAdminPage() {
       ingredientes: limpiarTexto(ingredientes),
       modoUso: limpiarTexto(modoUso),
       resultado: limpiarTexto(resultado),
-      imagenesText: limpiarTexto(imagenesText),
-      imagenesEditadas: Boolean(imagenesEditadas),
       presentaciones: (nextPresentaciones ?? presentaciones).map((pr) => ({
+        presentacionId: pr.presentacionId,
         tamanio: limpiarTexto(pr.tamanio),
         precioOriginal: String(pr.precioOriginal ?? ''),
         precio: String(pr.precio ?? ''),
         stock: String(pr.stock ?? ''),
         disponible: Boolean(pr.disponible),
         fechaCaducidad: String(pr.fechaCaducidad ?? ''),
+        imagenesText: limpiarTexto(pr.imagenesText),
       })),
     });
 
@@ -137,9 +156,7 @@ export default function ProductoDetalleAdminPage() {
           setResultado(p.resultado ?? '');
           setDescuentoStr(String(p.descuento ?? 0));
           setDisponible(p.stock);
-          setImagenesText((p.imagenes ?? (p.imagen ? [p.imagen] : []))?.join('\n'));
-          setImagenesEditadas(false);
-          const mappedPresentaciones = (p.presentaciones ?? []).map((pr) => {
+          const mappedPresentaciones: FilaPresentacion[] = (p.presentaciones ?? []).map((pr) => {
               const base = parseNumero(pr.precioOriginal ?? pr.precio);
               const precioConDescuento = calcularPrecioDesdeDescuento(base, p.descuento ?? 0);
               const fc = pr.fechaCaducidad;
@@ -148,13 +165,20 @@ export default function ProductoDetalleAdminPage() {
                 const m = fc.match(/^(\d{4}-\d{2}-\d{2})/);
                 fechaCaducidad = m ? m[1] : new Date(fc + 'T12:00:00').toISOString().slice(0, 10);
               }
+              const urls = pr.imagenes?.length
+                ? pr.imagenes
+                : pr.imagen
+                  ? [pr.imagen]
+                  : [];
               return {
+                presentacionId: pr.id,
                 tamanio: pr.tamaño,
                 precioOriginal: String(base || '0'),
                 precio: String(parseNumero(precioConDescuento)),
                 stock: String(pr.stock ?? 0),
                 disponible: pr.disponible ?? true,
                 fechaCaducidad,
+                imagenesText: urls.join('\n'),
               };
             });
           setPresentaciones(mappedPresentaciones);
@@ -172,15 +196,15 @@ export default function ProductoDetalleAdminPage() {
             ingredientes: limpiarTexto(p.ingredientes ?? ''),
             modoUso: limpiarTexto(p.modoUso ?? ''),
             resultado: limpiarTexto(p.resultado ?? ''),
-            imagenesText: limpiarTexto((p.imagenes ?? (p.imagen ? [p.imagen] : []))?.join('\n') ?? ''),
-            imagenesEditadas: false,
             presentaciones: mappedPresentaciones.map((pr) => ({
+              presentacionId: pr.presentacionId,
               tamanio: limpiarTexto(pr.tamanio),
               precioOriginal: String(pr.precioOriginal ?? ''),
               precio: String(pr.precio ?? ''),
               stock: String(pr.stock ?? ''),
               disponible: Boolean(pr.disponible),
               fechaCaducidad: String(pr.fechaCaducidad ?? ''),
+              imagenesText: limpiarTexto(pr.imagenesText),
             })),
           });
         }
@@ -310,12 +334,14 @@ export default function ProductoDetalleAdminPage() {
     setPresentaciones((prev) => [
       ...prev,
       {
+        presentacionId: undefined,
         tamanio: '',
         precioOriginal: '0',
         precio: String(parseNumero(precioInicial)),
         stock: '0',
         disponible: true,
         fechaCaducidad: '',
+        imagenesText: '',
       },
     ]);
   };
@@ -338,106 +364,45 @@ export default function ProductoDetalleAdminPage() {
     setSuccessMessage(null);
     try {
       const descuentoNum = parseFloat(descuentoStr) || 0;
-      const payload: Partial<ProductoPayload> = {};
-      const initialObj = (initialSnapshotRef.current
-        ? JSON.parse(initialSnapshotRef.current)
-        : {}) as Record<string, unknown>;
+      const presentacionesNorm = presentaciones.map(presentacionNormalizada);
+      // Cuerpo completo: muchos backends (Nest + ValidationPipe) fallan con PUT parcial
+      // (solo presentaciones) y devuelven "revisa los campos del formulario".
+      // No enviar `disponible` en la raíz: el DTO del API no lo incluye (sale de presentaciones).
+      const payload: ProductoPayload = {
+        nombre: limpiarTexto(nombre),
+        descripcion: limpiarTexto(descripcion),
+        descripcionLarga: limpiarTexto(descripcionLarga).trim() || undefined,
+        categoria: limpiarTexto(categoria),
+        marca: limpiarTexto(marca).trim() || undefined,
+        descuento: descuentoNum,
+        nuevo,
+        crueltyFree,
+        caracteristicas: caracteristicasText
+          .split('\n')
+          .map((l) => limpiarTexto(l).trim())
+          .filter(Boolean),
+        ingredientes: limpiarTexto(ingredientes).trim() || undefined,
+        modoUso: limpiarTexto(modoUso).trim() || undefined,
+        resultado: limpiarTexto(resultado).trim() || undefined,
+        presentaciones: serializarPresentacionesProducto(presentacionesNorm),
+      };
 
-      const nombreVal = limpiarTexto(nombre);
-      if (nombreVal !== String(initialObj.nombre ?? '')) payload.nombre = nombreVal;
-
-      const descripcionVal = limpiarTexto(descripcion);
-      if (descripcionVal !== String(initialObj.descripcion ?? '')) payload.descripcion = descripcionVal;
-
-      const descripcionLargaVal = limpiarTexto(descripcionLarga).trim();
-      if (descripcionLargaVal !== String(initialObj.descripcionLarga ?? '')) {
-        payload.descripcionLarga = descripcionLargaVal || undefined;
-      }
-
-      const categoriaVal = limpiarTexto(categoria);
-      if (categoriaVal !== String(initialObj.categoria ?? '')) payload.categoria = categoriaVal;
-
-      const marcaVal = limpiarTexto(marca).trim();
-      if (marcaVal !== String(initialObj.marca ?? '')) payload.marca = marcaVal || undefined;
-
-      if (String(descuentoStr ?? '') !== String(initialObj.descuentoStr ?? '')) payload.descuento = descuentoNum || 0;
-      if (Boolean(nuevo) !== Boolean(initialObj.nuevo)) payload.nuevo = nuevo;
-      if (Boolean(crueltyFree) !== Boolean(initialObj.crueltyFree)) payload.crueltyFree = crueltyFree;
-
-      const caracteristicasVal = caracteristicasText
-        .split('\n')
-        .map((l) => limpiarTexto(l).trim())
-        .filter(Boolean);
-      const caracteristicasIni = String(initialObj.caracteristicasText ?? '')
-        .split('\n')
-        .map((l) => limpiarTexto(l).trim())
-        .filter(Boolean);
-      if (JSON.stringify(caracteristicasVal) !== JSON.stringify(caracteristicasIni)) {
-        payload.caracteristicas = caracteristicasVal;
-      }
-
-      const ingredientesVal = limpiarTexto(ingredientes).trim();
-      if (ingredientesVal !== String(initialObj.ingredientes ?? '')) payload.ingredientes = ingredientesVal || undefined;
-
-      const modoUsoVal = limpiarTexto(modoUso).trim();
-      if (modoUsoVal !== String(initialObj.modoUso ?? '')) payload.modoUso = modoUsoVal || undefined;
-
-      const resultadoVal = limpiarTexto(resultado).trim();
-      if (resultadoVal !== String(initialObj.resultado ?? '')) payload.resultado = resultadoVal || undefined;
-
-      const imagenesVal = imagenesText
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
-      const imagenesIni = String(initialObj.imagenesText ?? '')
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
-      if (imagenesEditadas && JSON.stringify(imagenesVal) !== JSON.stringify(imagenesIni)) {
-        payload.imagenes = imagenesVal;
-      }
-
-      const presentacionesVal = presentaciones.map((pr) => {
-        const stockNum = parseInt(pr.stock || '0', 10);
-        const disp = pr.disponible && stockNum > 0;
-        const fc = pr.fechaCaducidad?.trim();
-        // Enviar como YYYY-MM-DD (input date) y que el backend lo convierta a Date.
-        const fechaCaducidad = fc || undefined;
-        const precioStr = String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0';
-        const precioOrigStr = String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || '0';
-        return {
-          tamanio: limpiarTexto(pr.tamanio),
-          precio: precioStr,
-          precioOriginal: precioOrigStr || undefined,
-          stock: pr.disponible ? stockNum : 0,
-          disponible: disp,
-          ...(fechaCaducidad ? { fechaCaducidad } : {}),
-        };
-      });
-      const presentacionesIni = ((initialObj.presentaciones as Array<Record<string, unknown>> | undefined) ?? []).map((pr) => ({
-        tamanio: String(pr.tamanio ?? ''),
-        precio: String(pr.precio ?? '').replace(/[^0-9.]/g, '') || '0',
-        precioOriginal: String(pr.precioOriginal ?? '').replace(/[^0-9.]/g, '') || undefined,
-        stock: parseInt(String(pr.stock ?? '0'), 10) || 0,
-        disponible: Boolean(pr.disponible),
-        ...(String(pr.fechaCaducidad ?? '').trim()
-          ? { fechaCaducidad: new Date(String(pr.fechaCaducidad).trim() + 'T00:00:00').toISOString() }
-          : {}),
-      }));
-      if (JSON.stringify(presentacionesVal) !== JSON.stringify(presentacionesIni)) {
-        payload.presentaciones = presentacionesVal;
-      }
-
-      if (Object.keys(payload).length === 0) {
-        setSuccessMessage('No hay cambios por guardar.');
-        return;
-      }
-      const actualizado = await updateProducto(producto.id, payload as ProductoPayload);
+      const actualizado = await updateProducto(producto.id, payload);
       setProducto(actualizado);
       setSuccessMessage('Producto actualizado correctamente.');
       initialSnapshotRef.current = currentSnapshot;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar los cambios');
+      const e = err as Error & { data?: unknown };
+      let msg = e instanceof Error ? e.message : 'Error al guardar los cambios';
+      if (/revisa los campos/i.test(msg) && e.data != null && typeof e.data === 'object') {
+        try {
+          const raw = JSON.stringify(e.data);
+          if (raw && raw !== '{}' && raw.length < 4000) msg = `${msg}\n\n${raw}`;
+        } catch {
+          /* ignore */
+        }
+      }
+      setError(msg);
     } finally {
       setSaving(false);
       setTimeout(() => setSuccessMessage(null), 4000);
@@ -673,9 +638,10 @@ export default function ProductoDetalleAdminPage() {
                     {presentaciones.map((pr, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end border-b pb-3 last:border-b-0"
+                        className="space-y-3 border-b pb-4 mb-4 last:mb-0 last:border-b-0"
                         style={{ borderColor: 'var(--fondos-suaves)' }}
                       >
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                         <div>
                           <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                             Tamaño
@@ -778,6 +744,27 @@ export default function ProductoDetalleAdminPage() {
                           </Button>
                         </div>
                       </div>
+                      <div>
+                        <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                          Imágenes de esta presentación (una URL por línea; se guardan en producto_presentaciones)
+                        </label>
+                        <textarea
+                          className="w-full rounded-md border px-3 py-2 text-sm min-h-[72px]"
+                          value={pr.imagenesText}
+                          onChange={(e) => {
+                            setPresentaciones((prev) =>
+                              prev.map((p, i) => (i === index ? { ...p, imagenesText: e.target.value } : p))
+                            );
+                          }}
+                          placeholder="https://..."
+                          style={{
+                            borderColor: 'var(--tarjetas-paneles)',
+                            backgroundColor: 'var(--fondos-suaves)',
+                            color: 'var(--menu-texto-principal)',
+                          }}
+                        />
+                      </div>
+                    </div>
                     ))}
                   </div>
                 )}
@@ -900,26 +887,6 @@ export default function ProductoDetalleAdminPage() {
                 />
               </Card>
 
-              <Card>
-                <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Imágenes (una URL por línea)
-                </h3>
-                <textarea
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  rows={4}
-                  value={imagenesText}
-                  onChange={(e) => {
-                    setImagenesText(e.target.value);
-                    setImagenesEditadas(true);
-                  }}
-                  placeholder="https://..."
-                  style={{
-                    borderColor: 'var(--tarjetas-paneles)',
-                    backgroundColor: 'var(--fondos-suaves)',
-                    color: 'var(--menu-texto-principal)',
-                  }}
-                />
-              </Card>
             </div>
           </div>
         </div>

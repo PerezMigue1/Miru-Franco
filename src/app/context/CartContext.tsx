@@ -17,6 +17,7 @@ import {
   eliminarCarritoItem,
   type CarritoItemApi,
 } from '../services/ecommerce';
+import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
 
 const CART_STORAGE_KEY = 'miru-cart';
 
@@ -64,7 +65,11 @@ function apiItemToCartItem(row: CarritoItemApi): CartItem {
     row.precioReferencia != null && row.precioReferencia > 0
       ? row.precioReferencia
       : parsePrecioPresentacion(row.presentacion);
-  const img = row.producto?.imagenes?.[0];
+  const imgRaw = row.producto?.imagenes?.[0];
+  const img =
+    typeof imgRaw === 'string' && imgRaw.trim()
+      ? normalizarUrlImagenExterna(imgRaw) || undefined
+      : undefined;
   return {
     id: `srv-${row.id}`,
     carritoItemId: row.id,
@@ -102,7 +107,10 @@ function loadFromStorage(): CartItem[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isCartItemRow);
+    return parsed.filter(isCartItemRow).map((item) => ({
+      ...item,
+      imagen: item.imagen ? normalizarUrlImagenExterna(item.imagen) || undefined : undefined,
+    }));
   } catch {
     return [];
   }
