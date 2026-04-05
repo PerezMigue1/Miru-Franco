@@ -1,14 +1,18 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Input from '../../../../../../components/ui/Input';
-import { getProductoPorId, type Producto } from '../../../../../../services/productos';
+import {
+  getProductoPorId,
+  urlsGaleriaProductoDetalle,
+  type Producto,
+} from '../../../../../../services/productos';
+import { ProductoGaleriaDetalle } from '../../../../../../components/tienda/ProductoGaleriaDetalle';
 import {
   listarValoracionesProducto,
   listarPedidosQueIncluyenProducto,
@@ -41,6 +45,11 @@ export default function DetalleProductoPage() {
   const { addItem } = useCart();
 
   const productoIdNum = producto ? Number(producto.id) : NaN;
+
+  const urlsGaleria = useMemo(() => {
+    if (!producto) return [];
+    return urlsGaleriaProductoDetalle(producto, presentacionSeleccionada);
+  }, [producto, presentacionSeleccionada]);
 
   useEffect(() => {
     if (!Number.isFinite(productoIdNum) || productoIdNum <= 0) return;
@@ -139,7 +148,7 @@ export default function DetalleProductoPage() {
         nombre: producto.nombre,
         precio: precioNum,
         cantidad,
-        imagen: producto.imagenes?.[0] ?? producto.imagen,
+        imagen: urlsGaleria[0] ?? producto.imagenes?.[0] ?? producto.imagen,
         presentacion: presentacionSeleccionada,
         productoId: productoIdNum,
         presentacionId,
@@ -228,26 +237,13 @@ export default function DetalleProductoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <div className="space-y-3 sm:space-y-4">
             <div
-              className="w-full h-64 sm:h-80 lg:h-96 xl:h-[500px] rounded-lg flex items-center justify-center overflow-hidden p-4 sm:p-6"
+              className="relative flex h-64 w-full items-center justify-center overflow-hidden rounded-lg p-4 sm:h-80 sm:p-6 lg:h-96 xl:h-[500px]"
               style={{
                 backgroundColor: 'var(--texto-fondo-oscuro)',
                 border: '2px solid var(--tarjetas-paneles)',
               }}
             >
-              {(producto.imagenes?.[0] ?? producto.imagen) ? (
-                <Image
-                  src={(producto.imagenes?.[0] ?? producto.imagen) as string}
-                  alt={producto.nombre}
-                  width={600}
-                  height={600}
-                  className="w-full h-full object-contain"
-                  unoptimized
-                />
-              ) : (
-                <span className="text-sm sm:text-base" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Imagen del Producto
-                </span>
-              )}
+              <ProductoGaleriaDetalle urls={urlsGaleria} nombreProducto={producto.nombre} />
             </div>
           </div>
 

@@ -50,6 +50,43 @@ export interface Producto {
   resultado?: string;
 }
 
+/**
+ * URLs únicas para galería en catálogo: imágenes del producto + todas las presentaciones.
+ */
+export function urlsGaleriaProductoCatalogo(p: Producto): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (u: string | undefined) => {
+    const s = String(u ?? '').trim();
+    if (s && !seen.has(s)) {
+      seen.add(s);
+      out.push(s);
+    }
+  };
+  (p.imagenes ?? []).forEach(push);
+  push(p.imagen);
+  for (const pr of p.presentaciones ?? []) {
+    (pr.imagenes ?? []).forEach(push);
+    push(pr.imagen);
+  }
+  return out;
+}
+
+/**
+ * Galería en ficha: prioriza imágenes de la presentación seleccionada; si no tiene, usa el conjunto del catálogo.
+ */
+export function urlsGaleriaProductoDetalle(p: Producto, tamanoPresentacion: string): string[] {
+  const pres = p.presentaciones?.find((x) => x.tamaño === tamanoPresentacion);
+  if (pres) {
+    if (pres.imagenes?.length) {
+      const u = pres.imagenes.map((x) => String(x).trim()).filter(Boolean);
+      if (u.length) return u;
+    }
+    if (pres.imagen?.trim()) return [pres.imagen.trim()];
+  }
+  return urlsGaleriaProductoCatalogo(p);
+}
+
 /** Respuesta posible del API (array directo o objeto con data/productos) */
 type ApiProductoRaw = Record<string, unknown> & {
   id?: string | number;

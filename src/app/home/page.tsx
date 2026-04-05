@@ -7,8 +7,9 @@ import Header from '../layouts/Header';
 import ScrollArrows, { SCROLL_ARROW_PADDING_X } from '../components/ui/ScrollArrows';
 import Card from '../components/ui/Card';
 import Footer from '../layouts/Footer';
-import { getProductosSinRedirigir } from '../services/productos';
+import { getProductosSinRedirigir, urlsGaleriaProductoCatalogo } from '../services/productos';
 import type { Producto } from '../services/productos';
+import { ProductoImagenCarruselTarjeta } from '../components/tienda/ProductoImagenCarruselTarjeta';
 import { getServicios } from '../services/servicios';
 import type { Servicio } from '../services/servicios';
 
@@ -199,7 +200,9 @@ export default function Home() {
                   className={`w-full overflow-x-auto overflow-y-hidden pb-4 scroll-smooth scrollbar-hide ${SCROLL_ARROW_PADDING_X}`}
                 >
                   <div className="flex gap-6 min-w-max">
-                  {productos.map((producto) => (
+                  {productos.map((producto) => {
+                    const galeriaInicio = urlsGaleriaProductoCatalogo(producto);
+                    return (
                     <Card
                       key={producto.id}
                       variant="elevated"
@@ -207,21 +210,15 @@ export default function Home() {
                       onClick={() => router.push('/cliente/tienda-online')}
                     >
                       <div className="aspect-square relative w-full bg-black/10">
-                        {(() => {
-                          const imgSrc = producto.imagen ?? producto.imagenes?.[0];
-                          const isValidSrc = typeof imgSrc === 'string' && (imgSrc.startsWith('http') || imgSrc.startsWith('/'));
-                          return isValidSrc ? (
-                            <Image
-                              src={imgSrc}
-                              alt={producto.nombre}
-                              fill
-                              className="object-cover"
-                              sizes="288px"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-5xl">🧴</div>
-                          );
-                        })()}
+                        {galeriaInicio.length > 0 ? (
+                          <ProductoImagenCarruselTarjeta
+                            urls={galeriaInicio}
+                            alt={producto.nombre}
+                            imageClassName="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-5xl">🧴</div>
+                        )}
                       </div>
                       <div className="p-4">
                         <h3 className="text-subtitle mb-0.5 font-semibold line-clamp-1" style={{ color: 'var(--texto-fondo-oscuro)' }}>
@@ -232,7 +229,8 @@ export default function Home() {
                         </p>
                       </div>
                     </Card>
-                  ))}
+                    );
+                  })}
                   </div>
                 </div>
               </div>

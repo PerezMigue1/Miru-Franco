@@ -41,6 +41,10 @@ export default function ServicioDetalleAdminPage() {
   const [duracion, setDuracion] = useState('');
   const [categoria, setCategoria] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  
+  // --- NUEVOS ESTADOS PARA IMÁGENES ---
+  const [imagenes, setImagenes] = useState<string[]>([]);
+  const [nuevaImagenUrl, setNuevaImagenUrl] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +60,8 @@ export default function ServicioDetalleAdminPage() {
           setDuracion(s.duracion ?? '');
           setCategoria(s.categoria ?? '');
           setDescripcion(s.descripcion ?? '');
+          // Cargar imágenes existentes (soporta array 'imagenes' o campo único 'imagen')
+          setImagenes(s.imagenes || (s.imagen ? [s.imagen] : []));
         } else {
           setError('Servicio no encontrado');
         }
@@ -68,6 +74,20 @@ export default function ServicioDetalleAdminPage() {
       });
     return () => { cancelled = true; };
   }, [id]);
+
+  const handleAgregarImagen = () => {
+    if (!nuevaImagenUrl.trim()) return;
+    if (imagenes.length >= 5) {
+      alert("Máximo 5 imágenes permitidas");
+      return;
+    }
+    setImagenes([...imagenes, nuevaImagenUrl.trim()]);
+    setNuevaImagenUrl('');
+  };
+
+  const handleQuitarImagen = (index: number) => {
+    setImagenes(imagenes.filter((_, i) => i !== index));
+  };
 
   const handleGuardar = async () => {
     if (!servicio) return;
@@ -84,9 +104,13 @@ export default function ServicioDetalleAdminPage() {
         precio: parsePrecio(precioStr),
         duracion: duracion.trim() || undefined,
         categoria: categoria.trim() || undefined,
+        // ENVIAR IMÁGENES ACTUALIZADAS
+        imagenes: imagenes,
+        imagen: imagenes[0] || '', // Mantenemos compatibilidad con campo único
       };
       const actualizado = await updateServicio(servicio.id, payload);
       setServicio(actualizado);
+      alert("Cambios guardados correctamente");
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
@@ -196,6 +220,52 @@ export default function ServicioDetalleAdminPage() {
                   rows={3}
                   fullWidth
                 />
+              </div>
+
+              {/* --- SECCIÓN DE GESTIÓN DE IMÁGENES --- */}
+              <div className="md:col-span-2 mt-4 border-t pt-4">
+                <label className="block text-sm font-bold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Galería de Imágenes (Máx. 5)
+                </label>
+                
+                <div className="flex gap-2 mb-4">
+                  <Input 
+                    placeholder="Pegar URL de la imagen..."
+                    value={nuevaImagenUrl}
+                    onChange={(e: any) => setNuevaImagenUrl(e.target.value)}
+                    fullWidth
+                  />
+                  <Button variant="outline" onClick={handleAgregarImagen} disabled={imagenes.length >= 5}>
+                    Agregar
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                  {imagenes.map((img, index) => (
+                    <div key={index} className="relative aspect-square border rounded-md overflow-hidden bg-gray-50 group">
+                      <img 
+                        src={img} 
+                        alt={`Servicio ${index}`} 
+                        className="w-full h-full object-cover"
+                        onError={(e: any) => { e.target.src = 'https://via.placeholder.com/150?text=Error'; }}
+                      />
+                      <button
+                        onClick={() => handleQuitarImagen(index)}
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        title="Quitar imagen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Espacios vacíos sugeridos */}
+                  {Array.from({ length: 5 - imagenes.length }).map((_, i) => (
+                    <div key={`empty-${i}`} className="aspect-square border-2 border-dashed border-gray-200 rounded-md flex items-center justify-center text-gray-300 text-xs">
+                      Vacío
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>

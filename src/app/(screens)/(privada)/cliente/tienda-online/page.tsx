@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
 import Badge from '../../../../components/ui/Badge';
-import { getProductos, type Producto } from '../../../../services/productos';
+import { getProductos, urlsGaleriaProductoCatalogo, type Producto } from '../../../../services/productos';
+import { ProductoImagenCarruselTarjeta } from '../../../../components/tienda/ProductoImagenCarruselTarjeta';
 
 /** Parsea precio tipo "$350" o "350" a número */
 function precioANumero(precio: string | undefined): number {
@@ -508,21 +508,13 @@ export default function CatalogoProductosPage() {
                 )}
                 <div className="relative mb-4">
                   <div
-                    className="w-full h-64 rounded-lg mb-4 flex items-center justify-center overflow-hidden bg-cover bg-center"
+                    className="relative mb-4 h-64 w-full overflow-hidden rounded-lg"
                     style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
-                    {(producto.imagenes?.[0] ?? producto.imagen) ? (
-                      <Image
-                        src={(producto.imagenes?.[0] ?? producto.imagen) as string}
-                        alt={producto.nombre}
-                        width={400}
-                        height={400}
-                        className="w-full h-full object-contain"
-                        unoptimized
-                      />
-                    ) : (
-                      <span style={{ color: 'var(--menu-texto-principal)' }}>Imagen del Producto</span>
-                    )}
+                    <ProductoImagenCarruselTarjeta
+                      urls={urlsGaleriaProductoCatalogo(producto)}
+                      alt={producto.nombre}
+                    />
                   </div>
                   <div className="absolute top-2 right-2 flex gap-2">
                     {producto.nuevo && (

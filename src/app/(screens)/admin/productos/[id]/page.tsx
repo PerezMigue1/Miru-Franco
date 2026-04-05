@@ -19,6 +19,8 @@ import {
   type ProductoPayload,
 } from '../../../../services/productos';
 import Modal from '../../../../components/ui/Modal';
+import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
+import { normalizarUrlImagenExterna } from '../../../../utils/normalizarUrlImagen';
 
 function calcularPrecioDesdeDescuento(precioOriginal: number, descuento: number): string {
   if (!precioOriginal || !descuento) return `$${precioOriginal || 0}`;
@@ -43,15 +45,9 @@ type FilaPresentacion = {
   stock: string;
   disponible: boolean;
   fechaCaducidad: string;
-  imagenesText: string;
+  /** URLs Cloudinary (solo vía subida en admin). */
+  imagenes: string[];
 };
-
-function urlsDesdeImagenesText(text: string): string[] {
-  return limpiarTexto(text)
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean);
-}
 
 /** Forma estable para comparar y para armar el payload de cada presentación. */
 function presentacionNormalizada(pr: FilaPresentacion) {
@@ -68,7 +64,7 @@ function presentacionNormalizada(pr: FilaPresentacion) {
     stock: pr.disponible ? stockNum : 0,
     disponible: disp,
     fechaCaducidad: fc || undefined,
-    imagenes: urlsDesdeImagenesText(pr.imagenesText),
+    imagenes: pr.imagenes.map((u) => limpiarTexto(u).trim()).filter(Boolean),
   };
 }
 
@@ -131,7 +127,7 @@ export default function ProductoDetalleAdminPage() {
         stock: String(pr.stock ?? ''),
         disponible: Boolean(pr.disponible),
         fechaCaducidad: String(pr.fechaCaducidad ?? ''),
-        imagenesText: limpiarTexto(pr.imagenesText),
+        imagenes: [...pr.imagenes],
       })),
     });
 
@@ -165,11 +161,14 @@ export default function ProductoDetalleAdminPage() {
                 const m = fc.match(/^(\d{4}-\d{2}-\d{2})/);
                 fechaCaducidad = m ? m[1] : new Date(fc + 'T12:00:00').toISOString().slice(0, 10);
               }
-              const urls = pr.imagenes?.length
+              const urls = (pr.imagenes?.length
                 ? pr.imagenes
                 : pr.imagen
                   ? [pr.imagen]
-                  : [];
+                  : []
+              )
+                .map((u) => normalizarUrlImagenExterna(u))
+                .filter(Boolean);
               return {
                 presentacionId: pr.id,
                 tamanio: pr.tamaño,
@@ -178,7 +177,7 @@ export default function ProductoDetalleAdminPage() {
                 stock: String(pr.stock ?? 0),
                 disponible: pr.disponible ?? true,
                 fechaCaducidad,
-                imagenesText: urls.join('\n'),
+                imagenes: urls,
               };
             });
           setPresentaciones(mappedPresentaciones);
@@ -204,7 +203,7 @@ export default function ProductoDetalleAdminPage() {
               stock: String(pr.stock ?? ''),
               disponible: Boolean(pr.disponible),
               fechaCaducidad: String(pr.fechaCaducidad ?? ''),
-              imagenesText: limpiarTexto(pr.imagenesText),
+              imagenes: [...pr.imagenes],
             })),
           });
         }
@@ -341,7 +340,7 @@ export default function ProductoDetalleAdminPage() {
         stock: '0',
         disponible: true,
         fechaCaducidad: '',
-        imagenesText: '',
+        imagenes: [],
       },
     ]);
   };
@@ -746,22 +745,16 @@ export default function ProductoDetalleAdminPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                          Imágenes de esta presentación (una URL por línea; se guardan en producto_presentaciones)
+                          Imágenes (Cloudinary; se guardan en producto_presentaciones)
                         </label>
-                        <textarea
-                          className="w-full rounded-md border px-3 py-2 text-sm min-h-[72px]"
-                          value={pr.imagenesText}
-                          onChange={(e) => {
+                        <EditorImagenesPresentacionCloudinary
+                          urls={pr.imagenes}
+                          onChange={(next) => {
                             setPresentaciones((prev) =>
-                              prev.map((p, i) => (i === index ? { ...p, imagenesText: e.target.value } : p))
+                              prev.map((p, i) => (i === index ? { ...p, imagenes: next } : p))
                             );
                           }}
-                          placeholder="https://..."
-                          style={{
-                            borderColor: 'var(--tarjetas-paneles)',
-                            backgroundColor: 'var(--fondos-suaves)',
-                            color: 'var(--menu-texto-principal)',
-                          }}
+                          disabled={saving}
                         />
                       </div>
                     </div>

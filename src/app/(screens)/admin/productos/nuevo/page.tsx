@@ -13,6 +13,7 @@ import {
   serializarPresentacionesProducto,
   type ProductoPayload,
 } from '../../../../services/productos';
+import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
 
 const AGREGAR_CAT = '__agregar_cat__';
 const AGREGAR_MARCA = '__agregar_marca__';
@@ -27,7 +28,7 @@ export default function NuevoProductoAdminPage() {
   const [categoria, setCategoria] = useState('');
   const [marca, setMarca] = useState('');
   const [disponible, setDisponible] = useState(true);
-  const [imagenesText, setImagenesText] = useState('');
+  const [imagenesPresentacion, setImagenesPresentacion] = useState<string[]>([]);
   const [categoriasCatalogo, setCategoriasCatalogo] = useState<string[]>([]);
   const [marcasCatalogo, setMarcasCatalogo] = useState<string[]>([]);
   const [showAgregarCategoria, setShowAgregarCategoria] = useState(false);
@@ -138,7 +139,7 @@ export default function NuevoProductoAdminPage() {
             precioOriginal: '0',
             stock: 0,
             disponible,
-            imagenes: urls,
+            imagenes: imagenesPresentacion,
           },
         ]),
       };
@@ -271,19 +272,12 @@ export default function NuevoProductoAdminPage() {
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              Imágenes de la presentación inicial (una URL por línea; se guardan en producto_presentaciones)
+              Imágenes de la presentación inicial (Cloudinary → producto_presentaciones)
             </label>
-            <textarea
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              rows={3}
-              value={imagenesText}
-              onChange={(e) => setImagenesText(e.target.value)}
-              placeholder="https://..."
-              style={{
-                borderColor: 'var(--tarjetas-paneles)',
-                backgroundColor: 'var(--fondos-suaves)',
-                color: 'var(--menu-texto-principal)',
-              }}
+            <EditorImagenesPresentacionCloudinary
+              urls={imagenesPresentacion}
+              onChange={setImagenesPresentacion}
+              disabled={saving}
             />
           </div>
           <div className="flex gap-3">
