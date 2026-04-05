@@ -123,10 +123,6 @@ export default function NuevoProductoAdminPage() {
     setSaving(true);
     setError(null);
     try {
-      const urls = imagenesText
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
       const payload: ProductoPayload = {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
