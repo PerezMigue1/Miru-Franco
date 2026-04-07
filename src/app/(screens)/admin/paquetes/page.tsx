@@ -26,7 +26,13 @@ export default function PaquetesPage() {
       setLoadError(null);
       setLoading(true);
       const data = await getPaquetes();
-      setPaquetes(Array.isArray(data) ? data : (data.data || []));
+      let list: unknown[] = [];
+      if (Array.isArray(data)) list = data;
+      else if (data && typeof data === 'object' && 'data' in data) {
+        const inner = (data as { data: unknown }).data;
+        if (Array.isArray(inner)) list = inner;
+      }
+      setPaquetes(list);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar paquetes';
       setLoadError(msg);

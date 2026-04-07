@@ -28,10 +28,13 @@ export default function DetallePaquetePage() {
       getPaqueteById(id as string)
         .then((p) => {
           setForm({
-            tipo_evento: p.tipo_evento,
-            precio_especial: p.precio_especial.toString(),
-            descripcion: p.descripcion || '',
-            servicios_vinculados: Array.isArray(p.servicios_vinculados) ? p.servicios_vinculados : []
+            tipo_evento: p.tipo_evento == null ? '' : String(p.tipo_evento),
+            precio_especial:
+              p.precio_especial == null ? '' : String(p.precio_especial),
+            descripcion: typeof p.descripcion === 'string' ? p.descripcion : '',
+            servicios_vinculados: Array.isArray(p.servicios_vinculados)
+              ? p.servicios_vinculados.map((x) => String(x))
+              : [],
           });
         })
         .catch(() => console.error("Error al cargar"))
