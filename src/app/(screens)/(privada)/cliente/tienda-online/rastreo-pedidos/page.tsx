@@ -84,7 +84,7 @@ export default function RastreoPedidosPage() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-6xl mx-auto py-4">
+      <div className="w-full max-w-none py-4">
         <div className="text-center mb-8">
           <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Rastreo de pedidos

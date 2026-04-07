@@ -160,8 +160,41 @@ export default function DetalleProductoPage() {
     }
   };
 
-  const manejarComprarAhora = () => {
-    router.push(`/cliente/tienda-online/checkout?producto=${id}&cantidad=${cantidad}`);
+  const manejarComprarAhora = async () => {
+    if (!producto) return;
+    const presActual = producto.presentaciones?.find((p) => p.tamaño === presentacionSeleccionada);
+    const disponibleParaCarrito =
+      producto.stock && (producto.presentaciones ? (presActual?.disponible ?? false) : true);
+    if (!disponibleParaCarrito) {
+      void showAlert('Esta presentación no está disponible por ahora.');
+      return;
+    }
+
+    const productoIdNum = Number(producto.id);
+    if (!Number.isFinite(productoIdNum) || productoIdNum <= 0 || !presActual?.id) {
+      void showAlert('No se pudo identificar correctamente la presentación para comprar.');
+      return;
+    }
+
+    const precioNum =
+      typeof presActual.precio === 'string'
+        ? parseFloat(String(presActual.precio).replace(/[^0-9.]/g, '')) || 0
+        : 0;
+
+    try {
+      await addItem({
+        nombre: producto.nombre,
+        precio: precioNum,
+        cantidad,
+        imagen: urlsGaleria[0] ?? producto.imagenes?.[0] ?? producto.imagen,
+        presentacion: presentacionSeleccionada,
+        productoId: productoIdNum,
+        presentacionId: presActual.id,
+      });
+      router.push('/cliente/tienda-online/checkout');
+    } catch (e) {
+      void showAlert(e instanceof Error ? e.message : 'No se pudo preparar la compra');
+    }
   };
 
   const enviarValoracion = async () => {
@@ -399,6 +432,16 @@ export default function DetalleProductoPage() {
                     disabled={!disponible}
                   >
                     {disponible ? '🛒 Agregar al Carrito' : 'No disponible'}
+                  </Button>
+                  <Button
+                    fullWidth
+                    size="lg"
+                    variant="outline"
+                    className="text-base sm:text-lg py-3"
+                    onClick={() => void manejarComprarAhora()}
+                    disabled={!disponible}
+                  >
+                    {disponible ? '⚡ Comprar ahora' : 'No disponible'}
                   </Button>
                 </div>
               </div>

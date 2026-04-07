@@ -24,6 +24,11 @@ function unwrapArray<T>(res: unknown): T[] {
     const o = res as Record<string, unknown>;
     const inner = o.data ?? o.items ?? o.carritoItems ?? o.pedidos ?? o.result;
     if (Array.isArray(inner)) return inner as T[];
+    if (inner && typeof inner === 'object' && !Array.isArray(inner)) {
+      const bag = inner as Record<string, unknown>;
+      const nested = bag.data ?? bag.items ?? bag.results;
+      if (Array.isArray(nested)) return nested as T[];
+    }
   }
   return [];
 }
@@ -177,18 +182,30 @@ export async function obtenerPedido(id: number): Promise<PedidoApi | null> {
   return o ? normalizarPedido(o) : null;
 }
 
+/**
+ * Líneas del pedido en POST /api/pedidos (solo lo que expone el DTO; precio y nombres los resuelve el servidor).
+ */
+export interface CrearPedidoLineaPayload {
+  cantidad: number;
+  productoId: number;
+  presentacionId: number;
+}
+
+/**
+ * Cuerpo `CreatePedidoDto` (POST /api/pedidos): sin totales ni direccionTextoCompleta en create
+ * (el servidor recalcula). `usuarioId` solo admin. Ver contrato backend-miru.
+ */
 export interface CrearPedidoPayload {
   estado?: EstadoPedidoUi;
-  subtotal: number;
-  costoEnvio: number;
-  impuestos: number;
-  descuento: number;
-  total: number;
   moneda?: string;
-  direccionTextoCompleta?: string;
   notasCliente?: string;
   metodoPago?: string;
-  direccionEnvioId?: string;
+  referenciaPago?: string;
+  /** Omitir o null si retiro en tienda */
+  direccionEnvioId?: string | null;
+  /** Solo admin */
+  usuarioId?: string;
+  items: CrearPedidoLineaPayload[];
 }
 
 export async function crearPedido(payload: CrearPedidoPayload): Promise<PedidoApi> {
@@ -198,7 +215,23 @@ export async function crearPedido(payload: CrearPedidoPayload): Promise<PedidoAp
   throw new Error('No se pudo crear el pedido');
 }
 
-export async function actualizarPedido(id: number, payload: Partial<CrearPedidoPayload>): Promise<PedidoApi> {
+/** Actualización parcial (puede incluir totales u otros campos según exponga el PUT del backend). */
+export type ActualizarPedidoPayload = Partial<{
+  estado: EstadoPedidoUi;
+  moneda: string;
+  notasCliente: string;
+  metodoPago: string;
+  referenciaPago: string;
+  direccionEnvioId: string | null;
+  subtotal: number;
+  costoEnvio: number;
+  impuestos: number;
+  descuento: number;
+  total: number;
+  direccionTextoCompleta: string;
+}>;
+
+export async function actualizarPedido(id: number, payload: ActualizarPedidoPayload): Promise<PedidoApi> {
   const res = await apiClient.put<unknown>(`/api/pedidos/${id}`, payload, BASE());
   const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
   if (o && o.id != null) return normalizarPedido(o);
@@ -242,14 +275,11 @@ export async function listarPedidoItems(pedidoId: number): Promise<PedidoItemApi
   return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarPedidoItem(r));
 }
 
+/** Misma forma que cada línea en POST /api/pedidos (`PedidoItemLineDto`). */
 export interface CrearPedidoItemPayload {
-  cantidad: number;
-  precioUnitario: number;
-  subtotal: number;
-  nombreProducto?: string;
-  tamanio?: string;
   productoId: number;
   presentacionId: number;
+  cantidad: number;
 }
 
 export async function crearPedidoItem(pedidoId: number, payload: CrearPedidoItemPayload): Promise<PedidoItemApi> {
@@ -321,6 +351,9 @@ export interface CrearPagoPayload {
   proveedor?: string;
   estado?: string;
   referenciaExterna?: string;
+  errorMensaje?: string;
+  pagadoEn?: string;
+  payload?: Record<string, unknown>;
   pedidoId: number;
 }
 
@@ -331,7 +364,11 @@ export async function crearPago(payload: CrearPagoPayload): Promise<PagoApi> {
   throw new Error('No se pudo registrar el pago');
 }
 
-export async function actualizarPagoParcial(id: number, payload: Partial<CrearPagoPayload>): Promise<PagoApi> {
+export type ActualizarPagoPayload = Partial<
+  Pick<CrearPagoPayload, 'monto' | 'estado' | 'referenciaExterna' | 'errorMensaje' | 'pagadoEn' | 'payload'>
+>;
+
+export async function actualizarPagoParcial(id: number, payload: ActualizarPagoPayload): Promise<PagoApi> {
   const res = await apiClient.patch<unknown>(`/api/pagos/${id}`, payload, BASE());
   const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
   if (o && o.id != null) return normalizarPago(o);
@@ -396,6 +433,34 @@ export async function obtenerEnvio(id: number): Promise<EnvioApi | null> {
   const res = await apiClient.get<unknown>(`/api/envios/${id}`, BASE());
   const o = unwrapObject<Record<string, unknown>>(res);
   return o ? normalizarEnvio(o) : null;
+}
+
+export interface CrearEnvioPayload {
+  pedidoId: number;
+  empresaEnvio?: string;
+  numeroGuia?: string;
+  estadoEnvio?: string;
+  fechaEnvio?: string;
+  fechaEntrega?: string;
+  notas?: string;
+}
+
+export async function crearEnvio(payload: CrearEnvioPayload): Promise<EnvioApi> {
+  const res = await apiClient.post<unknown>('/api/envios', payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarEnvio(o);
+  throw new Error('No se pudo crear el envío');
+}
+
+export async function actualizarEnvio(id: number, payload: Partial<CrearEnvioPayload>): Promise<EnvioApi> {
+  const res = await apiClient.put<unknown>(`/api/envios/${id}`, payload, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
+  if (o && o.id != null) return normalizarEnvio(o);
+  throw new Error('No se pudo actualizar el envío');
+}
+
+export async function eliminarEnvio(id: number): Promise<void> {
+  await apiClient.delete<void>(`/api/envios/${id}`, BASE());
 }
 
 // --- Facturas ---
@@ -572,6 +637,34 @@ export function varianteBadgeEstadoPedido(estado: string): BadgeVariant {
       return 'success';
     case 'cancelado':
       return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Estados de pago según backend (`EstadoPago`). */
+export function etiquetaEstadoPago(estado: string): string {
+  const m: Record<string, string> = {
+    pendiente: 'Pago pendiente',
+    aprobado: 'Pago aprobado',
+    rechazado: 'Pago rechazado',
+    cancelado: 'Pago cancelado',
+    reembolsado: 'Reembolsado',
+  };
+  return m[estado] ?? estado.replace(/_/g, ' ');
+}
+
+export function varianteBadgeEstadoPago(estado: string): BadgeVariant {
+  switch (estado) {
+    case 'aprobado':
+      return 'success';
+    case 'pendiente':
+      return 'warning';
+    case 'rechazado':
+    case 'cancelado':
+      return 'danger';
+    case 'reembolsado':
+      return 'info';
     default:
       return 'default';
   }

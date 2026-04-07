@@ -71,7 +71,7 @@ function CalendarioContent() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-none">
         <PageHeader
           title="Calendario de Disponibilidad"
           subtitle="Selecciona el día y hora para tu cita"
@@ -229,7 +229,7 @@ export default function CalendarioDisponibilidadPage() {
   return (
     <Suspense fallback={
       <ModuleLayout>
-        <div className="max-w-6xl mx-auto flex items-center justify-center min-h-[200px]">
+        <div className="w-full max-w-none flex items-center justify-center min-h-[200px]">
           <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando calendario...</p>
         </div>
       </ModuleLayout>

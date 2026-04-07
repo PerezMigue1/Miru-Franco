@@ -27,6 +27,7 @@ const OPCIONES_UNIDADES_PACK = ['1', '2', '3', '4', '6', '12', '24'];
 const OPCIONES_TIPO_PIEL = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible', 'Madura', 'Con acné'];
 const OPCIONES_TEXTURA = ['Gel', 'Crema', 'Loción', 'Sérum', 'Aceite', 'Mascarilla', 'Espuma'];
 const OPCIONES_SPF = ['Sin SPF', 'SPF 15', 'SPF 30', 'SPF 50', 'SPF 50+'];
+const PRODUCTOS_POR_PAGINA = 15;
 
 /** Qué filtros mostrar según la categoría seleccionada */
 type FiltroKey = 'precio' | 'descuento' | 'marca' | 'color' | 'acabado' | 'formatoLabial' | 'unidadesPack' | 'tipoPiel' | 'textura' | 'spf' | 'otrasCaracteristicas';
@@ -61,6 +62,14 @@ export default function CatalogoProductosPage() {
   const [textura, setTextura] = useState<string[]>([]);
   const [spf, setSpf] = useState<string[]>([]);
   const [otrasCaracteristicas, setOtrasCaracteristicas] = useState<string[]>([]);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [firmaPaginacion, setFirmaPaginacion] = useState('');
+
+  const abrirDetalleProducto = (id: string | number | undefined) => {
+    const idStr = String(id ?? '').trim();
+    if (!idStr) return;
+    router.push(`/cliente/tienda-online/productos/${encodeURIComponent(idStr)}`);
+  };
 
   const filtrosActivos = useMemo(() => filtrosParaCategoria(categoriaSeleccionada), [categoriaSeleccionada]);
   const mostrarFiltro = (key: FiltroKey) => filtrosActivos.includes(key);
@@ -135,6 +144,40 @@ export default function CatalogoProductosPage() {
     () => [...productosFiltrados].sort((a, b) => (a.stock === b.stock ? 0 : a.stock ? -1 : 1)),
     [productosFiltrados]
   );
+
+  const firmaListaFiltrada = productosFiltrados.map((p) => p.id).join(',');
+  const totalPaginas = Math.max(1, Math.ceil(productosOrdenados.length / PRODUCTOS_POR_PAGINA));
+
+  let resetPaginaPorFiltro = false;
+  if (firmaListaFiltrada !== firmaPaginacion) {
+    setFirmaPaginacion(firmaListaFiltrada);
+    setPaginaActual(1);
+    resetPaginaPorFiltro = true;
+  }
+  const paginaEfectiva = resetPaginaPorFiltro
+    ? 1
+    : Math.min(Math.max(1, paginaActual), totalPaginas);
+  if (!resetPaginaPorFiltro && paginaEfectiva !== paginaActual) {
+    setPaginaActual(paginaEfectiva);
+  }
+
+  const productosPagina = useMemo(() => {
+    const inicio = (paginaEfectiva - 1) * PRODUCTOS_POR_PAGINA;
+    return productosOrdenados.slice(inicio, inicio + PRODUCTOS_POR_PAGINA);
+  }, [productosOrdenados, paginaEfectiva]);
+
+  const irAPagina = (nueva: number) => {
+    const siguiente = Math.min(Math.max(1, nueva), totalPaginas);
+    if (siguiente === paginaEfectiva) return;
+    setPaginaActual(siguiente);
+    queueMicrotask(() => {
+      document.getElementById('catalogo-productos-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const rangoDesde =
+    productosOrdenados.length === 0 ? 0 : (paginaEfectiva - 1) * PRODUCTOS_POR_PAGINA + 1;
+  const rangoHasta = Math.min(paginaEfectiva * PRODUCTOS_POR_PAGINA, productosOrdenados.length);
 
   return (
     <ModuleLayout>
@@ -477,15 +520,16 @@ export default function CatalogoProductosPage() {
       )}
 
       {!loading && !error && (
+        <div id="catalogo-productos-grid" className="space-y-6 scroll-mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {productosOrdenados.map((producto) => {
+          {productosPagina.map((producto) => {
             const sinStock = (producto.stockCantidad ?? 0) === 0;
             const noDisponible = !producto.stock || sinStock;
             return (
               <Card
                 key={producto.id}
                 className={`cursor-pointer transition-all relative overflow-hidden ${noDisponible ? 'opacity-50' : 'hover:scale-105'}`}
-                onClick={() => router.push(`/cliente/tienda-online/productos/${producto.id}`)}
+                onClick={() => abrirDetalleProducto(producto.id)}
               >
                 {noDisponible && (
                   <>
@@ -511,21 +555,24 @@ export default function CatalogoProductosPage() {
                     className="relative mb-4 h-64 w-full overflow-hidden rounded-lg"
                     style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
-                    <ProductoImagenCarruselTarjeta
-                      urls={urlsGaleriaProductoCatalogo(producto)}
-                      alt={producto.nombre}
-                    />
-                  </div>
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    {producto.nuevo && (
-                      <Badge variant="success" size="sm">Nuevo</Badge>
-                    )}
-                    {(producto.descuento ?? 0) > 0 && (
-                      <Badge variant="warning" size="sm">-{producto.descuento}%</Badge>
-                    )}
-                    {noDisponible && (
-                      <Badge variant="danger" size="sm">No disponible</Badge>
-                    )}
+                    <div className="relative z-0 h-full min-h-[16rem] w-full">
+                      <ProductoImagenCarruselTarjeta
+                        urls={urlsGaleriaProductoCatalogo(producto)}
+                        alt={producto.nombre}
+                      />
+                    </div>
+                    {/* Por encima del carrusel (capas z-[1] del next/image); sin esto las etiquetas quedan tapadas */}
+                    <div className="absolute top-2 right-2 z-30 flex flex-wrap justify-end gap-2">
+                      {producto.nuevo && (
+                        <Badge variant="success" size="sm">Nuevo</Badge>
+                      )}
+                      {(producto.descuento ?? 0) > 0 && (
+                        <Badge variant="warning" size="sm">-{producto.descuento}%</Badge>
+                      )}
+                      {noDisponible && (
+                        <Badge variant="danger" size="sm">No disponible</Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="mb-2">
@@ -564,7 +611,7 @@ export default function CatalogoProductosPage() {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/cliente/tienda-online/productos/${producto.id}`);
+                      abrirDetalleProducto(producto.id);
                     }}
                   >
                     Ver Detalles
@@ -573,6 +620,41 @@ export default function CatalogoProductosPage() {
               </Card>
             );
           })}
+        </div>
+
+        {productosOrdenados.length > 0 && (
+          <div
+            className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 pt-2 border-t"
+            style={{ borderColor: 'var(--fondos-suaves)' }}
+          >
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              Mostrando {rangoDesde}–{rangoHasta} de {productosOrdenados.length} productos
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={paginaEfectiva <= 1}
+                onClick={() => irAPagina(paginaEfectiva - 1)}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                Página {paginaActual} de {totalPaginas}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={paginaEfectiva >= totalPaginas}
+                onClick={() => irAPagina(paginaEfectiva + 1)}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
         </div>
       )}
 

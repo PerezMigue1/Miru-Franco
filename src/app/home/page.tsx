@@ -89,7 +89,7 @@ export default function Home() {
       <main className="flex-1">
         {/* Hero con tipografía marca MIRÚ Franco */}
         <section
-          className="hero-bg-gradient relative flex flex-col items-center justify-center w-full px-4 overflow-hidden"
+          className="hero-bg-gradient relative flex flex-col items-center justify-center w-full layout-gutter-x overflow-hidden"
           style={{ marginTop: '104px', height: 'calc(100vh - 104px)' }}
         >
           <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 lg:gap-6 py-0 md:items-center flex-1 min-h-0 h-full">
@@ -170,7 +170,7 @@ export default function Home() {
 
         {/* Sección 1: Productos (API, orden aleatorio) */}
         <section className="py-20" style={{ backgroundColor: 'var(--fondo-general)' }}>
-          <div className="container mx-auto px-4">
+          <div className="layout-page">
             <div className="text-center mb-12">
               <h2 className="text-hero mb-4" style={{ color: '#161616' }}>
                 Nuestros Productos
@@ -252,7 +252,7 @@ export default function Home() {
 
         {/* Sección 2: Servicios (API, orden aleatorio) */}
         <section className="py-20" style={{ backgroundColor: '#2A2A2A' }}>
-          <div className="container mx-auto px-4">
+          <div className="layout-page">
             <div className="text-center mb-12">
               <h2 className="text-hero-light mb-4" style={{ color: '#F2F1ED' }}>
                 Nuestros Servicios
@@ -325,7 +325,7 @@ export default function Home() {
 
         {/* Sección 3: Galería (scroll lateral con flechas) — mismo fondo que Productos */}
         <section className="py-20 overflow-hidden" style={{ backgroundColor: 'var(--fondo-general)' }}>
-          <div className="container mx-auto px-4 mb-8">
+          <div className="layout-page mb-8">
             <div className="text-center">
               <h2 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Galería
@@ -373,7 +373,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="container mx-auto px-4 text-center mt-6">
+          <div className="layout-page text-center mt-6">
             <button
               type="button"
               onClick={() => router.push('/cliente/galeria')}
@@ -389,7 +389,7 @@ export default function Home() {
 
         {/* Sección 4: Sobre Nosotros */}
         <section className="py-20" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-          <div className="container mx-auto px-4">
+          <div className="layout-page">
             <div className="max-w-4xl mx-auto">
               <div className="rounded-lg shadow-lg p-8 border text-center" style={{ backgroundColor: '#B38E6F', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <h2 className="text-elegant-title mb-4" style={{ color: '#F2F1ED' }}>
@@ -419,7 +419,7 @@ export default function Home() {
 
         {/* Sección 5: CTA */}
         <section className="py-20" style={{ backgroundColor: '#2A2A2A' }}>
-          <div className="container mx-auto px-4">
+          <div className="layout-page">
             <div className="max-w-3xl mx-auto text-center rounded-lg shadow-lg p-8 border" style={{ backgroundColor: 'rgba(242,241,237,0.1)', borderColor: 'rgba(255,255,255,0.2)' }}>
               <h2 className="text-hero-light mb-4" style={{ color: '#F2F1ED' }}>
                 ¿Listo para Transformar tu Look?

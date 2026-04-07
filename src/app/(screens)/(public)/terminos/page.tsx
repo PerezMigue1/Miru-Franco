@@ -42,7 +42,7 @@ export default function TerminosPage() {
         </button>
       </div>
       
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="mx-auto w-full max-w-4xl py-8 layout-gutter-x">
 
         <div className="bg-header-footer rounded-lg shadow-lg p-8 md:p-12" style={{ backgroundColor: 'var(--header-footer)' }}>
           <h1 className="text-page-title text-center mb-8 text-texto-fondo-oscuro">

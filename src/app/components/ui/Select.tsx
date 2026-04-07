@@ -17,6 +17,8 @@ export default function Select({
   options,
   fullWidth = false,
   className = '',
+  onFocus,
+  onBlur,
   ...props
 }: SelectProps) {
   return (
@@ -44,10 +46,12 @@ export default function Select({
         onFocus={(e) => {
           e.currentTarget.style.borderColor = 'var(--hover)';
           e.currentTarget.style.boxShadow = '0 0 0 3px var(--hover)';
+          onFocus?.(e);
         }}
         onBlur={(e) => {
           e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--encabezados-alterno)';
           e.currentTarget.style.boxShadow = 'none';
+          onBlur?.(e);
         }}
         {...props}
       >

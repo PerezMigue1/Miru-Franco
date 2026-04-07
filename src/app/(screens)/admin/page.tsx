@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-none">
         {/* Header con identidad de admin */}
         <header
           className="rounded-2xl mb-8 px-6 py-8"

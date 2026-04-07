@@ -23,7 +23,7 @@ export default function GaleriaPage() {
 
   return (
     <PublicLayout>
-      <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
+      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
         <div className="text-center mb-12">
           <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Galería de Trabajos

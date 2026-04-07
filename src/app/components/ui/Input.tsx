@@ -17,6 +17,8 @@ export default function Input({
   icon,
   fullWidth = false,
   className = '',
+  onFocus,
+  onBlur,
   ...props
 }: InputProps) {
   return (
@@ -49,10 +51,12 @@ export default function Input({
             color: 'var(--menu-texto-principal)',
           }}
           onFocus={(e) => {
+            onFocus?.(e);
             e.currentTarget.style.borderColor = 'var(--hover)';
             e.currentTarget.style.boxShadow = '0 0 0 3px var(--hover)';
           }}
           onBlur={(e) => {
+            onBlur?.(e);
             e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--encabezados-alterno)';
             e.currentTarget.style.boxShadow = 'none';
           }}

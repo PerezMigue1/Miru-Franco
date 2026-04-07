@@ -88,6 +88,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       galeria: { label: 'Galería', href: '/cliente/galeria' },
       'mi-perfil': { label: 'Mi perfil', href: '/perfil' },
       direcciones: { label: 'Mis direcciones', href: '/cliente/direcciones' },
+      tarjetas: { label: 'Tarjetas', href: '/cliente/tarjetas' },
       carrito: { label: 'Carrito', href: '/cliente/carrito' },
       cotizaciones: { label: 'Cotizaciones', href: '/cliente/cotizaciones' },
       devoluciones: { label: 'Devoluciones', href: '/cliente/devoluciones' },
@@ -107,6 +108,10 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     // Direcciones: Inicio → Mi perfil (/perfil) → Mis direcciones
     if (section === 'direcciones') {
       return [...base, { label: 'Mi perfil', href: '/perfil' }, { label: 'Mis direcciones' }];
+    }
+
+    if (section === 'tarjetas') {
+      return [...base, { label: 'Mi perfil', href: '/perfil' }, { label: 'Tarjetas' }];
     }
 
     // Nivel 2 = sección real del sitio (Tienda online, Galería, Servicios y citas, etc.)

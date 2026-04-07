@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
@@ -11,15 +11,21 @@ import Input from '../../../../../components/ui/Input';
 import Modal from '../../../../../components/ui/Modal';
 import { useCart, type CartItem } from '../../../../../context/CartContext';
 import { hasValidToken } from '../../../../../utils/security';
+import { calcularResumenCarritoVistaPrevia } from '../../../../../utils/ventaDesdeCarrito';
 
 export default function CarritoComprasPage() {
   const router = useRouter();
   const { items, updateQuantity, removeItem, loading: cartLoading } = useCart();
   const [itemToRemove, setItemToRemove] = useState<CartItem | null>(null);
+  /** false en servidor y en el primer paint hidratado; true después → mismo HTML que SSR y sin mismatch. */
+  const enCliente = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
-  const subtotal = items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
-  const envio = items.length > 0 ? 50 : 0;
-  const total = subtotal + envio;
+  const { subtotal, costoEnvio: envio, total } = calcularResumenCarritoVistaPrevia(items);
+  const haySesion = enCliente && hasValidToken();
 
   const handleRemoveConfirm = () => {
     if (itemToRemove) {
@@ -35,7 +41,7 @@ export default function CarritoComprasPage() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-none">
         <Button 
           variant="outline" 
           onClick={() => router.push('/cliente/tienda-online')} 
@@ -201,7 +207,7 @@ export default function CarritoComprasPage() {
                   </div>
                 </div>
               </div>
-              {!hasValidToken() && items.length > 0 && (
+              {enCliente && !haySesion && items.length > 0 && (
                 <p className="text-sm mb-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}>
                   Para <strong>pagar y generar tu pedido</strong> en el sistema necesitas{' '}
                   <strong>iniciar sesión</strong>. Te pediremos la cuenta antes del checkout.
@@ -220,7 +226,7 @@ export default function CarritoComprasPage() {
                 }}
                 disabled={items.length === 0 || cartLoading}
               >
-                {hasValidToken() ? 'Continuar compra' : 'Iniciar sesión y continuar'}
+                {!enCliente ? 'Continuar' : haySesion ? 'Continuar compra' : 'Iniciar sesión y continuar'}
               </Button>
               <Button
                 fullWidth

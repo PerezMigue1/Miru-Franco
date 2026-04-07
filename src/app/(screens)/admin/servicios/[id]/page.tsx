@@ -136,7 +136,7 @@ export default function ServicioDetalleAdminPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="container mx-auto px-4 py-12">
+        <div className="layout-page py-12">
           <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando servicio...</p>
         </div>
       </AdminLayout>
@@ -146,7 +146,7 @@ export default function ServicioDetalleAdminPage() {
   if (error && !servicio) {
     return (
       <AdminLayout>
-        <div className="container mx-auto px-4 py-12">
+        <div className="layout-page py-12">
           <p className="mb-4" style={{ color: 'var(--danger)' }}>{error}</p>
         </div>
       </AdminLayout>
@@ -157,7 +157,7 @@ export default function ServicioDetalleAdminPage() {
 
   return (
     <AdminLayout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="layout-page py-12">
         <div className="max-w-4xl mx-auto">
           {error && (
             <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>

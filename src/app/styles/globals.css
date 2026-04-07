@@ -39,7 +39,9 @@
   --foreground: var(--menu-texto-principal);
   --input-bg: #F2F1ED;
   --menu-lateral-bg: #FFFFFF;
-  
+  /* Margen horizontal respecto al borde del viewport */
+  --layout-gutter-x: 1rem;
+
   /* ========== SISTEMA TIPOGRÁFICO ========== */
   
   /* Font Families */
@@ -100,6 +102,22 @@
   --enlaces-textos-interactivos: #4a7ba7;
   --hero-brand-color: var(--texto-fondo-oscuro);
   --hero-tagline-color: rgba(242, 241, 237, 0.85);
+}
+
+/* Más ancho útil que el `container` por defecto de Tailwind (mejor en monitores comunes) */
+.layout-page {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: min(100%, 90rem);
+  padding-left: var(--layout-gutter-x);
+  padding-right: var(--layout-gutter-x);
+}
+
+/* Mismo aire lateral que `.layout-page` (hero, legales, etc.) */
+.layout-gutter-x {
+  padding-left: var(--layout-gutter-x);
+  padding-right: var(--layout-gutter-x);
 }
 
 @theme inline {

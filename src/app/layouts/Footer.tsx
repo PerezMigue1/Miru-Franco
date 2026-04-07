@@ -6,7 +6,7 @@ import { socialColors } from '../utils/colors';
 export default function Footer() {
   return (
     <footer className="mt-auto bg-header-footer">
-      <div className="container mx-auto px-4 py-12">
+      <div className="layout-page py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Columna 1: Información */}
           <div className="md:col-span-1">

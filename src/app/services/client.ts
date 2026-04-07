@@ -13,6 +13,9 @@ interface RequestOptions extends RequestInit {
   skip500Redirect?: boolean;
 }
 
+/** Tercer argumento opcional de post/put/delete cuando no basta con un string `customBase`. */
+export type ApiClientCustomBase = string | { customBase?: string; skip500Redirect?: boolean };
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
@@ -396,8 +399,13 @@ class ApiClient {
         
         // Preservar el mensaje del backend para detectar cuenta no verificada
         const errorMessage = errorData.error || errorData.message || `Error ${response.status}: ${response.statusText}`;
-        
-        console.error(`[API Error] ${url}:`, errorData);
+
+        // 404: no spamear como error (Next dev overlay); suele ser ruta no registrada en el API
+        if (response.status === 404) {
+          console.warn(`[API 404] ${url}`, errorData);
+        } else {
+          console.error(`[API Error] ${url}:`, errorData);
+        }
         
         // Crear un error personalizado que preserve el mensaje original
         const error = new Error(errorMessage) as Error & { status?: number; data?: unknown };
@@ -418,8 +426,13 @@ class ApiClient {
         throw new Error('La respuesta del servidor no es JSON válido.');
       }
     } catch (error) {
-      console.error(`[API] Error en ${url}:`, error);
-      
+      const err = error as Error & { status?: number };
+      if (err.status === 404) {
+        console.warn(`[API] 404 ${url}:`, error);
+      } else {
+        console.error(`[API] Error en ${url}:`, error);
+      }
+
       // Mejorar mensaje de error para "Failed to fetch" (problemas de CORS o conexión)
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         const enhancedError = new Error(
@@ -455,26 +468,51 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect });
   }
 
-  async post<T>(endpoint: string, body?: unknown, customBase?: string): Promise<T> {
-    const url = customBase ? `${customBase}${endpoint}` : undefined;
+  private resolveCustomBaseOpts(opts?: ApiClientCustomBase): { url?: string; skip500Redirect: boolean } {
+    if (opts == null) return { skip500Redirect: false };
+    if (typeof opts === 'string') {
+      const customBase = opts;
+      return {
+        url: customBase ? `${customBase.replace(/\/$/, '')}` : undefined,
+        skip500Redirect: false,
+      };
+    }
+    const customBase = opts.customBase?.replace(/\/$/, '') ?? '';
+    return {
+      url: customBase ? `${customBase}` : undefined,
+      skip500Redirect: Boolean(opts.skip500Redirect),
+    };
+  }
+
+  async post<T>(endpoint: string, body?: unknown, customBaseOrOpts?: ApiClientCustomBase): Promise<T> {
+    const { url: basePart, skip500Redirect } = this.resolveCustomBaseOpts(customBaseOrOpts);
+    const fullUrl = basePart ? `${basePart}${endpoint}` : undefined;
     return this.request<T>(endpoint, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
-      endpoint: url,
+      endpoint: fullUrl,
+      skip500Redirect,
     });
   }
 
-  async put<T>(endpoint: string, body?: unknown, customBase?: string): Promise<T> {
-    const url = customBase ? `${customBase}${endpoint}` : undefined;
+  async put<T>(endpoint: string, body?: unknown, customBaseOrOpts?: ApiClientCustomBase): Promise<T> {
+    const { url: basePart, skip500Redirect } = this.resolveCustomBaseOpts(customBaseOrOpts);
+    const fullUrl = basePart ? `${basePart}${endpoint}` : undefined;
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
-      endpoint: url,
+      endpoint: fullUrl,
+      skip500Redirect,
     });
   }
 
-  async patch<T>(endpoint: string, body?: unknown, customBase?: string, requestOptions?: { skip403Redirect?: boolean }): Promise<T> {
-    const url = customBase ? `${customBase}${endpoint}` : undefined;
+  async patch<T>(
+    endpoint: string,
+    body?: unknown,
+    customBase?: string,
+    requestOptions?: { skip403Redirect?: boolean; skip500Redirect?: boolean }
+  ): Promise<T> {
+    const url = customBase ? `${customBase.replace(/\/$/, '')}${endpoint}` : undefined;
     return this.request<T>(endpoint, {
       method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
@@ -483,9 +521,10 @@ class ApiClient {
     });
   }
 
-  async delete<T>(endpoint: string, customBase?: string): Promise<T> {
-    const url = customBase ? `${customBase}${endpoint}` : undefined;
-    return this.request<T>(endpoint, { method: 'DELETE', endpoint: url });
+  async delete<T>(endpoint: string, customBaseOrOpts?: ApiClientCustomBase): Promise<T> {
+    const { url: basePart, skip500Redirect } = this.resolveCustomBaseOpts(customBaseOrOpts);
+    const fullUrl = basePart ? `${basePart}${endpoint}` : undefined;
+    return this.request<T>(endpoint, { method: 'DELETE', endpoint: fullUrl, skip500Redirect });
   }
 }
 

@@ -26,8 +26,8 @@ export default function CotizacionesPage() {
 
   return (
     <PublicLayout>
-      <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
-        <div className="max-w-6xl mx-auto">
+      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
+        <div className="w-full max-w-none">
           <div className="text-center mb-12">
             <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Cotizaciones para Eventos Especiales

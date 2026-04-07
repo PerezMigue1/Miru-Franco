@@ -112,7 +112,7 @@ export default function ClienteDetallePage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="container mx-auto px-4 py-12">
+        <div className="layout-page py-12">
           <p className="text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando cliente...</p>
         </div>
       </AdminLayout>
@@ -122,7 +122,7 @@ export default function ClienteDetallePage() {
   if (error || !cliente) {
     return (
       <AdminLayout>
-        <div className="container mx-auto px-4 py-12">
+        <div className="layout-page py-12">
           <p className="text-center" style={{ color: 'var(--danger)' }}>{error || 'Cliente no encontrado'}</p>
           <div className="text-center mt-4">
             <Button variant="outline" onClick={() => router.push('/admin/clientes-crm')}>
@@ -156,8 +156,8 @@ export default function ClienteDetallePage() {
         }
       />
 
-      <div className="container mx-auto px-4 pb-12">
-        <div className="max-w-6xl mx-auto">
+      <div className="layout-page pb-12">
+        <div className="w-full max-w-none">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <Card>

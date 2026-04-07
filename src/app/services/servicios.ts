@@ -227,7 +227,7 @@ export type ServiciosResult = { data: Servicio[]; error: null } | { data: Servic
 
 /**
  * Obtiene el listado de servicios sin redirigir en 401/500.
- * Usa GET {NEXT_PUBLIC_API_URL}/api/servicios (ej. http://localhost:3001/api/servicios).
+ * Usa GET {NEXT_PUBLIC_API_URL}/api/servicios (desde `getBackendBaseUrl()`).
  * Acepta respuesta en formato array o { data: [] } / { servicios: [] }.
  */
 export async function getServicios(): Promise<ServiciosResult> {

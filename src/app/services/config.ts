@@ -49,6 +49,17 @@ export default API_URL;
 // Funciones que se ejecutan en runtime (no en build time)
 // Esto asegura que las variables de entorno se lean correctamente en Vercel
 export const getBackendBaseUrl = () => getBackendBase();
+
+/**
+ * Base URL para rutas REST bajo `/api` (pedidos, carrito, `payments/*`, etc.).
+ * `NEXT_PUBLIC_API_URL` puede ser `https://host` o `https://host/api`; `getBackendBase()` normaliza al host sin `/api`.
+ */
+export const getRestApiBaseUrl = (): string => {
+  const b = getBackendBaseUrl().replace(/\/$/, '');
+  if (!b) return '';
+  return `${b}/api`;
+};
+
 export const getApiBaseUrl = () => `${getBackendBase()}/api/auth`;
 
 // Para compatibilidad con código existente, exportar como funciones

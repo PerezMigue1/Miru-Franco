@@ -15,18 +15,21 @@ export default function PaquetesPage() {
   const router = useRouter();
   const [paquetes, setPaquetes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // Estados para el Modal de eliminación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [idParaEliminar, setIdParaEliminar] = useState<string | null>(null);
 
   const cargarDatos = async () => {
     try {
+      setLoadError(null);
       setLoading(true);
       const data = await getPaquetes();
       setPaquetes(Array.isArray(data) ? data : (data.data || []));
     } catch (err) {
-      console.error("Error al cargar:", err);
+      const msg = err instanceof Error ? err.message : 'Error al cargar paquetes';
+      setLoadError(msg);
     } finally {
       setLoading(false);
     }
@@ -68,6 +71,18 @@ export default function PaquetesPage() {
         actions={<Button variant="outline" onClick={() => router.push('/admin/servicios')}>Volver</Button>}
       />
 
+      {loadError && (
+        <Card className="mb-4 border-amber-700/50 bg-amber-950/30">
+          <div className="p-4 text-amber-100 text-sm space-y-2">
+            <p className="font-semibold text-amber-50">No se pudieron cargar los paquetes</p>
+            <p className="text-amber-200/90 whitespace-pre-wrap">{loadError}</p>
+            <Button variant="outline" size="sm" onClick={() => cargarDatos()}>
+              Reintentar
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <Card>
         <Table headers={['Evento', 'Servicios', 'Precio', 'Acciones']}>
           {!loading && paquetes.map((p) => {
@@ -99,6 +114,9 @@ export default function PaquetesPage() {
           })}
         </Table>
         {loading && <div className="p-10 text-center">Cargando paquetes...</div>}
+        {!loading && !loadError && paquetes.length === 0 && (
+          <div className="p-10 text-center text-gray-500">No hay paquetes registrados.</div>
+        )}
       </Card>
 
       {/* Modal de Confirmación */}

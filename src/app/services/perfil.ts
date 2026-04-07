@@ -207,6 +207,27 @@ export interface ActualizarMiPerfilPayload {
   recibePromociones?: boolean;
 }
 
+/**
+ * Claves permitidas en PATCH `/api/auth/me` según el DTO del backend (ValidationPipe whitelist).
+ * Campos de perfil capilar / aviso de privacidad se omiten en la petición hasta que el API los exponga en el DTO.
+ */
+function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (payload.nombre !== undefined) body.nombre = payload.nombre;
+  if (payload.telefono !== undefined) body.telefono = payload.telefono;
+  if (payload.foto !== undefined) body.foto = payload.foto;
+  if (payload.recibePromociones !== undefined) body.recibePromociones = payload.recibePromociones;
+  if (payload.fechaNacimiento !== undefined) {
+    const v = payload.fechaNacimiento;
+    if (v && !String(v).includes('T')) {
+      body.fechaNacimiento = `${v}T12:00:00.000Z`;
+    } else {
+      body.fechaNacimiento = v;
+    }
+  }
+  return body;
+}
+
 export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
   const res = await apiClient.get<unknown>('/api/auth/me', BASE());
   const obj = unwrapUsuarioPayload(res);
@@ -215,10 +236,7 @@ export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
 }
 
 export async function patchMiPerfil(payload: ActualizarMiPerfilPayload): Promise<PerfilUsuarioCompleto> {
-  const body: Record<string, unknown> = { ...payload };
-  if (payload.fechaNacimiento && !payload.fechaNacimiento.includes('T')) {
-    body.fechaNacimiento = `${payload.fechaNacimiento}T12:00:00.000Z`;
-  }
+  const body = cuerpoPatchAuthMe(payload);
   const res = await apiClient.patch<unknown>('/api/auth/me', body, BASE());
   const obj = unwrapUsuarioPayload(res);
   if (!obj) throw new Error('El servidor no devolvió el perfil actualizado');
@@ -289,8 +307,9 @@ function direccionFromUpdateResponse(res: unknown): DireccionUsuarioDTO | null {
   return null;
 }
 
-export async function listarDireccionesUsuario(): Promise<DireccionUsuarioDTO[]> {
-  const res = await apiClient.get<unknown>('/api/direcciones-usuario', BASE());
+export async function listarDireccionesUsuario(opciones?: { usuarioId?: string }): Promise<DireccionUsuarioDTO[]> {
+  const q = opciones?.usuarioId ? `?usuarioId=${encodeURIComponent(opciones.usuarioId)}` : '';
+  const res = await apiClient.get<unknown>(`/api/direcciones-usuario${q}`, BASE());
   if (Array.isArray(res)) {
     return res
       .map((d) => (d && typeof d === 'object' ? normalizarDireccion(d as Record<string, unknown>) : null))

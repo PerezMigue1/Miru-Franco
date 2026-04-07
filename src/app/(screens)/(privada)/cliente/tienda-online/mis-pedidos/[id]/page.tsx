@@ -90,7 +90,7 @@ export default function DetallePedidoPage() {
   if (loading) {
     return (
       <ModuleLayout>
-        <div className="max-w-6xl mx-auto py-12 text-center">
+        <div className="w-full max-w-none py-12 text-center">
           <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando pedido…</p>
         </div>
       </ModuleLayout>
@@ -100,7 +100,7 @@ export default function DetallePedidoPage() {
   if (error || !pedido) {
     return (
       <ModuleLayout>
-        <div className="max-w-6xl mx-auto py-12">
+        <div className="w-full max-w-none py-12">
           <Card className="p-8 text-center">
             <p className="mb-4" style={{ color: 'var(--danger)' }}>
               {error ?? 'Pedido no encontrado'}
@@ -118,7 +118,7 @@ export default function DetallePedidoPage() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-none">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <Button variant="outline" size="sm" className="mb-2" onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}>

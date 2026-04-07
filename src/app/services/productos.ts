@@ -1,5 +1,5 @@
 // Servicio de productos para tienda-online
-// Usa GET http://localhost:3001/api/productos (NEXT_PUBLIC_API_URL + /api/productos)
+// Usa GET {NEXT_PUBLIC_API_URL}/api/productos (getBackendBaseUrl + /api/productos)
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';

@@ -167,7 +167,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </header>
 
       <main
-        className="flex-1 w-full mx-auto px-4 pt-1.5 pb-6 md:px-6 md:pt-2 md:pb-8"
+        className="flex-1 layout-page pt-1.5 pb-6 md:pt-2 md:pb-8"
         style={{ marginTop: ADMIN_BAR_HEIGHT }}
       >
         <GlobalBreadcrumb />

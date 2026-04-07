@@ -173,7 +173,7 @@ function DireccionesPageContent() {
 
   return (
     <PublicLayout>
-      <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
+      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
         <div className="max-w-4xl mx-auto">
           <Breadcrumb items={getBreadcrumbsForPath(pathname ?? '/cliente/direcciones')} />
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8 mt-2">
@@ -377,7 +377,7 @@ export default function DireccionesPage() {
     <Suspense
       fallback={
         <PublicLayout>
-          <div className="container mx-auto px-4 py-12" style={{ marginTop: '136px' }}>
+          <div className="layout-page py-12" style={{ marginTop: '136px' }}>
             <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
           </div>
         </PublicLayout>

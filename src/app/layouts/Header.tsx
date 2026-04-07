@@ -11,6 +11,7 @@ import { clearAuthData, getToken } from '../utils/security';
 import { useCart } from '../context/CartContext';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
+import { listarNotificaciones } from '../services/ecommerce';
 
 export default function Header() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('Usuario');
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
-  const notificationsCount = 0; // Cambia este valor cuando tengas notificaciones
+  const [notificationsCount, setNotificationsCount] = useState(0);
 
   const syncUserFromStorage = () => {
     const token = getToken();
@@ -63,6 +64,33 @@ export default function Header() {
     window.addEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
     return () => window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const cargarNotificaciones = async () => {
+      if (!getToken()) {
+        if (!cancelled) setNotificationsCount(0);
+        return;
+      }
+      try {
+        const list = await listarNotificaciones();
+        if (cancelled) return;
+        const noLeidas = list.filter((n) => n.leida !== true).length;
+        setNotificationsCount(noLeidas);
+      } catch {
+        if (!cancelled) setNotificationsCount(0);
+      }
+    };
+    void cargarNotificaciones();
+    const onRefresh = () => void cargarNotificaciones();
+    window.addEventListener(MIRU_USER_STORAGE_UPDATED, onRefresh);
+    window.addEventListener('focus', onRefresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onRefresh);
+      window.removeEventListener('focus', onRefresh);
+    };
+  }, [pathname]);
 
   // Cerrar menú usuario al hacer clic fuera
   useEffect(() => {
@@ -122,7 +150,7 @@ export default function Header() {
     <>
       {/* Barra Superior - Top Header */}
       <header className="fixed top-0 left-0 right-0 z-50 shadow-sm bg-header-footer">
-        <div className="container mx-auto px-4">
+        <div className="layout-page">
           <div className="flex items-center justify-between" style={{ minHeight: '56px', padding: '8px 0' }}>
             {/* Izquierda: Menu + Logo */}
             <div className="flex items-center gap-4">
@@ -201,6 +229,7 @@ export default function Header() {
               {/* Notificaciones */}
               <div className="relative">
                 <button
+                  onClick={() => router.push('/cliente/notificaciones')}
                   className="p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
                   aria-label="Notificaciones"
                 >
@@ -392,7 +421,7 @@ export default function Header() {
 
       {/* Barra de Navegación Secundaria */}
       <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ top: '72px', backgroundColor: '#710014' }}>
-        <div className="container mx-auto px-4">
+        <div className="layout-page">
           <div className="flex items-center justify-center h-14">
             <MenuHorizontal />
           </div>

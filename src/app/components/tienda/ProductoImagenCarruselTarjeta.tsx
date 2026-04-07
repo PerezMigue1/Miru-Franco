@@ -41,7 +41,7 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
 
   return (
     <div
-      className="relative h-full w-full"
+      className="relative z-0 isolate h-full w-full"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -65,7 +65,7 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
       ))}
       {n > 1 && (
         <div
-          className="pointer-events-none absolute bottom-2 left-0 right-0 z-[2] flex justify-center gap-1"
+          className="pointer-events-none absolute bottom-2 left-0 right-0 z-[5] flex justify-center gap-1"
           aria-hidden
         >
           {safe.map((_, idx) => (

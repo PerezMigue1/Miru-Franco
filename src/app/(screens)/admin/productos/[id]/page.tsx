@@ -426,7 +426,7 @@ export default function ProductoDetalleAdminPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="container mx-auto px-4 py-12" >
+        <div className="layout-page py-12" >
           <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando producto...
           </p>
@@ -438,7 +438,7 @@ export default function ProductoDetalleAdminPage() {
   if (error || !producto) {
     return (
       <AdminLayout>
-        <div className="container mx-auto px-4 py-12" >
+        <div className="layout-page py-12" >
           <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
             {error ?? 'Producto no encontrado'}
           </p>
@@ -451,8 +451,8 @@ export default function ProductoDetalleAdminPage() {
 
   return (
     <AdminLayout>
-      <div className="container mx-auto px-4 py-12" >
-        <div className="max-w-6xl mx-auto">
+      <div className="layout-page py-12" >
+        <div className="w-full max-w-none">
           <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
             <div className="flex items-center gap-3">
               {successMessage && (
