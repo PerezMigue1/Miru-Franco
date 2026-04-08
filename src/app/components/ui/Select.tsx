@@ -1,6 +1,6 @@
 'use client';
 
-import { SelectHTMLAttributes, ReactNode } from 'react';
+import { SelectHTMLAttributes } from 'react';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;

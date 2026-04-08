@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { hasValidToken } from '../../../utils/security';
 import ModuleLayout from '../../../components/layouts/ModuleLayout';
@@ -8,18 +8,15 @@ import UserProfile from '../../../components/perfil/UserProfile';
 
 export default function PerfilPage() {
   const router = useRouter();
-  /** Siempre null al inicio: en SSR no hay localStorage; evita hydration mismatch con ModuleLayout. */
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const isAuthed = typeof window !== 'undefined' && hasValidToken();
 
   useEffect(() => {
-    if (!hasValidToken()) {
+    if (!isAuthed) {
       router.replace('/login?returnUrl=/perfil');
-      return;
     }
-    setAllowed(true);
-  }, [router]);
+  }, [isAuthed, router]);
 
-  if (allowed !== true) {
+  if (!isAuthed) {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center"

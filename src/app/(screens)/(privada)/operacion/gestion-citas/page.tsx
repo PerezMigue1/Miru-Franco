@@ -10,7 +10,6 @@ import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
-import { colors } from '../../../../utils/colors';
 
 export default function GestionCitasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);

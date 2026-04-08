@@ -390,6 +390,7 @@ export default function Register({
     }
     
     if (!skipValidation) {
+      if (!validateStep3()) return;
       // Primero validar y obtener los errores
       const validationErrors: Record<string, string> = {};
       

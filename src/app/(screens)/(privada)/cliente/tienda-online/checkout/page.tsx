@@ -315,13 +315,6 @@ export default function CheckoutPage() {
     return metodosPagoGuardados;
   }, [metodosPagoGuardados, metodoPago.tipo]);
 
-  const tarjetaPreviewPaso3 = useMemo(() => {
-    if (tarjetaGuardadaId) {
-      return metodosPagoGuardados.find((m) => m.id === tarjetaGuardadaId) ?? null;
-    }
-    return metodosPagoGuardados.find((m) => m.esPredeterminada) ?? metodosPagoGuardados[0] ?? null;
-  }, [tarjetaGuardadaId, metodosPagoGuardados]);
-
   useEffect(() => {
     if (
       tarjetaGuardadaId &&
@@ -344,7 +337,7 @@ export default function CheckoutPage() {
     () => calcularResumenVentaCarrito(items, tipoEntrega),
     [items, tipoEntrega]
   );
-  const { subtotal, costoEnvio: envio, impuestos, descuento, total } = resumenVenta;
+  const { subtotal, costoEnvio: envio, total } = resumenVenta;
 
   useEffect(() => {
     if (cartLoading) return;

@@ -28,12 +28,8 @@ export default function Login({
   const [isResending, setIsResending] = useState(false);
   // Guardar credenciales para reintentar login después de verificar
   const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null);
-  // Manejo de bloqueo por fuerza bruta
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const [formDisabled, setFormDisabled] = useState(false);
   // Manejo de rate limiting para reenvío de código
-  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   
   // Usar refs para guardar valores y evitar que se borren
@@ -49,7 +45,6 @@ export default function Login({
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
       setCountdown(null);
-      setRetryAfter(null);
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.general;
@@ -184,10 +179,6 @@ export default function Login({
         if (lowerError.includes('bloqueada') || lowerError.includes('bloqueado')) {
           const match = errorMessage.match(/(\d+)\s*minutos?/i);
           const minutos = match ? parseInt(match[1]) : 15;
-          const blockedUntilTime = Date.now() + (minutos * 60 * 1000);
-          
-          setIsBlocked(true);
-          setBlockedUntil(blockedUntilTime);
           setFormDisabled(true);
           
           // NO borrar los datos del formulario, solo mostrar el error
@@ -199,8 +190,6 @@ export default function Login({
           // Habilitar formulario después del tiempo de bloqueo
           setTimeout(() => {
             setFormDisabled(false);
-            setIsBlocked(false);
-            setBlockedUntil(null);
             setErrors(prev => {
               const newErrors = { ...prev };
               delete newErrors.general;
@@ -378,7 +367,6 @@ export default function Login({
     }
 
     setIsResending(true);
-    setRetryAfter(null);
     setCountdown(null);
     // NO borrar todos los errores, solo el general
     setErrors(prev => {
@@ -401,7 +389,6 @@ export default function Login({
       const err = error as Error & { status?: number; retryAfter?: number };
       if (err.status === 429) {
         const retrySeconds = err.retryAfter || 60;
-        setRetryAfter(retrySeconds);
         setCountdown(retrySeconds);
         setErrors({ 
           general: `Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.` 

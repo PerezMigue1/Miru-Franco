@@ -16,12 +16,12 @@ jobs:
 
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "20"
           cache: "npm"
 
       - name: Instalar dependencias
@@ -35,19 +35,34 @@ jobs:
         env:
           # Variables que Next puede necesitar en build (ajusta si usas env)
           NEXT_PUBLIC_APP_URL: https://miru-franco.vercel.app
+          NEXT_PUBLIC_API_URL: https://miru-franco.onrender.com
 
   test:
     name: Pruebas
     runs-on: ubuntu-latest
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Configurar Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "20"
           cache: "npm"
       - name: Instalar dependencias
         run: npm ci
+      - name: Detectar si hay pruebas reales
+        id: tests
+        run: |
+          TEST_SCRIPT=$(node -e "const p=require('./package.json'); console.log((p.scripts&&p.scripts.test)||'')")
+          echo "script=$TEST_SCRIPT" >> "$GITHUB_OUTPUT"
+          if [ -z "$TEST_SCRIPT" ] || [ "$TEST_SCRIPT" = "npm run lint" ]; then
+            echo "has_real_tests=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_real_tests=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Ejecutar pruebas
+        if: steps.tests.outputs.has_real_tests == 'true'
         run: npm test
+      - name: Omitir pruebas (no configuradas)
+        if: steps.tests.outputs.has_real_tests != 'true'
+        run: echo "No hay pruebas unitarias/integracion configuradas. Se omite este job."

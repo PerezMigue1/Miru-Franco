@@ -21,7 +21,6 @@ export default function ForgotPasswordOTP({
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos en segundos
-  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const emailEnviadoRef = useRef<string | null>(null);
 
@@ -44,7 +43,6 @@ export default function ForgotPasswordOTP({
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
       setCountdown(null);
-      setRetryAfter(null);
       setError('');
       setMensaje('');
     }
@@ -127,7 +125,6 @@ export default function ForgotPasswordOTP({
     setIsResending(true);
     setError('');
     setMensaje('');
-    setRetryAfter(null);
     setCountdown(null);
 
     try {
@@ -147,7 +144,6 @@ export default function ForgotPasswordOTP({
       const error = err as Error & { status?: number; retryAfter?: number };
       if (error.status === 429) {
         const retrySeconds = error.retryAfter || 60;
-        setRetryAfter(retrySeconds);
         setCountdown(retrySeconds);
         setMensaje(`Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.`);
         setError('');

@@ -22,6 +22,7 @@ import {
   obtenerRealtimeMetricsDirecto,
   obtenerQueryInsightsDirecto,
   type ResultadoImportacion,
+  type ModoImportacion,
   type FormatoDiagrama,
   type OpcionesExportDirecto,
   type ActivityRowDirecta,
@@ -90,6 +91,12 @@ const FORMATOS_EXPORT = [
   { value: 'csv', label: 'CSV' },
   { value: 'json', label: 'JSON' },
 ] as const;
+
+const MODOS_IMPORTACION: Array<{ value: ModoImportacion; label: string }> = [
+  { value: 'missing_only', label: 'Solo faltantes (recomendado)' },
+  { value: 'upsert', label: 'Actualizar existentes + insertar faltantes' },
+  { value: 'append', label: 'Append (insertar todo lo del archivo)' },
+];
 
 const FORMATOS_DIAGRAMA: { value: FormatoDiagrama; label: string }[] = [
   { value: 'mermaid', label: 'Mermaid (.mmd)' },
@@ -187,6 +194,7 @@ function saveHistorialExportaciones(historial: EntradaHistorialExport[]): void {
 export default function BaseDatosPage() {
   const [tablaImport, setTablaImport] = useState('');
   const [archivoImport, setArchivoImport] = useState<File | null>(null);
+  const [modoImportacion, setModoImportacion] = useState<ModoImportacion>('missing_only');
   const [importando, setImportando] = useState(false);
   const [resultadoImport, setResultadoImport] = useState<ResultadoImportacion | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -343,7 +351,7 @@ export default function BaseDatosPage() {
     }
     setImportando(true);
     setResultadoImport(null);
-    const res = await importarDatos(tablaImport, archivoImport);
+    const res = await importarDatos(tablaImport, archivoImport, modoImportacion);
     setResultadoImport(res);
     setImportando(false);
     if (res.success) {
@@ -1178,6 +1186,19 @@ export default function BaseDatosPage() {
                     </p>
                   )}
                 </div>
+                <div>
+                  <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                    Modo de importación
+                  </label>
+                  <Select
+                    options={MODOS_IMPORTACION}
+                    value={modoImportacion}
+                    onChange={(e) => setModoImportacion(e.target.value as ModoImportacion)}
+                  />
+                  <p className="mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                    Usa <code className="bg-black/10 px-1 rounded">Solo faltantes</code> para recuperar eliminados sin duplicar.
+                  </p>
+                </div>
                 <Button type="submit" disabled={importando}>
                   {importando ? 'Importando…' : 'Importar'}
                 </Button>
@@ -1185,7 +1206,7 @@ export default function BaseDatosPage() {
               {resultadoImport != null && (() => {
                 const r = resultadoImport!;
                 if (r.success) {
-                  const { importados, fallidos, errores } = r as Extract<ResultadoImportacion, { success: true }>;
+                  const { importados, fallidos, actualizados, omitidos, modo, errores } = r as Extract<ResultadoImportacion, { success: true }>;
                   return (
                     <div
                       className="mt-4 p-4 rounded-lg text-sm"
@@ -1196,10 +1217,21 @@ export default function BaseDatosPage() {
                     >
                       <p className="font-medium">
                         Importados: {importados}
+                        {(actualizados ?? 0) > 0 && (
+                          <> • Actualizados: {actualizados ?? 0}</>
+                        )}
+                        {(omitidos ?? 0) > 0 && (
+                          <> • Omitidos: {omitidos ?? 0}</>
+                        )}
                         {(fallidos ?? 0) > 0 && (
                           <> • Fallidos: {fallidos ?? 0}</>
                         )}
                       </p>
+                      {modo && (
+                        <p className="mt-1 opacity-90">
+                          Modo aplicado: <code className="bg-black/10 px-1 rounded">{modo}</code>
+                        </p>
+                      )}
                       {(errores?.length ?? 0) > 0 && (
                         <ul className="mt-2 list-disc list-inside space-y-1 opacity-90">
                           {(errores ?? []).slice(0, 5).map((err, i) => (

@@ -31,14 +31,33 @@ export const TABLAS_EXPORTABLES = [
 export type TablaDisponible = (typeof TABLAS_DISPONIBLES)[number]['value'];
 
 export type ResultadoImportacion =
-  | { success: true; importados: number; fallidos?: number; errores?: Array<{ fila: number; mensaje: string }> }
+  | {
+      success: true;
+      importados: number;
+      fallidos?: number;
+      actualizados?: number;
+      omitidos?: number;
+      modo?: 'append' | 'missing_only' | 'upsert';
+      errores?: Array<{ fila: number; mensaje: string }>;
+    }
   | { success: false; error: string };
+
+export type ModoImportacion = 'append' | 'missing_only' | 'upsert';
+export type TablaImportable = {
+  tabla: string;
+  modosPermitidos: ModoImportacion[];
+  conflictKeys?: string[];
+};
 
 /**
  * Importa datos desde CSV o JSON.
  * POST /api/db/import (multipart: tabla + archivo)
  */
-export async function importarDatos(tabla: string, archivo: File): Promise<ResultadoImportacion> {
+export async function importarDatos(
+  tabla: string,
+  archivo: File,
+  modo: ModoImportacion = 'missing_only'
+): Promise<ResultadoImportacion> {
   const base = getBackendBaseUrl();
   const token = getToken();
   if (!token) {
@@ -48,6 +67,7 @@ export async function importarDatos(tabla: string, archivo: File): Promise<Resul
   const formData = new FormData();
   formData.append('tabla', tabla);
   formData.append('archivo', archivo);
+  formData.append('modo', modo);
 
   try {
     const res = await fetch(`${base}${DB_API_PREFIX}/import`, {
@@ -68,14 +88,70 @@ export async function importarDatos(tabla: string, archivo: File): Promise<Resul
 
     const importados = typeof data.importados === 'number' ? data.importados : 0;
     const fallidos = typeof data.fallidos === 'number' ? data.fallidos : 0;
+    const actualizados = typeof data.actualizados === 'number' ? data.actualizados : 0;
+    const omitidos = typeof data.omitidos === 'number' ? data.omitidos : 0;
+    const modoResp =
+      data.modo === 'append' || data.modo === 'missing_only' || data.modo === 'upsert'
+        ? (data.modo as ModoImportacion)
+        : undefined;
     const errores = Array.isArray(data.errores) ? data.errores : [];
 
     return {
       success: true,
       importados,
       fallidos,
+      actualizados,
+      omitidos,
+      modo: modoResp,
       errores,
     };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Obtiene tablas/modes soportados por el backend para importación segura.
+ * GET /api/db/import/tables
+ */
+export async function obtenerTablasImportables(): Promise<
+  { success: true; tablas: TablaImportable[] } | { success: false; error: string }
+> {
+  const base = getBackendBaseUrl();
+  const token = getToken();
+  if (!token) {
+    return { success: false, error: 'Debes iniciar sesión' };
+  }
+  try {
+    const res = await fetch(`${base}${DB_API_PREFIX}/import/tables`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: 'include',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = (data.message ?? data.error ?? `Error ${res.status}`) as string;
+      return { success: false, error: msg };
+    }
+    const tablasRaw = Array.isArray(data.tablas) ? data.tablas : [];
+    const tablas = tablasRaw
+      .map((t) => {
+        const tabla = String(t?.tabla ?? '').trim();
+        const modosRaw = Array.isArray(t?.modosPermitidos) ? t.modosPermitidos : [];
+        const modosPermitidos = modosRaw.filter(
+          (m): m is ModoImportacion => m === 'append' || m === 'missing_only' || m === 'upsert'
+        );
+        const conflictKeys = Array.isArray(t?.conflictKeys)
+          ? t.conflictKeys.map((c: unknown) => String(c))
+          : [];
+        return tabla ? { tabla, modosPermitidos, conflictKeys } : null;
+      })
+      .filter((t): t is TablaImportable => !!t);
+
+    return { success: true, tablas };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
     return { success: false, error: msg };

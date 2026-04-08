@@ -6,7 +6,6 @@ import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
-import Input from '../../../components/ui/Input';
 
 export default function GestionPersonalPage() {
   const empleados = [

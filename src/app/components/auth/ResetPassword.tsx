@@ -63,7 +63,6 @@ export default function ResetPassword({
         setTokenValidado(true);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenFromProps, emailFromProps]);
 
   const validarTokenRecuperacion = async (email: string, token: string) => {

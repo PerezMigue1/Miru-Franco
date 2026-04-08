@@ -22,23 +22,20 @@ export function EditorImagenesPresentacionCloudinary({
   uploadLabel = 'Subir imágenes',
 }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const effectivePreviewUrl = previewUrl && urls.includes(previewUrl) ? previewUrl : null;
   const urlsRef = useRef(urls);
   useEffect(() => {
     urlsRef.current = urls;
   }, [urls]);
 
   useEffect(() => {
-    if (!previewUrl) return;
+    if (!effectivePreviewUrl) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setPreviewUrl(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [previewUrl]);
-
-  useEffect(() => {
-    if (previewUrl && !urls.includes(previewUrl)) setPreviewUrl(null);
-  }, [urls, previewUrl]);
+  }, [effectivePreviewUrl]);
 
   const remove = (index: number) => {
     onChange(urls.filter((_, i) => i !== index));
@@ -104,12 +101,12 @@ export function EditorImagenesPresentacionCloudinary({
       />
 
       <Modal
-        isOpen={!!previewUrl}
+        isOpen={!!effectivePreviewUrl}
         onClose={() => setPreviewUrl(null)}
         title="Vista previa"
         size="xl"
       >
-        {previewUrl && (
+        {effectivePreviewUrl && (
           <div className="flex flex-col gap-2">
             <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
               Clic fuera del recuadro, el botón ✕ o la tecla Escape para cerrar.
@@ -120,7 +117,7 @@ export function EditorImagenesPresentacionCloudinary({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={previewUrl}
+                src={effectivePreviewUrl}
                 alt="Vista previa ampliada"
                 className="max-h-[min(82vh,880px)] w-auto max-w-full object-contain"
               />

@@ -21,7 +21,6 @@ export default function ForgotPassword({
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ email?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   
   // Contador regresivo para rate limiting
@@ -33,7 +32,6 @@ export default function ForgotPassword({
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
       setCountdown(null);
-      setRetryAfter(null);
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.general;
@@ -76,7 +74,6 @@ export default function ForgotPassword({
     }
     
     setIsLoading(true);
-    setRetryAfter(null);
     setCountdown(null);
     // NO limpiar todos los errores, solo el general para mantener errores de campos
     setErrors(prev => {
@@ -103,7 +100,6 @@ export default function ForgotPassword({
       const err = error as Error & { status?: number; retryAfter?: number };
       if (err.status === 429) {
         const retrySeconds = err.retryAfter || 60;
-        setRetryAfter(retrySeconds);
         setCountdown(retrySeconds);
         setErrors({ 
           general: `Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.` 
@@ -116,10 +112,6 @@ export default function ForgotPassword({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleBackToLogin = () => {
-    onSwitchToLogin?.();
   };
 
   return (

@@ -51,7 +51,7 @@ export default function DetallePaquetePage() {
       });
       alert("¡Paquete actualizado!");
       router.push('/admin/paquetes');
-    } catch (err) {
+    } catch {
       alert("Error al actualizar");
     } finally {
       setSaving(false);

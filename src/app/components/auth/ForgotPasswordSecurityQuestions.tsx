@@ -27,7 +27,6 @@ export default function ForgotPasswordSecurityQuestions({
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<{ email?: string; answers?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   
   // Contador regresivo para rate limiting
@@ -39,7 +38,6 @@ export default function ForgotPasswordSecurityQuestions({
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
       setCountdown(null);
-      setRetryAfter(null);
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.email;
@@ -47,16 +45,6 @@ export default function ForgotPasswordSecurityQuestions({
       });
     }
   }, [countdown]);
-
-  const predefinedQuestions = [
-    '¿Cuál era el nombre de tu primera mascota?',
-    '¿En qué ciudad naciste?',
-    '¿Cuál era el nombre de tu mejor amigo/a de la infancia?',
-    '¿Cuál era el nombre de tu colegio primario?',
-    '¿Cuál era el nombre de tu profesor/a favorito/a?',
-    '¿Cuál era el modelo de tu primer auto?',
-    '¿Cómo se llamaba tu abuela materna?',
-  ];
 
   const validateEmail = () => {
     const newErrors: { email?: string } = {};
@@ -96,7 +84,6 @@ export default function ForgotPasswordSecurityQuestions({
     }
     
     setIsLoading(true);
-    setRetryAfter(null);
     setCountdown(null);
     setErrors({}); // Limpiar errores previos
     
@@ -143,7 +130,6 @@ export default function ForgotPasswordSecurityQuestions({
       const err = error as Error & { status?: number; retryAfter?: number };
       if (err.status === 429) {
         const retrySeconds = err.retryAfter || 60;
-        setRetryAfter(retrySeconds);
         setCountdown(retrySeconds);
         setErrors({ 
           email: `Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.` 

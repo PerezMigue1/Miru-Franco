@@ -15,7 +15,6 @@ import type { PedidoApi } from '../../../../../services/ecommerce';
 export default function MisPedidosPage() {
   const router = useRouter();
   const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
-  const [counts, setCounts] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState('');

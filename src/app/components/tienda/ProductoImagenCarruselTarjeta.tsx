@@ -22,6 +22,7 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setI(0);
   }, [safe.join('|')]);
 

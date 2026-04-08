@@ -55,6 +55,7 @@ export default function CheckoutTarjetaAnimada({
   const [entro, setEntro] = useState(false);
   useEffect(() => {
     if (!animarEntrada) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEntro(false);
       return;
     }

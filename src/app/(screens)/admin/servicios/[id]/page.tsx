@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
 import Card from '../../../../components/ui/Card';
@@ -232,7 +233,7 @@ export default function ServicioDetalleAdminPage() {
                   <Input 
                     placeholder="Pegar URL de la imagen..."
                     value={nuevaImagenUrl}
-                    onChange={(e: any) => setNuevaImagenUrl(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setNuevaImagenUrl(e.target.value)}
                     fullWidth
                   />
                   <Button variant="outline" onClick={handleAgregarImagen} disabled={imagenes.length >= 5}>
@@ -243,11 +244,16 @@ export default function ServicioDetalleAdminPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                   {imagenes.map((img, index) => (
                     <div key={index} className="relative aspect-square border rounded-md overflow-hidden bg-gray-50 group">
-                      <img 
-                        src={img} 
-                        alt={`Servicio ${index}`} 
-                        className="w-full h-full object-cover"
-                        onError={(e: any) => { e.target.src = 'https://via.placeholder.com/150?text=Error'; }}
+                      <Image
+                        src={img}
+                        alt={`Servicio ${index}`}
+                        fill
+                        sizes="160px"
+                        className="object-cover"
+                        unoptimized
+                        onError={(e: SyntheticEvent<HTMLImageElement>) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
+                        }}
                       />
                       <button
                         onClick={() => handleQuitarImagen(index)}

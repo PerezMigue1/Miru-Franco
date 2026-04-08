@@ -23,7 +23,6 @@ export default function ActivateAccount({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
 
   // Validación del código OTP
@@ -116,7 +115,6 @@ export default function ActivateAccount({
     
     setIsResending(true);
     setError('');
-    setRetryAfter(null);
     setCountdown(null);
     // Solo limpiar mensaje si no es automático
     if (!esAutomatico) {
@@ -153,7 +151,6 @@ export default function ActivateAccount({
       const error = err as Error & { status?: number; retryAfter?: number };
       if (error.status === 429) {
         const retrySeconds = error.retryAfter || 60;
-        setRetryAfter(retrySeconds);
         setCountdown(retrySeconds);
         setMensaje(`Demasiados intentos. Espera ${retrySeconds} segundos antes de intentar nuevamente.`);
         setError('');
@@ -178,7 +175,6 @@ export default function ActivateAccount({
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
       setCountdown(null);
-      setRetryAfter(null);
       setError('');
     }
   }, [countdown]);

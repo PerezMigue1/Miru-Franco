@@ -11,9 +11,17 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 
+type PaqueteRow = {
+  id?: string;
+  _id?: string;
+  tipo_evento?: string;
+  servicios_vinculados?: string[];
+  precio_especial?: number | string;
+};
+
 export default function PaquetesPage() {
   const router = useRouter();
-  const [paquetes, setPaquetes] = useState<any[]>([]);
+  const [paquetes, setPaquetes] = useState<PaqueteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -26,11 +34,11 @@ export default function PaquetesPage() {
       setLoadError(null);
       setLoading(true);
       const data = await getPaquetes();
-      let list: unknown[] = [];
+      let list: PaqueteRow[] = [];
       if (Array.isArray(data)) list = data;
       else if (data && typeof data === 'object' && 'data' in data) {
         const inner = (data as { data: unknown }).data;
-        if (Array.isArray(inner)) list = inner;
+        if (Array.isArray(inner)) list = inner as PaqueteRow[];
       }
       setPaquetes(list);
     } catch (err) {
@@ -53,8 +61,9 @@ export default function PaquetesPage() {
       setShowDeleteModal(false);
       setIdParaEliminar(null);
       alert("Paquete eliminado correctamente");
-    } catch (err: any) {
-      alert(`No se pudo eliminar: ${err.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      alert(`No se pudo eliminar: ${message}`);
     }
   };
 

@@ -55,12 +55,6 @@ export default function AuthContainer({
     setCurrentView('enlace-enviado');
   };
 
-  const handleOTPCodeSent = (email: string) => {
-    // Cuando se envía el código OTP, cambiar a la vista de verificación
-    setRecoveryEmail(email);
-    setCurrentView('forgot-otp');
-  };
-
   const handleOTPCodeVerified = (email: string, token: string) => {
     // Cuando se verifica el código OTP, guardar token con expiración de 10 minutos
     setRecoveryIdentifier(email);

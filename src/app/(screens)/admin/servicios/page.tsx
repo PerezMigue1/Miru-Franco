@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
@@ -11,7 +11,7 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
 import { getCategoryColor } from '../../../utils/categoryColors';
-import { getServicios, createServicio, deleteServicio } from '../../../services/servicios';
+import { getServicios, createServicio, deleteServicio, type Servicio, type ServicioPayload } from '../../../services/servicios';
 import { createPaquete } from '../../../services/paquetes'; 
 
 const CATEGORIAS_OPCIONES = [
@@ -32,13 +32,13 @@ const DURACION_OPCIONES = [
 
 export default function ServiciosPage() {
   const router = useRouter();
-  const [servicios, setServicios] = useState<any[]>([]);
+  const [servicios, setServicios] = useState<Servicio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [servicioToDelete, setServicioToDelete] = useState<any | null>(null);
+  const [servicioToDelete, setServicioToDelete] = useState<Servicio | null>(null);
   const [saving, setSaving] = useState(false);
 
   // --- ESTADOS PARA PAQUETES ---
@@ -68,7 +68,7 @@ export default function ServiciosPage() {
     try {
       const result = await getServicios();
       setServicios(result.data || []);
-    } catch (err) {
+    } catch {
       setError("Error al cargar servicios");
     } finally {
       setLoading(false);
@@ -95,7 +95,7 @@ export default function ServiciosPage() {
     setSaving(true);
     setError(null);
     try {
-      const payload: any = {
+      const payload: ServicioPayload = {
         nombre: formNombre.trim(),
         precio: parseFloat(formPrecio) || 0,
         duracionMinutos: parseInt(formDuracion),
@@ -110,7 +110,7 @@ export default function ServiciosPage() {
       setShowForm(false);
       resetServicioForm();
       loadServicios();
-    } catch (err: any) {
+    } catch {
       setError("Error al guardar");
     } finally {
       setSaving(false);
@@ -151,7 +151,7 @@ export default function ServiciosPage() {
       // REDIRECCIÓN TRAS GUARDAR
       router.push('/admin/paquetes'); 
 
-    } catch (err) {
+    } catch {
       setError("Error al crear el paquete. Revisa la conexión con el servidor.");
     } finally {
       setSaving(false);
@@ -166,7 +166,7 @@ export default function ServiciosPage() {
       setSuccess("Servicio eliminado correctamente");
       setShowDeleteModal(false);
       loadServicios();
-    } catch (err: any) {
+    } catch {
       setError("Error al eliminar");
     }
   };
@@ -214,9 +214,9 @@ export default function ServiciosPage() {
                     src={s.imagen || 'https://via.placeholder.com/150?text=No+Image'} 
                     alt="" 
                     className="w-full h-full object-cover" 
-                    onError={(e:any) => {
-                      e.target.onerror = null; 
-                      e.target.src = 'https://via.placeholder.com/150?text=Error';
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
                     }}
                   />
                 </div>
@@ -254,14 +254,14 @@ export default function ServiciosPage() {
       </Card>
 
       {/* MODAL SERVICIOS */}
-      <Modal isOpen={showForm} onClose={() => !saving && setShowForm(false)} title={"" as any}>
+      <Modal isOpen={showForm} onClose={() => !saving && setShowForm(false)} title="">
         <div className="flex flex-col gap-4">
           <h2 className="text-xl font-bold" style={{ color: colorGuindaHex }}>Nuevo Servicio</h2>
-          <Input label="Nombre del Servicio *" value={formNombre} onChange={(e:any) => setFormNombre(e.target.value)} fullWidth />
-          <Input label="URL de la Imagen" value={formImagenUrl} onChange={(e:any) => setFormImagenUrl(e.target.value)} fullWidth />
-          <Input label="Productos que incluye (Separar por comas)" value={formIncluye} onChange={(e:any) => setFormIncluye(e.target.value)} fullWidth />
+          <Input label="Nombre del Servicio *" value={formNombre} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormNombre(e.target.value)} fullWidth />
+          <Input label="URL de la Imagen" value={formImagenUrl} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormImagenUrl(e.target.value)} fullWidth />
+          <Input label="Productos que incluye (Separar por comas)" value={formIncluye} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormIncluye(e.target.value)} fullWidth />
           <div className="grid grid-cols-2 gap-4 items-end">
-            <Input label="Precio ($) *" value={formPrecio} onChange={(e:any) => setFormPrecio(e.target.value)} />
+            <Input label="Precio ($) *" value={formPrecio} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPrecio(e.target.value)} />
             <div className="flex flex-col">
               <label className="text-sm font-medium mb-1 text-black">Duración *</label>
               <select className="w-full p-2 border rounded-md text-sm bg-white text-black h-[42px]" value={formDuracion} onChange={e => setFormDuracion(e.target.value)}>
@@ -285,7 +285,7 @@ export default function ServiciosPage() {
       </Modal>
 
       {/* MODAL PAQUETES */}
-      <Modal isOpen={showPaqueteForm} onClose={() => !saving && setShowPaqueteForm(false)} title={"" as any}>
+      <Modal isOpen={showPaqueteForm} onClose={() => !saving && setShowPaqueteForm(false)} title="">
         <div className="flex flex-col gap-4 p-1">
           <h2 className="text-xl font-bold mb-2" style={{ color: colorGuindaHex }}>Configurar Paquete Especial</h2>
           
@@ -355,7 +355,7 @@ export default function ServiciosPage() {
             </div>
           )}
 
-          <Input label="Precio del Paquete ($) *" type="number" value={formPaquetePrecio} onChange={(e:any) => setFormPaquetePrecio(e.target.value)} fullWidth />
+          <Input label="Precio del Paquete ($) *" type="number" value={formPaquetePrecio} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPaquetePrecio(e.target.value)} fullWidth />
           
           <div className="flex justify-end gap-2 mt-4">
              <Button variant="outline" onClick={() => setShowPaqueteForm(false)}>Cancelar</Button>
@@ -365,7 +365,7 @@ export default function ServiciosPage() {
       </Modal>
 
       {/* MODAL ELIMINAR */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={"" as any}>
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="">
         <div className="p-2 flex flex-col gap-4">
           <h2 className="text-black text-xl font-bold">Confirmar eliminación</h2>
           <p className="text-black">¿Estás seguro de que deseas borrar este servicio?</p>

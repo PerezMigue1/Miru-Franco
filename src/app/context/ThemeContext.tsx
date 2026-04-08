@@ -17,15 +17,16 @@ const applyThemeToDocument = (theme: Theme) => {
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
-
-  useEffect(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'dark';
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial: Theme = stored ?? (prefersDark ? 'dark' : 'light');
-    applyThemeToDocument(initial);
-    setTheme(initial);
-  }, []);
+    return stored ?? (prefersDark ? 'dark' : 'light');
+  });
+
+  useEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => {

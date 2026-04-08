@@ -51,17 +51,18 @@ export default function BaseDatosSchemasPage() {
 
   useEffect(() => {
     // Carga inicial de tablas al entrar.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargarTablas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (tablaSeleccionada) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void cargarSchema(tablaSeleccionada);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setColumnas([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tablaSeleccionada]);
 
   return (

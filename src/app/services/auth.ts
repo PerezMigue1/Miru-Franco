@@ -271,7 +271,8 @@ export const api = {
     return data;
   },
 
-  async forgotPassword(_email: string, _method: 'email' | 'sms' | 'security-questions' = 'email'): Promise<ForgotPasswordResponse> {
+  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+    void email;
     // Esta ruta no existe en el backend actual
     // El flujo de recuperación se maneja directamente con las preguntas de seguridad
     // Por ahora retornamos un mensaje de éxito
