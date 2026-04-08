@@ -19,6 +19,13 @@ type PaqueteRow = {
   precio_especial?: number | string;
 };
 
+const getPaqueteId = (p: PaqueteRow): string | null => {
+  const raw = p.id ?? p._id;
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
 export default function PaquetesPage() {
   const router = useRouter();
   const [paquetes, setPaquetes] = useState<PaqueteRow[]>([]);
@@ -57,7 +64,7 @@ export default function PaquetesPage() {
     try {
       await deletePaquete(idParaEliminar);
       // Filtramos la lista local para que desaparezca de la tabla de inmediato
-      setPaquetes(paquetes.filter(p => (p.id || p._id) !== idParaEliminar));
+      setPaquetes(paquetes.filter((p) => getPaqueteId(p) !== idParaEliminar));
       setShowDeleteModal(false);
       setIdParaEliminar(null);
       alert("Paquete eliminado correctamente");
@@ -101,7 +108,8 @@ export default function PaquetesPage() {
       <Card>
         <Table headers={['Evento', 'Servicios', 'Precio', 'Acciones']}>
           {!loading && paquetes.map((p) => {
-            const currentId = p.id || p._id;
+            const currentId = getPaqueteId(p);
+            if (!currentId) return null;
             return (
               <TableRow key={currentId}>
                 <TableCell className="font-bold text-white">{p.tipo_evento}</TableCell>

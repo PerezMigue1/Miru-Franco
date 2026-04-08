@@ -131,7 +131,10 @@ export default function ServiciosPage() {
     setSaving(true);
     try {
       const nombresSeleccionados = servicios
-        .filter(s => formPaqueteServicios.includes(s.id || s._id))
+        .filter((s) => {
+          const sid = String(s.id ?? s._id ?? '');
+          return sid.length > 0 && formPaqueteServicios.includes(sid);
+        })
         .map(s => s.nombre);
 
       const payload = {
@@ -238,8 +241,8 @@ export default function ServiciosPage() {
                 <span style={{ color: colorTextoBlanco }}>{s.duracionMinutos || s.duracion} min</span>
               </TableCell>
               <TableCell>
-                <Badge variant={getCategoryColor(s.categoria)}>
-                  {s.categoria}
+                <Badge variant={getCategoryColor(s.categoria ?? 'General')}>
+                  {s.categoria ?? 'General'}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -318,15 +321,23 @@ export default function ServiciosPage() {
             <div className="border rounded-md p-2 max-h-32 overflow-y-auto bg-gray-50 flex flex-col gap-1 text-black">
               {servicios.map((s) => (
                 <label key={s.id || s._id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">
+                  {(() => {
+                    const sid = String(s.id ?? s._id ?? '');
+                    return (
                   <input 
                     type="checkbox" 
-                    checked={formPaqueteServicios.includes(s.id || s._id)}
+                    checked={sid.length > 0 && formPaqueteServicios.includes(sid)}
                     onChange={(e) => {
-                      const id = s.id || s._id;
-                      if(e.target.checked) setFormPaqueteServicios([...formPaqueteServicios, id]);
-                      else setFormPaqueteServicios(formPaqueteServicios.filter(x => x !== id));
+                      if (!sid) return;
+                      if (e.target.checked) {
+                        setFormPaqueteServicios([...formPaqueteServicios, sid]);
+                      } else {
+                        setFormPaqueteServicios(formPaqueteServicios.filter((x) => x !== sid));
+                      }
                     }}
                   />
+                    );
+                  })()}
                   {s.nombre}
                 </label>
               ))}
@@ -341,7 +352,10 @@ export default function ServiciosPage() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {servicios
-                  .filter(s => formPaqueteServicios.includes(s.id || s._id))
+                  .filter((s) => {
+                    const sid = String(s.id ?? s._id ?? '');
+                    return sid.length > 0 && formPaqueteServicios.includes(sid);
+                  })
                   .map(s => (
                     <div key={s.id || s._id} className="flex items-center gap-2 bg-white/10 p-2 rounded border border-white/20">
                       <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-white/5">

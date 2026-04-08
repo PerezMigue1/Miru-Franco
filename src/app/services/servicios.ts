@@ -26,6 +26,7 @@ export interface ServicioProductoAsociadoUI {
 /** Servicio alineado con el modelo Prisma (servicios). */
 export interface Servicio {
   id: string | number;
+  _id?: string | number;
   nombre: string;
   descripcion?: string;
   descripcionLarga?: string;
@@ -206,6 +207,7 @@ function normalizarServicio(raw: ApiServicioRaw): Servicio {
 
   return {
     id,
+    _id: raw._id,
     nombre: String(raw.nombre ?? ''),
     descripcion: raw.descripcion != null ? String(raw.descripcion) : undefined,
     descripcionLarga: descripcionLargaStr?.trim() || undefined,
@@ -276,6 +278,7 @@ export interface ServicioPayload {
   imagenes?: string[];
   incluye?: string[];
   recomendaciones?: string[];
+  activo?: boolean;
 }
 
 /**

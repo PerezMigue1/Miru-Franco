@@ -136,20 +136,23 @@ export async function obtenerTablasImportables(): Promise<
       const msg = (data.message ?? data.error ?? `Error ${res.status}`) as string;
       return { success: false, error: msg };
     }
-    const tablasRaw = Array.isArray(data.tablas) ? data.tablas : [];
+    const tablasRaw: unknown[] = Array.isArray(data.tablas) ? data.tablas : [];
     const tablas = tablasRaw
-      .map((t) => {
-        const tabla = String(t?.tabla ?? '').trim();
-        const modosRaw = Array.isArray(t?.modosPermitidos) ? t.modosPermitidos : [];
+      .map((t: unknown) => {
+        const item = (t ?? {}) as Record<string, unknown>;
+        const tabla = String(item.tabla ?? '').trim();
+        const modosRaw = Array.isArray(item.modosPermitidos) ? item.modosPermitidos : [];
         const modosPermitidos = modosRaw.filter(
           (m): m is ModoImportacion => m === 'append' || m === 'missing_only' || m === 'upsert'
         );
-        const conflictKeys = Array.isArray(t?.conflictKeys)
-          ? t.conflictKeys.map((c: unknown) => String(c))
+        const conflictKeys = Array.isArray(item.conflictKeys)
+          ? item.conflictKeys.map((c: unknown) => String(c))
           : [];
         return tabla ? { tabla, modosPermitidos, conflictKeys } : null;
       })
-      .filter((t): t is TablaImportable => !!t);
+      .filter(
+        (t): t is { tabla: string; modosPermitidos: ModoImportacion[]; conflictKeys: string[] } => !!t
+      );
 
     return { success: true, tablas };
   } catch (e) {
