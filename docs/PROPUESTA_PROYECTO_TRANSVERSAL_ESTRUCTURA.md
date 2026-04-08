@@ -1,3 +1,195 @@
+# Propuesta — Proyecto transversal / Memoria de cálculo
+**Miru Franco Beauty Salón — Inventario de productos**
+
+Documento redactado según la estructura solicitada para la actividad A2 (Memoria de cálculo), enfocado **solo** en el módulo de inventario de productos.
+
+---
+
+## Resumen
+
+**Nombre del proyecto:** Optimización del inventario de productos en Miru Franco Web. **Objetivo:** desarrollar una solución tecnológica para automatizar y mejorar el control del inventario de productos del salón, reduciendo errores manuales y mejorando la toma de decisiones de compra. **Descripción breve:** se utilizará el histórico de movimientos de inventario (entradas, salidas y stock) para construir un modelo predictivo que estime el comportamiento del stock en el tiempo. **Problemática:** actualmente el control puede volverse reactivo, lo que provoca riesgo de faltantes o sobreinventario y dificulta planear reabastecimiento en el momento correcto. **Justificación:** para esta etapa se utiliza la ley de crecimiento/decrecimiento \( \frac{dx}{dt}=kx \), fórmula ya practicada en clase, para modelar de forma simple la variación del stock de productos y anticipar decisiones de compra. **Metodología:** se trabajará con Scrum para realizar entregas cortas, validar avances del módulo de inventario y ajustar el sistema con retroalimentación continua. **Impacto:** mayor orden operativo, mejor visibilidad del stock y reducción de riesgos por quiebre de inventario.
+
+---
+
+## Objetivo general del proyecto
+
+El objetivo de este proyecto es desarrollar una solución tecnológica mediante un sistema web para que la estética Miru Franco Beauty Salón automatice el **inventario de productos**, centralice la información y utilice un modelo matemático básico para apoyar decisiones de reabastecimiento.
+
+**¿Para qué se hace?**  
+Para disminuir errores en el control de existencias, evitar faltantes de productos y planear compras con base en datos.
+
+---
+
+## Diagnóstico inicial (entrevistas)
+
+En el diagnóstico inicial, mediante entrevistas, se identificó que:
+
+- El control del inventario de productos se hace con revisión manual periódica.
+- No siempre existe alerta temprana de stock crítico.
+- Las decisiones de compra se toman de forma reactiva.
+- Se requiere una vista centralizada en el sistema para consultar estado y evolución del inventario.
+
+---
+
+## Metodología
+
+### Metodología elegida y justificación
+
+El equipo eligió la metodología **Scrum** para el desarrollo del módulo de inventario de productos porque permite trabajar de forma iterativa, colaborativa y flexible.
+
+### Justificación
+
+Scrum se adapta bien a este proyecto porque permite hacer entregas funcionales en periodos cortos (Sprints), donde la administración puede revisar avances del inventario (captura, consulta, alertas, proyección) y validar si cubren la necesidad real del negocio.
+
+### Aplicación de Scrum (resumen)
+
+| Elemento | Aplicación en inventario |
+|---------|---------------------------|
+| Product Backlog | Funciones de inventario priorizadas |
+| Sprint | Entregas cortas del módulo |
+| Sprint Review | Validación de funcionalidades del inventario |
+| Retrospective | Mejora continua del proceso |
+
+---
+
+## Cómo resultado en esta etapa del proyecto
+
+**Hasta dónde se llega en esta etapa:**
+
+- Propuesta escrita del modelo predictivo para inventario de productos.
+- Definición de variables, condiciones iniciales y fórmula principal.
+- Diseño de resultados esperados (tablas/gráficas de proyección de stock).
+- Reglas de decisión para alertar stock crítico y sugerir pedido.
+
+---
+
+## Palabras clave
+
+Inventario de productos · Ecuaciones diferenciales · Ley de crecimiento y decrecimiento · Stock · Reabastecimiento · Modelo predictivo · Sistema web
+
+---
+
+# Propuesta 1
+
+## Sección 1
+
+### 1.1 Origen de los datos
+
+**Partiendo del histórico de datos almacenados** del sistema:
+
+- Entradas de inventario (compras o reposición).
+- Salidas de inventario (ventas o consumo interno de producto).
+- Stock actual por producto y fecha de actualización.
+
+### Captura de los datos
+
+- Captura automática al registrar entrada/salida de inventario.
+- Registro de fecha, cantidad y producto.
+- Consolidación por producto para analizar su comportamiento en el tiempo.
+
+**Justificación (para qué)**  
+Tener datos estructurados permite modelar, comparar y predecir el stock de forma confiable.
+
+---
+
+### 1.2 Condiciones iniciales y variables
+
+**Condiciones iniciales**
+
+- \(x(0)=x_0\): stock inicial del producto.
+- \(k\): constante de crecimiento/decrecimiento estimada con histórico.
+
+**Variables**
+
+| Variable | Significado |
+|----------|-------------|
+| \(x(t)\) | Stock del producto en el tiempo |
+| \(k\) | Constante de cambio proporcional |
+| \(t\) | Tiempo (días o semanas) |
+| \(x_{min}\) | Umbral mínimo de stock |
+
+---
+
+### 1.3 Fórmulas
+
+**Fórmula principal (practicada):**
+
+\[
+\frac{dx}{dt}=kx
+\]
+
+**Solución general:**
+
+\[
+x(t)=x_0e^{kt}
+\]
+
+Interpretación:
+- Si \(k<0\): el stock decrece.
+- Si \(k>0\): el stock crece.
+
+**Mini sección opcional (Laplace, básica):**
+- \( \mathcal{L}\{1\}=\frac{1}{s} \)
+- \( \mathcal{L}\{t\}=\frac{1}{s^2} \)
+- \( \mathcal{L}\{\sen(kt)\}=\frac{k}{s^2+k^2} \)
+- \( \mathcal{L}\{e^{at}\}=\frac{1}{s-a} \)
+
+Uso opcional: como en el modelo aparece \(e^{kt}\), se puede citar \( \mathcal{L}\{e^{kt}\}=\frac{1}{s-k} \) para respaldo teórico.
+
+---
+
+### 1.4 Modelo predictivo
+
+El modelo predictivo consiste en:
+
+1. Estimar \(k\) para cada producto usando el histórico.
+2. Proyectar stock con \(x(t)=x_0e^{kt}\) a 7, 14 y 30 días.
+3. Generar alerta cuando \(x(t)\leq x_{min}\).
+
+---
+
+### 1.5 Resultados
+
+Resultados esperados a mostrar:
+
+- Tabla por producto: stock actual, \(k\), proyección a 7/14/30 días.
+- Gráfica \(x(t)\) por producto.
+- Estado: normal, preventivo o crítico.
+
+---
+
+### 1.6 Interpretación de resultados
+
+- Si \(x(t)\) cae por debajo de \(x_{min}\), existe riesgo de quiebre y se recomienda comprar.
+- Si \(k\) es muy negativo, el producto tiene salida rápida y requiere seguimiento más frecuente.
+- Si \(k\) cercano a cero, el stock es estable.
+
+---
+
+### 1.7 Conclusiones
+
+- La fórmula \( \frac{dx}{dt}=kx \) es suficiente para una primera predicción de inventario de productos.
+- El modelo ayuda a pasar de control reactivo a control preventivo.
+- Integrado en Miru Franco Web, permite decisiones de compra más oportunas.
+
+**Justificación final (para qué)**  
+La propuesta mejora el control del inventario de productos y aporta una base matemática sencilla, coherente con lo visto en clase.
+
+---
+
+## Referencias bibliográficas
+
+- Schwaber, K., & Sutherland, J. (2020). *The Scrum Guide*. Scrum.org.
+- Zill, D. G. (2018). *Ecuaciones diferenciales con aplicaciones de modelado* (11.ª ed.). Cengage Learning.
+
+---
+
+## Historial
+
+| Fecha | Cambio |
+|-------|--------|
+| 2025-03 | Documento generado según estructura académica |
+| 2026-03 | Documento acotado exclusivamente a inventario de productos |
 # Propuesta — Proyecto transversal / Memoria de cálculo  
 **Miru Franco Beauty Salón — Sistema integral multiplataforma**
 

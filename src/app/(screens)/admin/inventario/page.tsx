@@ -180,6 +180,9 @@ export default function InventarioPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => router.push('/admin/inventario/prediccion')}>
+              Predicción de inventario
+            </Button>
             <Button onClick={() => router.push('/admin/productos/nuevo')}>+ Agregar Producto</Button>
           </div>
         </div>
