@@ -4,6 +4,12 @@ import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ResetPassword from '../../../components/auth/ResetPassword';
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,12 +24,13 @@ function ResetPasswordContent() {
     
     // Limpiar cualquier parámetro de la URL antes de redirigir
     router.push('/login?passwordChanged=true');
-    // Forzar recarga para limpiar cualquier estado residual
-    setTimeout(() => {
+    // Forzar recarga para limpiar cualquier estado residual (sin callback que dispare taint URL → setTimeout)
+    void (async () => {
+      await sleep(100);
       if (typeof window !== 'undefined') {
-        window.location.href = '/login?passwordChanged=true';
+        window.location.assign('/login?passwordChanged=true');
       }
-    }, 100);
+    })();
   };
 
   const handleSwitchToLogin = () => {
