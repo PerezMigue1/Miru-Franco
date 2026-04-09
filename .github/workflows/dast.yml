@@ -58,23 +58,24 @@ jobs:
           fi
 
       # Escaneo DAST contra la URL desplegada (definida en el secreto DAST_TARGET_URL)
-      - name: OWASP ZAP Baseline Scan (with custom rules)
-        uses: zaproxy/action-baseline@v0.14.0
-        if: steps.zap_rules.outputs.found == 'true'
-        with:
-          target: ${{ steps.resolve_target.outputs.target_url }}
-          cmd_options: '-a -j'
-          allow_issue_writing: false
-          rules_file_name: .zap/rules.tsv
-        continue-on-error: true
+      - name: OWASP ZAP Baseline Scan (Docker CLI)
+        run: |
+          TARGET_URL="${{ steps.resolve_target.outputs.target_url }}"
+          RULES_OPT=""
+          if [ "${{ steps.zap_rules.outputs.found }}" = "true" ]; then
+            RULES_OPT="-c /zap/wrk/.zap/rules.tsv"
+          fi
 
-      - name: OWASP ZAP Baseline Scan (without custom rules)
-        uses: zaproxy/action-baseline@v0.14.0
-        if: steps.zap_rules.outputs.found != 'true'
-        with:
-          target: ${{ steps.resolve_target.outputs.target_url }}
-          cmd_options: '-a -j'
-          allow_issue_writing: false
+          echo "Ejecutando ZAP baseline para: $TARGET_URL"
+          docker pull ghcr.io/zaproxy/zaproxy:stable
+          docker run --rm -v "$(pwd):/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t "$TARGET_URL" \
+            -a -j \
+            $RULES_OPT \
+            -r report_html.html \
+            -w report_md.md \
+            -J report_json.json \
+            -x report_xml.xml || true
         continue-on-error: true
 
       - name: Inspect generated ZAP reports
