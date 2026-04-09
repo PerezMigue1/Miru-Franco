@@ -60,6 +60,7 @@ jobs:
       # Escaneo DAST contra la URL desplegada (definida en el secreto DAST_TARGET_URL)
       - name: OWASP ZAP Baseline Scan (Docker CLI)
         run: |
+          set -o pipefail
           TARGET_URL="${{ steps.resolve_target.outputs.target_url }}"
           RULES_OPT=""
           if [ "${{ steps.zap_rules.outputs.found }}" = "true" ]; then
@@ -75,7 +76,7 @@ jobs:
             -r report_html.html \
             -w report_md.md \
             -J report_json.json \
-            -x report_xml.xml || true
+            -x report_xml.xml | tee zap-baseline.log
         continue-on-error: true
 
       - name: Inspect generated ZAP reports
@@ -88,7 +89,12 @@ jobs:
             echo "Se encontraron reportes ZAP."
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::ZAP no generó archivos report_* en esta ejecución."
+            echo "::error::ZAP no generó archivos report_* en esta ejecución."
+            if [ -f zap-baseline.log ]; then
+              echo "Últimas líneas de zap-baseline.log:"
+              tail -n 80 zap-baseline.log || true
+            fi
+            exit 1
           fi
 
       - name: Upload ZAP report
@@ -96,6 +102,8 @@ jobs:
         if: always()
         with:
           name: zap-report
-          path: report_*
+          path: |
+            report_*
+            zap-baseline.log
           if-no-files-found: warn
           retention-days: 30
