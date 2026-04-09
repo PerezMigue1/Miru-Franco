@@ -34,7 +34,7 @@ jobs:
         run: npm run build
         env:
           # Variables que Next puede necesitar en build (ajusta si usas env)
-          NEXT_PUBLIC_APP_URL: https://miru-franco.vercel.app
+          NEXT_PUBLIC_APP_URL: https://www.mirufranco.com
           NEXT_PUBLIC_API_URL: https://miru-franco.onrender.com
 
   test:

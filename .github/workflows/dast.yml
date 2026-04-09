@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       target_url:
-        description: 'URL desplegada a escanear (ej. https://miru-franco.vercel.app)'
+        description: 'URL desplegada a escanear (producción: https://www.mirufranco.com)'
         required: false
         type: string
   push:

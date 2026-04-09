@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://miru-franco.vercel.app"
+          "value": "https://www.mirufranco.com"
         },
         {
           "key": "Access-Control-Allow-Methods",
