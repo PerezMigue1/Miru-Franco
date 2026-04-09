@@ -69,7 +69,7 @@ jobs:
 
           echo "Ejecutando ZAP baseline para: $TARGET_URL"
           docker pull ghcr.io/zaproxy/zaproxy:stable
-          docker run --rm -v "$(pwd):/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+          docker run --rm --user root -v "$(pwd):/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t "$TARGET_URL" \
             -a -j \
             $RULES_OPT \
