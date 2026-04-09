@@ -45,8 +45,6 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    const isDev = process.env.NODE_ENV === 'development';
-
     const baseHeaders = [
       {
         key: 'X-Frame-Options',
@@ -70,18 +68,11 @@ const nextConfig: NextConfig = {
       },
     ];
 
-    // En desarrollo, Next.js usa scripts/runtime que pueden romperse con CSP estricto.
-    // Dejamos CSP solo en producción para evitar pantallas "cargando" por bloqueo de scripts.
-    const cspHeader = {
-      key: 'Content-Security-Policy',
-      value:
-        "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://vercel.live; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://res.cloudinary.com https://images.unsplash.com https://logos-world.net https://*.googleusercontent.com https://lh3.googleusercontent.com https://via.placeholder.com; connect-src 'self' http://localhost:3000 http://localhost:3001 https://api.cloudinary.com https://backend-miru-franco.vercel.app https://miru-franco.onrender.com https://api.mirufranco.com; frame-src 'self' https://vercel.live; upgrade-insecure-requests;",
-    };
-
+    // CSP en producción: src/middleware.ts (nonce + strict-dynamic). Aquí solo headers base.
     return [
       {
         source: '/(.*)',
-        headers: isDev ? baseHeaders : [...baseHeaders, cspHeader],
+        headers: baseHeaders,
       },
     ];
   },
