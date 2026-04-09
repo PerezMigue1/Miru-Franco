@@ -82,8 +82,17 @@ const nextConfig: NextConfig = {
       },
     ];
 
-    // CSP en producción: src/middleware.ts (nonce + strict-dynamic). Aquí solo headers base.
+    // Rutas más específicas primero: Next/Vercel a veces no aplican el patrón genérico a /_next/image.
+    const hstsOnly = [
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=31536000; includeSubDomains; preload',
+      },
+    ];
+
     return [
+      { source: '/_next/image', headers: hstsOnly },
+      { source: '/_next/static/:path*', headers: hstsOnly },
       {
         source: '/(.*)',
         headers: baseHeaders,

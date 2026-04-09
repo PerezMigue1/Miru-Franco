@@ -1,0 +1,8 @@
+# ZAP Baseline: reglas ignoradas con justificación (DAST en CI).
+# Formato: RULE_ID	ACTION	Mensaje
+# Ver: https://www.zaproxy.org/docs/docker/baseline-scan/
+#
+# 90004: Cross-Origin-Opener-Policy / Cross-Origin-Embedder-Policy.
+# ZAP exige COOP=same-origin y COEP=require-corp. Aquí usamos COOP=same-origin-allow-popups
+# (Google OAuth) y COEP=unsafe-none (evita romper imágenes/API cross-origin). Es decisión consciente.
+90004	IGNORE	Aceptado: COOP/COEP relajados para OAuth y recursos cross-origin (documentar en informe).
