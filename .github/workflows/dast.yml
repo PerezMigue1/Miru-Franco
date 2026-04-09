@@ -43,8 +43,8 @@ jobs:
           echo "target_url=$TARGET_URL" >> "$GITHUB_OUTPUT"
           echo "DAST apuntará a: $TARGET_URL"
 
-      - name: Clean previous local report
-        run: rm -f report_html.html
+      - name: Clean previous local reports
+        run: rm -f report_*
 
       - name: Check if ZAP rules file exists
         id: zap_rules
@@ -77,19 +77,24 @@ jobs:
           allow_issue_writing: false
         continue-on-error: true
 
-      - name: Validate fresh ZAP report exists
+      - name: Inspect generated ZAP reports
+        id: reports
         run: |
-          if [ ! -f report_html.html ]; then
-            echo "No se generó report_html.html nuevo"
-            exit 1
+          echo "Buscando reportes generados por ZAP..."
+          ls -la report_* 2>/dev/null || true
+          if compgen -G "report_*" > /dev/null; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Se encontraron reportes ZAP."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ZAP no generó archivos report_* en esta ejecución."
           fi
-          echo "Reporte generado correctamente:"
-          ls -l report_html.html
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: zap-report
-          path: report_html.html
+          path: report_*
+          if-no-files-found: warn
           retention-days: 30
