@@ -52,6 +52,7 @@ jobs:
         with:
           target: ${{ steps.resolve_target.outputs.target_url }}
           cmd_options: '-a -j'
+          allow_issue_writing: false
         continue-on-error: true
 
       - name: Validate fresh ZAP report exists
