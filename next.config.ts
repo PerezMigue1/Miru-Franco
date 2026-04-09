@@ -7,6 +7,8 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  /** Evita cabecera X-Powered-By: Next.js (alerta baja en ZAP / fuga de stack). */
+  poweredByHeader: false,
   turbopack: {
     root: projectRoot,
   },
@@ -65,6 +67,18 @@ const nextConfig: NextConfig = {
       {
         key: 'X-XSS-Protection',
         value: '1; mode=block',
+      },
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=31536000; includeSubDomains; preload',
+      },
+      {
+        key: 'Cross-Origin-Opener-Policy',
+        value: 'same-origin-allow-popups',
+      },
+      {
+        key: 'Cross-Origin-Embedder-Policy',
+        value: 'unsafe-none',
       },
     ];
 
