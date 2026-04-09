@@ -73,11 +73,9 @@ jobs:
           docker run --rm --user root -v "$(pwd):/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t "$TARGET_URL" \
             -a -j \
+            -l WARN \
             $RULES_OPT \
-            -r report_html.html \
-            -w report_md.md \
-            -J report_json.json \
-            -x report_xml.xml | tee zap-baseline.log
+            -r report_html.html
           ZAP_EXIT=${PIPESTATUS[0]}
           set -e
 
@@ -88,26 +86,19 @@ jobs:
           fi
 
           echo "::error::ZAP falló por error operativo (exit code: $ZAP_EXIT)."
-          if [ -f zap-baseline.log ]; then
-            tail -n 120 zap-baseline.log || true
-          fi
           exit "$ZAP_EXIT"
 
       - name: Inspect generated ZAP reports
         id: reports
         run: |
-          echo "Buscando reportes generados por ZAP..."
-          ls -la report_* 2>/dev/null || true
-          if compgen -G "report_*" > /dev/null; then
+          echo "Buscando reporte HTML generado por ZAP..."
+          ls -la report_html.html 2>/dev/null || true
+          if [ -f report_html.html ]; then
             echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Se encontraron reportes ZAP."
+            echo "Se encontró report_html.html."
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::error::ZAP no generó archivos report_* en esta ejecución."
-            if [ -f zap-baseline.log ]; then
-              echo "Últimas líneas de zap-baseline.log:"
-              tail -n 80 zap-baseline.log || true
-            fi
+            echo "::error::ZAP no generó report_html.html en esta ejecución."
             exit 1
           fi
 
@@ -116,8 +107,6 @@ jobs:
         if: always()
         with:
           name: zap-report
-          path: |
-            report_*
-            zap-baseline.log
+          path: report_html.html
           if-no-files-found: warn
           retention-days: 30
