@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
+
+/** Raíz real del app (evita que Turbopack elija otro lockfile en carpetas padre, p. ej. el del usuario). */
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  turbopack: {
+    root: projectRoot,
+  },
   // En desarrollo: proxy /api/* al backend para evitar CORS (peticiones van a mismo origen)
   async rewrites() {
     if (process.env.NODE_ENV === 'development') {
