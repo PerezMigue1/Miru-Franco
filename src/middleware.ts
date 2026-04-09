@@ -9,7 +9,7 @@ function randomNonceBase64(): string {
   return btoa(bin);
 }
 
-/** Origen del API público (misma lista que antes en next.config). */
+/** Orígenes del API (fetch / RSC / etc.). */
 function connectSrcOrigins(): string[] {
   const base = [
     "'self'",
@@ -28,6 +28,37 @@ function connectSrcOrigins(): string[] {
     /* ignorar URL inválida en build */
   }
   return base;
+}
+
+/**
+ * Orígenes desde los que puede cargarse una imagen (img / next/image hacia URL absoluta).
+ * Debe incluir el mismo host que el API si el backend sirve /uploads, url.jpg, etc.
+ */
+function imgSrcOrigins(): string[] {
+  const staticHosts = [
+    'https://res.cloudinary.com',
+    'https://images.unsplash.com',
+    'https://logos-world.net',
+    'https://lh3.googleusercontent.com',
+    'https://lh4.googleusercontent.com',
+    'https://lh5.googleusercontent.com',
+    'https://lh6.googleusercontent.com',
+    'https://lh7.googleusercontent.com',
+    'https://via.placeholder.com',
+    'https://backend-miru-franco.vercel.app',
+    'https://miru-franco.onrender.com',
+    'https://api.mirufranco.com',
+  ];
+  const out = new Set<string>(["'self'", 'data:', 'blob:', ...staticHosts]);
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (raw) {
+    try {
+      out.add(new URL(raw).origin);
+    } catch {
+      /* ignorar */
+    }
+  }
+  return [...out];
 }
 
 /**
@@ -53,21 +84,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "style-src-attr 'unsafe-inline'",
     "font-src 'self' https://fonts.gstatic.com data:",
-    [
-      'img-src',
-      "'self'",
-      'data:',
-      'blob:',
-      'https://res.cloudinary.com',
-      'https://images.unsplash.com',
-      'https://logos-world.net',
-      'https://lh3.googleusercontent.com',
-      'https://lh4.googleusercontent.com',
-      'https://lh5.googleusercontent.com',
-      'https://lh6.googleusercontent.com',
-      'https://lh7.googleusercontent.com',
-      'https://via.placeholder.com',
-    ].join(' '),
+    ['img-src', ...imgSrcOrigins()].join(' '),
     ['connect-src', ...connectSrcOrigins()].join(' '),
     "frame-src 'self' https://vercel.live",
     'upgrade-insecure-requests',
