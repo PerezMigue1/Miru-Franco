@@ -69,6 +69,7 @@ jobs:
 
           echo "Ejecutando ZAP baseline para: $TARGET_URL"
           docker pull ghcr.io/zaproxy/zaproxy:stable
+          set +e
           docker run --rm --user root -v "$(pwd):/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t "$TARGET_URL" \
             -a -j \
@@ -77,7 +78,20 @@ jobs:
             -w report_md.md \
             -J report_json.json \
             -x report_xml.xml | tee zap-baseline.log
-        continue-on-error: true
+          ZAP_EXIT=${PIPESTATUS[0]}
+          set -e
+
+          # En zap-baseline.py, 0/1/2 pueden indicar hallazgos; reservamos fallo duro para errores operativos.
+          if [ "$ZAP_EXIT" -le 2 ]; then
+            echo "ZAP finalizó con código $ZAP_EXIT (escaneo completado con alertas o warnings)."
+            exit 0
+          fi
+
+          echo "::error::ZAP falló por error operativo (exit code: $ZAP_EXIT)."
+          if [ -f zap-baseline.log ]; then
+            tail -n 120 zap-baseline.log || true
+          fi
+          exit "$ZAP_EXIT"
 
       - name: Inspect generated ZAP reports
         id: reports
