@@ -5,6 +5,30 @@ import Link from 'next/link';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import Card from '../../components/ui/Card';
 import { getProductosParaDashboard } from '../../services/productos';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeDollarSign,
+  BarChart3,
+  Bell,
+  CalendarDays,
+  CreditCard,
+  Database,
+  FileText,
+  Megaphone,
+  Package,
+  Receipt,
+  RotateCcw,
+  Scissors,
+  ShieldCheck,
+  ShoppingCart,
+  Store,
+  Truck,
+  User,
+  Users,
+  type LucideIcon,
+  CircleX,
+} from 'lucide-react';
 
 function precioANumero(precio: string | undefined): number {
   if (!precio) return 0;
@@ -12,61 +36,61 @@ function precioANumero(precio: string | undefined): number {
   return parseFloat(s) || 0;
 }
 
-const GRUPOS_ACCESOS: { titulo: string; items: { label: string; href: string; icon: string; description?: string }[] }[] = [
+const GRUPOS_ACCESOS: { titulo: string; items: { label: string; href: string; icon: LucideIcon; description?: string }[] }[] = [
   {
     titulo: 'Ventas e inventario',
     items: [
-      { label: 'Inventario', href: '/admin/inventario', icon: '📦', description: 'Productos y stock' },
-      { label: 'Venta local', href: '/admin/venta-local', icon: '🏪', description: 'Punto de venta' },
-      { label: 'Venta online', href: '/admin/venta-online', icon: '🛒', description: 'Pedidos tienda' },
-      { label: 'Servicios', href: '/admin/servicios', icon: '💇‍♀️', description: 'Catálogo de servicios' },
+      { label: 'Inventario', href: '/admin/inventario', icon: Package, description: 'Productos y stock' },
+      { label: 'Venta local', href: '/admin/venta-local', icon: Store, description: 'Punto de venta' },
+      { label: 'Venta online', href: '/admin/venta-online', icon: ShoppingCart, description: 'Pedidos tienda' },
+      { label: 'Servicios', href: '/admin/servicios', icon: Scissors, description: 'Catálogo de servicios' },
     ],
   },
   {
     titulo: 'Clientes y agenda',
     items: [
-      { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: '👥', description: 'Gestión de clientes' },
-      { label: 'Gestión de citas', href: '/admin/gestion-citas', icon: '📅', description: 'Agenda y citas (vista admin)' },
+      { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: Users, description: 'Gestión de clientes' },
+      { label: 'Gestión de citas', href: '/admin/gestion-citas', icon: CalendarDays, description: 'Agenda y citas (vista admin)' },
     ],
   },
   {
     titulo: 'Compras y logística',
     items: [
-      { label: 'Compras a proveedores', href: '/admin/compras-proveedores', icon: '🛒', description: 'Órdenes de compra' },
-      { label: 'Control de caducidad', href: '/admin/control-caducidad', icon: '📆', description: 'Productos por vencer' },
-      { label: 'Entregas y envíos', href: '/admin/entregas-envios', icon: '📦', description: 'Envíos y entregas' },
+      { label: 'Compras a proveedores', href: '/admin/compras-proveedores', icon: ShoppingCart, description: 'Órdenes de compra' },
+      { label: 'Control de caducidad', href: '/admin/control-caducidad', icon: CalendarDays, description: 'Productos por vencer' },
+      { label: 'Entregas y envíos', href: '/admin/entregas-envios', icon: Package, description: 'Envíos y entregas' },
     ],
   },
   {
     titulo: 'Atención al cliente',
     items: [
-      { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios', icon: '↩️', description: 'Devoluciones' },
-      { label: 'Quejas y garantías', href: '/admin/quejas-garantias', icon: '🛡️', description: 'Garantías y quejas' },
-      { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos', icon: '📝', description: 'Cotizaciones' },
+      { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios', icon: RotateCcw, description: 'Devoluciones' },
+      { label: 'Quejas y garantías', href: '/admin/quejas-garantias', icon: ShieldCheck, description: 'Garantías y quejas' },
+      { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos', icon: FileText, description: 'Cotizaciones' },
     ],
   },
   {
     titulo: 'Finanzas y reportes',
     items: [
-      { label: 'Reportes', href: '/admin/reportes', icon: '📊', description: 'Estadísticas' },
-      { label: 'Facturación', href: '/admin/facturacion', icon: '🧾', description: 'Facturas' },
-      { label: 'Pagos', href: '/admin/pagos', icon: '💳', description: 'Cobros y pagos' },
+      { label: 'Reportes', href: '/admin/reportes', icon: BarChart3, description: 'Estadísticas' },
+      { label: 'Facturación', href: '/admin/facturacion', icon: Receipt, description: 'Facturas' },
+      { label: 'Pagos', href: '/admin/pagos', icon: CreditCard, description: 'Cobros y pagos' },
     ],
   },
   {
     titulo: 'Marketing y personal',
     items: [
-      { label: 'Marketing', href: '/admin/marketing', icon: '📢', description: 'Promociones y campañas' },
-      { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: '👤', description: 'Empleados y horarios' },
+      { label: 'Marketing', href: '/admin/marketing', icon: Megaphone, description: 'Promociones y campañas' },
+      { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: User, description: 'Empleados y horarios' },
     ],
   },
   {
     titulo: 'Configuración',
     items: [
-      { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: '🔐', description: 'Permisos' },
-      { label: 'Proveedores', href: '/admin/proveedores', icon: '🚚', description: 'Proveedores' },
-      { label: 'Notificaciones', href: '/admin/notificaciones', icon: '🔔', description: 'Avisos' },
-      { label: 'Base de datos', href: '/admin/base-datos', icon: '🗄️', description: 'Importar, exportar y gestionar datos' },
+      { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: ShieldCheck, description: 'Permisos' },
+      { label: 'Proveedores', href: '/admin/proveedores', icon: Truck, description: 'Proveedores' },
+      { label: 'Notificaciones', href: '/admin/notificaciones', icon: Bell, description: 'Avisos' },
+      { label: 'Base de datos', href: '/admin/base-datos', icon: Database, description: 'Importar, exportar y gestionar datos' },
     ],
   },
 ];
@@ -142,7 +166,7 @@ export default function AdminDashboardPage() {
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                   style={{ backgroundColor: 'var(--fondos-suaves)' }}
                 >
-                  📦
+                  <Package size={22} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -164,7 +188,7 @@ export default function AdminDashboardPage() {
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                   style={{ backgroundColor: 'rgba(217, 142, 4, 0.2)' }}
                 >
-                  ⚠️
+                  <AlertTriangle size={22} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -186,7 +210,7 @@ export default function AdminDashboardPage() {
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                   style={{ backgroundColor: 'rgba(89, 12, 12, 0.15)' }}
                 >
-                  🚫
+                  <CircleX size={22} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -208,7 +232,7 @@ export default function AdminDashboardPage() {
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                   style={{ backgroundColor: 'rgba(110, 125, 87, 0.25)' }}
                 >
-                  💰
+                  <BadgeDollarSign size={22} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -247,8 +271,8 @@ export default function AdminDashboardPage() {
                         padding="md"
                       >
                         <div className="flex items-center gap-4">
-                          <span className="text-2xl shrink-0 transition-transform group-hover:scale-110" aria-hidden>
-                            {item.icon}
+                          <span className="shrink-0 transition-transform group-hover:scale-110" aria-hidden>
+                            <item.icon size={24} />
                           </span>
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -260,8 +284,8 @@ export default function AdminDashboardPage() {
                               </p>
                             )}
                           </div>
-                          <span className="text-lg opacity-0 group-hover:opacity-100 transition-opacity shrink-0" style={{ color: 'var(--hover)' }}>
-                            →
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0" style={{ color: 'var(--hover)' }}>
+                            <ArrowRight size={18} />
                           </span>
                         </div>
                       </Card>

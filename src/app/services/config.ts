@@ -27,18 +27,24 @@ export const getBackendBase = (): string => {
     );
   }
   
-  // Si la URL incluye /api/auth, removerlo
-  if (apiUrl.includes('/api/auth')) {
-    return apiUrl.replace('/api/auth', '').replace(/\/$/, '');
+  let base = apiUrl.replace(/\/$/, '');
+
+  // Auth en subruta dedicada
+  if (base.includes('/api/auth')) {
+    base = base.replace('/api/auth', '').replace(/\/$/, '');
   }
-  
-  // Si incluye cualquier /api/, removerlo
-  if (apiUrl.includes('/api/')) {
-    return apiUrl.replace(/\/api\/.*$/, '').replace(/\/$/, '');
+
+  // .../api/algo/... → dejar solo host (prefijo global /api se concatena en cada servicio)
+  if (base.includes('/api/')) {
+    base = base.replace(/\/api\/.*$/, '').replace(/\/$/, '');
   }
-  
-  // Si termina con /, removerlo
-  return apiUrl.replace(/\/$/, '');
+
+  // URL exactamente .../api (sin path tras /api): quitar /api para no generar /api/api/... al usar + "/api/..."
+  if (base.endsWith('/api')) {
+    base = base.slice(0, -4);
+  }
+
+  return base.replace(/\/$/, '');
 };
 
 // Exportar API_URL simple para compatibilidad con la guia

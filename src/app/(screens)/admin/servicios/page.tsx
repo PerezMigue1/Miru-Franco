@@ -10,9 +10,12 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
+import { CheckCircle2, ClipboardList } from 'lucide-react';
 import { getCategoryColor } from '../../../utils/categoryColors';
 import { getServicios, createServicio, deleteServicio, type Servicio, type ServicioPayload } from '../../../services/servicios';
-import { createPaquete } from '../../../services/paquetes'; 
+import { createPaquete, serializarPaqueteParaApi } from '../../../services/paquetes';
+import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
+import { IMG_SERVICIO_PLACEHOLDER } from '../../../utils/serviceImagePlaceholder';
 
 const CATEGORIAS_OPCIONES = [
   { label: 'Alaciados y Alisados', value: 'Alaciados y Alisados' },
@@ -124,38 +127,52 @@ export default function ServiciosPage() {
   };
 
   const handleCrearPaquete = async () => {
-    if (!formPaqueteTipo || !formPaquetePrecio || !formPaqueteDescripcion) {
-      setError("Rellena los campos del paquete");
+    if (!formPaqueteTipo || !formPaquetePrecio.trim() || !formPaqueteDescripcion.trim()) {
+      setError('Rellena los campos obligatorios del paquete.');
       return;
     }
+    const precioNum = parseFloat(formPaquetePrecio.replace(/[^0-9.]/g, ''));
+    if (!Number.isFinite(precioNum) || precioNum < 0) {
+      setError('Indica un precio válido para el paquete.');
+      return;
+    }
+    const nombresSeleccionados = servicios
+      .filter((s) => {
+        const sid = String(s.id ?? s._id ?? '');
+        return sid.length > 0 && formPaqueteServicios.includes(sid);
+      })
+      .map((s) => s.nombre.trim())
+      .filter(Boolean);
+    if (nombresSeleccionados.length === 0) {
+      setError('Selecciona al menos un servicio individual para incluir en el paquete.');
+      return;
+    }
+
     setSaving(true);
+    setError(null);
+    const paquetePayload = {
+      tipoEvento: formPaqueteTipo.trim(),
+      descripcion: formPaqueteDescripcion.trim(),
+      serviciosVinculados: nombresSeleccionados,
+      precioEspecial: precioNum,
+    };
     try {
-      const nombresSeleccionados = servicios
-        .filter((s) => {
-          const sid = String(s.id ?? s._id ?? '');
-          return sid.length > 0 && formPaqueteServicios.includes(sid);
-        })
-        .map(s => s.nombre);
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[paquetes] POST /api/paquetes body', serializarPaqueteParaApi(paquetePayload));
+      }
+      await createPaquete(paquetePayload);
 
-      const payload = {
-        tipo_evento: formPaqueteTipo,
-        descripcion: formPaqueteDescripcion,
-        servicios_vinculados: nombresSeleccionados,
-        precio_especial: parseFloat(formPaquetePrecio)
-      };
-
-      await createPaquete(payload);
-
-      setSuccess("¡Paquete guardado correctamente!");
+      setSuccess('¡Paquete guardado correctamente!');
       setShowPaqueteForm(false);
-      
-      setFormPaqueteTipo(''); setFormPaquetePrecio(''); setFormPaqueteDescripcion(''); setFormPaqueteServicios([]);
 
-      // REDIRECCIÓN TRAS GUARDAR
-      router.push('/admin/paquetes'); 
+      setFormPaqueteTipo('');
+      setFormPaquetePrecio('');
+      setFormPaqueteDescripcion('');
+      setFormPaqueteServicios([]);
 
-    } catch {
-      setError("Error al crear el paquete. Revisa la conexión con el servidor.");
+      router.push('/admin/paquetes');
+    } catch (e) {
+      setError(mensajeUsuarioDesdeErrorApi(e));
     } finally {
       setSaving(false);
     }
@@ -183,7 +200,7 @@ export default function ServiciosPage() {
           <div className="flex gap-2">
             {/* BOTÓN PARA IR A LA LISTA DE PAQUETES */}
             <Button variant="outline" onClick={() => router.push('/admin/paquetes')}>
-              📋 Ver Paquetes
+              <ClipboardList size={16} className="inline-block mr-1" /> Ver Paquetes
             </Button>
             <Button variant="outline" onClick={() => setShowPaqueteForm(true)}>
               + Crear Paquete
@@ -197,7 +214,7 @@ export default function ServiciosPage() {
 
       {success && (
         <div className="bg-green-600 border border-green-700 text-white px-4 py-3 rounded mb-4 text-xs font-bold shadow-md animate-pulse">
-          ✅ {success}
+          <CheckCircle2 size={14} className="inline-block mr-1" /> {success}
         </div>
       )}
 
@@ -213,13 +230,13 @@ export default function ServiciosPage() {
             <TableRow key={s.id || s._id || Math.random()}>
               <TableCell>
                 <div className="w-12 h-12 rounded bg-gray-200 overflow-hidden flex items-center justify-center border">
-                  <img 
-                    src={s.imagen || 'https://via.placeholder.com/150?text=No+Image'} 
-                    alt="" 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={s.imagen?.trim() ? s.imagen : IMG_SERVICIO_PLACEHOLDER}
+                    alt=""
+                    className="w-full h-full object-cover"
                     onError={(e: SyntheticEvent<HTMLImageElement>) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
+                      e.currentTarget.src = IMG_SERVICIO_PLACEHOLDER;
                     }}
                   />
                 </div>
@@ -317,7 +334,8 @@ export default function ServiciosPage() {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium mb-1 text-black">Vincular Servicios Individuales</label>
+            <label className="text-sm font-medium mb-1 text-black">Vincular servicios individuales *</label>
+            <p className="text-xs text-gray-600 mb-1">Marca al menos uno; el paquete debe incluir servicios del catálogo.</p>
             <div className="border rounded-md p-2 max-h-32 overflow-y-auto bg-gray-50 flex flex-col gap-1 text-black">
               {servicios.map((s) => (
                 <label key={s.id || s._id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">

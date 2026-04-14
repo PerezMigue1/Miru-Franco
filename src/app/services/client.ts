@@ -1,8 +1,9 @@
 // Cliente API centralizado con manejo de errores y tokens
 
-import { getApiBaseUrl, getBackendBaseUrl } from './config';
+import { getApiBaseUrl } from './config';
 import { getToken, saveToken, clearAuthData } from '../utils/security';
 import { showAlert } from '../utils/toast';
+import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -68,29 +69,15 @@ class ApiClient {
           const lastActivity = tokenData.lastActivity || tokenData.iat;
           const timeSinceActivity = now - lastActivity;
           
-          // Si han pasado más de 10 minutos, renovar token
+          // Si han pasado más de 10 minutos, renovar token (compartido: evita carreras / "Token revocado")
           if (timeSinceActivity > 10 * 60) {
             try {
-              const BACKEND_BASE = getBackendBaseUrl();
-              const refreshResponse = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
-              });
-              
-              if (refreshResponse.ok) {
-                const refreshData = await refreshResponse.json();
-                if (refreshData.token) {
-                  saveToken(refreshData.token);
-                  token = refreshData.token;
-                  headers['Authorization'] = `Bearer ${token}`;
-                }
+              const refreshed = await runSharedAccessTokenRefresh();
+              if (refreshed.kind === 'ok') {
+                token = refreshed.token;
+                headers['Authorization'] = `Bearer ${token}`;
               }
             } catch (refreshError) {
-              // Si falla la renovación, continuar con el token actual
               console.warn('Error renovando token:', refreshError);
             }
           }
@@ -138,36 +125,27 @@ class ApiClient {
           // ✅ Intentar renovar token y reintentar la petición UNA vez antes de echar al usuario (evita "acceso denegado" al admin tras un cambio)
           if (typeof window !== 'undefined' && !isLoginPage && token) {
             try {
-              const BACKEND_BASE = getBackendBaseUrl();
-              const refreshRes = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                credentials: 'include',
-              });
-              if (refreshRes.ok) {
-                const refreshData = await refreshRes.json() as { token?: string };
-                if (refreshData.token) {
-                  saveToken(refreshData.token);
-                  const newHeaders = { ...headers, 'Authorization': `Bearer ${refreshData.token}` };
-                  const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers: newHeaders, credentials: 'include' });
-                  if (retryRes.ok) {
-                    const retryBody = await retryRes.text();
-                    if (!retryBody?.trim()) return {} as T;
-                    try {
-                      return JSON.parse(retryBody) as T;
-                    } catch {
-                      throw new Error('La respuesta del servidor no es JSON válido.');
-                    }
+              const refreshed = await runSharedAccessTokenRefresh();
+              if (refreshed.kind === 'ok') {
+                const newHeaders = { ...headers, 'Authorization': `Bearer ${refreshed.token}` };
+                const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers: newHeaders, credentials: 'include' });
+                if (retryRes.ok) {
+                  const retryBody = await retryRes.text();
+                  if (!retryBody?.trim()) return {} as T;
+                  try {
+                    return JSON.parse(retryBody) as T;
+                  } catch {
+                    throw new Error('La respuesta del servidor no es JSON válido.');
                   }
-                  if (retryRes.status === 401) {
-                    errorText = await retryRes.text();
-                    try {
-                      errorData = JSON.parse(errorText);
-                    } catch {
-                      errorData = { message: errorText };
-                    }
-                    lowerMessage = (errorData.message || errorData.error || '').toLowerCase();
+                }
+                if (retryRes.status === 401) {
+                  errorText = await retryRes.text();
+                  try {
+                    errorData = JSON.parse(errorText);
+                  } catch {
+                    errorData = { message: errorText };
                   }
+                  lowerMessage = (errorData.message || errorData.error || '').toLowerCase();
                 }
               }
             } catch {

@@ -5,6 +5,7 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
 
 const BASE = () => getBackendBaseUrl();
 
@@ -54,11 +55,61 @@ export interface CarritoItemApi {
   creadoEn?: string;
   actualizadoEn?: string;
   /** Si el GET expande producto */
-  producto?: { nombre?: string; imagenes?: string[]; marca?: string };
-  presentacion?: { tamanio?: string; precio?: number | string };
+  producto?: {
+    nombre?: string;
+    imagen?: string;
+    imagenes?: string[];
+    marca?: string;
+  };
+  presentacion?: {
+    tamanio?: string;
+    precio?: number | string;
+    imagen?: string;
+    imagenes?: string[];
+  };
+}
+
+function extraerUrlImagenCarrito(val: unknown): string | undefined {
+  if (typeof val === 'string') {
+    const n = normalizarUrlImagenExterna(val);
+    return n || undefined;
+  }
+  if (val && typeof val === 'object') {
+    const o = val as Record<string, unknown>;
+    const raw = o.secure_url ?? o.url ?? o.src;
+    if (typeof raw === 'string') {
+      const n = normalizarUrlImagenExterna(raw);
+      return n || undefined;
+    }
+  }
+  return undefined;
 }
 
 function normalizarCarritoItem(raw: Record<string, unknown>): CarritoItemApi {
+  const productoRaw =
+    raw.producto && typeof raw.producto === 'object'
+      ? (raw.producto as Record<string, unknown>)
+      : undefined;
+  const imagenesRaw = Array.isArray(productoRaw?.imagenes)
+    ? (productoRaw?.imagenes as unknown[])
+    : [];
+  const imagenesNorm = imagenesRaw
+    .map((item) => extraerUrlImagenCarrito(item))
+    .filter((u): u is string => Boolean(u));
+  const imagenSingle = extraerUrlImagenCarrito(productoRaw?.imagen);
+
+  const presentacionRaw =
+    raw.presentacion && typeof raw.presentacion === 'object'
+      ? (raw.presentacion as Record<string, unknown>)
+      : undefined;
+  const presentacionImgsRaw = Array.isArray(presentacionRaw?.imagenes)
+    ? (presentacionRaw?.imagenes as unknown[])
+    : [];
+  const presentacionImgsNorm = presentacionImgsRaw
+    .map((item) => extraerUrlImagenCarrito(item))
+    .filter((u): u is string => Boolean(u));
+  const presentacionSingle = extraerUrlImagenCarrito(presentacionRaw?.imagen);
+
   return {
     id: num(raw.id),
     cantidad: num(raw.cantidad, 1),
@@ -68,14 +119,32 @@ function normalizarCarritoItem(raw: Record<string, unknown>): CarritoItemApi {
     presentacionId: num(raw.presentacionId ?? raw.presentacion_id),
     creadoEn: str(raw.creadoEn ?? raw.creado_en),
     actualizadoEn: str(raw.actualizadoEn ?? raw.actualizado_en),
-    producto:
-      raw.producto && typeof raw.producto === 'object'
-        ? (raw.producto as CarritoItemApi['producto'])
-        : undefined,
-    presentacion:
-      raw.presentacion && typeof raw.presentacion === 'object'
-        ? (raw.presentacion as CarritoItemApi['presentacion'])
-        : undefined,
+    producto: productoRaw
+      ? {
+          nombre: typeof productoRaw.nombre === 'string' ? productoRaw.nombre : undefined,
+          marca: typeof productoRaw.marca === 'string' ? productoRaw.marca : undefined,
+          imagenes: imagenesNorm.length ? imagenesNorm : imagenSingle ? [imagenSingle] : undefined,
+          imagen: imagenSingle ?? imagenesNorm[0],
+        }
+      : undefined,
+    presentacion: presentacionRaw
+      ? {
+          tamanio:
+            typeof (presentacionRaw.tamanio ?? presentacionRaw.tamaño) === 'string'
+              ? String(presentacionRaw.tamanio ?? presentacionRaw.tamaño)
+              : undefined,
+          precio:
+            typeof presentacionRaw.precio === 'number' || typeof presentacionRaw.precio === 'string'
+              ? (presentacionRaw.precio as number | string)
+              : undefined,
+          imagenes: presentacionImgsNorm.length
+            ? presentacionImgsNorm
+            : presentacionSingle
+              ? [presentacionSingle]
+              : undefined,
+          imagen: presentacionSingle ?? presentacionImgsNorm[0],
+        }
+      : undefined,
   };
 }
 

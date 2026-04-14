@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getPaqueteById, updatePaquete } from '../../../../services/paquetes'; 
+import { getPaqueteById, updatePaquete, camposPaqueteApi } from '../../../../services/paquetes'; 
 import AdminLayout from '../../../../components/layouts/AdminLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
@@ -27,14 +27,12 @@ export default function DetallePaquetePage() {
     if (id) {
       getPaqueteById(id as string)
         .then((p) => {
+          const c = camposPaqueteApi(p as Record<string, unknown>);
           setForm({
-            tipo_evento: p.tipo_evento == null ? '' : String(p.tipo_evento),
-            precio_especial:
-              p.precio_especial == null ? '' : String(p.precio_especial),
-            descripcion: typeof p.descripcion === 'string' ? p.descripcion : '',
-            servicios_vinculados: Array.isArray(p.servicios_vinculados)
-              ? p.servicios_vinculados.map((x) => String(x))
-              : [],
+            tipo_evento: c.tipoEvento,
+            precio_especial: c.precioEspecial,
+            descripcion: c.descripcion,
+            servicios_vinculados: c.serviciosVinculados,
           });
         })
         .catch(() => console.error("Error al cargar"))
@@ -45,9 +43,16 @@ export default function DetallePaquetePage() {
   const handleGuardar = async () => {
     setSaving(true);
     try {
+      const precioNum = parseFloat(String(form.precio_especial).replace(/[^0-9.]/g, ''));
+      if (!Number.isFinite(precioNum) || precioNum < 0) {
+        alert('Precio no válido');
+        return;
+      }
       await updatePaquete(id as string, {
-        ...form,
-        precio_especial: parseFloat(form.precio_especial)
+        tipoEvento: form.tipo_evento.trim(),
+        descripcion: form.descripcion.trim(),
+        precioEspecial: precioNum,
+        serviciosVinculados: form.servicios_vinculados.map((x) => String(x).trim()).filter(Boolean),
       });
       alert("¡Paquete actualizado!");
       router.push('/admin/paquetes');

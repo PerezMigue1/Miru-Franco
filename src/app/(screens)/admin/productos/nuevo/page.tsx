@@ -61,7 +61,7 @@ export default function NuevoProductoAdminPage() {
     return [
       { value: '', label: 'Elige una opción' },
       ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
-      { value: AGREGAR_CAT, label: '➕ Agregar otra categoría' },
+      { value: AGREGAR_CAT, label: '+ Agregar otra categoría' },
     ];
   }, [categoriasCatalogo, categoria, categoriasEliminadas]);
 
@@ -77,7 +77,7 @@ export default function NuevoProductoAdminPage() {
       { value: '', label: 'Elige una opción' },
       { value: '__sin_marca__', label: 'Sin marca' },
       ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
-      { value: AGREGAR_MARCA, label: '➕ Agregar otra marca' },
+      { value: AGREGAR_MARCA, label: '+ Agregar otra marca' },
     ];
   }, [marcasCatalogo, marca, marcasEliminadas]);
 

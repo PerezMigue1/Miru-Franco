@@ -10,20 +10,38 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
+import { House } from 'lucide-react';
 
 type PaqueteRow = {
-  id?: string;
+  id?: string | number;
   _id?: string;
   tipo_evento?: string;
+  tipoEvento?: string;
   servicios_vinculados?: string[];
+  serviciosVinculados?: string[];
   precio_especial?: number | string;
+  precioEspecial?: number | string;
 };
+
+function etiquetaTipoEvento(p: PaqueteRow): string {
+  return String(p.tipo_evento ?? p.tipoEvento ?? '');
+}
+
+function listaServiciosVinculados(p: PaqueteRow): string[] {
+  const a = p.servicios_vinculados ?? p.serviciosVinculados;
+  return Array.isArray(a) ? a.map((x) => String(x)) : [];
+}
+
+function precioMostrar(p: PaqueteRow): string | number {
+  const v = p.precio_especial ?? p.precioEspecial;
+  return v ?? '—';
+}
 
 const getPaqueteId = (p: PaqueteRow): string | null => {
   const raw = p.id ?? p._id;
-  if (typeof raw !== 'string') return null;
-  const trimmed = raw.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  if (raw === undefined || raw === null) return null;
+  const s = String(raw).trim();
+  return s.length > 0 ? s : null;
 };
 
 export default function PaquetesPage() {
@@ -40,14 +58,8 @@ export default function PaquetesPage() {
     try {
       setLoadError(null);
       setLoading(true);
-      const data = await getPaquetes();
-      let list: PaqueteRow[] = [];
-      if (Array.isArray(data)) list = data;
-      else if (data && typeof data === 'object' && 'data' in data) {
-        const inner = (data as { data: unknown }).data;
-        if (Array.isArray(inner)) list = inner as PaqueteRow[];
-      }
-      setPaquetes(list);
+      const list = await getPaquetes();
+      setPaquetes(list as PaqueteRow[]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar paquetes';
       setLoadError(msg);
@@ -78,7 +90,7 @@ export default function PaquetesPage() {
     <AdminLayout>
       {/* Breadcrumbs de navegación */}
       <div className="flex items-center gap-2 mb-6 text-sm">
-        <button onClick={() => router.push('/')} className="px-3 py-1.5 rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">🏠 Inicio</button>
+        <button onClick={() => router.push('/')} className="px-3 py-1.5 rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors"><House size={14} className="inline-block mr-1" />Inicio</button>
         <span className="text-gray-600">›</span>
         <button onClick={() => router.push('/admin')} className="px-3 py-1.5 rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Panel</button>
         <span className="text-gray-600">›</span>
@@ -112,11 +124,11 @@ export default function PaquetesPage() {
             if (!currentId) return null;
             return (
               <TableRow key={currentId}>
-                <TableCell className="font-bold text-white">{p.tipo_evento}</TableCell>
+                <TableCell className="font-bold text-white">{etiquetaTipoEvento(p)}</TableCell>
                 <TableCell className="text-gray-400 text-xs">
-                  {Array.isArray(p.servicios_vinculados) ? p.servicios_vinculados.join(', ') : 'N/A'}
+                  {listaServiciosVinculados(p).length ? listaServiciosVinculados(p).join(', ') : 'N/A'}
                 </TableCell>
-                <TableCell className="text-yellow-400 font-bold">${p.precio_especial}</TableCell>
+                <TableCell className="text-yellow-400 font-bold">${precioMostrar(p)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => router.push(`/admin/paquetes/${currentId}`)}>Ver</Button>

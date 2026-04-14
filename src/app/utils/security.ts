@@ -293,14 +293,22 @@ export const getAuthHeaders = (): HeadersInit => {
 };
 
 /**
- * Guarda token de forma segura
+ * Solo persiste access token (p. ej. refresh). No actualiza `lastLoginTime` para no interferir
+ * con la ventana de “login reciente” ni con detección de inactividad en el apiClient.
+ */
+export const persistAccessTokenOnly = (token: string): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('token', token);
+    localStorage.setItem('authToken', token);
+  }
+};
+
+/**
+ * Guarda token de forma segura (login / registro: marca momento de sesión)
  */
 export const saveToken = (token: string): void => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
-    // También guardar como authToken para compatibilidad
-    localStorage.setItem('authToken', token);
-    // Guardar timestamp del login para evitar mensajes de inactividad inmediatos
+    persistAccessTokenOnly(token);
     localStorage.setItem('lastLoginTime', String(Date.now()));
   }
 };

@@ -9,12 +9,14 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { AlertTriangle, BadgeDollarSign, CircleX, Package } from 'lucide-react';
 import { getCategoryColor, getEstadoColor } from '../../../utils/categoryColors';
 import {
   getProductosSinRedirigir,
   aplicarDescuentoGlobal,
   type Producto,
 } from '../../../services/productos';
+import { MIRU_CATALOG_STOCK_CHANGED } from '../../../utils/catalogStockSync';
 
 // Helper simple para sacar número de un precio tipo \"$350\"
 function precioANumero(precio: string | undefined): number {
@@ -66,6 +68,29 @@ export default function InventarioPage() {
       });
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let seq = 0;
+    const onStock = () => {
+      const my = ++seq;
+      setLoading(true);
+      setError(null);
+      getProductosSinRedirigir({ incluirNoDisponibles: true })
+        .then((result) => {
+          if (my !== seq) return;
+          setProductos(result.data);
+          setError(result.error);
+        })
+        .finally(() => {
+          if (my === seq) setLoading(false);
+        });
+    };
+    window.addEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    return () => {
+      seq += 1;
+      window.removeEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
     };
   }, []);
 
@@ -190,7 +215,7 @@ export default function InventarioPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="transition-all duration-200 hover:shadow-lg" variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>📦</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}><Package size={22} /></div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total Productos</p>
                 <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalProductos}</p>
@@ -199,7 +224,7 @@ export default function InventarioPage() {
           </Card>
           <Card className="transition-all duration-200 hover:shadow-lg" variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'rgba(217, 142, 4, 0.2)' }}>⚠️</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(217, 142, 4, 0.2)' }}><AlertTriangle size={22} /></div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Stock Bajo (≤5)</p>
                 <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning)' }}>{stockBajo}</p>
@@ -208,7 +233,7 @@ export default function InventarioPage() {
           </Card>
           <Card className="transition-all duration-200 hover:shadow-lg" variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'rgba(89, 12, 12, 0.15)' }}>🚫</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(89, 12, 12, 0.15)' }}><CircleX size={22} /></div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Sin stock</p>
                 <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--danger)' }}>{sinStock}</p>
@@ -217,7 +242,7 @@ export default function InventarioPage() {
           </Card>
           <Card className="transition-all duration-200 hover:shadow-lg" variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: 'rgba(110, 125, 87, 0.25)' }}>💰</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(110, 125, 87, 0.25)' }}><BadgeDollarSign size={22} /></div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Valor Total</p>
                 <p className="text-xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${valorTotal.toLocaleString('es-MX')}</p>
@@ -387,13 +412,26 @@ export default function InventarioPage() {
                 </Badge>
               </TableCell>
               <TableCell>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => router.push(`/admin/productos/${producto.id}`)}
-                >
-                  Ver y editar
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      router.push(
+                        `/admin/inventario/prediccion?producto=${encodeURIComponent(String(producto.id))}#prediccion-categorias`
+                      )
+                    }
+                  >
+                    Predicción y análisis
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => router.push(`/admin/productos/${producto.id}`)}
+                  >
+                    Ver y editar
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           );

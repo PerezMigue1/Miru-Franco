@@ -25,6 +25,7 @@ import { hasValidToken } from '../../../../../utils/security';
 import { showAlert, showToast } from '../../../../../utils/toast';
 import { readCheckoutDireccionId, clearCheckoutDireccionId } from '../../../../../utils/checkoutDeliveryStorage';
 import { mensajeUsuarioDesdeErrorApi } from '../../../../../utils/apiErrorMessage';
+import { emitCatalogStockChanged } from '../../../../../utils/catalogStockSync';
 import {
   lineaResumenEnvio,
   etiquetaTipoDomicilio,
@@ -801,6 +802,8 @@ export default function CheckoutPage() {
           presentacionId: item.presentacionId,
         })),
       });
+      // El servidor descuenta stock al crear el pedido; refrescar catálogos abiertos.
+      emitCatalogStockChanged();
 
       const textoDirLimpio = textoDir.trim();
       if (textoDirLimpio) {
@@ -832,7 +835,14 @@ export default function CheckoutPage() {
     } catch (e) {
       const msg = mensajeUsuarioDesdeErrorApi(e);
       setSubmitError(msg);
-      void showAlert(msg);
+      const st = (e as Error & { status?: number }).status;
+      if (st === 400) {
+        void showAlert(
+          `${msg}\n\nSi el mensaje indica falta de stock, el pedido no se creó y el inventario no cambió. Revisa cantidades o vuelve al catálogo para ver disponibilidad actualizada.`
+        );
+      } else {
+        void showAlert(msg);
+      }
     } finally {
       setSubmitting(false);
     }

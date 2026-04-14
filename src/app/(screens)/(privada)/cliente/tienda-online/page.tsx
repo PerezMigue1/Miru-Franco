@@ -9,6 +9,7 @@ import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
 import Badge from '../../../../components/ui/Badge';
 import { getProductos, urlsGaleriaProductoCatalogo, type Producto } from '../../../../services/productos';
+import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
 import { ProductoImagenCarruselTarjeta } from '../../../../components/tienda/ProductoImagenCarruselTarjeta';
 
 /** Parsea precio tipo "$350" o "350" a número */
@@ -93,6 +94,34 @@ export default function CatalogoProductosPage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let seq = 0;
+    const onStock = () => {
+      const id = ++seq;
+      setLoading(true);
+      setError(null);
+      getProductos()
+        .then((data) => {
+          if (id !== seq) return;
+          setProductos(data);
+        })
+        .catch((err) => {
+          if (id !== seq) return;
+          setError(err instanceof Error ? err.message : 'Error al cargar productos');
+          const url = (err as Error & { url?: string }).url;
+          setErrorUrl(url ?? null);
+        })
+        .finally(() => {
+          if (id === seq) setLoading(false);
+        });
+    };
+    window.addEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    return () => {
+      seq += 1;
+      window.removeEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    };
   }, []);
 
   // Categorías dinámicas desde el backend (sin valores estáticos hardcodeados)

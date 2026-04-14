@@ -69,7 +69,12 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       if (third) {
         if (section === 'productos' && third === 'nuevo') admin.push({ label: 'Nuevo producto' });
         else if (section === 'productos' && third !== 'nuevo') admin.push({ label: 'Detalle de producto' });
-        else if (section === 'servicios') admin.push({ label: 'Detalle de servicio' });
+        else if (section === 'inventario' && third === 'prediccion') admin.push({ label: 'Predicción de inventario' });
+        else if (section === 'inventario' && third === 'inteligente') admin.push({ label: 'Predicción de inventario' });
+        else if (section === 'inventario' && third === 'ventas-analisis') admin.push({ label: 'Análisis de ventas (tienda)' });
+        else if (section === 'inventario' && third === 'producto' && segments[3] && segments[4] === 'analisis') {
+          admin.push({ label: 'Análisis de ventas por producto' });
+        } else if (section === 'servicios') admin.push({ label: 'Detalle de servicio' });
         else if (section === 'clientes-crm') admin.push({ label: 'Perfil de cliente' });
       }
     }

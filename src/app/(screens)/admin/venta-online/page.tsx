@@ -25,6 +25,8 @@ import {
 import { getUsuarios, type Usuario } from '../../../services/usuarios';
 import { listarDireccionesUsuario, type DireccionUsuarioDTO } from '../../../services/perfil';
 import { showAlert, showToast } from '../../../utils/toast';
+import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
+import { emitCatalogStockChanged } from '../../../utils/catalogStockSync';
 
 type EstadoEnvioUi = 'preparando' | 'en_transito' | 'entregado' | 'fallido';
 
@@ -223,10 +225,11 @@ export default function VentaOnlinePage() {
     setSaving(true);
     try {
       await actualizarPedido(id, { estado: estado as PedidoApi['estado'] });
+      emitCatalogStockChanged();
       await cargarDatosBase();
       showToast(`Pedido #${id} actualizado a ${etiquetaEstadoPedido(estado)}.`, 'success');
     } catch (e) {
-      void showAlert(e instanceof Error ? e.message : 'No se pudo actualizar el estado');
+      void showAlert(mensajeUsuarioDesdeErrorApi(e));
     } finally {
       setSaving(false);
     }
@@ -244,10 +247,11 @@ export default function VentaOnlinePage() {
         metodoPago: formPedido.metodoPago || undefined,
         referenciaPago: formPedido.referenciaPago || undefined,
       });
+      emitCatalogStockChanged();
       await cargarDatosBase();
       showToast('Pedido actualizado.', 'success');
     } catch (e) {
-      void showAlert(e instanceof Error ? e.message : 'No se pudo guardar el pedido');
+      void showAlert(mensajeUsuarioDesdeErrorApi(e));
     } finally {
       setSaving(false);
     }
@@ -298,7 +302,7 @@ export default function VentaOnlinePage() {
       await cargarDatosBase();
       showToast('Pago aprobado y pedido marcado como pagado.', 'success');
     } catch (e) {
-      void showAlert(e instanceof Error ? e.message : 'No se pudo actualizar pago/pedido');
+      void showAlert(mensajeUsuarioDesdeErrorApi(e));
     } finally {
       setSaving(false);
     }
@@ -350,11 +354,12 @@ export default function VentaOnlinePage() {
         direccionEnvioId: formNuevoPedido.direccionEnvioId || null,
         items: lineas,
       });
+      emitCatalogStockChanged();
       await cargarDatosBase();
       setSelectedPedidoId(creado.id);
       showToast(`Pedido #${creado.id} creado.`, 'success');
     } catch (e) {
-      void showAlert(e instanceof Error ? e.message : 'No se pudo crear el pedido');
+      void showAlert(mensajeUsuarioDesdeErrorApi(e));
     } finally {
       setSaving(false);
     }
@@ -451,6 +456,10 @@ export default function VentaOnlinePage() {
           <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Editar pedido #{selectedPedido.id}
           </h2>
+          <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+            Al marcar el pedido como cancelado, el backend devuelve stock al inventario y las vistas de productos se recargan al guardar.
+            Si cambias de cancelado a otro estado, el servidor vuelve a reservar stock según las líneas del pedido y puede responder con error si no hay existencias.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select label="Estado pedido" value={formPedido.estado} onChange={(e) => setFormPedido((p) => ({ ...p, estado: e.target.value }))} options={OPCIONES_ESTADO_PEDIDO} fullWidth />
             <Input label="Costo envío" type="number" value={formPedido.costoEnvio} onChange={(e) => setFormPedido((p) => ({ ...p, costoEnvio: e.target.value }))} fullWidth />

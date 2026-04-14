@@ -3,12 +3,25 @@
 import { ReactNode } from 'react';
 
 interface TableProps {
-  headers: string[];
+  headers: ReactNode[];
   children: ReactNode;
   className?: string;
+  /**
+   * false = encabezados en mayúsculas tipo etiqueta (comportamiento anterior).
+   * true = texto normal, mejor para frases largas en español.
+   */
+  headersLegibles?: boolean;
+  stickyFirstColumn?: boolean;
 }
 
-export default function Table({ headers, children, className = '' }: TableProps) {
+export default function Table({
+  headers,
+  children,
+  className = '',
+  headersLegibles,
+  stickyFirstColumn = false,
+}: TableProps) {
+  const legible = headersLegibles === true;
   return (
     <div
       className="overflow-x-auto rounded-xl border"
@@ -20,8 +33,15 @@ export default function Table({ headers, children, className = '' }: TableProps)
             {headers.map((header, index) => (
               <th
                 key={index}
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10"
-                style={{ color: 'var(--texto-fondo-oscuro)' }}
+                className={`px-4 py-3 text-left text-xs font-semibold sticky top-0 z-10 ${
+                  legible ? 'normal-case leading-snug' : 'uppercase tracking-wider'
+                }`}
+                style={{
+                  color: 'var(--texto-fondo-oscuro)',
+                  ...(stickyFirstColumn && index === 0
+                    ? { left: 0, zIndex: 12, boxShadow: '1px 0 0 var(--borde-sutil)' }
+                    : {}),
+                }}
               >
                 {header}
               </th>
@@ -75,14 +95,27 @@ interface TableCellProps {
   className?: string;
   colSpan?: number;
   style?: React.CSSProperties;
+  stickyLeft?: boolean;
 }
 
-export function TableCell({ children, className = '', colSpan, style }: TableCellProps) {
+export function TableCell({ children, className = '', colSpan, style, stickyLeft = false }: TableCellProps) {
   return (
     <td
       colSpan={colSpan}
       className={`px-4 py-3 whitespace-nowrap text-sm ${className}`}
-      style={{ color: 'var(--menu-texto-principal)', ...style }}
+      style={{
+        color: 'var(--menu-texto-principal)',
+        ...(stickyLeft
+          ? {
+              position: 'sticky',
+              left: 0,
+              zIndex: 8,
+              backgroundColor: 'var(--fondo-general)',
+              boxShadow: '1px 0 0 var(--borde-sutil)',
+            }
+          : {}),
+        ...style,
+      }}
     >
       {children}
     </td>

@@ -65,7 +65,22 @@ function apiItemToCartItem(row: CarritoItemApi): CartItem {
     row.precioReferencia != null && row.precioReferencia > 0
       ? row.precioReferencia
       : parsePrecioPresentacion(row.presentacion);
-  const imgRaw = row.producto?.imagenes?.[0];
+  const rowAny = row as CarritoItemApi & { imagen?: unknown; imagenUrl?: unknown; producto?: CarritoItemApi['producto'] & { imagen?: unknown } };
+  const rowWithPresentacion = rowAny as CarritoItemApi & {
+    presentacion?: CarritoItemApi['presentacion'] & { imagen?: unknown; imagenes?: unknown };
+  };
+  const imgRaw =
+    row.producto?.imagenes?.[0] ??
+    (typeof rowAny.producto?.imagen === 'string' ? rowAny.producto.imagen : undefined) ??
+    (Array.isArray(rowWithPresentacion.presentacion?.imagenes) &&
+    typeof rowWithPresentacion.presentacion.imagenes[0] === 'string'
+      ? rowWithPresentacion.presentacion.imagenes[0]
+      : undefined) ??
+    (typeof rowWithPresentacion.presentacion?.imagen === 'string'
+      ? rowWithPresentacion.presentacion.imagen
+      : undefined) ??
+    (typeof rowAny.imagen === 'string' ? rowAny.imagen : undefined) ??
+    (typeof rowAny.imagenUrl === 'string' ? rowAny.imagenUrl : undefined);
   const img =
     typeof imgRaw === 'string' && imgRaw.trim()
       ? normalizarUrlImagenExterna(imgRaw) || undefined

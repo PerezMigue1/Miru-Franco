@@ -22,6 +22,7 @@ import {
 } from '../../../../../../services/ecommerce';
 import { useCart } from '../../../../../../context/CartContext';
 import { showAlert, showToast } from '../../../../../../utils/toast';
+import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../../../utils/catalogStockSync';
 import { hasValidToken } from '../../../../../../utils/security';
 import Select from '../../../../../../components/ui/Select';
 import Textarea from '../../../../../../components/ui/Textarea';
@@ -109,6 +110,36 @@ export default function DetalleProductoPage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
+  }, [id]);
+
+  useEffect(() => {
+    let seq = 0;
+    const onStock = () => {
+      const my = ++seq;
+      setLoading(true);
+      setError(null);
+      getProductoPorId(id)
+        .then((p) => {
+          if (my !== seq) return;
+          setProducto(p ?? null);
+          if (p?.presentaciones?.length) {
+            const primeraDisponible = p.presentaciones.find((pr) => pr.disponible);
+            setPresentacionSeleccionada(primeraDisponible?.tamaño ?? p.presentaciones[0]?.tamaño ?? '');
+          }
+        })
+        .catch((err) => {
+          if (my !== seq) return;
+          setError(err instanceof Error ? err.message : 'Error al cargar el producto');
+        })
+        .finally(() => {
+          if (my === seq) setLoading(false);
+        });
+    };
+    window.addEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    return () => {
+      seq += 1;
+      window.removeEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    };
   }, [id]);
 
   const manejarAgregarCarrito = async () => {

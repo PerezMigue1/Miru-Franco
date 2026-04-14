@@ -10,6 +10,7 @@ import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import Textarea from '../../../../components/ui/Textarea';
 import Modal from '../../../../components/ui/Modal';
+import { X } from 'lucide-react';
 import { getCategoryColor } from '../../../../utils/categoryColors';
 import {
   getServicioPorId,
@@ -18,6 +19,7 @@ import {
   type Servicio,
   type ServicioPayload,
 } from '../../../../services/servicios';
+import { IMG_SERVICIO_PLACEHOLDER } from '../../../../utils/serviceImagePlaceholder';
 
 function parsePrecio(str: string | undefined): number | undefined {
   if (!str) return undefined;
@@ -252,7 +254,8 @@ export default function ServicioDetalleAdminPage() {
                         className="object-cover"
                         unoptimized
                         onError={(e: SyntheticEvent<HTMLImageElement>) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = IMG_SERVICIO_PLACEHOLDER;
                         }}
                       />
                       <button
@@ -260,7 +263,7 @@ export default function ServicioDetalleAdminPage() {
                         className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         title="Quitar imagen"
                       >
-                        ✕
+                        <X size={12} />
                       </button>
                     </div>
                   ))}

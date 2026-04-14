@@ -21,6 +21,8 @@ import {
 import Modal from '../../../../components/ui/Modal';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
 import { normalizarUrlImagenExterna } from '../../../../utils/normalizarUrlImagen';
+import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
+import { AlertTriangle, Check, X } from 'lucide-react';
 
 function calcularPrecioDesdeDescuento(precioOriginal: number, descuento: number): string {
   if (!precioOriginal || !descuento) return `$${precioOriginal || 0}`;
@@ -221,6 +223,41 @@ export default function ProductoDetalleAdminPage() {
     };
   }, [id]);
 
+  /** Pedidos / estados pueden mover stock en servidor; sincronizar solo filas de inventario sin borrar el resto del formulario. */
+  useEffect(() => {
+    let seq = 0;
+    const onStock = () => {
+      const my = ++seq;
+      getProductoPorId(id)
+        .then((p) => {
+          if (my !== seq || !p) return;
+          setProducto((prev) => (prev ? { ...prev, stock: p.stock, presentaciones: p.presentaciones } : p));
+          setDisponible(p.stock);
+          setPresentaciones((prev) =>
+            prev.map((row) => {
+              const pr = (p.presentaciones ?? []).find(
+                (x) => x.id === row.presentacionId || x.tamaño === row.tamanio
+              );
+              if (!pr) return row;
+              return {
+                ...row,
+                stock: String(pr.stock ?? 0),
+                disponible: pr.disponible ?? true,
+              };
+            })
+          );
+        })
+        .catch(() => {
+          /* mantener formulario actual */
+        });
+    };
+    window.addEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    return () => {
+      seq += 1;
+      window.removeEventListener(MIRU_CATALOG_STOCK_CHANGED, onStock);
+    };
+  }, [id]);
+
   // Catálogo para selects (categorías y marcas): se carga una vez
   useEffect(() => {
     let cancelled = false;
@@ -258,7 +295,7 @@ export default function ProductoDetalleAdminPage() {
     return [
       { value: '', label: 'Elige una opción' },
       ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
-      { value: AGREGAR_CAT, label: '➕ Agregar otra categoría' },
+      { value: AGREGAR_CAT, label: '+ Agregar otra categoría' },
     ];
   }, [categoriasCatalogo, categoria, categoriasEliminadas]);
 
@@ -276,7 +313,7 @@ export default function ProductoDetalleAdminPage() {
       { value: '', label: 'Elige una opción' },
       { value: '__sin_marca__', label: 'Sin marca' },
       ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
-      { value: AGREGAR_MARCA, label: '➕ Agregar otra marca' },
+      { value: AGREGAR_MARCA, label: '+ Agregar otra marca' },
     ];
   }, [marcasCatalogo, marca, marcasEliminadas]);
 
@@ -739,7 +776,7 @@ export default function ProductoDetalleAdminPage() {
                             onClick={() => eliminarPresentacion(index)}
                             title="Quitar presentación"
                           >
-                            ✕
+                            <X size={14} />
                           </Button>
                         </div>
                       </div>
@@ -815,7 +852,9 @@ export default function ProductoDetalleAdminPage() {
                   <div className="flex justify-between">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Stock total:</span>
                     <span className="font-semibold" style={{ color: presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) <= 0 ? 'var(--danger)' : 'var(--success)' }}>
-                      {presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) > 0 ? '✓ OK' : '⚠ Sin stock'}
+                      {presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) > 0
+                        ? <span className="inline-flex items-center gap-1"><Check size={14} /> OK</span>
+                        : <span className="inline-flex items-center gap-1"><AlertTriangle size={14} /> Sin stock</span>}
                     </span>
                   </div>
                 </div>
