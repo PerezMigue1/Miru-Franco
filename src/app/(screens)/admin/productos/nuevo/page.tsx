@@ -14,7 +14,7 @@ import {
   type ProductoPayload,
 } from '../../../../services/productos';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
-import { parseCategoriaSub, serializarCategoriaSub } from '../../../../utils/inventarioInteligente';
+import { parseCategoriaSub } from '../../../../utils/inventarioInteligente';
 
 const AGREGAR_CAT = '__agregar_cat__';
 const AGREGAR_MARCA = '__agregar_marca__';
@@ -27,12 +27,10 @@ export default function NuevoProductoAdminPage() {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [subcategoria, setSubcategoria] = useState('');
   const [marca, setMarca] = useState('');
   const [disponible, setDisponible] = useState(true);
   const [imagenesPresentacion, setImagenesPresentacion] = useState<string[]>([]);
   const [categoriasCatalogo, setCategoriasCatalogo] = useState<string[]>([]);
-  const [subsPorCategoriaPrincipal, setSubsPorCategoriaPrincipal] = useState<Record<string, string[]>>({});
   const [marcasCatalogo, setMarcasCatalogo] = useState<string[]>([]);
   const [showAgregarCategoria, setShowAgregarCategoria] = useState(false);
   const [showAgregarMarca, setShowAgregarMarca] = useState(false);
@@ -47,23 +45,13 @@ export default function NuevoProductoAdminPage() {
       .then((list) => {
         if (cancelled) return;
         const principals = new Set<string>();
-        const subsMap: Record<string, Set<string>> = {};
         for (const p of list) {
-          const { categoriaPrincipal, subcategoria: sub } = parseCategoriaSub(String(p.categoria || ''));
+          const { categoriaPrincipal } = parseCategoriaSub(String(p.categoria || ''));
           if (categoriaPrincipal && categoriaPrincipal !== 'Sin categoría') {
             principals.add(categoriaPrincipal);
-            if (sub.trim()) {
-              if (!subsMap[categoriaPrincipal]) subsMap[categoriaPrincipal] = new Set();
-              subsMap[categoriaPrincipal].add(sub.trim());
-            }
           }
         }
         setCategoriasCatalogo([...principals].sort((a, b) => a.localeCompare(b)));
-        setSubsPorCategoriaPrincipal(
-          Object.fromEntries(
-            Object.entries(subsMap).map(([k, v]) => [k, [...v].sort((a, b) => a.localeCompare(b))])
-          )
-        );
         setMarcasCatalogo(Array.from(new Set(list.map((p) => p.marca).filter((m): m is string => Boolean(m)))));
       })
       .catch(() => {});
@@ -84,11 +72,6 @@ export default function NuevoProductoAdminPage() {
       { value: AGREGAR_CAT, label: '+ Agregar otra categoría' },
     ];
   }, [categoriasCatalogo, categoria, categoriasEliminadas]);
-
-  const subsSugeridas = useMemo(
-    () => (categoria.trim() ? subsPorCategoriaPrincipal[categoria.trim()] ?? [] : []),
-    [categoria, subsPorCategoriaPrincipal]
-  );
 
   const opcionesMarca = useMemo(() => {
     const base = marcasCatalogo
@@ -111,7 +94,6 @@ export default function NuevoProductoAdminPage() {
     if (v) {
       setCategoriasCatalogo((prev) => (prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b))));
       setCategoria(v);
-      setSubcategoria('');
     }
     setShowAgregarCategoria(false);
     setNuevaCategoriaVal('');
@@ -131,7 +113,6 @@ export default function NuevoProductoAdminPage() {
     if (categoria?.trim()) {
       setCategoriasEliminadas((prev) => (prev.includes(categoria.trim()) ? prev : [...prev, categoria.trim()]));
       setCategoria('');
-      setSubcategoria('');
     }
   };
 
@@ -153,7 +134,7 @@ export default function NuevoProductoAdminPage() {
       const payload: ProductoPayload = {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
-        categoria: serializarCategoriaSub(categoria.trim(), subcategoria.trim()),
+        categoria: categoria.trim(),
         marca: marca.trim() || undefined,
         presentaciones: serializarPresentacionesProducto([
           {
@@ -212,7 +193,6 @@ export default function NuevoProductoAdminPage() {
                       if (v === AGREGAR_CAT) setShowAgregarCategoria(true);
                       else {
                         setCategoria(v);
-                        setSubcategoria('');
                       }
                     }}
                     fullWidth
@@ -238,24 +218,6 @@ export default function NuevoProductoAdminPage() {
                   <Button size="sm" variant="outline" onClick={() => { setShowAgregarCategoria(false); setNuevaCategoriaVal(''); }}>Cancelar</Button>
                 </div>
               )}
-              <div className="mt-3">
-                <datalist id="admin-nuevo-producto-subs">
-                  {subsSugeridas.map((s) => (
-                    <option key={s} value={s} />
-                  ))}
-                </datalist>
-                <Input
-                  label="Subcategoría (opcional)"
-                  value={subcategoria}
-                  onChange={(e) => setSubcategoria(e.target.value)}
-                  placeholder="Ej. Shampoos"
-                  list="admin-nuevo-producto-subs"
-                  fullWidth
-                />
-                <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Se guarda como «Categoría &gt; Subcategoría» para inventario y predicción.
-                </p>
-              </div>
             </div>
             <div>
               <div className="flex items-end gap-2">

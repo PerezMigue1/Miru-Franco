@@ -726,13 +726,28 @@ export default function PrediccionInventarioPage() {
           >
             Inventario · predicción
           </p>
-          <Button
-            variant="outline"
-            className="shrink-0 w-full sm:w-auto order-1 sm:order-2"
-            onClick={() => router.push("/admin/inventario")}
-          >
-            Volver a inventario
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2 sm:justify-end">
+            <Button
+              variant="outline"
+              className="shrink-0 w-full sm:w-auto"
+              onClick={() => {
+                const pid = searchParams.get("producto");
+                const q = pid
+                  ? `?producto=${encodeURIComponent(pid)}`
+                  : "";
+                router.push(`/admin/inventario/historial-ventas${q}`);
+              }}
+            >
+              Historial de ventas
+            </Button>
+            <Button
+              variant="outline"
+              className="shrink-0 w-full sm:w-auto"
+              onClick={() => router.push("/admin/inventario")}
+            >
+              Volver a inventario
+            </Button>
+          </div>
         </header>
 
         <section
