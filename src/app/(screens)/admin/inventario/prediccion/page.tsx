@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminLayout from "../../../../components/layouts/AdminLayout";
 import Card from "../../../../components/ui/Card";
 import Button from "../../../../components/ui/Button";
 import Select from "../../../../components/ui/Select";
+import Input from "../../../../components/ui/Input";
 import Table, { TableCell, TableRow } from "../../../../components/ui/Table";
 import Badge from "../../../../components/ui/Badge";
 import { Drawer } from "../../../../components/ui/Drawer";
@@ -37,6 +44,8 @@ const AJUSTE_K_MODELO = 1;
 const FILAS_VISIBLES_TABLA = 10;
 const ALTO_FILA_PX = 44;
 const ALTO_ENCABEZADO_PX = 44;
+
+type UmbralModo = "auto" | "pct";
 
 /** Bordes / fondos solo con variables de `globals.css` (cambian en `.dark`). */
 const bordePanelPrediccion =
@@ -171,6 +180,8 @@ export default function PrediccionInventarioPage() {
   const [periodoDias, setPeriodoDias] = useState<7 | 30 | 90>(30);
   const diasVentanaVentas = periodoDias;
   const horizonteDias = periodoDias;
+  const [umbralModo, setUmbralModo] = useState<UmbralModo>("auto");
+  const [umbralPct, setUmbralPct] = useState(25);
 
   useEffect(() => {
     let cancelled = false;
@@ -272,6 +283,14 @@ export default function PrediccionInventarioPage() {
     [productosVista],
   );
 
+  const umbralParaX0 = useCallback(
+    (x0: number) =>
+      umbralModo === "auto"
+        ? stockMinimoAuto
+        : Math.max(1, Math.round((umbralPct / 100) * x0)),
+    [umbralModo, umbralPct, stockMinimoAuto],
+  );
+
   const predicciones = useMemo<PrediccionProducto[]>(() => {
     return productosVista.map((p) => {
       const x0 = Math.max(0, p.stockCantidad ?? 0);
@@ -279,7 +298,7 @@ export default function PrediccionInventarioPage() {
       const k = kBase * AJUSTE_K_MODELO;
       const xT = x0 * Math.exp(k * horizonteDias);
       const cambioPct = x0 > 0 ? ((xT - x0) / x0) * 100 : 0;
-      const estado = estadoDesdePrediccion(xT, stockMinimoAuto);
+      const estado = estadoDesdePrediccion(xT, umbralParaX0(x0));
       const recomendacion =
         estado === "critico"
           ? "Reabastecer ya."
@@ -299,7 +318,7 @@ export default function PrediccionInventarioPage() {
         recomendacion,
       };
     });
-  }, [productosVista, horizonteDias, stockMinimoAuto]);
+  }, [productosVista, horizonteDias, umbralParaX0]);
 
   const criticos = predicciones.filter((p) => p.estado === "critico").length;
   const preventivos = predicciones.filter(
@@ -317,7 +336,9 @@ export default function PrediccionInventarioPage() {
         stockProyectadoPeor: null as number | null,
       };
     }
-    const bajoUmbral = predicciones.filter((p) => p.xT <= stockMinimoAuto);
+    const bajoUmbral = predicciones.filter(
+      (p) => p.xT <= umbralParaX0(p.x0),
+    );
     if (bajoUmbral.length > 0) {
       const worst = bajoUmbral.reduce((a, b) => (a.xT <= b.xT ? a : b));
       return {
@@ -332,7 +353,7 @@ export default function PrediccionInventarioPage() {
     for (const p of predicciones) {
       const delta = (p.xT - p.x0) / Math.max(1, horizonteDias);
       if (delta >= -1e-12) continue;
-      const dias = (p.x0 - stockMinimoAuto) / -delta;
+      const dias = (p.x0 - umbralParaX0(p.x0)) / -delta;
       if (dias > 0 && dias < minDias) {
         minDias = dias;
         nombre = p.nombre;
@@ -352,7 +373,7 @@ export default function PrediccionInventarioPage() {
       urgente: false,
       stockProyectadoPeor: null,
     };
-  }, [predicciones, horizonteDias, stockMinimoAuto]);
+  }, [predicciones, horizonteDias, umbralParaX0]);
 
   const validacion = useMemo(() => {
     const sinNegativos = predicciones.every((p) => p.xT >= 0);
@@ -414,6 +435,13 @@ export default function PrediccionInventarioPage() {
     } as const;
   }, [predicciones, hayFiltrosCatalogo]);
 
+  const umbralLineaGrafica = useMemo(() => {
+    if (umbralModo === "auto") return stockMinimoAuto;
+    const xTot = curvaAgregada?.x0;
+    if (xTot == null || xTot <= 0) return stockMinimoAuto;
+    return Math.max(1, Math.round((umbralPct / 100) * xTot));
+  }, [umbralModo, umbralPct, stockMinimoAuto, curvaAgregada]);
+
   const puntosCurvaDensa = useMemo<PuntoGrafica[]>(() => {
     if (!curvaAgregada) return [];
     const H = horizonteDias;
@@ -447,7 +475,7 @@ export default function PrediccionInventarioPage() {
     const innerW = width - padL - padR;
     const innerH = height - padT - padB;
     const valores = pts.map((p) => p.valor);
-    const maxY = Math.max(...valores, stockMinimoAuto, 1);
+    const maxY = Math.max(...valores, umbralLineaGrafica, 1);
     const minY = 0;
     const yRange = Math.max(maxY - minY, 1e-9);
     const xMax = Math.max(...pts.map((p) => p.dia), 1);
@@ -459,7 +487,7 @@ export default function PrediccionInventarioPage() {
           `${i === 0 ? "M" : "L"} ${toX(p.dia).toFixed(1)} ${toY(p.valor).toFixed(1)}`,
       )
       .join(" ");
-    const yThreshold = toY(stockMinimoAuto);
+    const yThreshold = toY(umbralLineaGrafica);
     const tickVals = [0, Math.round(maxY / 2), Math.round(maxY)];
     return {
       width,
@@ -482,7 +510,7 @@ export default function PrediccionInventarioPage() {
           ? `${Math.round(v / 1000)}k`
           : String(Math.round(v)),
     };
-  }, [puntosCurvaDensa, stockMinimoAuto]);
+  }, [puntosCurvaDensa, umbralLineaGrafica]);
 
   const fechaRestock = useMemo(() => {
     if (restockGlobal.dias === null) return null;
@@ -633,7 +661,7 @@ export default function PrediccionInventarioPage() {
         promD: 0,
         demH: 0,
       };
-      const cr = cruceModeloVentas(p, mv, stockMinimoAuto);
+      const cr = cruceModeloVentas(p, mv, umbralParaX0(p.x0));
       const q = sugerenciaExportText(sugerenciaAccion(p, mv, horizonteDias));
       return [
         `"${p.nombre.replace(/"/g, '""')}"`,
@@ -932,7 +960,7 @@ export default function PrediccionInventarioPage() {
           </Card>
         )}
 
-        <div className="rounded-2xl p-4" style={superficieCard}>
+        <div className="rounded-2xl p-4 space-y-4" style={superficieCard}>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span
               className="text-sm font-semibold shrink-0"
@@ -955,10 +983,26 @@ export default function PrediccionInventarioPage() {
               className="text-xs w-full sm:w-auto sm:ml-1"
               style={{ color: "var(--encabezados-alterno)" }}
             >
-              Umbral auto:{" "}
-              <strong style={{ color: "var(--menu-texto-principal)" }}>
-                {stockMinimoAuto} u.
-              </strong>
+              {umbralModo === "auto" ? (
+                <>
+                  Umbral:{" "}
+                  <strong style={{ color: "var(--menu-texto-principal)" }}>
+                    {stockMinimoAuto} u.
+                  </strong>{" "}
+                  (auto)
+                </>
+              ) : (
+                <>
+                  SKU{" "}
+                  <strong style={{ color: "var(--menu-texto-principal)" }}>
+                    {umbralPct}%
+                  </strong>{" "}
+                  de cada x₀ · total (gráfico):{" "}
+                  <strong style={{ color: "var(--menu-texto-principal)" }}>
+                    {umbralLineaGrafica} u.
+                  </strong>
+                </>
+              )}
             </span>
             {validacion.ok ? (
               <Badge variant="success" size="sm" className="sm:ml-auto">
@@ -969,6 +1013,40 @@ export default function PrediccionInventarioPage() {
                 Revisar
               </Badge>
             )}
+          </div>
+          <div
+            className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end border-t pt-3"
+            style={sutilDivisor}
+          >
+            <Select
+              label="Umbral de alerta"
+              options={[
+                { value: "auto", label: "Automático (catálogo)" },
+                { value: "pct", label: "% del stock inicial (por SKU)" },
+              ]}
+              value={umbralModo}
+              onChange={(e) =>
+                setUmbralModo(e.target.value === "pct" ? "pct" : "auto")
+              }
+              className="sm:max-w-xs"
+            />
+            {umbralModo === "pct" ? (
+              <Input
+                label="% sobre x₀"
+                type="number"
+                min={1}
+                max={99}
+                value={umbralPct}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") return;
+                  const n = parseInt(raw, 10);
+                  if (!Number.isFinite(n)) return;
+                  setUmbralPct(Math.min(99, Math.max(1, n)));
+                }}
+                className="max-w-[7.5rem]"
+              />
+            ) : null}
           </div>
         </div>
 
@@ -1088,13 +1166,17 @@ export default function PrediccionInventarioPage() {
                     style={sutilDivisor}
                   >
                     <dt style={{ color: "var(--encabezados-alterno)" }}>
-                      Umbral (auto)
+                      {umbralModo === "auto"
+                        ? "Umbral (auto)"
+                        : `Umbral (${umbralPct}% x₀)`}
                     </dt>
                     <dd
                       className="font-semibold tabular-nums"
                       style={{ color: "var(--menu-texto-principal)" }}
                     >
-                      {stockMinimoAuto} u.
+                      {umbralModo === "auto"
+                        ? `${stockMinimoAuto} u.`
+                        : `${umbralLineaGrafica} u. (total)`}
                     </dd>
                   </div>
                   <div
@@ -1416,7 +1498,7 @@ export default function PrediccionInventarioPage() {
                 >
                   Peor caso del catálogo frente al umbral de{" "}
                   <strong style={{ color: "var(--menu-texto-principal)" }}>
-                    {stockMinimoAuto} u.
+                    {umbralLineaGrafica} u.
                   </strong>{" "}
                   en la ventana de{" "}
                   <strong style={{ color: "var(--menu-texto-principal)" }}>
@@ -1463,13 +1545,15 @@ export default function PrediccionInventarioPage() {
                       className="text-[11px] font-medium uppercase tracking-wide mb-1"
                       style={{ color: "var(--encabezados-alterno)" }}
                     >
-                      Umbral automático
+                      {umbralModo === "auto"
+                        ? "Umbral automático"
+                        : "Umbral (línea, % total)"}
                     </dt>
                     <dd
                       className="text-xl font-bold tabular-nums tracking-tight"
                       style={{ color: "var(--menu-texto-principal)" }}
                     >
-                      {stockMinimoAuto} u.
+                      {umbralLineaGrafica} u.
                     </dd>
                   </div>
                 </dl>
@@ -1493,7 +1577,8 @@ export default function PrediccionInventarioPage() {
                   className="text-xs mb-4"
                   style={{ color: "var(--encabezados-alterno)" }}
                 >
-                  Línea = stock total · rojo = umbral auto
+                  Línea = stock total · rojo = umbral (
+                  {umbralModo === "auto" ? "auto" : `${umbralPct}% del total`})
                 </p>
                 {graficaReserva && curvaAgregada ? (
                   <div
@@ -1566,7 +1651,7 @@ export default function PrediccionInventarioPage() {
                         fontSize="11"
                         fill="var(--danger)"
                       >
-                        Umbral: {stockMinimoAuto}
+                        Umbral: {umbralLineaGrafica}
                       </text>
                       <path
                         d={graficaReserva.path}
@@ -1709,7 +1794,7 @@ export default function PrediccionInventarioPage() {
                         const mv = metricasVentasPorProducto.get(
                           String(p.id).trim(),
                         ) ?? { unidades: 0, promD: 0, demH: 0 };
-                        const cr = cruceModeloVentas(p, mv, stockMinimoAuto);
+                        const cr = cruceModeloVentas(p, mv, umbralParaX0(p.x0));
                         const sug = sugerenciaAccion(p, mv, horizonteDias);
                         return (
                           <TableRow key={p.id}>
@@ -1802,13 +1887,11 @@ export default function PrediccionInventarioPage() {
                 </p>
                 <div className="space-y-3">
                   {topRiesgo.map((p) => {
+                    const uM = umbralParaX0(p.x0);
                     const progress =
-                      stockMinimoAuto <= 0
+                      uM <= 0
                         ? 100
-                        : Math.max(
-                            0,
-                            Math.min(100, (p.xT / stockMinimoAuto) * 100),
-                          );
+                        : Math.max(0, Math.min(100, (p.xT / uM) * 100));
                     const mvR = metricasVentasPorProducto.get(
                       String(p.id).trim(),
                     );
