@@ -128,6 +128,22 @@ Interpretación:
 - Si \(k<0\): el stock decrece.
 - Si \(k>0\): el stock crece.
 
+**Resolución (pasos 1 a 7)**
+
+**Paso 1 — Separación de variables:** \(\displaystyle \frac{dx}{dt}=kx \;\Rightarrow\; \frac{dx}{x}=k\,dt\).
+
+**Paso 2 — Integración:** \(\displaystyle \int\frac{dx}{x}=\int k\,dt \;\Rightarrow\; \ln|x|=kt+C_1 \;\Rightarrow\; x(t)=Ce^{kt}\).
+
+**Paso 3 — Despeje de \(x\):** \(x(t)=Ce^{kt}\).
+
+**Paso 4 — Condición inicial \(x(0)=x_0\):** \(x_0=C\) \(\Rightarrow\) \(C=x_0\).
+
+**Paso 5 — Sustituir \(C\):** \(\displaystyle x(t)=x_0e^{kt}\).
+
+**Paso 6 — Segundo punto \((t_1,x_1)\):** \(x_1=x_0e^{kt_1}\) \(\Rightarrow\) \(\displaystyle k=\frac{1}{t_1}\ln\frac{x_1}{x_0}\).
+
+**Paso 7 — Tiempo hasta el nivel de alerta \(x_{\min}\):** \(x_{\min}=x_0e^{kt}\) \(\Rightarrow\) \(\displaystyle t=\frac{1}{k}\ln\frac{x_{\min}}{x_0}\) (con \(k<0\) y \(0<x_{\min}<x_0\)).
+
 **Mini sección opcional (Laplace, básica):**
 - \( \mathcal{L}\{1\}=\frac{1}{s} \)
 - \( \mathcal{L}\{t\}=\frac{1}{s^2} \)
@@ -190,6 +206,7 @@ La propuesta mejora el control del inventario de productos y aporta una base mat
 |-------|--------|
 | 2025-03 | Documento generado según estructura académica |
 | 2026-03 | Documento acotado exclusivamente a inventario de productos |
+| 2026-04 | §1.3: pasos 1–7 en formato breve; retorno de §1.4–1.5 al esquema original |
 # Propuesta — Proyecto transversal / Memoria de cálculo  
 **Miru Franco Beauty Salón — Sistema integral multiplataforma**
 

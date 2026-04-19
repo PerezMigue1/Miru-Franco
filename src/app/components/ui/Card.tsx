@@ -1,12 +1,13 @@
 'use client';
 
-import { ReactNode, HTMLAttributes } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 
-interface CardProps extends HTMLAttributes<HTMLDivElement> {
+interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'style'> {
   children: ReactNode;
   className?: string;
   padding?: 'sm' | 'md' | 'lg';
   variant?: 'default' | 'elevated' | 'outlined';
+  style?: CSSProperties;
 }
 
 export default function Card({
@@ -14,6 +15,7 @@ export default function Card({
   className = '',
   padding = 'md',
   variant = 'default',
+  style,
   ...props
 }: CardProps) {
   const paddingStyles = {
@@ -49,6 +51,7 @@ export default function Card({
         backgroundColor: variantStyle.bg,
         border: variantStyle.border,
         boxShadow: variantStyle.shadow,
+        ...style,
       }}
       {...props}
     >

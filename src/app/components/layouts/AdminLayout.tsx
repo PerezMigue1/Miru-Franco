@@ -8,6 +8,7 @@ import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmace
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
+import ThemeToggle from '../ui/ThemeToggle';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -150,7 +151,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div
+            className="flex items-center gap-1.5 rounded-lg border px-1 py-0.5"
+            style={{ borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(0,0,0,0.12)' }}
+            title="Modo claro u oscuro"
+          >
+            <span className="hidden sm:inline text-xs opacity-90 pr-0.5" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+              Tema
+            </span>
+            <ThemeToggle />
+          </div>
           <Link
             href="/admin"
             className="text-xs md:text-sm opacity-90 hover:opacity-100 transition-opacity"

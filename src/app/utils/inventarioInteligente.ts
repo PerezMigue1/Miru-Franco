@@ -17,6 +17,15 @@ export function parseCategoriaSub(categoria: string): { categoriaPrincipal: stri
   return { categoriaPrincipal: s || 'Sin categoría', subcategoria: '' };
 }
 
+/** Guarda en BD el mismo formato que entiende `parseCategoriaSub` (p. ej. `Cabello > Shampoos`). */
+export function serializarCategoriaSub(categoriaPrincipal: string, subcategoria: string): string {
+  const cat = (categoriaPrincipal || '').trim();
+  const sub = (subcategoria || '').trim();
+  if (!cat) return '';
+  if (!sub) return cat;
+  return `${cat} > ${sub}`;
+}
+
 export interface MovimientoInventario {
   id: string;
   fechaIso: string;
@@ -29,10 +38,9 @@ export interface MovimientoInventario {
 /** Salidas reales desde pedidos online. Entradas de almacén requieren API dedicada en backend. */
 export function movimientosSalidaDesdeVentas(
   lineas: LineaVentaProducto[],
-  productoId: number
+  productoId: string | number
 ): MovimientoInventario[] {
-  return lineas
-    .filter((l) => l.productoId === productoId)
+  return filtrarLineasPorProducto(lineas, productoId)
     .sort((a, b) => new Date(b.fechaIso).getTime() - new Date(a.fechaIso).getTime())
     .map((l, i) => ({
       id: `salida-${l.pedidoId}-${l.productoId}-${i}`,
@@ -95,18 +103,19 @@ export function participacionPorProducto(
   lineas: LineaVentaProducto[],
   filtroSub: (p: Producto) => boolean
 ): ParticipacionPastel[] {
-  const map = new Map<number, number>();
+  const map = new Map<string, number>();
   for (const l of lineas) {
-    const pr = productos.find((x) => Number(x.id) === l.productoId);
+    const key = String(l.productoId).trim();
+    const pr = productos.find((x) => String(x.id) === key);
     if (!pr || !filtroSub(pr)) continue;
-    map.set(l.productoId, (map.get(l.productoId) ?? 0) + l.cantidad);
+    map.set(key, (map.get(key) ?? 0) + l.cantidad);
   }
   const total = [...map.values()].reduce((s, v) => s + v, 0);
   if (total <= 0) return [];
   let i = 0;
   return [...map.entries()]
     .map(([id, u]) => {
-      const pr = productos.find((x) => Number(x.id) === id);
+      const pr = productos.find((x) => String(x.id) === id);
       return {
         etiqueta: pr?.nombre ?? `#${id}`,
         valor: u,
@@ -116,13 +125,68 @@ export function participacionPorProducto(
     .sort((a, b) => b.valor - a.valor);
 }
 
-export function unidadesVendidasProducto(lineas: LineaVentaProducto[], productoId: number): number {
-  return lineas.filter((l) => l.productoId === productoId).reduce((s, l) => s + l.cantidad, 0);
+export function unidadesVendidasProducto(lineas: LineaVentaProducto[], productoId: string | number): number {
+  return filtrarLineasPorProducto(lineas, productoId).reduce((s, l) => s + l.cantidad, 0);
+}
+
+/** Forma mínima para construir consumo desde `listarMovimientosInventario` cuando no hay pedidos online. */
+export type MovimientoConsumoLite = {
+  tipo: string;
+  cantidad: number;
+  creadoEn: string;
+};
+
+/**
+ * Convierte salidas (y ajustes negativos) de inventario en pseudo-líneas de venta para reutilizar `agregarSerieTemporal`.
+ */
+export function lineasSalidaDesdeMovimientosInventario(
+  movimientos: MovimientoConsumoLite[],
+  productoId: string | number,
+  desde: Date
+): LineaVentaProducto[] {
+  const t0 = desde.getTime();
+  const out: LineaVentaProducto[] = [];
+  let seq = 0;
+  for (const m of movimientos) {
+    const tipo = String(m.tipo || '').toLowerCase();
+    const raw = Number(m.cantidad) || 0;
+    let unidades = 0;
+    if (tipo === 'salida') unidades = Math.abs(raw);
+    else if (tipo === 'ajuste' && raw < 0) unidades = Math.abs(raw);
+    if (unidades <= 0) continue;
+    const d = new Date(m.creadoEn);
+    if (Number.isNaN(d.getTime()) || d.getTime() < t0) continue;
+    seq += 1;
+    out.push({
+      productoId,
+      cantidad: unidades,
+      subtotal: 0,
+      fechaIso: m.creadoEn,
+      pedidoId: -seq,
+      nombreProducto: null,
+    });
+  }
+  return out;
+}
+
+/**
+ * Líneas del producto en la ventana de pedidos; si no hay ninguna, cae a salidas del historial de inventario.
+ */
+export function lineasConsumoDetalleProductoEnVentana(
+  lineasVentana: LineaVentaProducto[],
+  movimientos: MovimientoConsumoLite[],
+  productoId: string | number,
+  desde: Date
+): { lineas: LineaVentaProducto[]; fuente: 'pedidos' | 'movimientos' } {
+  const desdeLineas = filtrarLineasPorProducto(lineasVentana, productoId);
+  if (desdeLineas.length > 0) return { lineas: desdeLineas, fuente: 'pedidos' };
+  const fromMov = lineasSalidaDesdeMovimientosInventario(movimientos, productoId, desde);
+  return { lineas: fromMov, fuente: 'movimientos' };
 }
 
 export function serieConsumoProducto(
   lineas: LineaVentaProducto[],
-  productoId: number,
+  productoId: string | number,
   desde: Date,
   granularidad: 'dia' | 'semana' | 'mes'
 ) {
@@ -130,7 +194,7 @@ export function serieConsumoProducto(
   return agregarSerieTemporal(filtradas, granularidad);
 }
 
-export function promedioDiarioProducto(lineas: LineaVentaProducto[], productoId: number, desde: Date): number {
+export function promedioDiarioProducto(lineas: LineaVentaProducto[], productoId: string | number, desde: Date): number {
   const filtradas = filtrarLineasPorProducto(filtrarLineasDesdeFecha(lineas, desde), productoId);
   return promedioUnidadesPorDia(filtradas);
 }

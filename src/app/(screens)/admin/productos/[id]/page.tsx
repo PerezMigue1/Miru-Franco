@@ -22,6 +22,7 @@ import Modal from '../../../../components/ui/Modal';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
 import { normalizarUrlImagenExterna } from '../../../../utils/normalizarUrlImagen';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
+import { parseCategoriaSub, serializarCategoriaSub } from '../../../../utils/inventarioInteligente';
 import { AlertTriangle, Check, X } from 'lucide-react';
 
 function calcularPrecioDesdeDescuento(precioOriginal: number, descuento: number): string {
@@ -86,6 +87,7 @@ export default function ProductoDetalleAdminPage() {
   const [descripcion, setDescripcion] = useState('');
   const [descripcionLarga, setDescripcionLarga] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [subcategoria, setSubcategoria] = useState('');
   const [marca, setMarca] = useState('');
   const [descuentoStr, setDescuentoStr] = useState('0');
   const [disponible, setDisponible] = useState(true);
@@ -96,6 +98,8 @@ export default function ProductoDetalleAdminPage() {
   const [modoUso, setModoUso] = useState('');
   const [resultado, setResultado] = useState('');
   const [categoriasCatalogo, setCategoriasCatalogo] = useState<string[]>([]);
+  /** Subcategorías ya usadas en el catálogo, por categoría principal (para datalist). */
+  const [subsPorCategoriaPrincipal, setSubsPorCategoriaPrincipal] = useState<Record<string, string[]>>({});
   const [marcasCatalogo, setMarcasCatalogo] = useState<string[]>([]);
   const [showAgregarCategoria, setShowAgregarCategoria] = useState(false);
   const [showAgregarMarca, setShowAgregarMarca] = useState(false);
@@ -112,6 +116,7 @@ export default function ProductoDetalleAdminPage() {
       descripcion: limpiarTexto(descripcion),
       descripcionLarga: limpiarTexto(descripcionLarga),
       categoria: limpiarTexto(categoria),
+      subcategoria: limpiarTexto(subcategoria),
       marca: limpiarTexto(marca),
       descuentoStr: String(descuentoStr ?? ''),
       disponible: Boolean(disponible),
@@ -140,11 +145,15 @@ export default function ProductoDetalleAdminPage() {
     getProductoPorId(id)
       .then((p) => {
         if (!cancelled && p) {
+          const parsedCat = parseCategoriaSub(p.categoria ?? '');
+          const catPrincipal =
+            parsedCat.categoriaPrincipal === 'Sin categoría' ? '' : parsedCat.categoriaPrincipal;
           setProducto(p);
           setNombre(p.nombre);
           setDescripcion(p.descripcion ?? '');
           setDescripcionLarga(p.descripcionLarga ?? '');
-          setCategoria(p.categoria ?? '');
+          setCategoria(catPrincipal);
+          setSubcategoria(parsedCat.subcategoria);
           setMarca(p.marca ?? '');
           setNuevo(p.nuevo ?? false);
           setCrueltyFree(p.crueltyFree ?? false);
@@ -187,7 +196,8 @@ export default function ProductoDetalleAdminPage() {
             nombre: limpiarTexto(p.nombre),
             descripcion: limpiarTexto(p.descripcion ?? ''),
             descripcionLarga: limpiarTexto(p.descripcionLarga ?? ''),
-            categoria: limpiarTexto(p.categoria ?? ''),
+            categoria: limpiarTexto(catPrincipal),
+            subcategoria: limpiarTexto(parsedCat.subcategoria),
             marca: limpiarTexto(p.marca ?? ''),
             descuentoStr: String(p.descuento ?? 0),
             disponible: Boolean(p.stock),
@@ -264,14 +274,32 @@ export default function ProductoDetalleAdminPage() {
     getProductos()
       .then((list) => {
         if (cancelled) return;
-        const categorias = Array.from(new Set(list.map((p) => p.categoria).filter(Boolean)));
+        const principals = new Set<string>();
+        const subsMap: Record<string, Set<string>> = {};
+        for (const pr of list) {
+          const { categoriaPrincipal, subcategoria } = parseCategoriaSub(String(pr.categoria || ''));
+          if (categoriaPrincipal && categoriaPrincipal !== 'Sin categoría') {
+            principals.add(categoriaPrincipal);
+            if (subcategoria.trim()) {
+              if (!subsMap[categoriaPrincipal]) subsMap[categoriaPrincipal] = new Set();
+              subsMap[categoriaPrincipal].add(subcategoria.trim());
+            }
+          }
+        }
+        const categorias = [...principals].sort((a, b) => a.localeCompare(b));
         const marcas = Array.from(new Set(list.map((p) => p.marca).filter(Boolean))) as string[];
         setCategoriasCatalogo(categorias);
+        setSubsPorCategoriaPrincipal(
+          Object.fromEntries(
+            Object.entries(subsMap).map(([k, v]) => [k, [...v].sort((a, b) => a.localeCompare(b))])
+          )
+        );
         setMarcasCatalogo(marcas);
       })
       .catch(() => {
         // Si falla, se mantienen arrays vacíos; el select mostrará al menos el valor actual.
         setCategoriasCatalogo([]);
+        setSubsPorCategoriaPrincipal({});
         setMarcasCatalogo([]);
       });
     return () => {
@@ -322,6 +350,7 @@ export default function ProductoDetalleAdminPage() {
     if (v) {
       setCategoriasCatalogo((prev) => (prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b))));
       setCategoria(v);
+      setSubcategoria('');
     }
     setShowAgregarCategoria(false);
     setNuevaCategoriaVal('');
@@ -341,8 +370,14 @@ export default function ProductoDetalleAdminPage() {
     if (categoria?.trim()) {
       setCategoriasEliminadas((prev) => (prev.includes(categoria.trim()) ? prev : [...prev, categoria.trim()]));
       setCategoria('');
+      setSubcategoria('');
     }
   };
+
+  const subsSugeridas = useMemo(
+    () => (categoria.trim() ? subsPorCategoriaPrincipal[categoria.trim()] ?? [] : []),
+    [categoria, subsPorCategoriaPrincipal]
+  );
 
   const eliminarMarcaActual = () => {
     if (marca?.trim()) {
@@ -408,7 +443,7 @@ export default function ProductoDetalleAdminPage() {
         nombre: limpiarTexto(nombre),
         descripcion: limpiarTexto(descripcion),
         descripcionLarga: limpiarTexto(descripcionLarga).trim() || undefined,
-        categoria: limpiarTexto(categoria),
+        categoria: serializarCategoriaSub(limpiarTexto(categoria), limpiarTexto(subcategoria)),
         marca: limpiarTexto(marca).trim() || undefined,
         descuento: descuentoNum,
         nuevo,
@@ -425,6 +460,9 @@ export default function ProductoDetalleAdminPage() {
 
       const actualizado = await updateProducto(producto.id, payload);
       setProducto(actualizado);
+      const postCat = parseCategoriaSub(actualizado.categoria ?? '');
+      setCategoria(postCat.categoriaPrincipal === 'Sin categoría' ? '' : postCat.categoriaPrincipal);
+      setSubcategoria(postCat.subcategoria);
       setSuccessMessage('Producto actualizado correctamente.');
       initialSnapshotRef.current = currentSnapshot;
     } catch (err) {
@@ -511,8 +549,8 @@ export default function ProductoDetalleAdminPage() {
                   <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                     {nombre}
                   </h1>
-                  <Badge variant={getCategoryColor(producto.categoria)} size="lg">
-                    {producto.categoria}
+                  <Badge variant={getCategoryColor(serializarCategoriaSub(categoria, subcategoria))} size="lg">
+                    {serializarCategoriaSub(limpiarTexto(categoria), limpiarTexto(subcategoria)) || '—'}
                   </Badge>
                 </div>
 
@@ -554,7 +592,10 @@ export default function ProductoDetalleAdminPage() {
                           onChange={(e) => {
                             const v = e.target.value;
                             if (v === AGREGAR_CAT) setShowAgregarCategoria(true);
-                            else setCategoria(v);
+                            else {
+                              setCategoria(v);
+                              setSubcategoria('');
+                            }
                           }}
                           fullWidth
                         />
@@ -583,6 +624,24 @@ export default function ProductoDetalleAdminPage() {
                         </Button>
                       </div>
                     )}
+                    <div className="mt-3">
+                      <datalist id="admin-producto-subs">
+                        {subsSugeridas.map((s) => (
+                          <option key={s} value={s} />
+                        ))}
+                      </datalist>
+                      <Input
+                        label="Subcategoría (opcional)"
+                        value={subcategoria}
+                        onChange={(e) => setSubcategoria(e.target.value)}
+                        placeholder="Ej. Shampoos"
+                        list="admin-producto-subs"
+                        fullWidth
+                      />
+                      <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                        Se guarda como «Categoría &gt; Subcategoría» para filtros de inventario y predicción.
+                      </p>
+                    </div>
                   </div>
                   <div>
                     <div className="flex items-end gap-2">

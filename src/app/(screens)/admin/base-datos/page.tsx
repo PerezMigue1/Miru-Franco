@@ -13,6 +13,7 @@ import {
   descargarDiagrama,
   obtenerDiagrama,
   listarTablasDirectas,
+  obtenerTablasImportables,
   exportarDirecto,
   obtenerColumnasDirectas,
   obtenerActividadDirecta,
@@ -22,7 +23,11 @@ import {
   obtenerIndexStatsDirecto,
   obtenerRealtimeMetricsDirecto,
   obtenerQueryInsightsDirecto,
+  truncarTabla,
   type ResultadoImportacion,
+  type ModoImportacion,
+  type TablaImportable,
+  type ResultadoTruncate,
   type FormatoDiagrama,
   type OpcionesExportDirecto,
   type ActivityRowDirecta,
@@ -62,6 +67,7 @@ import {
   ShieldAlert,
   TableProperties,
   Table2,
+  Trash2,
   Upload,
   Users,
   Menu,
@@ -230,6 +236,7 @@ export default function BaseDatosPage() {
   const [archivoImport, setArchivoImport] = useState<File | null>(null);
   const [importando, setImportando] = useState(false);
   const [resultadoImport, setResultadoImport] = useState<ResultadoImportacion | null>(null);
+  const [tablasImportablesMeta, setTablasImportablesMeta] = useState<TablaImportable[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Exportar ──
@@ -299,7 +306,7 @@ export default function BaseDatosPage() {
   const [vistaPrincipal, setVistaPrincipal] = useState<
     'operaciones' | 'monitoreo' | 'diagrama' | 'consultar' | 'backup'
   >('operaciones');
-  const [vistaOperaciones, setVistaOperaciones] = useState<'importar' | 'exportar'>('importar');
+  const [vistaOperaciones, setVistaOperaciones] = useState<'importar' | 'exportar' | 'truncate'>('importar');
   const [vistaMonitoreo, setVistaMonitoreo] = useState<
     'resumen' | 'tablas' | 'indices' | 'actividad' | 'locks'
   >('resumen');
@@ -313,6 +320,12 @@ export default function BaseDatosPage() {
   const [modoBackup, setModoBackup] = useState<'completa' | 'seleccionada'>('completa');
   const [formatoBackup, setFormatoBackup] = useState<'json' | 'sql' | 'csv'>('json');
   const [tablasSeleccionadasBackup, setTablasSeleccionadasBackup] = useState<string[]>([]);
+  const [tablaTruncate, setTablaTruncate] = useState('');
+  const [truncateRestartIdentity, setTruncateRestartIdentity] = useState(true);
+  const [truncateCascade, setTruncateCascade] = useState(false);
+  const [truncateConfirmText, setTruncateConfirmText] = useState('');
+  const [truncandoTabla, setTruncandoTabla] = useState(false);
+  const [resultadoTruncate, setResultadoTruncate] = useState<ResultadoTruncate | null>(null);
 
   const navegarVistaPrincipal = (vista: 'operaciones' | 'monitoreo' | 'diagrama' | 'consultar' | 'backup') => {
     if (vista === 'operaciones') {
@@ -325,13 +338,13 @@ export default function BaseDatosPage() {
       return;
     }
     if (vista === 'backup') {
-      router.push('/admin/base-datos/Backup');
+      router.push('/admin/base-datos/backup');
       return;
     }
     setVistaPrincipal(vista);
   };
 
-  const navegarVistaOperaciones = (vista: 'importar' | 'exportar') => {
+  const navegarVistaOperaciones = (vista: 'importar' | 'exportar' | 'truncate') => {
     setVistaOperaciones(vista);
     setVistaPrincipal('operaciones');
     router.push(`/admin/base-datos/operaciones/${vista}`);
@@ -374,15 +387,14 @@ export default function BaseDatosPage() {
     }
     if (sub.startsWith('/operaciones')) {
       setVistaPrincipal('operaciones');
-      setVistaOperaciones(sub.includes('/exportar') ? 'exportar' : 'importar');
+      if (sub.includes('/truncate')) setVistaOperaciones('truncate');
+      else setVistaOperaciones(sub.includes('/exportar') ? 'exportar' : 'importar');
       return;
     }
     if (sub.startsWith('/monitoreo')) {
       setVistaPrincipal('monitoreo');
       if (sub.includes('/tablas')) setVistaMonitoreo('tablas');
       else if (sub.includes('/indices')) setVistaMonitoreo('indices');
-      else if (sub.includes('/actividad')) setVistaMonitoreo('actividad');
-      else if (sub.includes('/locks')) setVistaMonitoreo('locks');
       else setVistaMonitoreo('resumen');
       return;
     }
@@ -554,6 +566,84 @@ export default function BaseDatosPage() {
     if (ext !== 'csv' && ext !== 'json') { setResultadoImport({ success: false, error: 'El archivo debe ser CSV o JSON' }); return; }
     setImportando(true);
     setResultadoImport(null);
+    if (tablaImport === '__todas__') {
+      if (ext !== 'json') {
+        setResultadoImport({ success: false, error: 'Para importar toda la base debes usar un JSON multi-tabla.' });
+        setImportando(false);
+        return;
+      }
+      try {
+        const raw = await archivoImport.text();
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+          setResultadoImport({ success: false, error: 'JSON inválido. Debe ser un objeto con tablas como propiedades.' });
+          setImportando(false);
+          return;
+        }
+        const tablasDestino = (tablasImportablesMeta.length > 0
+          ? tablasImportablesMeta.map((t) => t.tabla)
+          : tablasDirectas
+        ).filter((t) => Array.isArray((parsed as Record<string, unknown>)[t]));
+
+        if (tablasDestino.length === 0) {
+          setResultadoImport({ success: false, error: 'El JSON no contiene datos para tablas importables.' });
+          setImportando(false);
+          return;
+        }
+
+        let importadosTotal = 0;
+        let fallidosTotal = 0;
+        let actualizadosTotal = 0;
+        let omitidosTotal = 0;
+        const erroresTotal: Array<{ fila: number; mensaje: string }> = [];
+        const modoPorTabla = (tabla: string): ModoImportacion => {
+          const meta = tablasImportablesMeta.find((t) => t.tabla === tabla);
+          const permitidos = meta?.modosPermitidos ?? [];
+          if (permitidos.includes('missing_only')) return 'missing_only';
+          if (permitidos.includes('upsert')) return 'upsert';
+          if (permitidos.includes('append')) return 'append';
+          return 'append';
+        };
+
+        for (const tabla of tablasDestino) {
+          const rows = (parsed as Record<string, unknown[]>)[tabla];
+          const blob = new Blob([JSON.stringify(rows ?? [])], { type: 'application/json' });
+          const fileTabla = new File([blob], `${tabla}.json`, { type: 'application/json' });
+          const resTabla = await importarDatos(tabla, fileTabla, modoPorTabla(tabla));
+          if (resTabla.success) {
+            importadosTotal += resTabla.importados;
+            fallidosTotal += resTabla.fallidos ?? 0;
+            actualizadosTotal += resTabla.actualizados ?? 0;
+            omitidosTotal += resTabla.omitidos ?? 0;
+            (resTabla.errores ?? []).forEach((err) => {
+              erroresTotal.push({ fila: err.fila, mensaje: `[${tabla}] ${err.mensaje}` });
+            });
+          } else {
+            fallidosTotal += 1;
+            erroresTotal.push({ fila: 0, mensaje: `[${tabla}] ${resTabla.error}` });
+          }
+        }
+
+        const success = importadosTotal > 0 || actualizadosTotal > 0 || omitidosTotal > 0;
+        setResultadoImport(
+          success
+            ? {
+              success: true,
+              importados: importadosTotal,
+              fallidos: fallidosTotal,
+              actualizados: actualizadosTotal,
+              omitidos: omitidosTotal,
+              errores: erroresTotal,
+            }
+            : { success: false, error: erroresTotal[0]?.mensaje ?? 'No se pudo importar ninguna tabla del archivo.' }
+        );
+      } catch (err) {
+        setResultadoImport({ success: false, error: err instanceof Error ? err.message : 'Error al procesar el archivo JSON.' });
+      }
+      setImportando(false);
+      return;
+    }
+
     const res = await importarDatos(tablaImport, archivoImport);
     setResultadoImport(res);
     setImportando(false);
@@ -613,21 +703,57 @@ export default function BaseDatosPage() {
     setExportando(false);
   };
 
+  const handleTruncateTabla = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResultadoTruncate(null);
+    if (!tablaTruncate) {
+      setResultadoTruncate({ success: false, error: 'Selecciona una tabla.' });
+      return;
+    }
+    const confirmEsperado = `TRUNCATE ${tablaTruncate}`;
+    if (truncateConfirmText.trim() !== confirmEsperado) {
+      setResultadoTruncate({ success: false, error: `Escribe exactamente: ${confirmEsperado}` });
+      return;
+    }
+    setTruncandoTabla(true);
+    const res = await truncarTabla(tablaTruncate, {
+      restartIdentity: truncateRestartIdentity,
+      cascade: truncateCascade,
+    });
+    setResultadoTruncate(res);
+    setTruncandoTabla(false);
+    if (res.success) setTruncateConfirmText('');
+  };
+
   const cargarTablasDirectas = async () => {
     setLoadingTablasDirectas(true);
     setErrorExport(null);
-    const res = await listarTablasDirectas();
-    if (res.success) {
-      setTablasDirectas(res.tablas);
-      setTablaExport(res.tablas.length ? '__todas__' : '');
-      setTablaImport((prev) => (prev || !res.tablas.length ? prev : res.tablas[0]));
+    const [resTablas, resImportables] = await Promise.all([
+      listarTablasDirectas(),
+      obtenerTablasImportables(),
+    ]);
+
+    if (resTablas.success) {
+      setTablasDirectas(resTablas.tablas);
+      setTablaExport(resTablas.tablas.length ? '__todas__' : '');
+
+      if (resImportables.success) {
+        setTablasImportablesMeta(resImportables.tablas);
+        const importables = resImportables.tablas.map((t) => t.tabla);
+        setTablaImport((prev) => (prev || importables.length === 0 ? prev : importables[0]));
+      } else {
+        setTablasImportablesMeta([]);
+        setTablaImport((prev) => (prev || !resTablas.tablas.length ? prev : resTablas.tablas[0]));
+      }
+
       // Pre-seleccionar todas para backup
-      setTablasSeleccionadasBackup(res.tablas);
+      setTablasSeleccionadasBackup(resTablas.tablas);
     } else {
-      setErrorExport(res.error);
+      setErrorExport(resTablas.error);
       setTablasDirectas([]);
       setTablaExport('');
       setTablaImport('');
+      setTablasImportablesMeta([]);
     }
     setLoadingTablasDirectas(false);
   };
@@ -973,14 +1099,6 @@ export default function BaseDatosPage() {
   const qpsSeries = realtimeSeries.map((p) => p.qps);
   const connSeries = realtimeSeries.map((p) => p.activeConnections);
   const respSeries = realtimeSeries.map((p) => p.avgResponseMs);
-  const tableChartData = tableStats.slice(0, 20).map((t) => ({
-    tabla: t.relname,
-    vivas: Number(t.n_live_tup || 0),
-    obsoletas: Number(t.n_dead_tup || 0),
-  }));
-  const tableChartMaxRaw = Math.max(10, ...tableChartData.map((d) => Math.max(d.vivas, d.obsoletas)));
-  const tableChartMax = Math.ceil(tableChartMaxRaw / 10) * 10;
-  const tableChartTicks = Array.from({ length: Math.floor(tableChartMax / 10) + 1 }, (_, i) => i * 10);
   const maxQps = Math.max(1, ...qpsSeries);
   const maxRespMs = Math.max(1, ...respSeries);
   const buildLineFromSeries = (values: number[]) => {
@@ -995,8 +1113,6 @@ export default function BaseDatosPage() {
     { id: 'resumen' as const, label: 'Monitoreo y rendimiento', icon: Database, hint: 'Estado global' },
     { id: 'tablas' as const, label: 'Tablas', icon: Table2, hint: 'Salud de tablas' },
     { id: 'indices' as const, label: 'Índices', icon: ChartNoAxesColumn, hint: 'Eficiencia' },
-    { id: 'actividad' as const, label: 'Actividad', icon: Activity, hint: 'Sesiones vivas' },
-    { id: 'locks' as const, label: 'Locks', icon: Lock, hint: 'Contención' },
   ];
   const tabMonitoreoActual = tabsMonitoreo.find((t) => t.id === vistaMonitoreo);
   const totalIndices = Math.max(1, indexStats.length);
@@ -1114,7 +1230,7 @@ export default function BaseDatosPage() {
               </div>
               {vistaPrincipal === 'operaciones' && (
                 <div className="mt-4 pt-3 border-t space-y-1" style={{ borderColor: 'var(--encabezados-alterno)' }}>
-                  {([{ id: 'importar', label: 'Importar datos' }, { id: 'exportar', label: 'Exportar datos' }] as const).map((item) => (
+                  {([{ id: 'importar', label: 'Importar datos' }, { id: 'exportar', label: 'Exportar datos' }, { id: 'truncate', label: 'Truncate tabla' }] as const).map((item) => (
                     <button key={item.id} type="button"
                       onClick={() => { navegarVistaOperaciones(item.id); setMenuLateralOculto(true); }}
                       className="w-full text-left rounded px-3 py-2 text-sm"
@@ -1130,12 +1246,20 @@ export default function BaseDatosPage() {
                 </p>
             
                 <Link
-                  href="/admin/base-datos/operaciones/importar"
+                  href="/admin/base-datos/restauracion"
                   className="block w-full rounded px-3 py-2 text-sm no-underline hover:opacity-90"
                   style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'transparent' }}
                   onClick={() => setMenuLateralOculto(true)}
                 >
-                  Restauración (importar)
+                  Restauración
+                </Link>
+                <Link
+                  href="/admin/base-datos/restauracion-protocolo"
+                  className="block w-full rounded px-3 py-2 text-sm no-underline hover:opacity-90"
+                  style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'transparent' }}
+                  onClick={() => setMenuLateralOculto(true)}
+                >
+                  Protocolo de restauración
                 </Link>
               </div>
             </aside>
@@ -1146,7 +1270,7 @@ export default function BaseDatosPage() {
             {vistaPrincipal === 'operaciones' && (
               <Card variant="elevated" padding="md">
                 <div className="flex flex-wrap gap-2">
-                  {([{ id: 'importar', label: 'Importación' }, { id: 'exportar', label: 'Exportación' }] as const).map((item) => (
+                  {([{ id: 'importar', label: 'Importación' }, { id: 'exportar', label: 'Exportación' }, { id: 'truncate', label: 'Truncate' }] as const).map((item) => (
                     <button key={item.id} type="button" onClick={() => navegarVistaOperaciones(item.id)}
                       className="px-3 py-1.5 rounded-full text-sm font-medium border"
                       style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
@@ -1174,12 +1298,15 @@ export default function BaseDatosPage() {
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Tabla</label>
                     <Select
-                      options={tablasDirectas.length === 0
+                      options={(tablasImportablesMeta.length > 0 ? tablasImportablesMeta.map((t) => t.tabla) : tablasDirectas).length === 0
                         ? [{ value: '', label: '— Carga las tablas de la BD —' }]
-                        : tablasDirectas.map((t) => ({ value: t, label: t }))}
+                        : [{ value: '__todas__', label: 'Toda la base (JSON multi-tabla)' },
+                          ...(tablasImportablesMeta.length > 0 ? tablasImportablesMeta.map((t) => t.tabla) : tablasDirectas)
+                            .map((t) => ({ value: t, label: t }))]
+                      }
                       value={tablaImport}
                       onChange={(e) => setTablaImport(e.target.value)}
-                      disabled={tablasDirectas.length === 0}
+                      disabled={(tablasImportablesMeta.length > 0 ? tablasImportablesMeta : tablasDirectas).length === 0}
                     />
                   </div>
                   <div>
@@ -1362,6 +1489,78 @@ export default function BaseDatosPage() {
                   </div>
                 )}
                 {errorExport && <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>{errorExport}</p>}
+              </Card>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════════
+                TRUNCATE
+            ══════════════════════════════════════════════════════════════════ */}
+            {vistaPrincipal === 'operaciones' && vistaOperaciones === 'truncate' && (
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <Trash2 size={18} /> Truncate de tabla
+                </h2>
+                <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+                  El comando <code className="text-xs bg-black/10 px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
+                  Esta operación es destructiva.
+                </p>
+                <form onSubmit={handleTruncateTabla} className="space-y-4">
+                  <div>
+                    <Button type="button" variant="outline" onClick={cargarTablasDirectas} disabled={loadingTablasDirectas}>
+                      {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
+                    </Button>
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Tabla objetivo</label>
+                    <Select
+                      options={tablasDirectas.length === 0
+                        ? [{ value: '', label: '— Carga las tablas de la BD —' }]
+                        : tablasDirectas.map((t) => ({ value: t, label: t }))}
+                      value={tablaTruncate}
+                      onChange={(e) => setTablaTruncate(e.target.value)}
+                      disabled={tablasDirectas.length === 0}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                      <input type="checkbox" checked={truncateRestartIdentity} onChange={(e) => setTruncateRestartIdentity(e.target.checked)} className="rounded" />
+                      RESTART IDENTITY
+                    </label>
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                      <input type="checkbox" checked={truncateCascade} onChange={(e) => setTruncateCascade(e.target.checked)} className="rounded" />
+                      CASCADE
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Confirmación (escribe exactamente: <code className="text-xs bg-black/10 px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
+                    </label>
+                    <input
+                      type="text"
+                      value={truncateConfirmText}
+                      onChange={(e) => setTruncateConfirmText(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border"
+                      style={{ backgroundColor: 'var(--texto-fondo-oscuro)', borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
+                      placeholder={tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}
+                    />
+                  </div>
+                  <Button type="submit" variant="danger" disabled={truncandoTabla || !tablaTruncate}>
+                    {truncandoTabla ? 'Ejecutando…' : 'Ejecutar TRUNCATE'}
+                  </Button>
+                </form>
+                {resultadoTruncate && (
+                  <div
+                    className="mt-4 p-4 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: resultadoTruncate.success ? 'rgba(110,125,87,0.2)' : 'rgba(89,12,12,0.15)',
+                      color: resultadoTruncate.success ? 'var(--success)' : 'var(--danger)',
+                    }}
+                  >
+                    {resultadoTruncate.success
+                      ? `TRUNCATE ejecutado en ${resultadoTruncate.tabla}${resultadoTruncate.message ? `: ${resultadoTruncate.message}` : '.'}`
+                      : resultadoTruncate.error}
+                  </div>
+                )}
               </Card>
             )}
 
@@ -1757,20 +1956,21 @@ export default function BaseDatosPage() {
                     </div>
                     {vistaTablasMonitoreo === 'tabla' ? (
                       <div className="max-h-72 overflow-y-auto">
-                        <Table headers={['Tabla', 'Registros', 'Obsoletos', 'Seq', 'Idx', 'Estado']}>
+                        <Table headers={['Nombre de tabla', 'Registros activos', 'Registros obsoletos', 'Consulta rápida', 'Consulta lenta', 'Condición']}>
                           {tableStats.slice(0, 20).map((t) => {
                             const live = Number(t.n_live_tup || 0);
                             const dead = Number(t.n_dead_tup || 0);
                             const estado = dead > 40 ? 'Crítico' : dead > 10 ? 'Atención' : 'Óptimo';
                             const variant = dead > 40 ? 'danger' : dead > 10 ? 'warning' : 'success';
-                            const seq = Number(t.seq_scan || 0); const idx = Number(t.idx_scan || 0);
+                            const consultaLenta = Number(t.seq_scan || 0);
+                            const consultaRapida = Number(t.idx_scan || 0);
                             return (
                               <TableRow key={`${t.schemaname}.${t.relname}`}>
                                 <TableCell>{t.schemaname}.{t.relname}</TableCell>
                                 <TableCell style={{ color: live > 0 ? 'var(--success)' : 'var(--encabezados-alterno)', fontWeight: 700 }}>{live}</TableCell>
                                 <TableCell style={{ color: colorDeadTuples(dead), fontWeight: 700 }}>{dead}</TableCell>
-                                <TableCell style={{ color: seq > idx ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: seq > idx ? 700 : 500 }}>{seq}</TableCell>
-                                <TableCell style={{ color: idx >= seq ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: idx >= seq ? 700 : 500 }}>{idx}</TableCell>
+                                <TableCell style={{ color: consultaRapida >= consultaLenta ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: consultaRapida >= consultaLenta ? 700 : 500 }}>{consultaRapida}</TableCell>
+                                <TableCell style={{ color: consultaLenta > consultaRapida ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: consultaLenta > consultaRapida ? 700 : 500 }}>{consultaLenta}</TableCell>
                                 <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
                               </TableRow>
                             );
@@ -1779,15 +1979,28 @@ export default function BaseDatosPage() {
                       </div>
                     ) : (
                       <div className="rounded-lg border p-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
-                        <ResponsiveContainer width="100%" height={520}>
-                          <BarChart layout="vertical" data={tableChartData} margin={{ top: 8, right: 20, left: 10, bottom: 8 }}>
+                        <ResponsiveContainer width="100%" height={420}>
+                          <BarChart
+                            data={tableStats.slice(0, 20).map((t) => {
+                              const live = Number(t.n_live_tup || 0);
+                              const dead = Number(t.n_dead_tup || 0);
+                              return {
+                                tabla: t.relname,
+                                activos: live,
+                                criticos: dead > 10 ? dead : 0,
+                                atencion: dead > 0 && dead <= 10 ? dead : 0,
+                              };
+                            })}
+                            margin={{ top: 8, right: 20, left: 0, bottom: 50 }}
+                          >
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" />
-                            <XAxis type="number" domain={[0, tableChartMax]} ticks={tableChartTicks} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
-                            <YAxis type="category" dataKey="tabla" width={140} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
+                            <XAxis dataKey="tabla" interval={0} angle={-35} textAnchor="end" height={65} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 10 }} />
+                            <YAxis tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
                             <Tooltip contentStyle={{ backgroundColor: 'var(--fondo-general)', border: '1px solid var(--encabezados-alterno)' }} labelStyle={{ color: 'var(--menu-texto-principal)' }} />
                             <Legend />
-                            <Bar dataKey="vivas" fill="var(--success)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="obsoletas" fill="var(--danger)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="activos" name="Registros Activos" fill="var(--success)" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="criticos" name="Registros Críticos" fill="var(--danger)" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="atencion" name="Registros en Atención" fill="var(--warning)" radius={[3, 3, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1849,7 +2062,7 @@ export default function BaseDatosPage() {
                     </div>
                     {vistaIndicesMonitoreo === 'tabla' ? (
                       <div className="max-h-72 overflow-y-auto">
-                        <Table headers={['Indice', 'Tabla', 'Idx scan', 'Seq scan', 'Eficiencia %', 'Estado']}>
+                        <Table headers={['Nombre índice', 'Tabla', 'Consultas índice', 'Consultas sec.', 'Eficiencia %', 'Calidad']}>
                           {indexStats.slice(0, 20).map((i) => {
                             const eff = Number(i.eficiencia || 0);
                             const variant = eff < 40 ? 'danger' : eff < 80 ? 'warning' : 'success';
@@ -1871,15 +2084,22 @@ export default function BaseDatosPage() {
                     ) : (
                       <div className="rounded-lg border p-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                         <ResponsiveContainer width="100%" height={420}>
-                          <BarChart layout="vertical"
-                            data={indexStats.slice(0, 12).map((i) => ({ indice: i.indexname, eficiencia: Math.max(0, Math.min(100, Number(i.eficiencia || 0))) }))}
-                            margin={{ top: 8, right: 20, left: 10, bottom: 8 }}>
+                          <BarChart
+                            data={indexStats.slice(0, 20).map((i) => ({
+                              indice: i.indexname,
+                              consultasIndice: Number(i.idx_scan || 0),
+                              consultasSec: Number(i.seq_scan || 0),
+                              eficiencia: Math.max(0, Math.min(100, Number(i.eficiencia || 0))),
+                            }))}
+                            margin={{ top: 8, right: 20, left: 0, bottom: 50 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" />
-                            <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
-                            <YAxis type="category" dataKey="indice" width={160} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
+                            <XAxis dataKey="indice" interval={0} angle={-35} textAnchor="end" height={65} tick={{ fill: 'var(--encabezados-alterno)', fontSize: 10 }} />
+                            <YAxis tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }} />
                             <Tooltip contentStyle={{ backgroundColor: 'var(--fondo-general)', border: '1px solid var(--encabezados-alterno)' }} labelStyle={{ color: 'var(--menu-texto-principal)' }} />
                             <Legend />
-                            <Bar dataKey="eficiencia" fill="var(--hover)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="consultasIndice" name="Consultas Índice" fill="var(--success)" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="consultasSec" name="Consultas Sec." fill="var(--danger)" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="eficiencia" name="Eficiencia %" fill="var(--warning)" radius={[3, 3, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>

@@ -11,9 +11,15 @@ import { Drawer } from '../ui/Drawer';
 import { SvgLineaVentas, SvgBarrasVentas } from './VentasMiniCharts';
 import { SvgPastelParticipacion } from './SvgPastelParticipacion';
 import { type Producto } from '../../services/productos';
-import { filtrarLineasDesdeFecha, type LineaVentaProducto } from '../../utils/inventarioVentasOnline';
+import {
+  agregarSerieTemporal,
+  filtrarLineasDesdeFecha,
+  promedioUnidadesPorDia,
+  type LineaVentaProducto,
+} from '../../utils/inventarioVentasOnline';
 import {
   etiquetaTendencia,
+  lineasConsumoDetalleProductoEnVentana,
   parseCategoriaSub,
   participacionPorProducto,
   puntoReorden,
@@ -33,6 +39,7 @@ const FILAS_LISTA = 12;
 const ALTO_LISTA = 44 * FILAS_LISTA + 44;
 
 type Gran = 'dia' | 'semana' | 'mes';
+type DiasAnalisis = 30 | 60 | 90 | 180;
 
 export type InventarioAnalisisCategoriasPanelProps = {
   productos: Producto[];
@@ -66,7 +73,7 @@ export function InventarioAnalisisCategoriasPanel({
   const [categoriaSel, setCategoriaSel] = useState('');
   const [subcategoriaSel, setSubcategoriaSel] = useState('');
   const [productoSel, setProductoSel] = useState('');
-  const [diasAnalisis, setDiasAnalisis] = useState<90 | 180>(90);
+  const [diasAnalisis, setDiasAnalisis] = useState<DiasAnalisis>(90);
   const [granularidad, setGranularidad] = useState<Gran>('dia');
   const [leadTimeDias, setLeadTimeDias] = useState(7);
   const [stockSeguridad, setStockSeguridad] = useState(5);
@@ -161,8 +168,8 @@ export function InventarioAnalisisCategoriasPanel({
       setMovimientosError(null);
       return;
     }
-    const productoId = Number(productoActivo.id);
-    if (!Number.isFinite(productoId)) {
+    const productoId = productoActivo.id;
+    if (productoId == null || String(productoId).trim() === '') {
       setMovimientosApi([]);
       setMovimientosError('No se pudo consultar movimientos: id de producto inválido.');
       return;
@@ -216,10 +223,15 @@ export function InventarioAnalisisCategoriasPanel({
     return { variant: 'warning', label: 'Salida' };
   };
 
+  const consumoDetalleProducto = useMemo(() => {
+    if (!productoActivo) return { lineas: [] as LineaVentaProducto[], fuente: 'pedidos' as const };
+    return lineasConsumoDetalleProductoEnVentana(lineasVentana, movimientosApi, productoActivo.id, desde);
+  }, [productoActivo, lineasVentana, movimientosApi, desde]);
+
   const serieActiva = useMemo(() => {
     if (!productoActivo) return [];
-    return serieConsumoProducto(lineasVentana, Number(productoActivo.id), desde, granularidad);
-  }, [productoActivo, lineasVentana, desde, granularidad]);
+    return agregarSerieTemporal(consumoDetalleProducto.lineas, granularidad);
+  }, [productoActivo, consumoDetalleProducto.lineas, granularidad]);
 
   const chartSeries = useMemo(
     () => serieActiva.map((s) => ({ etiqueta: s.etiqueta, valor: s.unidades })),
@@ -229,23 +241,23 @@ export function InventarioAnalisisCategoriasPanel({
 
   const serieDiaVals = useMemo(() => {
     if (!productoActivo) return [];
-    const s = serieConsumoProducto(lineasVentana, Number(productoActivo.id), desde, 'dia');
+    const s = agregarSerieTemporal(consumoDetalleProducto.lineas, 'dia');
     return s.map((x) => x.unidades);
-  }, [productoActivo, lineasVentana, desde]);
+  }, [productoActivo, consumoDetalleProducto.lineas]);
 
   const metricasProducto = useMemo(() => {
     if (!productoActivo) return null;
-    const id = Number(productoActivo.id);
     const stock = productoActivo.stockCantidad ?? 0;
-    const uDia = promedioDiarioProducto(lineasVentana, id, desde);
-    const vendidas = unidadesVendidasProducto(lineasVentana, id);
+    const lineas = consumoDetalleProducto.lineas;
+    const uDia = promedioUnidadesPorDia(lineas);
+    const vendidas = lineas.reduce((s, l) => s + l.cantidad, 0);
     const tend = tendenciaDesdeSerieDiaria(serieDiaVals);
     const pr = puntoReorden(uDia, leadTimeDias, stockSeguridad);
     const proj30 = stockProyectadoLineal(stock, uDia, 30);
     const proj60 = stockProyectadoLineal(stock, uDia, 60);
     const proj90 = stockProyectadoLineal(stock, uDia, 90);
-    return { stock, uDia, vendidas, tend, pr, proj30, proj60, proj90 };
-  }, [productoActivo, lineasVentana, desde, serieDiaVals, leadTimeDias, stockSeguridad]);
+    return { stock, uDia, vendidas, tend, pr, proj30, proj60, proj90, fuenteConsumo: consumoDetalleProducto.fuente };
+  }, [productoActivo, consumoDetalleProducto, serieDiaVals, leadTimeDias, stockSeguridad]);
 
   const filtroSubFn = useMemo(() => {
     return (p: Producto) => productoPerteneceCatSub(p, categoriaSel, subcategoriaSel);
@@ -259,7 +271,7 @@ export function InventarioAnalisisCategoriasPanel({
   const consumoGlobalSub = useMemo(() => {
     let u = 0;
     for (const l of lineasVentana) {
-      const pr = productos.find((x) => Number(x.id) === l.productoId);
+      const pr = productos.find((x) => String(x.id) === String(l.productoId));
       if (pr && filtroSubFn(pr)) u += l.cantidad;
     }
     const dias = Math.max(1, diasAnalisis);
@@ -271,8 +283,7 @@ export function InventarioAnalisisCategoriasPanel({
 
   const rankingSub = useMemo(() => {
     const rows = productosFiltrados.map((p) => {
-      const id = Number(p.id);
-      const u = unidadesVendidasProducto(lineasVentana, id);
+      const u = unidadesVendidasProducto(lineasVentana, p.id);
       const stock = p.stockCantidad ?? 0;
       const ratio = stock > 0 ? u / stock : u;
       return { p, u, stock, ratio };
@@ -368,8 +379,10 @@ export function InventarioAnalisisCategoriasPanel({
           <Select
             label="Periodo de análisis"
             value={String(diasAnalisis)}
-            onChange={(e) => setDiasAnalisis(Number(e.target.value) as 90 | 180)}
+            onChange={(e) => setDiasAnalisis(Number(e.target.value) as DiasAnalisis)}
             options={[
+              { value: '30', label: 'Últimos 30 días' },
+              { value: '60', label: 'Últimos 60 días' },
               { value: '90', label: 'Últimos 90 días' },
               { value: '180', label: 'Últimos 180 días' },
             ]}
@@ -476,14 +489,13 @@ export function InventarioAnalisisCategoriasPanel({
           <Table headers={headersListadoProductos}>
             {!loading &&
               productosFiltrados.map((p) => {
-                const id = Number(p.id);
                 const { categoriaPrincipal, subcategoria } = parseCategoriaSub(p.categoria || '');
                 const subTxt = subcategoria.trim();
                 const stock = p.stockCantidad ?? 0;
-                const u = unidadesVendidasProducto(lineasVentana, id);
-                const uDia = promedioDiarioProducto(lineasVentana, id, desde);
+                const u = unidadesVendidasProducto(lineasVentana, p.id);
+                const uDia = promedioDiarioProducto(lineasVentana, p.id, desde);
                 const pr = puntoReorden(uDia, leadTimeDias, stockSeguridad);
-                const vals = serieConsumoProducto(lineasVentana, id, desde, 'dia').map((x) => x.unidades);
+                const vals = serieConsumoProducto(lineasVentana, p.id, desde, 'dia').map((x) => x.unidades);
                 const tend = tendenciaDesdeSerieDiaria(vals);
                 const tb = tendenciaBadge(tend);
                 return (
@@ -534,11 +546,21 @@ export function InventarioAnalisisCategoriasPanel({
             </h3>
             <div className="flex flex-wrap gap-3 mb-4">
               <Badge variant="info">Stock actual: {metricasProducto.stock}</Badge>
-              <Badge variant="info">Vendido ({diasAnalisis}d): {metricasProducto.vendidas} u.</Badge>
+              <Badge variant="info">
+                {metricasProducto.fuenteConsumo === 'movimientos' ? 'Salidas inventario' : 'Vendido'} ({diasAnalisis}
+                d): {metricasProducto.vendidas} u.
+              </Badge>
               <Badge variant={tendenciaBadge(metricasProducto.tend).variant}>
                 Tendencia: {etiquetaTendencia(metricasProducto.tend)}
               </Badge>
             </div>
+            {metricasProducto.fuenteConsumo === 'movimientos' && (
+              <p className="text-xs mb-4 rounded-lg border px-3 py-2" style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondos-suaves)' }}>
+                En este período no hay líneas de pedido online contables para este producto; las gráficas y el
+                desglose de unidades usan las <strong>salidas (y ajustes negativos)</strong> del historial de
+                inventario, alineadas con la tabla de abajo.
+              </p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                 <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -579,6 +601,11 @@ export function InventarioAnalisisCategoriasPanel({
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {metricasProducto.fuenteConsumo === 'pedidos' && puntosSerie <= 1 && chartSeries.length > 0 && (
+              <p className="lg:col-span-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                Hay pocos puntos en pedidos para la línea; prueba otro período o agrupación semanal/mensual.
+              </p>
+            )}
             <Card variant="elevated" padding="lg">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -591,7 +618,7 @@ export function InventarioAnalisisCategoriasPanel({
               <div className="rounded-lg border p-2" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                 <SvgLineaVentas series={chartSeries} />
               </div>
-              {puntosSerie <= 1 && (
+              {metricasProducto.fuenteConsumo === 'pedidos' && puntosSerie <= 1 && (
                 <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
                   Hay pocos datos para línea (solo {puntosSerie} período). Prueba cambiar período o agrupación.
                 </p>
@@ -609,7 +636,7 @@ export function InventarioAnalisisCategoriasPanel({
               <div className="rounded-lg border p-2" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                 <SvgBarrasVentas series={chartSeries} />
               </div>
-              {puntosSerie === 1 && (
+              {metricasProducto.fuenteConsumo === 'pedidos' && puntosSerie === 1 && (
                 <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
                   Solo hay 1 período con ventas; por eso ves una sola barra.
                 </p>

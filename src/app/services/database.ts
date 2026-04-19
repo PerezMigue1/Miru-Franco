@@ -49,6 +49,10 @@ export type TablaImportable = {
   conflictKeys?: string[];
 };
 
+export type ResultadoTruncate =
+  | { success: true; tabla: string; restartIdentity: boolean; cascade: boolean; message?: string }
+  | { success: false; error: string };
+
 /**
  * Importa datos desde CSV o JSON.
  * POST /api/db/import (multipart: tabla + archivo)
@@ -155,6 +159,52 @@ export async function obtenerTablasImportables(): Promise<
       );
 
     return { success: true, tablas };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Ejecuta TRUNCATE TABLE para una tabla concreta.
+ * POST /api/db/truncate
+ */
+export async function truncarTabla(
+  tabla: string,
+  opciones?: { restartIdentity?: boolean; cascade?: boolean }
+): Promise<ResultadoTruncate> {
+  const base = getBackendBaseUrl();
+  const token = getToken();
+  if (!token) {
+    return { success: false, error: 'Debes iniciar sesión' };
+  }
+
+  try {
+    const res = await fetch(`${base}${DB_API_PREFIX}/truncate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        tabla,
+        restartIdentity: opciones?.restartIdentity ?? true,
+        cascade: opciones?.cascade ?? false,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = (data.message ?? data.error ?? `Error ${res.status}`) as string;
+      return { success: false, error: msg };
+    }
+    return {
+      success: true,
+      tabla: String(data.tabla ?? tabla),
+      restartIdentity: Boolean(data.restartIdentity ?? opciones?.restartIdentity ?? true),
+      cascade: Boolean(data.cascade ?? opciones?.cascade ?? false),
+      message: typeof data.message === 'string' ? data.message : undefined,
+    };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
     return { success: false, error: msg };

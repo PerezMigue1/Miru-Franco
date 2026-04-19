@@ -14,7 +14,8 @@ export const ESTADOS_PEDIDO_CONTABLES_VENTA: EstadoPedidoUi[] = [
 ];
 
 export interface LineaVentaProducto {
-  productoId: number;
+  /** Coincide con `Producto.id` del catálogo (número o string según backend). */
+  productoId: number | string;
   cantidad: number;
   subtotal: number;
   /** Fecha del pedido (ISO). */
@@ -36,9 +37,9 @@ function fechaValida(iso: string): Date | null {
 }
 
 export function filtrarLineasPorProducto(lineas: LineaVentaProducto[], productoId: string | number): LineaVentaProducto[] {
-  const id = Number(productoId);
-  if (!Number.isFinite(id)) return [];
-  return lineas.filter((l) => l.productoId === id);
+  const key = String(productoId ?? '').trim();
+  if (!key) return [];
+  return lineas.filter((l) => String(l.productoId).trim() === key);
 }
 
 export function filtrarLineasDesdeFecha(lineas: LineaVentaProducto[], desde: Date): LineaVentaProducto[] {

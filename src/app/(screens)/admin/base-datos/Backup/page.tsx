@@ -13,6 +13,7 @@ import { exportarDirecto, listarTablasDirectas } from '../../../../services/data
 
 type FormatoBackup = 'json' | 'sql' | 'csv';
 type ModoBackup = 'completa' | 'seleccionada';
+type FrecuenciaBackup = 'diaria' | 'semanal' | 'mensual';
 
 type BackupEntry = {
   id: string;
@@ -30,7 +31,11 @@ const STORAGE_KEY_HISTORIAL_BACKUP = 'base-datos-historial-backups';
 const MAX_HISTORIAL_BACKUP = 30;
 const STORAGE_AUTO_ENABLED = 'backup-miru-auto-enabled';
 const STORAGE_AUTO_TIME = 'backup-miru-auto-time';
-const STORAGE_AUTO_LAST_HOUR = 'backup-miru-auto-last-hour';
+const STORAGE_AUTO_SECOND = 'backup-miru-auto-second';
+const STORAGE_AUTO_FREQUENCY = 'backup-miru-auto-frequency';
+const STORAGE_AUTO_WEEKDAY = 'backup-miru-auto-weekday';
+const STORAGE_AUTO_MONTHDAY = 'backup-miru-auto-monthday';
+const STORAGE_AUTO_LAST_RUN_KEY = 'backup-miru-auto-last-run-key';
 
 function loadHistorialBackups(): BackupEntry[] {
   if (typeof window === 'undefined') return [];
@@ -104,6 +109,10 @@ export default function BackupPage() {
   const [historialBackups, setHistorialBackups] = useState<BackupEntry[]>([]);
   const [autoEnabled, setAutoEnabled] = useState(false);
   const [autoTime, setAutoTime] = useState('08:00');
+  const [autoSecond, setAutoSecond] = useState('00');
+  const [autoFrequency, setAutoFrequency] = useState<FrecuenciaBackup>('diaria');
+  const [autoWeekday, setAutoWeekday] = useState('1');
+  const [autoMonthday, setAutoMonthday] = useState('1');
   const [menuLateralOculto, setMenuLateralOculto] = useState(true);
 
   const modoRef = useRef<ModoBackup>(modoBackup);
@@ -136,6 +145,14 @@ export default function BackupPage() {
       setAutoEnabled(localStorage.getItem(STORAGE_AUTO_ENABLED) === '1');
       const t = localStorage.getItem(STORAGE_AUTO_TIME);
       if (t) setAutoTime(t);
+      const sec = localStorage.getItem(STORAGE_AUTO_SECOND);
+      if (sec) setAutoSecond(sec.padStart(2, '0'));
+      const f = localStorage.getItem(STORAGE_AUTO_FREQUENCY) as FrecuenciaBackup | null;
+      if (f === 'diaria' || f === 'semanal' || f === 'mensual') setAutoFrequency(f);
+      const wd = localStorage.getItem(STORAGE_AUTO_WEEKDAY);
+      if (wd) setAutoWeekday(wd);
+      const md = localStorage.getItem(STORAGE_AUTO_MONTHDAY);
+      if (md) setAutoMonthday(md);
     }
     cargarTablasDirectas();
   }, []);
@@ -224,17 +241,30 @@ export default function BackupPage() {
     const interval = setInterval(() => {
       const now = new Date();
       const [h, m] = autoTime.split(':').map(Number);
-      if (now.getHours() !== h || now.getMinutes() !== m) return;
+      const s = Number(autoSecond);
+      if (now.getHours() !== h || now.getMinutes() !== m || now.getSeconds() !== s) return;
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+      const weekday = now.getDay();
+      const monthday = Math.min(Number(autoMonthday), new Date(year, month, 0).getDate());
 
-      const hourKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${h}`;
-      const lastHour = localStorage.getItem(STORAGE_AUTO_LAST_HOUR);
-      if (lastHour === hourKey) return;
+      const debeEjecutar =
+        autoFrequency === 'diaria' ||
+        (autoFrequency === 'semanal' && weekday === Number(autoWeekday)) ||
+        (autoFrequency === 'mensual' && day === monthday);
 
-      localStorage.setItem(STORAGE_AUTO_LAST_HOUR, hourKey);
+      if (!debeEjecutar) return;
+
+      const runKey = `${autoFrequency}-${year}-${month}-${day}-${h}-${m}-${s}`;
+      const lastRun = localStorage.getItem(STORAGE_AUTO_LAST_RUN_KEY);
+      if (lastRun === runKey) return;
+
+      localStorage.setItem(STORAGE_AUTO_LAST_RUN_KEY, runKey);
       void realizarBackup('programado');
-    }, 60000);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [autoEnabled, autoTime, realizarBackup]);
+  }, [autoEnabled, autoTime, autoSecond, autoFrequency, autoWeekday, autoMonthday, realizarBackup]);
 
   const toggleAutoBackup = () => {
     const next = !autoEnabled;
@@ -246,6 +276,54 @@ export default function BackupPage() {
     setAutoTime(value);
     if (typeof window !== 'undefined') localStorage.setItem(STORAGE_AUTO_TIME, value);
   };
+
+  const updateAutoSecond = (value: string) => {
+    const normalized = String(Math.max(0, Math.min(59, Number(value) || 0))).padStart(2, '0');
+    setAutoSecond(normalized);
+    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_AUTO_SECOND, normalized);
+  };
+
+  const updateAutoFrequency = (value: FrecuenciaBackup) => {
+    setAutoFrequency(value);
+    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_AUTO_FREQUENCY, value);
+  };
+
+  const updateAutoWeekday = (value: string) => {
+    setAutoWeekday(value);
+    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_AUTO_WEEKDAY, value);
+  };
+
+  const updateAutoMonthday = (value: string) => {
+    setAutoMonthday(value);
+    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_AUTO_MONTHDAY, value);
+  };
+
+  const getProximasEjecuciones = (count = 3): Date[] => {
+    const [h, m] = autoTime.split(':').map(Number);
+    const s = Number(autoSecond);
+    const now = new Date();
+    const resultados: Date[] = [];
+    const cursor = new Date(now);
+    cursor.setSeconds(0, 0);
+    for (let i = 0; i < 400 && resultados.length < count; i += 1) {
+      const c = new Date(cursor);
+      c.setDate(c.getDate() + i);
+      c.setHours(h, m, s, 0);
+      if (c <= now) continue;
+      if (autoFrequency === 'diaria') resultados.push(c);
+      if (autoFrequency === 'semanal' && c.getDay() === Number(autoWeekday)) resultados.push(c);
+      if (autoFrequency === 'mensual') {
+        const ultimoDia = new Date(c.getFullYear(), c.getMonth() + 1, 0).getDate();
+        const dia = Math.min(Number(autoMonthday), ultimoDia);
+        if (c.getDate() === dia) resultados.push(c);
+      }
+    }
+    return resultados;
+  };
+
+  const proximosBackups = autoEnabled ? getProximasEjecuciones(3) : [];
+  const proximoBackup = proximosBackups[0];
+  const ultimoBackupAutomatico = historialBackups.find((h) => h.origen === 'programado');
 
   return (
     <AdminLayout>
@@ -283,10 +361,12 @@ export default function BackupPage() {
             <div className="space-y-1">
               {[
                 { href: '/admin/base-datos/operaciones/importar', label: 'Operaciones' },
-                { href: '/admin/base-datos/Backup', label: 'Backup' },
+                { href: '/admin/base-datos/backup', label: 'Backup' },
+                { href: '/admin/base-datos/restauracion', label: 'Restauración' },
                 { href: '/admin/base-datos/monitoreo', label: 'Monitoreo' },
                 { href: '/admin/base-datos/diagrama', label: 'Diagrama ER' },
                 { href: '/admin/base-datos/consultar', label: 'Consultar datos' },
+                { href: '/admin/base-datos/restauracion-protocolo', label: 'Protocolo de restauración' },
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -294,7 +374,7 @@ export default function BackupPage() {
                   onClick={() => setMenuLateralOculto(true)}
                   className="block w-full text-left rounded px-3 py-2 text-sm no-underline"
                   style={{
-                    backgroundColor: item.href === '/admin/base-datos/Backup' ? 'var(--hover)' : 'transparent',
+                    backgroundColor: item.href === '/admin/base-datos/backup' ? 'var(--hover)' : 'transparent',
                     color: 'var(--menu-texto-principal)',
                   }}
                 >
@@ -391,38 +471,145 @@ export default function BackupPage() {
           </Card>
 
           <Card variant="elevated" padding="lg">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          <h2 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
             <Timer size={18} /> Automatizacion de Backups
           </h2>
+          <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+            Configura backups automáticos para que se ejecuten sin intervención manual.
+          </p>
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="auto-backup"
-                checked={autoEnabled}
-                onChange={toggleAutoBackup}
-                className="w-4 h-4"
-              />
-              <label htmlFor="auto-backup" className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-                Habilitar backup automatico por hora
-              </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-lg border p-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="auto-backup"
+                    checked={autoEnabled}
+                    onChange={toggleAutoBackup}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="auto-backup" className="text-sm font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                    Habilitar backups automáticos
+                  </label>
+                </div>
+                <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Los backups se ejecutarán según la configuración establecida.
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs mb-1 font-semibold uppercase" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Frecuencia
+                </label>
+                <Select
+                  options={[
+                    { value: 'diaria', label: 'Diaria' },
+                    { value: 'semanal', label: 'Semanal' },
+                    { value: 'mensual', label: 'Mensual' },
+                  ]}
+                  value={autoFrequency}
+                  onChange={(e) => updateAutoFrequency(e.target.value as FrecuenciaBackup)}
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
-                Hora del backup (HH:MM)
+              <label className="block text-xs mb-1 font-semibold uppercase" style={{ color: 'var(--encabezados-alterno)' }}>
+                Hora (HH:MM:SS)
               </label>
-              <input
-                type="time"
-                value={autoTime}
-                onChange={(e) => updateAutoTime(e.target.value)}
-                className="w-full p-2 rounded border"
-                style={{
-                  borderColor: 'var(--encabezados-alterno)',
-                  backgroundColor: 'var(--fondo-general)',
-                  color: 'var(--menu-texto-principal)',
-                }}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={autoTime.split(':')[0]}
+                  onChange={(e) => updateAutoTime(`${String(Math.max(0, Math.min(23, Number(e.target.value) || 0))).padStart(2, '0')}:${autoTime.split(':')[1]}`)}
+                  className="w-16 p-2 rounded border text-center"
+                  style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
+                />
+                <span style={{ color: 'var(--encabezados-alterno)' }}>:</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={autoTime.split(':')[1]}
+                  onChange={(e) => updateAutoTime(`${autoTime.split(':')[0]}:${String(Math.max(0, Math.min(59, Number(e.target.value) || 0))).padStart(2, '0')}`)}
+                  className="w-16 p-2 rounded border text-center"
+                  style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
+                />
+                <span style={{ color: 'var(--encabezados-alterno)' }}>:</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={autoSecond}
+                  onChange={(e) => updateAutoSecond(e.target.value)}
+                  className="w-16 p-2 rounded border text-center"
+                  style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
+                />
+              </div>
+              <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                Tiempo configurado: {autoTime}:{autoSecond}
+              </p>
             </div>
+            {autoFrequency === 'semanal' && (
+              <div>
+                <label className="block text-sm mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Día de la semana
+                </label>
+                <Select
+                  options={[
+                    { value: '1', label: 'Lunes' },
+                    { value: '2', label: 'Martes' },
+                    { value: '3', label: 'Miércoles' },
+                    { value: '4', label: 'Jueves' },
+                    { value: '5', label: 'Viernes' },
+                    { value: '6', label: 'Sábado' },
+                    { value: '0', label: 'Domingo' },
+                  ]}
+                  value={autoWeekday}
+                  onChange={(e) => updateAutoWeekday(e.target.value)}
+                />
+              </div>
+            )}
+            {autoFrequency === 'mensual' && (
+              <div>
+                <label className="block text-sm mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Día del mes
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={autoMonthday}
+                  onChange={(e) => updateAutoMonthday(e.target.value)}
+                  className="w-full p-2 rounded border"
+                  style={{
+                    borderColor: 'var(--encabezados-alterno)',
+                    backgroundColor: 'var(--fondo-general)',
+                    color: 'var(--menu-texto-principal)',
+                  }}
+                />
+              </div>
+            )}
+            {autoEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3" style={{ borderColor: 'rgba(176, 56, 102, 0.5)', backgroundColor: 'rgba(176, 56, 102, 0.08)' }}>
+                  <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Próximo backup</p>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    {proximoBackup
+                      ? proximoBackup.toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })
+                      : 'Sin programación'}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3" style={{ borderColor: 'rgba(176, 56, 102, 0.5)', backgroundColor: 'rgba(176, 56, 102, 0.08)' }}>
+                  <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Último backup automático</p>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    {ultimoBackupAutomatico
+                      ? new Date(ultimoBackupAutomatico.fecha).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })
+                      : 'Aún no ejecutado'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           </Card>
 

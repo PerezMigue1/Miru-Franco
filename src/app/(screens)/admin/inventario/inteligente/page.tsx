@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
 
-/** Ruta histórica: todo el análisis vive en `/admin/inventario/prediccion` (pestaña Categorías y rotación). */
+/** Ruta histórica: redirige al módulo de predicción de inventario. */
 export default function InventarioInteligenteRedirectPage() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/admin/inventario/prediccion#prediccion-categorias');
+    router.replace('/admin/inventario/prediccion#seccion-modulo-prediccion');
   }, [router]);
   return (
     <AdminLayout>

@@ -33,7 +33,7 @@ interface ListadoMovimientosResp {
 }
 
 export interface ListarMovimientosParams {
-  productoId?: number;
+  productoId?: number | string;
   presentacionId?: number;
   desde?: string;
   hasta?: string;

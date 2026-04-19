@@ -418,7 +418,7 @@ export default function InventarioPage() {
                     variant="outline"
                     onClick={() =>
                       router.push(
-                        `/admin/inventario/prediccion?producto=${encodeURIComponent(String(producto.id))}#prediccion-categorias`
+                        `/admin/inventario/prediccion?producto=${encodeURIComponent(String(producto.id))}`
                       )
                     }
                   >
