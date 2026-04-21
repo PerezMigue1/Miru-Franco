@@ -40,7 +40,6 @@ import {
   type TopCostlyQueryDirecta,
 } from '../../../services/database';
 import { mermaidToSvg, svgToPngBlob } from '../../../utils/mermaidRender';
-import { getToken } from '../../../utils/security';
 import JSZip from 'jszip';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
 import { getUsuarios, getUsuarioById, type Usuario } from '../../../services/usuarios';
@@ -791,23 +790,14 @@ export default function BaseDatosPage() {
   };
 
   const fetchTablaJson = async (tabla: string): Promise<{ success: true; rows: Record<string, unknown>[]; filename: string } | { success: false; error: string }> => {
-    const token = getToken();
-    if (!token) {
-      return { success: false, error: 'Debes iniciar sesión' };
-    }
     try {
-      const params = new URLSearchParams({ tabla, formato: 'json' });
-      const res = await fetch(`/api/db/export-direct?${params.toString()}`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+      const resultado = await exportarDirecto(tabla, 'json');
+      if (!resultado.success) {
+        return resultado;
       }
-      const rows = (await res.json()) as Record<string, unknown>[];
-      const filename = `${tabla}_${new Date().toISOString().slice(0, 10)}.json`;
-      return { success: true, rows, filename };
+      const texto = await resultado.blob.text();
+      const rows = JSON.parse(texto) as Record<string, unknown>[];
+      return { success: true, rows, filename: resultado.filename };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Error al obtener datos JSON' };
     }

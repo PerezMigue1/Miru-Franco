@@ -345,6 +345,7 @@ export async function descargarDiagrama(
 
 /** Ruta de exportación directa a la BD (Next.js API route, mismo origen). */
 const EXPORT_DIRECT_PREFIX = '/api/db/export-direct';
+const getExportDirectBase = () => `${getBackendBaseUrl()}${EXPORT_DIRECT_PREFIX}`;
 
 /**
  * Lista tablas disponibles para exportación directa (conexión a DATABASE_URL).
@@ -358,7 +359,7 @@ export async function listarTablasDirectas(): Promise<
     return { success: false, error: 'Debes iniciar sesión' };
   }
   try {
-    const res = await fetch(EXPORT_DIRECT_PREFIX, {
+    const res = await fetch(getExportDirectBase(), {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -395,7 +396,7 @@ export async function obtenerColumnasDirectas(tabla: string): Promise<
   }
   try {
     const res = await fetch(
-      `${EXPORT_DIRECT_PREFIX}?tabla=${encodeURIComponent(tabla)}&meta=1`,
+      `${getExportDirectBase()}?tabla=${encodeURIComponent(tabla)}&meta=1`,
       { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
     );
     const data = await res.json().catch(() => ({}));
@@ -521,7 +522,7 @@ export async function obtenerSchemaDirecto(
   }
   try {
     const res = await fetch(
-      `${EXPORT_DIRECT_PREFIX}?tabla=${encodeURIComponent(tabla)}&meta=schema`,
+      `${getExportDirectBase()}?tabla=${encodeURIComponent(tabla)}&meta=schema`,
       { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
     );
     const data = await res.json().catch(() => ({}));
@@ -546,7 +547,7 @@ export async function obtenerActividadDirecta(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=activity`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=activity`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -568,7 +569,7 @@ export async function obtenerLocksDirectos(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=locks`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=locks`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -586,7 +587,7 @@ export async function obtenerResumenBdDirecto(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=db_summary`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=db_summary`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -604,7 +605,7 @@ export async function obtenerTableStatsDirecto(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=table_stats`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=table_stats`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -622,7 +623,7 @@ export async function obtenerIndexStatsDirecto(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=index_stats`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=index_stats`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -640,7 +641,7 @@ export async function obtenerTableSizesDirecto(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=table_size`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=table_size`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -658,7 +659,7 @@ export async function obtenerRealtimeMetricsDirecto(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=realtime_metrics`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=realtime_metrics`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -681,7 +682,7 @@ export async function obtenerQueryInsightsDirecto(): Promise<
   const token = getToken();
   if (!token) return { success: false, error: 'Debes iniciar sesión' };
   try {
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?meta=query_insights`, {
+    const res = await fetch(`${getExportDirectBase()}?meta=query_insights`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -717,7 +718,7 @@ export async function obtenerExplainDirecto(
       params.set('columna', columna);
       params.set('valor', valor);
     }
-    const res = await fetch(`${EXPORT_DIRECT_PREFIX}?${params.toString()}`, {
+    const res = await fetch(`${getExportDirectBase()}?${params.toString()}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -754,7 +755,7 @@ export async function exportarDirecto(
     if (opciones?.fechaDesde) params.set('fechaDesde', opciones.fechaDesde);
     if (opciones?.fechaHasta) params.set('fechaHasta', opciones.fechaHasta);
     if (opciones?.soloActivos) params.set('soloActivos', 'true');
-    const url = `${EXPORT_DIRECT_PREFIX}?${params.toString()}`;
+    const url = `${getExportDirectBase()}?${params.toString()}`;
     const res = await fetch(url, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
