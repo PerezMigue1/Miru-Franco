@@ -34,6 +34,7 @@ import {
   Activity,
   AlertTriangle,
   CalendarDays,
+  Maximize2,
   Package,
   ShoppingBag,
 } from "lucide-react";
@@ -226,6 +227,7 @@ export default function PrediccionInventarioPage() {
 
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [productoFiltroId, setProductoFiltroId] = useState("");
+  const [tablaOverlayOpen, setTablaOverlayOpen] = useState(false);
 
   const categoriasFiltroOpciones = useMemo(() => {
     const s = new Set<string>();
@@ -336,11 +338,9 @@ export default function PrediccionInventarioPage() {
         stockProyectadoPeor: null as number | null,
       };
     }
-    const bajoUmbral = predicciones.filter(
-      (p) => p.xT <= umbralParaX0(p.x0),
-    );
-    if (bajoUmbral.length > 0) {
-      const worst = bajoUmbral.reduce((a, b) => (a.xT <= b.xT ? a : b));
+    const bajoUmbralHoy = predicciones.filter((p) => p.x0 <= umbralParaX0(p.x0));
+    if (bajoUmbralHoy.length > 0) {
+      const worst = bajoUmbralHoy.reduce((a, b) => (a.xT <= b.xT ? a : b));
       return {
         dias: 0,
         nombre: worst.nombre,
@@ -348,14 +348,16 @@ export default function PrediccionInventarioPage() {
         stockProyectadoPeor: worst.xT,
       };
     }
+
     let minDias = Number.POSITIVE_INFINITY;
     let nombre: string | null = null;
     for (const p of predicciones) {
-      const delta = (p.xT - p.x0) / Math.max(1, horizonteDias);
-      if (delta >= -1e-12) continue;
-      const dias = (p.x0 - umbralParaX0(p.x0)) / -delta;
-      if (dias > 0 && dias < minDias) {
-        minDias = dias;
+      const umbral = umbralParaX0(p.x0);
+      if (p.k >= -1e-12) continue;
+      if (p.x0 <= umbral) continue;
+      const diasCruce = Math.log(umbral / p.x0) / p.k;
+      if (Number.isFinite(diasCruce) && diasCruce > 0 && diasCruce < minDias) {
+        minDias = diasCruce;
         nombre = p.nombre;
       }
     }
@@ -368,12 +370,12 @@ export default function PrediccionInventarioPage() {
       };
     }
     return {
-      dias: Math.round(minDias),
+      dias: Math.ceil(minDias),
       nombre,
       urgente: false,
       stockProyectadoPeor: null,
     };
-  }, [predicciones, horizonteDias, umbralParaX0]);
+  }, [predicciones, umbralParaX0]);
 
   const validacion = useMemo(() => {
     const sinNegativos = predicciones.every((p) => p.xT >= 0);
@@ -594,6 +596,29 @@ export default function PrediccionInventarioPage() {
     const d = Math.max(1, contextoPedidos.dias);
     return contextoPedidos.unidades / d;
   }, [contextoPedidos.dias, contextoPedidos.unidades]);
+
+  /** Días globales para cruzar umbral (stock total vs umbral total). */
+  const diasReabastecerGlobal = useMemo(() => {
+    if (!curvaAgregada) return null as number | null;
+    const x0 = Math.max(0, curvaAgregada.x0);
+    /** k de consumo real: dx/dt = kx con tasa observada ≈ ventas_dia / stock_actual. */
+    const k = x0 > 0 ? -(promedioDiarioVentasGlobal / x0) : 0;
+    const umbral = Math.max(1, umbralLineaGrafica);
+    if (x0 <= 0) return 0;
+    if (x0 <= umbral) return 0;
+    if (k >= -1e-12) return null;
+    const t = Math.log(umbral / x0) / k;
+    if (!Number.isFinite(t) || t > 36500) return null;
+    if (t <= 0) return 0;
+    return Math.ceil(t);
+  }, [curvaAgregada, umbralLineaGrafica, promedioDiarioVentasGlobal]);
+
+  const reabastecerEnHorizonte = useMemo(() => {
+    if (diasReabastecerGlobal === null) return "sin_presion" as const;
+    if (diasReabastecerGlobal <= 0) return "urgente" as const;
+    if (diasReabastecerGlobal <= horizonteDias) return "estimado" as const;
+    return "fuera_horizonte" as const;
+  }, [diasReabastecerGlobal, horizonteDias]);
 
   const metricasVentasPorProducto = useMemo(() => {
     const m = new Map<string, MetricaVentaProd>();
@@ -1232,8 +1257,8 @@ export default function PrediccionInventarioPage() {
                   >
                     <dt style={{ color: "var(--encabezados-alterno)" }}>
                       {hayFiltrosCatalogo
-                        ? "Stock en vista (suma)"
-                        : "Stock en catálogo (suma)"}
+                        ? "Condición inicial (stock en vista)"
+                        : "Condición inicial (stock en catálogo)"}
                     </dt>
                     <dd
                       className="font-semibold tabular-nums"
@@ -1270,6 +1295,59 @@ export default function PrediccionInventarioPage() {
                     Normal: {normales}
                   </Badge>
                 </div>
+              </Card>
+
+              <Card
+                variant="elevated"
+                padding="lg"
+                className="rounded-2xl border-0"
+                style={superficieCard}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3
+                    className="text-base font-semibold tracking-tight"
+                    style={{ color: "var(--menu-texto-principal)" }}
+                  >
+                    Total de días para reabastecer
+                  </h3>
+                  {reabastecerEnHorizonte === "urgente" ? (
+                    <Badge variant="danger" size="sm" className="shrink-0">
+                      Urgente
+                    </Badge>
+                  ) : reabastecerEnHorizonte === "estimado" ? (
+                    <Badge variant="warning" size="sm" className="shrink-0">
+                      Estimado
+                    </Badge>
+                  ) : reabastecerEnHorizonte === "fuera_horizonte" ? (
+                    <Badge variant="success" size="sm" className="shrink-0">
+                      Fuera de horizonte
+                    </Badge>
+                  ) : (
+                    <Badge variant="success" size="sm" className="shrink-0">
+                      Sin presión
+                    </Badge>
+                  )}
+                </div>
+                <p
+                  className="mt-3 text-3xl font-bold tabular-nums"
+                  style={{ color: "var(--menu-texto-principal)" }}
+                >
+                  {diasReabastecerGlobal !== null
+                    ? `${diasReabastecerGlobal} d`
+                    : "N/A"}
+                </p>
+                <p
+                  className="mt-1 text-xs leading-relaxed"
+                  style={{ color: "var(--encabezados-alterno)" }}
+                >
+                  {reabastecerEnHorizonte === "urgente"
+                    ? "El stock total ya está en o por debajo del umbral en la vista actual."
+                    : reabastecerEnHorizonte === "estimado"
+                      ? "Días estimados hasta que el stock total cruce el umbral en la vista actual."
+                      : reabastecerEnHorizonte === "fuera_horizonte"
+                        ? `El cruce estimado ocurre después del período activo (${horizonteDias} d).`
+                        : "No se proyecta cruce de umbral para el stock total con la tendencia actual."}
+                </p>
               </Card>
 
               <Card
@@ -1769,7 +1847,16 @@ export default function PrediccionInventarioPage() {
                   Unidades = pedidos válidos en el período. Salida estimada =
                   referencia, no pronóstico exacto.
                 </p>
-                <div className="flex justify-end mb-3">
+                <div className="flex justify-end gap-2 mb-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setTablaOverlayOpen(true)}
+                    disabled={predicciones.length === 0}
+                  >
+                    <Maximize2 className="h-4 w-4 mr-1.5" aria-hidden />
+                    Ver tabla completa
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -1989,6 +2076,148 @@ export default function PrediccionInventarioPage() {
             />
           )}
         </Drawer>
+
+        {tablaOverlayOpen && (
+          <div
+            className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-[1px] p-3 sm:p-5"
+            onClick={() => setTablaOverlayOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tabla de predicción ampliada"
+          >
+            <div
+              className="mx-auto h-full w-full max-w-[1450px] rounded-2xl border p-4 sm:p-5 flex flex-col"
+              style={{
+                backgroundColor: "var(--superficie-elevada)",
+                borderColor:
+                  "color-mix(in srgb, var(--tarjetas-paneles) 45%, transparent)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                  <h3
+                    className="text-base sm:text-lg font-semibold"
+                    style={{ color: "var(--menu-texto-principal)" }}
+                  >
+                    Tabla completa de predicción
+                  </h3>
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: "var(--encabezados-alterno)" }}
+                  >
+                    Unidades = pedidos válidos en el período. Salida estimada =
+                    referencia, no pronóstico exacto.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={exportarCsv}
+                    disabled={predicciones.length === 0}
+                  >
+                    Exportar CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setTablaOverlayOpen(false)}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+                <Table
+                  className="min-w-[1260px]"
+                  headersLegibles
+                  stickyFirstColumn
+                  headers={[
+                    "Producto",
+                    "Stock actual",
+                    `Unidades vendidas (${diasVentanaVentas} d)`,
+                    `Salida estimada (${horizonteDias} d)`,
+                    `Stock estimado (${horizonteDias} d)`,
+                    "Variación %",
+                    "Nivel de alerta",
+                    "Riesgo actual",
+                    "Sugerencia",
+                    "Nota",
+                  ]}
+                >
+                  {!loading &&
+                    predicciones.map((p) => {
+                      const badge = estadoBadge(p.estado);
+                      const mv = metricasVentasPorProducto.get(
+                        String(p.id).trim(),
+                      ) ?? { unidades: 0, promD: 0, demH: 0 };
+                      const cr = cruceModeloVentas(p, mv, umbralParaX0(p.x0));
+                      const sug = sugerenciaAccion(p, mv, horizonteDias);
+                      return (
+                        <TableRow key={`overlay-${p.id}`}>
+                          <TableCell
+                            stickyLeft
+                            className="font-semibold whitespace-nowrap min-w-[180px] max-w-[260px] truncate"
+                          >
+                            {p.nombre}
+                          </TableCell>
+                          <TableCell>{p.x0.toFixed(1)}</TableCell>
+                          <TableCell>{mv.unidades}</TableCell>
+                          <TableCell>{mv.demH.toFixed(1)}</TableCell>
+                          <TableCell>{p.xT.toFixed(1)}</TableCell>
+                          <TableCell
+                            style={{
+                              color:
+                                p.cambioPct <= 0
+                                  ? "var(--danger)"
+                                  : "var(--success)",
+                            }}
+                          >
+                            {p.cambioPct.toFixed(1)}%
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={badge.variant} size="sm">
+                              {badge.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={cr.variant} size="sm">
+                              {cr.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm align-top min-w-[320px] max-w-[420px]">
+                            <p
+                              className="font-medium leading-snug"
+                              style={{ color: "var(--menu-texto-principal)" }}
+                            >
+                              {sug.accion}
+                            </p>
+                            <p
+                              className="text-xs mt-1.5 leading-relaxed"
+                              style={{ color: "var(--encabezados-alterno)" }}
+                            >
+                              {sug.detalle}
+                            </p>
+                          </TableCell>
+                          <TableCell className="min-w-[90px]">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => abrirDetalleProducto(p.id)}
+                            >
+                              Ver
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </Table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
