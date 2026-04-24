@@ -362,11 +362,9 @@ export default function BackupPage() {
               {[
                 { href: '/admin/base-datos/operaciones/importar', label: 'Operaciones' },
                 { href: '/admin/base-datos/backup', label: 'Backup' },
-                { href: '/admin/base-datos/restauracion', label: 'Restauración' },
                 { href: '/admin/base-datos/monitoreo', label: 'Monitoreo' },
                 { href: '/admin/base-datos/diagrama', label: 'Diagrama ER' },
                 { href: '/admin/base-datos/consultar', label: 'Consultar datos' },
-                { href: '/admin/base-datos/restauracion-protocolo', label: 'Protocolo de restauración' },
               ].map((item) => (
                 <Link
                   key={item.href}

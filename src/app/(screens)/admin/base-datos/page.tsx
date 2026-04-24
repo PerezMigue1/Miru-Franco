@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Card from '../../../components/ui/Card';
@@ -1230,28 +1229,6 @@ export default function BaseDatosPage() {
                   ))}
                 </div>
               )}
-              <div className="mt-4 pt-3 border-t space-y-1" style={{ borderColor: 'var(--encabezados-alterno)' }}>
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-wide opacity-70" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Páginas dedicadas
-                </p>
-            
-                <Link
-                  href="/admin/base-datos/restauracion"
-                  className="block w-full rounded px-3 py-2 text-sm no-underline hover:opacity-90"
-                  style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'transparent' }}
-                  onClick={() => setMenuLateralOculto(true)}
-                >
-                  Restauración
-                </Link>
-                <Link
-                  href="/admin/base-datos/restauracion-protocolo"
-                  className="block w-full rounded px-3 py-2 text-sm no-underline hover:opacity-90"
-                  style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'transparent' }}
-                  onClick={() => setMenuLateralOculto(true)}
-                >
-                  Protocolo de restauración
-                </Link>
-              </div>
             </aside>
           )}
 
