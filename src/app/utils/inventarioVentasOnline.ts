@@ -50,6 +50,20 @@ export function filtrarLineasDesdeFecha(lineas: LineaVentaProducto[], desde: Dat
   });
 }
 
+/** Líneas cuyo `fechaIso` cae en [inicio, fin] (inclusivo, por instante de tiempo). */
+export function filtrarLineasRangoFechasInclusivo(
+  lineas: LineaVentaProducto[],
+  inicio: Date,
+  fin: Date,
+): LineaVentaProducto[] {
+  const t0 = inicio.getTime();
+  const t1 = fin.getTime();
+  return lineas.filter((l) => {
+    const d = fechaValida(l.fechaIso);
+    return d != null && d.getTime() >= t0 && d.getTime() <= t1;
+  });
+}
+
 function claveDia(d: Date): string {
   return d.toISOString().slice(0, 10);
 }

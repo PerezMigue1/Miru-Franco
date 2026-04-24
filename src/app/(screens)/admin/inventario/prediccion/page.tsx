@@ -23,8 +23,8 @@ import {
 } from "../../../../services/productos";
 import {
   cargarLineasVentasDesdePedidosOnline,
-  filtrarLineasDesdeFecha,
   filtrarLineasPorProducto,
+  filtrarLineasRangoFechasInclusivo,
   promedioUnidadesPorDia,
   proyeccionDemandaUnidades,
   type LineaVentaProducto,
@@ -38,6 +38,16 @@ import {
   Package,
   ShoppingBag,
 } from "lucide-react";
+
+function parseFechaInputLocal(ymd: string): Date | null {
+  const t = ymd.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
+  const [y, m, d] = t.split("-").map((n) => parseInt(n, 10));
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const out = new Date(y, m - 1, d, 0, 0, 0, 0);
+  if (out.getFullYear() !== y || out.getMonth() !== m - 1 || out.getDate() !== d) return null;
+  return out;
+}
 
 type EstadoPrediccion = "normal" | "preventivo" | "critico";
 
@@ -179,8 +189,10 @@ export default function PrediccionInventarioPage() {
   const [errorVentas, setErrorVentas] = useState<string | null>(null);
   /** Ventas recientes y horizonte de proyección van unidos: mismo número de días. */
   const [periodoDias, setPeriodoDias] = useState<7 | 30 | 90>(30);
-  const diasVentanaVentas = periodoDias;
   const horizonteDias = periodoDias;
+  const [rangoFechaInicio, setRangoFechaInicio] = useState("");
+  const [rangoFechaFin, setRangoFechaFin] = useState("");
+  const [rangoFechasActivo, setRangoFechasActivo] = useState(false);
   const [umbralModo, setUmbralModo] = useState<UmbralModo>("auto");
   const [umbralPct, setUmbralPct] = useState(25);
 
@@ -533,16 +545,58 @@ export default function PrediccionInventarioPage() {
     return curvaAgregada.x0 * Math.exp(curvaAgregada.k * diasReferenciaCurva);
   }, [curvaAgregada, diasReferenciaCurva]);
 
-  const desdeVentas = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - diasVentanaVentas);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [diasVentanaVentas]);
+  const rangoFechasParseado = useMemo((): { inicio: Date; fin: Date } | null => {
+    if (!rangoFechaInicio || !rangoFechaFin) return null;
+    const a = parseFechaInputLocal(rangoFechaInicio);
+    const b = parseFechaInputLocal(rangoFechaFin);
+    if (!a || !b || a.getTime() > b.getTime()) return null;
+    return { inicio: a, fin: b };
+  }, [rangoFechaInicio, rangoFechaFin]);
+
+  const ventanaOrigenPedidos = useMemo(() => {
+    if (rangoFechasActivo && rangoFechasParseado) {
+      const desde = new Date(rangoFechasParseado.inicio);
+      desde.setHours(0, 0, 0, 0);
+      const hasta = new Date(rangoFechasParseado.fin);
+      hasta.setHours(23, 59, 59, 999);
+      const d0 = new Date(rangoFechasParseado.inicio);
+      d0.setHours(0, 0, 0, 0);
+      const d1 = new Date(rangoFechasParseado.fin);
+      d1.setHours(0, 0, 0, 0);
+      const dias = Math.max(
+        1,
+        Math.round((d1.getTime() - d0.getTime()) / 86400000) + 1,
+      );
+      return {
+        desde,
+        hasta,
+        dias,
+        modo: "rango" as const,
+      };
+    }
+    const desde = new Date();
+    desde.setDate(desde.getDate() - periodoDias);
+    desde.setHours(0, 0, 0, 0);
+    const hasta = new Date();
+    hasta.setHours(23, 59, 59, 999);
+    return {
+      desde,
+      hasta,
+      dias: periodoDias,
+      modo: "rolling" as const,
+    };
+  }, [rangoFechasActivo, rangoFechasParseado, periodoDias]);
+
+  const diasVentanaVentas = ventanaOrigenPedidos.dias;
 
   const lineasVentanaVentas = useMemo(
-    () => filtrarLineasDesdeFecha(lineasVentas, desdeVentas),
-    [lineasVentas, desdeVentas],
+    () =>
+      filtrarLineasRangoFechasInclusivo(
+        lineasVentas,
+        ventanaOrigenPedidos.desde,
+        ventanaOrigenPedidos.hasta,
+      ),
+    [lineasVentas, ventanaOrigenPedidos],
   );
 
   const idsProductosVista = useMemo(
@@ -560,13 +614,15 @@ export default function PrediccionInventarioPage() {
   );
 
   const contextoPedidos = useMemo(() => {
+    const pedidosEnVentanaBase = rangoFechasActivo
+      ? new Set(lineasVentanaVentas.map((l) => l.pedidoId)).size
+      : pedidosVentasCount;
     if (!hayFiltrosCatalogo) {
       const u = lineasVentanaVentas.reduce((s, l) => s + l.cantidad, 0);
       return {
         unidades: u,
         lineas: lineasVentanaVentas.length,
-        /** Conteo explícito de `cargarLineasVentasDesdePedidosOnline` (listarPedidos + ítems). */
-        pedidos: pedidosVentasCount,
+        pedidos: pedidosEnVentanaBase,
         dias: diasVentanaVentas,
       };
     }
@@ -586,6 +642,7 @@ export default function PrediccionInventarioPage() {
     lineasVentanaFiltradas,
     pedidosVentasCount,
     diasVentanaVentas,
+    rangoFechasActivo,
   ]);
 
   const stockTotalCatalogo = useMemo(
@@ -633,6 +690,85 @@ export default function PrediccionInventarioPage() {
     }
     return m;
   }, [predicciones, lineasVentanaFiltradas, horizonteDias]);
+
+  const serieOrigenVentasDia = useMemo(() => {
+    const lineas = hayFiltrosCatalogo
+      ? lineasVentanaFiltradas
+      : lineasVentanaVentas;
+    const inicio = new Date(ventanaOrigenPedidos.desde);
+    inicio.setHours(0, 0, 0, 0);
+    const finD = new Date(ventanaOrigenPedidos.hasta);
+    finD.setHours(0, 0, 0, 0);
+    if (inicio.getTime() > finD.getTime()) return [];
+    const map = new Map<string, { u: number; m: number }>();
+    for (const l of lineas) {
+      const t = new Date(l.fechaIso);
+      if (Number.isNaN(t.getTime())) continue;
+      t.setHours(0, 0, 0, 0);
+      if (t.getTime() < inicio.getTime() || t.getTime() > finD.getTime()) continue;
+      const clave = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+      const prev = map.get(clave) ?? { u: 0, m: 0 };
+      prev.u += l.cantidad;
+      prev.m += l.subtotal;
+      map.set(clave, prev);
+    }
+    const out: { clave: string; etiqueta: string; u: number; m: number }[] = [];
+    for (const cur = new Date(inicio); cur.getTime() <= finD.getTime(); cur.setDate(cur.getDate() + 1)) {
+      const clave = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+      const data = map.get(clave) ?? { u: 0, m: 0 };
+      out.push({
+        clave,
+        etiqueta: new Intl.DateTimeFormat("es-MX", {
+          day: "2-digit",
+          month: "short",
+        }).format(cur),
+        u: data.u,
+        m: data.m,
+      });
+    }
+    return out;
+  }, [ventanaOrigenPedidos, lineasVentanaVentas, lineasVentanaFiltradas, hayFiltrosCatalogo]);
+
+  const graficaOrigenVentas = useMemo(() => {
+    const pts = serieOrigenVentasDia;
+    if (pts.length === 0) return null;
+    const w = 640;
+    const h = 200;
+    const padL = 40;
+    const padR = 8;
+    const padT = 8;
+    const padB = 32;
+    const n = pts.length;
+    const maxU = Math.max(1, ...pts.map((p) => p.u));
+    const innerW = w - padL - padR;
+    const innerH = h - padT - padB;
+    const step = innerW / Math.max(1, n);
+    const barW = Math.max(2, Math.min(20, step * 0.65));
+    const yBase = padT + innerH;
+    return {
+      w,
+      h,
+      padL,
+      padR,
+      padT,
+      padB,
+      yBase,
+      innerH,
+      maxU,
+      barW,
+      toY: (u: number) => padT + innerH * (1 - u / maxU),
+      toX: (i: number) => padL + (i + 0.5) * step,
+    };
+  }, [serieOrigenVentasDia]);
+
+  const aplicarRangoFechasOrigen = useCallback(() => {
+    if (!rangoFechasParseado) return;
+    setRangoFechasActivo(true);
+  }, [rangoFechasParseado]);
+
+  const restablecerVentanaAperiodo = useCallback(() => {
+    setRangoFechasActivo(false);
+  }, []);
 
   const drawerProductoId = useMemo(() => {
     const raw = searchParams.get("producto");
@@ -793,7 +929,8 @@ export default function PrediccionInventarioPage() {
               className="text-sm mt-3 max-w-xl leading-relaxed"
               style={{ color: "var(--encabezados-alterno)" }}
             >
-              Pedidos online + stock del catálogo. Elige 7, 30 o 90 días.
+              Pedidos online + stock del catálogo. Elige 7, 30 o 90 días, o
+              aplica un rango de fechas al origen de ventas.
             </p>
           </div>
 
@@ -829,9 +966,13 @@ export default function PrediccionInventarioPage() {
                   className="text-xs mt-1 leading-snug"
                   style={{ color: "var(--encabezados-alterno)" }}
                 >
-                  {hayFiltrosCatalogo
-                    ? `Vista · últimos ${contextoPedidos.dias} d`
-                    : `Global · últimos ${contextoPedidos.dias} d`}
+                  {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                    ? hayFiltrosCatalogo
+                      ? "Vista · rango de fechas"
+                      : "Global · rango de fechas"
+                    : hayFiltrosCatalogo
+                      ? `Vista · últimos ${contextoPedidos.dias} d`
+                      : `Global · últimos ${contextoPedidos.dias} d`}
                 </p>
               </div>
             </div>
@@ -866,9 +1007,13 @@ export default function PrediccionInventarioPage() {
                   className="text-xs mt-1 leading-snug"
                   style={{ color: "var(--encabezados-alterno)" }}
                 >
-                  {hayFiltrosCatalogo
-                    ? `Pedidos con líneas en vista · ${contextoPedidos.dias} d`
-                    : `Pedidos contables (API). Unidades: últimos ${contextoPedidos.dias} d`}
+                  {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                    ? hayFiltrosCatalogo
+                      ? "Pedidos con líneas en vista (rango)"
+                      : "Pedidos con líneas en rango (origen de datos)"
+                    : hayFiltrosCatalogo
+                      ? `Pedidos con líneas en vista · ${contextoPedidos.dias} d`
+                      : `Pedidos contables (API). Unidades: últimos ${contextoPedidos.dias} d`}
                 </p>
               </div>
             </div>
@@ -1013,8 +1158,13 @@ export default function PrediccionInventarioPage() {
                 key={d}
                 type="button"
                 size="sm"
-                variant={periodoDias === d ? "primary" : "outline"}
-                onClick={() => setPeriodoDias(d)}
+                variant={
+                  !rangoFechasActivo && periodoDias === d ? "primary" : "outline"
+                }
+                onClick={() => {
+                  setPeriodoDias(d);
+                  setRangoFechasActivo(false);
+                }}
               >
                 {d} días
               </Button>
@@ -1053,6 +1203,70 @@ export default function PrediccionInventarioPage() {
                 Revisar
               </Badge>
             )}
+            {rangoFechasActivo && rangoFechasParseado && (
+              <Badge variant="info" size="sm" className="sm:ml-1">
+                Rango de fechas
+              </Badge>
+            )}
+          </div>
+          <div
+            className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end border-t pt-3 mt-2"
+            style={sutilDivisor}
+          >
+            <span
+              className="text-sm font-semibold w-full sm:w-auto mr-0 sm:mr-2"
+              style={{ color: "var(--menu-texto-principal)" }}
+            >
+              Origen de ventas
+            </span>
+            <Input
+              type="date"
+              label="Desde"
+              value={rangoFechaInicio}
+              onChange={(e) => setRangoFechaInicio(e.target.value)}
+              className="w-full min-w-0 sm:w-40"
+            />
+            <Input
+              type="date"
+              label="Hasta"
+              value={rangoFechaFin}
+              onChange={(e) => setRangoFechaFin(e.target.value)}
+              className="w-full min-w-0 sm:w-40"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="primary"
+              onClick={aplicarRangoFechasOrigen}
+              disabled={!rangoFechasParseado}
+              title={
+                rangoFechasParseado
+                  ? "Usar pedidos cuya fecha cae en este rango (incl.)"
+                  : "Indica dos fechas válidas (inicio ≤ fin)"
+              }
+            >
+              Aplicar rango
+            </Button>
+            {rangoFechasActivo && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={restablecerVentanaAperiodo}
+              >
+                Volver a 7/30/90
+              </Button>
+            )}
+            {rangoFechaInicio &&
+              rangoFechaFin &&
+              !rangoFechasParseado && (
+                <span
+                  className="text-xs w-full"
+                  style={{ color: "var(--danger)" }}
+                >
+                  Fechas no válidas (revisa inicio y fin).
+                </span>
+              )}
           </div>
           <div
             className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end border-t pt-3"
@@ -1195,10 +1409,29 @@ export default function PrediccionInventarioPage() {
                       Período activo
                     </dt>
                     <dd
-                      className="font-semibold tabular-nums"
+                      className="font-semibold tabular-nums text-right"
                       style={{ color: "var(--menu-texto-principal)" }}
                     >
-                      {periodoDias} días
+                      {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado ? (
+                        <span className="block text-sm font-medium leading-snug">
+                          {rangoFechasParseado.inicio.toLocaleDateString("es-MX", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}{" "}
+                          –{" "}
+                          {rangoFechasParseado.fin.toLocaleDateString("es-MX", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                          <span className="block text-xs font-normal tabular-nums mt-0.5">
+                            {ventanaOrigenPedidos.dias} días
+                          </span>
+                        </span>
+                      ) : (
+                        `${periodoDias} días`
+                      )}
                     </dd>
                   </div>
                   <div
@@ -1825,6 +2058,138 @@ export default function PrediccionInventarioPage() {
                   >
                     Sin stock en catálogo para dibujar la curva.
                   </p>
+                )}
+              </Card>
+
+              <Card
+                variant="elevated"
+                padding="lg"
+                className="mb-6 rounded-2xl border-0"
+                style={superficieCard}
+              >
+                <h3
+                  className="text-base font-semibold mb-1 flex items-center gap-2"
+                  style={{ color: "var(--menu-texto-principal)" }}
+                >
+                  <CalendarDays
+                    className="h-5 w-5 shrink-0"
+                    style={{ color: "var(--iconografia)" }}
+                    aria-hidden
+                  />
+                  Origen de datos (ventas)
+                </h3>
+                <p
+                  className="text-xs mb-3"
+                  style={{ color: "var(--encabezados-alterno)" }}
+                >
+                  Suma de unidades por <strong>fecha de pedido</strong> en el
+                  rango actual (
+                  {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                    ? "rango fijo"
+                    : "últimos"}{" "}
+                  {ventanaOrigenPedidos.dias} d). Respeta los filtros de
+                  categoría y producto.
+                </p>
+                {loading ? (
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--encabezados-alterno)" }}
+                  >
+                    Cargando origen de ventas…
+                  </p>
+                ) : !graficaOrigenVentas || serieOrigenVentasDia.length === 0 ? (
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--encabezados-alterno)" }}
+                  >
+                    Sin ventas con fecha en el rango seleccionado, o aún no hay
+                    datos.
+                  </p>
+                ) : (
+                  <div
+                    className="w-full overflow-x-auto p-3 sm:p-4"
+                    style={chartWellStyle}
+                  >
+                    <svg
+                      viewBox={`0 0 ${graficaOrigenVentas.w} ${graficaOrigenVentas.h}`}
+                      width="100%"
+                      height="auto"
+                      className="min-h-[200px] max-h-[240px]"
+                      role="img"
+                      aria-label="Unidades de venta por día"
+                    >
+                      {[
+                        0,
+                        Math.round(graficaOrigenVentas.maxU / 2),
+                        graficaOrigenVentas.maxU,
+                      ].map((v, i) => {
+                        const y = graficaOrigenVentas.toY(v);
+                        return (
+                          <g key={`goy-${i}`}>
+                            <line
+                              x1={graficaOrigenVentas.padL}
+                              y1={y}
+                              x2={graficaOrigenVentas.w - graficaOrigenVentas.padR}
+                              y2={y}
+                              stroke="var(--encabezados-alterno)"
+                              strokeWidth="0.5"
+                              strokeDasharray="3 4"
+                              opacity={0.35}
+                            />
+                            <text
+                              x={graficaOrigenVentas.padL - 6}
+                              y={y + 4}
+                              textAnchor="end"
+                              fontSize="10"
+                              fill="var(--encabezados-alterno)"
+                            >
+                              {v}
+                            </text>
+                          </g>
+                        );
+                      })}
+                      {serieOrigenVentasDia.map((p, i) => {
+                        const cx = graficaOrigenVentas.toX(i);
+                        const yTop = graficaOrigenVentas.toY(p.u);
+                        const hBar = Math.max(
+                          0.5,
+                          graficaOrigenVentas.yBase - yTop,
+                        );
+                        return (
+                          <g key={p.clave}>
+                            <rect
+                              x={cx - graficaOrigenVentas.barW / 2}
+                              y={yTop}
+                              width={graficaOrigenVentas.barW}
+                              height={hBar}
+                              fill="var(--enlaces-textos-interactivos)"
+                              rx="2"
+                            />
+                            {serieOrigenVentasDia.length <= 14 && (
+                              <text
+                                x={cx}
+                                y={graficaOrigenVentas.h - 4}
+                                textAnchor="middle"
+                                fontSize="9"
+                                fill="var(--encabezados-alterno)"
+                              >
+                                {p.etiqueta}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    {serieOrigenVentasDia.length > 14 && (
+                      <p
+                        className="text-xs mt-2"
+                        style={{ color: "var(--encabezados-alterno)" }}
+                      >
+                        Eje horizontal: un punto por día en el rango. Barra
+                        baja o cero = sin unidades de venta ese día.
+                      </p>
+                    )}
+                  </div>
                 )}
               </Card>
 
