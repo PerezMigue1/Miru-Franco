@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Button from '../ui/Button';
+import { getMiPerfil } from '../../services/auth';
 import {
-  getMiPerfil,
   mergePerfilEnLocalStorage,
   patchMiPerfil,
   type PerfilUsuarioCompleto,

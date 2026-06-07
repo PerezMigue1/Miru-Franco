@@ -228,13 +228,6 @@ function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, u
   return body;
 }
 
-export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
-  const res = await apiClient.get<unknown>('/api/auth/me', BASE());
-  const obj = unwrapUsuarioPayload(res);
-  if (!obj) throw new Error('No se pudo leer el perfil');
-  return normalizarPerfilUsuario(obj);
-}
-
 export async function patchMiPerfil(payload: ActualizarMiPerfilPayload): Promise<PerfilUsuarioCompleto> {
   const body = cuerpoPatchAuthMe(payload);
   const res = await apiClient.patch<unknown>('/api/auth/me', body, BASE());

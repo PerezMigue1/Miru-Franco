@@ -43,8 +43,6 @@ export interface Usuario {
   creadoEn?: string;
   actualizadoEn?: string;
   ultimaActividad?: string | null;
-  /** Backend puede enviar _id en lugar de id */
-  _id?: string;
 }
 
 /** Item del catálogo de roles (GET /api/usuarios/roles). */
@@ -58,7 +56,6 @@ export interface RolCatalogoItem {
 
 type ApiUsuarioRaw = Record<string, unknown> & {
   id?: string;
-  _id?: string;
   nombre?: string;
   email?: string;
   telefono?: string | null;
@@ -136,7 +133,7 @@ function extraerRol(raw: ApiUsuarioRaw): string {
 }
 
 function normalizarUsuario(raw: ApiUsuarioRaw): Usuario {
-  const id = String(raw.id ?? raw._id ?? '');
+  const id = String(raw.id ?? '');
   const rolBruto = extraerRol(raw);
   const rol = String(rolBruto).toLowerCase().trim() || 'cliente';
   const perfilCapilar =
@@ -327,7 +324,7 @@ export async function getUsuarioById(id: string): Promise<Usuario> {
       (obj.data && typeof obj.data === 'object' ? obj.data as ApiUsuarioRaw : null) ??
       (obj.user && typeof obj.user === 'object' ? obj.user as ApiUsuarioRaw : null) ??
       (obj.usuario && typeof obj.usuario === 'object' ? obj.usuario as ApiUsuarioRaw : null) ??
-      ((obj.id != null || obj._id != null) && obj.email ? (obj as unknown as ApiUsuarioRaw) : null);
+      (obj.id != null && obj.email ? (obj as unknown as ApiUsuarioRaw) : null);
     if (data && typeof data === 'object') return normalizarUsuario(data);
     return null;
   }
@@ -415,7 +412,7 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
   // No enviar "rol" si el backend lo rechaza en el POST; asignar rol después con PATCH /api/usuarios/:id/rol
 
   const res = await apiClient.post<Record<string, unknown>>(
-    '/api/usuarios',
+    '/api/usuarios/registro',
     body,
     BASE()
   );
@@ -426,7 +423,7 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
     (obj.data && typeof obj.data === 'object' ? obj.data as ApiUsuarioRaw : null) ??
     (obj.user && typeof obj.user === 'object' ? obj.user as ApiUsuarioRaw : null) ??
     (obj.usuario && typeof obj.usuario === 'object' ? obj.usuario as ApiUsuarioRaw : null) ??
-    ((obj.id != null || obj._id != null) && obj.email ? (obj as unknown as ApiUsuarioRaw) : null);
+    (obj.id != null && obj.email ? (obj as unknown as ApiUsuarioRaw) : null);
 
   if (data && typeof data === 'object') return normalizarUsuario(data);
   throw new Error('El API no devolvió el usuario creado');
@@ -509,7 +506,7 @@ function normalizarNotificacionRelacionada(raw: Record<string, unknown>): Usuari
 
 function normalizarDireccionRelacionada(raw: Record<string, unknown>): UsuarioDireccionRelacionada {
   return {
-    id: String(raw.id ?? raw._id ?? ''),
+    id: String(raw.id ?? ''),
     calle: raw.calle != null ? String(raw.calle) : undefined,
     coloniaBarrio: raw.coloniaBarrio != null ? String(raw.coloniaBarrio) : raw.colonia_barrio != null ? String(raw.colonia_barrio) : undefined,
     municipioAlcaldia: raw.municipioAlcaldia != null ? String(raw.municipioAlcaldia) : raw.municipio_alcaldia != null ? String(raw.municipio_alcaldia) : undefined,

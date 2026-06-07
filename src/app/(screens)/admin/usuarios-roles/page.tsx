@@ -54,7 +54,7 @@ export default function UsuariosRolesPage() {
   const [formFechaNacimiento, setFormFechaNacimiento] = useState('');
   const [formPregunta, setFormPregunta] = useState('');
   const [formRespuesta, setFormRespuesta] = useState('');
-  const [preguntasSeguridad, setPreguntasSeguridad] = useState<Array<{ _id?: string; pregunta: string }>>([]);
+  const [preguntasSeguridad, setPreguntasSeguridad] = useState<Array<{ id?: string; pregunta: string }>>([]);
   const [loadingPreguntas, setLoadingPreguntas] = useState(false);
   const [verificandoEmail, setVerificandoEmail] = useState(false);
   const [emailYaRegistrado, setEmailYaRegistrado] = useState(false);
@@ -120,10 +120,10 @@ export default function UsuariosRolesPage() {
       authApi
         .getAvailableSecurityQuestions()
         .then((data) => {
-          const questions = (data.questions || []).map((q: { _id?: string; pregunta?: string; question?: string } | string) =>
+          const questions = (data.questions || []).map((q: { id?: string; pregunta?: string; question?: string } | string) =>
             typeof q === 'string'
               ? { pregunta: q }
-              : { _id: (q as { _id?: string })._id, pregunta: (q as { pregunta?: string }).pregunta || (q as { question?: string }).question || '' }
+              : { id: (q as { id?: string }).id, pregunta: (q as { pregunta?: string }).pregunta || (q as { question?: string }).question || '' }
           );
           setPreguntasSeguridad(questions);
         })

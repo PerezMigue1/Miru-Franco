@@ -25,6 +25,7 @@ export default function Header() {
   const [userName, setUserName] = useState<string>('Usuario');
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [notificationsCount, setNotificationsCount] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
 
   const syncUserFromStorage = () => {
     const token = getToken();
@@ -105,6 +106,27 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isUserMenuOpen]);
 
+  // Backdrop-blur al hacer scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Bloquear scroll del body cuando el menú está abierto
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMenuOpen]);
+
+  // Cerrar menú con Escape
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMenuOpen]);
+
   // ✅ Logout individual (solo este dispositivo)
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
@@ -149,15 +171,19 @@ export default function Header() {
   return (
     <>
       {/* Barra Superior - Top Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 shadow-sm bg-header-footer">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg backdrop-blur-sm' : 'shadow-sm'}`}
+        style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
+      >
         <div className="layout-page">
-          <div className="flex items-center justify-between" style={{ minHeight: '56px', padding: '8px 0' }}>
+          <div className="flex items-center gap-3" style={{ minHeight: '56px', padding: '8px 0' }}>
             {/* Izquierda: Menu + Logo */}
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                className="flex items-center justify-center hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                 aria-label="Menu"
+                style={{ minHeight: '44px', minWidth: '44px' }}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {isMenuOpen ? (
@@ -206,7 +232,7 @@ export default function Header() {
             </div>
 
             {/* Derecha: Tema + Carrito + Notificaciones + Usuario */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 ml-auto">
               <ThemeToggle />
               {/* Carrito */}
               <Link
@@ -397,26 +423,26 @@ export default function Header() {
                   Iniciar sesión
                 </Link>
               )}
+
             </div>
           </div>
         </div>
       </header>
 
-      {/* Menú Hamburguesa */}
+      {/* Menú móvil — panel lateral */}
       {isMenuOpen && (
-        <div 
-          className="fixed left-0 w-80 h-[calc(100vh-72px)] z-50 overflow-y-auto scrollbar-hide shadow-xl bg-white dark:bg-[#710014] top-[72px]"
-        >
-          <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
-        </div>
-      )}
-
-      {/* Overlay para cerrar el menú */}
-      {isMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setIsMenuOpen(false)}
-        />
+        <>
+          <div
+            className="fixed left-0 top-0 h-full w-80 z-50 shadow-2xl overflow-y-auto scrollbar-hide"
+            style={{ backgroundColor: 'var(--header-footer)' }}
+          >
+            <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
+          </div>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMenuOpen(false)}
+          />
+        </>
       )}
 
       {/* Barra de Navegación Secundaria */}

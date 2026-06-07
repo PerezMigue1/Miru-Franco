@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "api-design": {
+      "source": "aaronontheweb/dotnet-skills",
+      "sourceType": "github",
+      "skillPath": "skills/csharp-api-design/SKILL.md",
+      "computedHash": "9b627f15b93e77f017dd7b649503baa32895fa081e8379934aa63038bb90a689"
+    },
+    "code-review": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "engineering/skills/code-review/SKILL.md",
+      "computedHash": "2b1ac29c8d03ecdd6dbb9d0ebc8cdb05965151bedceed36f262546785b3123bc"
+    },
+    "firecrawl": {
+      "source": "firecrawl/cli",
+      "sourceType": "github",
+      "skillPath": "skills/firecrawl-cli/SKILL.md",
+      "computedHash": "f6d0f199ff10480f9ba20e4977c05fadaa4b922dc72755453c7ade2f17f47170"
+    },
+    "nestjs": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/developer-kit-typescript/skills/nestjs/SKILL.md",
+      "computedHash": "c9771be6c8e742c4451a127005cf45b60c02c0e06f1e61f72b5c0db1dfb21595"
+    },
+    "react-native-skills": {
+      "source": "secondsky/claude-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/react-native-skills/skills/react-native-skills/SKILL.md",
+      "computedHash": "b515c73066c0bc085a7428c9639e973ecdfd65346d1fa777f003629586bbef26"
+    },
+    "security-guidance": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "skillPath": "engineering/security-guidance/skills/security-guidance/SKILL.md",
+      "computedHash": "9696b2ea15fb42daea2639d8dc11252692d36c0b4ae6c0a954b85dc681a91e30"
+    },
+    "senior-backend": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "skillPath": "engineering-team/skills/senior-backend/SKILL.md",
+      "computedHash": "a6b153be472ee0eb8d650635e0131f36de895370f3d74a24688b331479fc815e"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    }
+  }
+}

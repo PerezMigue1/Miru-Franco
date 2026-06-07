@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
@@ -16,8 +17,8 @@ import {
   actualizarPedido,
   type EstadoPedidoUi,
 } from '../../../../../services/ecommerce';
+import { getMiPerfil } from '../../../../../services/auth';
 import {
-  getMiPerfil,
   listarDireccionesUsuario,
   type DireccionUsuarioDTO,
 } from '../../../../../services/perfil';
@@ -99,13 +100,21 @@ function textoHumanoMsiParaUi(msi: Record<string, unknown>): string | null {
   return null;
 }
 
-type ErroresTarjeta = Partial<
-  Record<
-    'numeroTarjeta' | 'nombreTitular' | 'fechaVencimiento' | 'cvv' | 'mesesMSI' | 'coherenciaTipo',
-    string
-  >
->;
-type ErroresContacto = Partial<Record<'nombre' | 'apellidos' | 'email' | 'telefono' | 'rfcFactura', string>>;
+interface ContactoFormValues {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  telefono: string;
+  rfcFactura: string;
+}
+
+interface TarjetaFormValues {
+  numeroTarjeta: string;
+  nombreTitular: string;
+  fechaVencimiento: string;
+  cvv: string;
+  mesesMSI: string;
+}
 
 function soloDigitos(s: string): string {
   return s.replace(/\D/g, '');
@@ -245,33 +254,42 @@ export default function CheckoutPage() {
    */
   const [paso, setPaso] = useState(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [erroresTarjeta, setErroresTarjeta] = useState<ErroresTarjeta>({});
-  const [erroresContacto, setErroresContacto] = useState<ErroresContacto>({});
   const [submitting, setSubmitting] = useState(false);
 
   const [tipoEntrega, setTipoEntrega] = useState<'domicilio' | 'retiro'>('domicilio');
 
-  const [datosPersonales, setDatosPersonales] = useState({
-    nombre: '',
-    apellidos: '',
-    email: '',
-    telefono: '',
-  });
-
   const [direcciones, setDirecciones] = useState<DireccionUsuarioDTO[]>([]);
   const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState('');
 
-  const [metodoPago, setMetodoPago] = useState({
-    tipo: '',
-    numeroTarjeta: '',
-    nombreTitular: '',
-    fechaVencimiento: '',
-    cvv: '',
+  const [metodoPago, setMetodoPago] = useState({ tipo: '' });
+
+  const [solicitaFactura, setSolicitaFactura] = useState(false);
+
+  const {
+    register: regContacto,
+    reset: resetContacto,
+    getValues: getContactoValues,
+    trigger: triggerContacto,
+    formState: { errors: contactoErrors },
+  } = useForm<ContactoFormValues>({
+    mode: 'onBlur',
+    defaultValues: { nombre: '', apellidos: '', email: '', telefono: '', rfcFactura: '' },
   });
 
-  const [mesesMSI, setMesesMSI] = useState('1');
-  const [solicitaFactura, setSolicitaFactura] = useState(false);
-  const [rfcFactura, setRfcFactura] = useState('');
+  const {
+    setValue: setTarjetaValue,
+    getValues: getTarjetaValues,
+    watch: watchTarjeta,
+    trigger: triggerTarjeta,
+    control: tarjetaControl,
+    reset: resetTarjeta,
+    formState: { errors: tarjetaErrors },
+  } = useForm<TarjetaFormValues>({
+    mode: 'onBlur',
+    defaultValues: { numeroTarjeta: '', nombreTitular: '', fechaVencimiento: '', cvv: '', mesesMSI: '1' },
+  });
+
+  const tarjetaValues = watchTarjeta();
 
   const [cargandoPerfilCheckout, setCargandoPerfilCheckout] = useState(true);
   const [tarjetaGuardadaId, setTarjetaGuardadaId] = useState<string | null>(null);
@@ -365,11 +383,12 @@ export default function CheckoutPage() {
         if (cancelled) return;
         const baseNombre = splitNombreCompleto(perfil.nombre);
         const apellidosApi = perfil.apellidos?.trim();
-        setDatosPersonales({
+        resetContacto({
           nombre: baseNombre.nombre,
           apellidos: apellidosApi && apellidosApi.length > 0 ? apellidosApi : baseNombre.apellidos,
           email: perfil.email ?? '',
           telefono: perfil.telefono ?? '',
+          rfcFactura: '',
         });
         const dirList =
           perfil.direcciones && perfil.direcciones.length > 0 ? perfil.direcciones : list;
@@ -452,7 +471,7 @@ export default function CheckoutPage() {
       setBinTipoTarjeta(null);
       return;
     }
-    const digits = metodoPago.numeroTarjeta.replace(/\D/g, '');
+    const digits = tarjetaValues.numeroTarjeta.replace(/\D/g, '');
     if (digits.length < 6) {
       setBinAyuda(null);
       setMarcaTarjetaDeBin(null);
@@ -498,7 +517,7 @@ export default function CheckoutPage() {
       })();
     }, 450);
     return () => window.clearTimeout(t);
-  }, [esTarjeta, esTarjetaCredito, paso, pasoDatosTarjeta, tarjetaGuardadaId, metodoPago.numeroTarjeta]);
+  }, [esTarjeta, esTarjetaCredito, paso, pasoDatosTarjeta, tarjetaGuardadaId, tarjetaValues.numeroTarjeta]);
 
   const bancoEmisorParaTarjeta = useMemo(() => {
     if (tarjetaGuardadaId) {
@@ -575,7 +594,7 @@ export default function CheckoutPage() {
       }
       return null;
     }
-    const digits = metodoPago.numeroTarjeta.replace(/\D/g, '');
+    const digits = getTarjetaValues('numeroTarjeta').replace(/\D/g, '');
     if (digits.length < 6) return null;
     if (!binTipoTarjeta) return null;
     if (metodoPago.tipo === 'tarjeta_credito' && binTipoTarjeta === 'debito') {
@@ -608,139 +627,6 @@ export default function CheckoutPage() {
     return true;
   };
 
-  const validarPasoMensualidadCredito = (): boolean => {
-    const okMsi = OPCIONES_MSI.some((o) => o.value === mesesMSI);
-    if (!okMsi) {
-      setErroresTarjeta({ mesesMSI: 'Elige una opción de meses sin intereses.' });
-      setSubmitError('Elige la mensualidad o meses sin intereses antes de continuar.');
-      return false;
-    }
-    setErroresTarjeta((prev) => {
-      const next = { ...prev };
-      delete next.mesesMSI;
-      return next;
-    });
-    return true;
-  };
-
-  const validarPasoDatosTarjeta = (): boolean => {
-    if (!esTarjeta) return true;
-
-    const coh = coherenciaTipoTarjetaMensaje();
-    if (coh) {
-      setErroresTarjeta((prev) => ({ ...prev, coherenciaTipo: coh }));
-      setSubmitError(coh);
-      return false;
-    }
-
-    if (tarjetaGuardadaId !== null) {
-      setErroresTarjeta({});
-      return true;
-    }
-
-    const errs: ErroresTarjeta = {};
-    const numErr = errorNumeroTarjeta(metodoPago.numeroTarjeta);
-    if (numErr) errs.numeroTarjeta = numErr;
-    const nomErr = errorNombreTitular(metodoPago.nombreTitular);
-    if (nomErr) errs.nombreTitular = nomErr;
-    const venErr = errorVencimiento(metodoPago.fechaVencimiento);
-    if (venErr) errs.fechaVencimiento = venErr;
-    const cvvErr = errorCvv(metodoPago.cvv);
-    if (cvvErr) errs.cvv = cvvErr;
-
-    if (Object.keys(errs).length > 0) {
-      setErroresTarjeta(errs);
-      setSubmitError('Revisa los datos de la tarjeta antes de continuar.');
-      return false;
-    }
-    setErroresTarjeta({});
-    return true;
-  };
-
-  const validarDatosContacto = (): boolean => {
-    const errs: ErroresContacto = {};
-    if (!datosPersonales.nombre.trim()) errs.nombre = 'Indica tu nombre.';
-    if (!datosPersonales.apellidos.trim()) errs.apellidos = 'Indica tus apellidos.';
-    if (!datosPersonales.email.trim()) errs.email = 'Indica tu correo electrónico.';
-    else if (!emailValido(datosPersonales.email)) errs.email = 'El correo no tiene un formato válido.';
-    if (!datosPersonales.telefono.trim()) errs.telefono = 'Indica un teléfono de contacto.';
-    else if (!telefonoValidoMx(datosPersonales.telefono)) {
-      errs.telefono = 'El teléfono debe incluir al menos 10 dígitos.';
-    }
-    if (solicitaFactura) {
-      const r = rfcFactura.trim().toUpperCase();
-      if (!r) errs.rfcFactura = 'Indica el RFC o desmarca “Solicito factura”.';
-      else if (!rfcMexicoBasico(r)) {
-        errs.rfcFactura = 'RFC inválido (revisa formato, 12 o 13 caracteres).';
-      }
-    }
-
-    if (Object.keys(errs).length > 0) {
-      setErroresContacto(errs);
-      setSubmitError('Revisa los datos de contacto antes de finalizar.');
-      return false;
-    }
-    setErroresContacto({});
-    return true;
-  };
-
-  /** Valida un campo de tarjeta al salir del input (feedback inmediato). */
-  const blurValidarTarjeta = (campo: keyof ErroresTarjeta) => {
-    if (tarjetaGuardadaId !== null) return;
-    if (campo === 'coherenciaTipo') return;
-    setErroresTarjeta((prev) => {
-      const next = { ...prev };
-      let msg: string | null = null;
-      if (campo === 'numeroTarjeta') msg = errorNumeroTarjeta(metodoPago.numeroTarjeta);
-      else if (campo === 'nombreTitular') msg = errorNombreTitular(metodoPago.nombreTitular);
-      else if (campo === 'fechaVencimiento') msg = errorVencimiento(metodoPago.fechaVencimiento);
-      else if (campo === 'cvv') {
-        msg = errorCvv(metodoPago.cvv);
-      } else if (campo === 'mesesMSI') {
-        if (esTarjetaCredito && !OPCIONES_MSI.some((o) => o.value === mesesMSI)) {
-          msg = 'Elige una opción de meses sin intereses.';
-        }
-      }
-      if (msg) next[campo] = msg;
-      else delete next[campo];
-
-      const coh = coherenciaTipoTarjetaMensaje();
-      if (coh) next.coherenciaTipo = coh;
-      else delete next.coherenciaTipo;
-
-      return next;
-    });
-  };
-
-  const blurValidarContacto = (campo: keyof ErroresContacto) => {
-    setErroresContacto((prev) => {
-      const next = { ...prev };
-      let msg: string | null = null;
-      if (campo === 'nombre') {
-        if (!datosPersonales.nombre.trim()) msg = 'Indica tu nombre.';
-      } else if (campo === 'apellidos') {
-        if (!datosPersonales.apellidos.trim()) msg = 'Indica tus apellidos.';
-      } else if (campo === 'email') {
-        if (!datosPersonales.email.trim()) msg = 'Indica tu correo electrónico.';
-        else if (!emailValido(datosPersonales.email)) msg = 'El correo no tiene un formato válido.';
-      } else if (campo === 'telefono') {
-        if (!datosPersonales.telefono.trim()) msg = 'Indica un teléfono de contacto.';
-        else if (!telefonoValidoMx(datosPersonales.telefono)) {
-          msg = 'El teléfono debe incluir al menos 10 dígitos.';
-        }
-      } else if (campo === 'rfcFactura' && solicitaFactura) {
-        const r = rfcFactura.trim().toUpperCase();
-        if (!r) msg = 'Indica el RFC o desmarca “Solicito factura”.';
-        else if (!rfcMexicoBasico(r)) {
-          msg = 'RFC inválido (revisa formato, 12 o 13 caracteres).';
-        }
-      }
-      if (msg) next[campo] = msg;
-      else delete next[campo];
-      return next;
-    });
-  };
-
   const ejecutarCompra = async () => {
     if (!hasValidToken()) {
       const msg = 'Inicia sesión para completar la compra.';
@@ -749,7 +635,10 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!validarDatosContacto()) return;
+    if (!(await triggerContacto())) {
+      setSubmitError('Revisa los datos de contacto antes de finalizar.');
+      return;
+    }
     setSubmitError(null);
 
     const errLineas = mensajeErrorLineasNoVendibles(items);
@@ -762,14 +651,14 @@ export default function CheckoutPage() {
     try {
       const textoDir = textoDireccionPedido();
       let notasCliente = construirNotasClienteVenta({
-        telefono: datosPersonales.telefono,
-        nombreContacto: datosPersonales.nombre,
-        apellidosContacto: datosPersonales.apellidos,
+        telefono: getContactoValues('telefono'),
+        nombreContacto: getContactoValues('nombre'),
+        apellidosContacto: getContactoValues('apellidos'),
         tipoEntrega,
         esTarjeta,
-        mesesMSI: esTarjetaCredito ? mesesMSI : '1',
+        mesesMSI: esTarjetaCredito ? getTarjetaValues('mesesMSI') : '1',
         solicitaFactura,
-        rfcFactura: solicitaFactura ? rfcFactura : undefined,
+        rfcFactura: solicitaFactura ? getContactoValues('rfcFactura') : undefined,
       });
       if (esTarjeta) {
         const tipoTxt =
@@ -849,12 +738,12 @@ export default function CheckoutPage() {
   };
 
   const guardarTarjetaManualEnPerfil = async (): Promise<string> => {
-    const num = metodoPago.numeroTarjeta.replace(/\D/g, '');
+    const num = getTarjetaValues('numeroTarjeta').replace(/\D/g, '');
     if (num.length !== 16) {
       throw new Error('Número de tarjeta incompleto para guardado.');
     }
     const ult4 = num.slice(-4);
-    const [mmRaw, yyRaw] = metodoPago.fechaVencimiento.split('/');
+    const [mmRaw, yyRaw] = getTarjetaValues('fechaVencimiento').split('/');
     const mm = parseInt(mmRaw || '', 10);
     const yy = parseInt(yyRaw || '', 10);
     const expMes = Number.isFinite(mm) ? mm : undefined;
@@ -893,37 +782,30 @@ export default function CheckoutPage() {
     }
     if (paso === 3) {
       if (!validarPaso3()) return;
-      setErroresTarjeta({});
       if (metodoPago.tipo === 'tarjeta_credito' || metodoPago.tipo === 'tarjeta_debito') {
         if (tarjetaGuardadaId !== null) {
-          if (metodoPago.tipo === 'tarjeta_credito') setPaso(5);
-          else {
-            setErroresContacto({});
-            setPaso(5);
-          }
+          setPaso(5);
         } else {
           setPaso(4);
         }
       } else {
-        setErroresContacto({});
         setPaso(5);
       }
       return;
     }
     if (paso === 4 && esTarjeta) {
-      if (!validarPasoDatosTarjeta()) return;
+      const coh = coherenciaTipoTarjetaMensaje();
+      if (coh) { setSubmitError(coh); return; }
       if (tarjetaGuardadaId === null) {
+        if (!(await triggerTarjeta(['numeroTarjeta', 'nombreTitular', 'fechaVencimiento', 'cvv']))) {
+          setSubmitError('Revisa los datos de la tarjeta antes de continuar.');
+          return;
+        }
         setSavingMetodoPago(true);
         try {
           const nuevoId = await guardarTarjetaManualEnPerfil();
           setTarjetaGuardadaId(nuevoId);
-          setMetodoPago((prev) => ({
-            ...prev,
-            numeroTarjeta: '',
-            nombreTitular: '',
-            fechaVencimiento: '',
-            cvv: '',
-          }));
+          resetTarjeta({ numeroTarjeta: '', nombreTitular: '', fechaVencimiento: '', cvv: '', mesesMSI: getTarjetaValues('mesesMSI') });
           setPaso(3);
           setSubmitError(null);
           showToast('Tarjeta guardada y seleccionada para este checkout.', 'success');
@@ -936,17 +818,14 @@ export default function CheckoutPage() {
           setSavingMetodoPago(false);
         }
       }
-      if (esTarjetaCredito) {
-        setPaso(5);
-      } else {
-        setErroresContacto({});
-        setPaso(5);
-      }
+      setPaso(5);
       return;
     }
     if (paso === 5 && esTarjetaCredito) {
-      if (!validarPasoMensualidadCredito()) return;
-      setErroresContacto({});
+      if (!(await triggerTarjeta(['mesesMSI']))) {
+        setSubmitError('Elige la mensualidad o meses sin intereses antes de continuar.');
+        return;
+      }
       setPaso(6);
       return;
     }
@@ -958,7 +837,6 @@ export default function CheckoutPage() {
   const manejarAnterior = () => {
     setSubmitError(null);
     if (paso === pasoRevision) {
-      setErroresContacto({});
       if (esTarjetaCredito) {
         setPaso(5);
       } else if (esTarjeta) {
@@ -970,17 +848,11 @@ export default function CheckoutPage() {
       return;
     }
     if (esTarjetaCredito && paso === 5) {
-      setErroresTarjeta((prev) => {
-        const next = { ...prev };
-        delete next.mesesMSI;
-        return next;
-      });
       if (tarjetaGuardadaId !== null) setPaso(3);
       else setPaso(4);
       return;
     }
     if (paso === 4 && esTarjeta) {
-      setErroresTarjeta({});
       setPaso(3);
       return;
     }
@@ -1247,7 +1119,7 @@ export default function CheckoutPage() {
                             tipo,
                           });
                           setTarjetaGuardadaId(null);
-                          if (tipo === 'tarjeta_debito') setMesesMSI('1');
+                          if (tipo === 'tarjeta_debito') setTarjetaValue('mesesMSI', '1');
                         }}
                       />
                       <span style={{ color: 'var(--menu-texto-principal)' }}>{opt.label}</span>
@@ -1292,7 +1164,7 @@ export default function CheckoutPage() {
                                     ...prev,
                                     tipo: tipoRaw === 'debito' ? 'tarjeta_debito' : 'tarjeta_credito',
                                   }));
-                                  if (tipoRaw === 'debito') setMesesMSI('1');
+                                  if (tipoRaw === 'debito') setTarjetaValue('mesesMSI', '1');
                                 }}
                               />
                               <span
@@ -1347,17 +1219,9 @@ export default function CheckoutPage() {
                 <Select
                   label="Meses sin intereses"
                   options={OPCIONES_MSI}
-                  value={mesesMSI}
-                  error={erroresTarjeta.mesesMSI}
-                  onChange={(e) => {
-                    setMesesMSI(e.target.value);
-                    setErroresTarjeta((p) => {
-                      const n = { ...p };
-                      delete n.mesesMSI;
-                      return n;
-                    });
-                  }}
-                  onBlur={() => blurValidarTarjeta('mesesMSI')}
+                  value={tarjetaValues.mesesMSI}
+                  error={tarjetaErrors.mesesMSI?.message}
+                  onChange={(e) => setTarjetaValue('mesesMSI', e.target.value, { shouldValidate: true })}
                   fullWidth
                 />
               </Card>
@@ -1381,23 +1245,23 @@ export default function CheckoutPage() {
                   <CheckoutTarjetaAnimada
                     variant={esTarjetaCredito ? 'credito' : 'debito'}
                     animarEntrada={paso === pasoDatosTarjeta}
-                    numeroTarjeta={metodoPago.numeroTarjeta}
-                    nombreTitular={metodoPago.nombreTitular}
-                    fechaVencimiento={metodoPago.fechaVencimiento}
-                    cvv={metodoPago.cvv}
+                    numeroTarjeta={tarjetaValues.numeroTarjeta}
+                    nombreTitular={tarjetaValues.nombreTitular}
+                    fechaVencimiento={tarjetaValues.fechaVencimiento}
+                    cvv={tarjetaValues.cvv}
                     enfocadoCvv={enfocadoCvv}
                     marcaTarjeta={marcaParaTarjeta}
                     bancoEmisor={bancoEmisorParaTarjeta}
                   />
 
                   <div className="space-y-4 min-w-0">
-                    {erroresTarjeta.coherenciaTipo && (
+                    {coherenciaTipoTarjetaMensaje() && (
                       <p
                         className="text-sm rounded-md px-3 py-2"
                         style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger)' }}
                         role="alert"
                       >
-                        {erroresTarjeta.coherenciaTipo}
+                        {coherenciaTipoTarjetaMensaje()}
                       </p>
                     )}
 
@@ -1421,100 +1285,81 @@ export default function CheckoutPage() {
                         {binAyuda}
                       </p>
                     )}
-                    <Input
-                      label="Número de tarjeta"
-                      value={metodoPago.numeroTarjeta}
-                      error={erroresTarjeta.numeroTarjeta}
-                      onChange={(e) => {
-                        setMetodoPago({
-                          ...metodoPago,
-                          numeroTarjeta: formatearInputNumeroTarjeta(e.target.value),
-                        });
-                        setErroresTarjeta((p) => {
-                          const n = { ...p };
-                          delete n.numeroTarjeta;
-                          delete n.coherenciaTipo;
-                          return n;
-                        });
-                      }}
-                      onBlur={() => blurValidarTarjeta('numeroTarjeta')}
-                      fullWidth
-                      placeholder="0000 0000 0000 0000"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      maxLength={19}
+                    <Controller
+                      name="numeroTarjeta"
+                      control={tarjetaControl}
+                      rules={{ validate: (v) => errorNumeroTarjeta(v) ?? true }}
+                      render={({ field, fieldState }) => (
+                        <Input
+                          label="Número de tarjeta"
+                          {...field}
+                          onChange={(e) => field.onChange(formatearInputNumeroTarjeta(e.target.value))}
+                          error={fieldState.error?.message}
+                          fullWidth
+                          placeholder="0000 0000 0000 0000"
+                          inputMode="numeric"
+                          autoComplete="cc-number"
+                          maxLength={19}
+                        />
+                      )}
                     />
-                    <Input
-                      label="Nombre del titular"
-                      value={metodoPago.nombreTitular}
-                      error={erroresTarjeta.nombreTitular}
-                      onChange={(e) => {
-                        setMetodoPago({
-                          ...metodoPago,
-                          nombreTitular: sanitizarNombreTitular(e.target.value),
-                        });
-                        setErroresTarjeta((p) => {
-                          const n = { ...p };
-                          delete n.nombreTitular;
-                          return n;
-                        });
-                      }}
-                      onBlur={() => blurValidarTarjeta('nombreTitular')}
-                      fullWidth
-                      placeholder="Miguel Angel Perez De La Cruz"
-                      autoComplete="cc-name"
-                      maxLength={80}
-                      spellCheck={false}
+                    <Controller
+                      name="nombreTitular"
+                      control={tarjetaControl}
+                      rules={{ validate: (v) => errorNombreTitular(v) ?? true }}
+                      render={({ field, fieldState }) => (
+                        <Input
+                          label="Nombre del titular"
+                          {...field}
+                          onChange={(e) => field.onChange(sanitizarNombreTitular(e.target.value))}
+                          error={fieldState.error?.message}
+                          fullWidth
+                          placeholder="Miguel Angel Perez De La Cruz"
+                          autoComplete="cc-name"
+                          maxLength={80}
+                          spellCheck={false}
+                        />
+                      )}
                     />
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Vencimiento"
-                        value={metodoPago.fechaVencimiento}
-                        error={erroresTarjeta.fechaVencimiento}
-                        onChange={(e) => {
-                          setMetodoPago({
-                            ...metodoPago,
-                            fechaVencimiento: formatearInputVencimiento(e.target.value),
-                          });
-                          setErroresTarjeta((p) => {
-                            const n = { ...p };
-                            delete n.fechaVencimiento;
-                            return n;
-                          });
-                        }}
-                        onBlur={() => blurValidarTarjeta('fechaVencimiento')}
-                        fullWidth
-                        placeholder="MM/AA"
-                        inputMode="numeric"
-                        autoComplete="cc-exp"
-                        maxLength={5}
+                      <Controller
+                        name="fechaVencimiento"
+                        control={tarjetaControl}
+                        rules={{ validate: (v) => errorVencimiento(v) ?? true }}
+                        render={({ field, fieldState }) => (
+                          <Input
+                            label="Vencimiento"
+                            {...field}
+                            onChange={(e) => field.onChange(formatearInputVencimiento(e.target.value))}
+                            error={fieldState.error?.message}
+                            fullWidth
+                            placeholder="MM/AA"
+                            inputMode="numeric"
+                            autoComplete="cc-exp"
+                            maxLength={5}
+                          />
+                        )}
                       />
-                      <Input
-                        label="CVC"
-                        type="password"
-                        value={metodoPago.cvv}
-                        error={erroresTarjeta.cvv}
-                        onChange={(e) => {
-                          setMetodoPago({
-                            ...metodoPago,
-                            cvv: sanitizarCvv(e.target.value),
-                          });
-                          setErroresTarjeta((p) => {
-                            const n = { ...p };
-                            delete n.cvv;
-                            return n;
-                          });
-                        }}
-                        onFocus={() => setEnfocadoCvv(true)}
-                        onBlur={() => {
-                          setEnfocadoCvv(false);
-                          blurValidarTarjeta('cvv');
-                        }}
-                        fullWidth
-                        placeholder="123"
-                        inputMode="numeric"
-                        autoComplete="cc-csc"
-                        maxLength={3}
+                      <Controller
+                        name="cvv"
+                        control={tarjetaControl}
+                        rules={{ validate: (v) => errorCvv(v) ?? true }}
+                        render={({ field, fieldState }) => (
+                          <Input
+                            label="CVC"
+                            type="password"
+                            {...field}
+                            onChange={(e) => field.onChange(sanitizarCvv(e.target.value))}
+                            onFocus={() => setEnfocadoCvv(true)}
+                            onBlur={() => { setEnfocadoCvv(false); void field.onBlur(); }}
+                            error={fieldState.error?.message}
+                            fullWidth
+                            placeholder="123"
+                            inputMode="numeric"
+                            autoComplete="cc-csc"
+                            maxLength={3}
+                          />
+                        )}
                       />
                     </div>
                   </div>
@@ -1543,83 +1388,44 @@ export default function CheckoutPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         label="Nombre"
-                        value={datosPersonales.nombre}
-                        error={erroresContacto.nombre}
-                        onChange={(e) => {
-                          setDatosPersonales({ ...datosPersonales, nombre: e.target.value });
-                          setErroresContacto((p) => {
-                            const n = { ...p };
-                            delete n.nombre;
-                            return n;
-                          });
-                        }}
-                        onBlur={() => blurValidarContacto('nombre')}
+                        error={contactoErrors.nombre?.message}
                         fullWidth
+                        {...regContacto('nombre', { required: 'Indica tu nombre.' })}
                       />
                       <Input
                         label="Apellidos"
-                        value={datosPersonales.apellidos}
-                        error={erroresContacto.apellidos}
-                        onChange={(e) => {
-                          setDatosPersonales({ ...datosPersonales, apellidos: e.target.value });
-                          setErroresContacto((p) => {
-                            const n = { ...p };
-                            delete n.apellidos;
-                            return n;
-                          });
-                        }}
-                        onBlur={() => blurValidarContacto('apellidos')}
+                        error={contactoErrors.apellidos?.message}
                         fullWidth
+                        {...regContacto('apellidos', { required: 'Indica tus apellidos.' })}
                       />
                     </div>
                     <Input
                       label="Correo"
                       type="email"
                       className="mt-4"
-                      value={datosPersonales.email}
-                      error={erroresContacto.email}
-                      onChange={(e) => {
-                        setDatosPersonales({ ...datosPersonales, email: e.target.value });
-                        setErroresContacto((p) => {
-                          const n = { ...p };
-                          delete n.email;
-                          return n;
-                        });
-                      }}
-                      onBlur={() => blurValidarContacto('email')}
+                      error={contactoErrors.email?.message}
                       fullWidth
+                      {...regContacto('email', {
+                        required: 'Indica tu correo electrónico.',
+                        validate: (v) => emailValido(v) || 'El correo no tiene un formato válido.',
+                      })}
                     />
                     <Input
                       label="Teléfono"
                       type="tel"
                       className="mt-4"
-                      value={datosPersonales.telefono}
-                      error={erroresContacto.telefono}
-                      onChange={(e) => {
-                        setDatosPersonales({ ...datosPersonales, telefono: e.target.value });
-                        setErroresContacto((p) => {
-                          const n = { ...p };
-                          delete n.telefono;
-                          return n;
-                        });
-                      }}
-                      onBlur={() => blurValidarContacto('telefono')}
+                      error={contactoErrors.telefono?.message}
                       fullWidth
+                      {...regContacto('telefono', {
+                        required: 'Indica un teléfono de contacto.',
+                        validate: (v) => telefonoValidoMx(v) || 'El teléfono debe incluir al menos 10 dígitos.',
+                      })}
                     />
                     <label className="flex items-center gap-2 mt-4 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={solicitaFactura}
-                        onChange={(e) => {
-                          setSolicitaFactura(e.target.checked);
-                          if (!e.target.checked) {
-                            setErroresContacto((p) => {
-                              const n = { ...p };
-                              delete n.rfcFactura;
-                              return n;
-                            });
-                          }
-                        }}
+                        onChange={(e) => setSolicitaFactura(e.target.checked)}
                       />
                       <span style={{ color: 'var(--menu-texto-principal)' }}>Solicito factura fiscal (CFDI)</span>
                     </label>
@@ -1627,19 +1433,21 @@ export default function CheckoutPage() {
                       <Input
                         label="RFC"
                         className="mt-3"
-                        value={rfcFactura}
-                        error={erroresContacto.rfcFactura}
-                        onChange={(e) => {
-                          setRfcFactura(e.target.value.toUpperCase());
-                          setErroresContacto((p) => {
-                            const n = { ...p };
-                            delete n.rfcFactura;
-                            return n;
-                          });
-                        }}
-                        onBlur={() => blurValidarContacto('rfcFactura')}
+                        error={contactoErrors.rfcFactura?.message}
                         fullWidth
                         placeholder="XAXX010101000"
+                        {...regContacto('rfcFactura', {
+                          validate: (v) => {
+                            if (!solicitaFactura) return true;
+                            const r = v.trim().toUpperCase();
+                            if (!r) return 'Indica el RFC o desmarca "Solicito factura".';
+                            if (!rfcMexicoBasico(r)) return 'RFC inválido (revisa formato, 12 o 13 caracteres).';
+                            return true;
+                          },
+                          onChange: (e) => {
+                            e.target.value = e.target.value.toUpperCase();
+                          },
+                        })}
                       />
                     )}
                   </section>
@@ -1668,7 +1476,7 @@ export default function CheckoutPage() {
                     {esTarjeta && esTarjetaCredito && (
                       <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         <strong style={{ color: 'var(--menu-texto-principal)' }}>Meses sin intereses:</strong>{' '}
-                        {OPCIONES_MSI.find((o) => o.value === mesesMSI)?.label ?? mesesMSI}
+                        {OPCIONES_MSI.find((o) => o.value === tarjetaValues.mesesMSI)?.label ?? tarjetaValues.mesesMSI}
                       </p>
                     )}
                     <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>

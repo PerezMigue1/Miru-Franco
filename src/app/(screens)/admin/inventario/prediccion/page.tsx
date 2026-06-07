@@ -189,10 +189,28 @@ export default function PrediccionInventarioPage() {
   const [errorVentas, setErrorVentas] = useState<string | null>(null);
   /** Ventas recientes y horizonte de proyección van unidos: mismo número de días. */
   const [periodoDias, setPeriodoDias] = useState<7 | 30 | 90>(30);
-  const horizonteDias = periodoDias;
   const [rangoFechaInicio, setRangoFechaInicio] = useState("");
   const [rangoFechaFin, setRangoFechaFin] = useState("");
   const [rangoFechasActivo, setRangoFechasActivo] = useState(false);
+  const [fechaProyeccionRef, setFechaProyeccionRef] = useState("");
+  const fechaInicioModelo = useMemo(
+    () => (rangoFechaInicio ? parseFechaInputLocal(rangoFechaInicio) : null),
+    [rangoFechaInicio],
+  );
+  const fechaProyeccionValida = useMemo(
+    () => (fechaProyeccionRef ? parseFechaInputLocal(fechaProyeccionRef) : null),
+    [fechaProyeccionRef],
+  );
+  const horizonteDiasCalendario = useMemo(() => {
+    if (!fechaInicioModelo || !fechaProyeccionValida) return null as number | null;
+    const d0 = new Date(fechaInicioModelo);
+    d0.setHours(0, 0, 0, 0);
+    const d1 = new Date(fechaProyeccionValida);
+    d1.setHours(0, 0, 0, 0);
+    const diff = Math.round((d1.getTime() - d0.getTime()) / 86400000);
+    return diff >= 0 ? diff : null;
+  }, [fechaInicioModelo, fechaProyeccionValida]);
+  const horizonteDias = horizonteDiasCalendario ?? periodoDias;
   const [umbralModo, setUmbralModo] = useState<UmbralModo>("auto");
   const [umbralPct, setUmbralPct] = useState(25);
 
@@ -240,6 +258,14 @@ export default function PrediccionInventarioPage() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [productoFiltroId, setProductoFiltroId] = useState("");
   const [tablaOverlayOpen, setTablaOverlayOpen] = useState(false);
+  const [origenBarraHover, setOrigenBarraHover] = useState<string | null>(null);
+  const [graficaPredHover, setGraficaPredHover] = useState<{
+    dia: number;
+    valor: number;
+    fechaTxt: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const categoriasFiltroOpciones = useMemo(() => {
     const s = new Set<string>();
@@ -456,6 +482,89 @@ export default function PrediccionInventarioPage() {
     return Math.max(1, Math.round((umbralPct / 100) * xTot));
   }, [umbralModo, umbralPct, stockMinimoAuto, curvaAgregada]);
 
+  const modeloVentas3Fechas = useMemo(() => {
+    if (!curvaAgregada || !fechaInicioModelo) return null;
+    const fecha2 = parseFechaInputLocal(rangoFechaFin);
+    if (!fecha2) return null;
+    const f1 = new Date(fechaInicioModelo);
+    f1.setHours(0, 0, 0, 0);
+    const f2 = new Date(fecha2);
+    f2.setHours(0, 0, 0, 0);
+    const t2 = Math.round((f2.getTime() - f1.getTime()) / 86400000);
+    if (!Number.isFinite(t2) || t2 <= 0) return null;
+
+    const t3 =
+      fechaProyeccionValida != null
+        ? Math.round(
+            (new Date(fechaProyeccionValida).setHours(0, 0, 0, 0) -
+              f1.getTime()) /
+              86400000,
+          )
+        : horizonteDias;
+    if (!Number.isFinite(t3) || t3 < 0) return null;
+
+    const idsVista = new Set(
+      productosVista.map((p) => String(p.id).trim()).filter(Boolean),
+    );
+    const claveDia = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate(),
+      ).padStart(2, "0")}`;
+    const claveF1 = claveDia(f1);
+    const claveF2 = claveDia(f2);
+    let v1 = 0;
+    let v2 = 0;
+    for (const l of lineasVentas) {
+      const d = new Date(l.fechaIso);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = claveDia(d);
+      if (key !== claveF1 && key !== claveF2) continue;
+      if (
+        hayFiltrosCatalogo &&
+        !idsVista.has(String(l.productoId).trim())
+      )
+        continue;
+      if (key === claveF1) v1 += l.cantidad;
+      if (key === claveF2) v2 += l.cantidad;
+    }
+    const base = Math.max(v1, 0.0001);
+    const objetivo = Math.max(v2, 0.0001);
+    const kVentas = Math.log(objetivo / base) / t2;
+
+    const ventasDia = (t: number) => Math.max(0, base * Math.exp(kVentas * t));
+    const stockProyectado = (t: number) => {
+      const x0 = Math.max(0, curvaAgregada.x0);
+      if (x0 <= 0) return 0;
+      let acumulada: number;
+      if (Math.abs(kVentas) < 1e-9) acumulada = base * t;
+      else acumulada = (base / kVentas) * (Math.exp(kVentas * t) - 1);
+      return Math.max(0, x0 - Math.max(0, acumulada));
+    };
+
+    return {
+      f1,
+      f2,
+      t2,
+      t3,
+      kVentas,
+      v1,
+      v2,
+      v3: ventasDia(t3),
+      ventasDia,
+      stockProyectado,
+    };
+  }, [
+    curvaAgregada,
+    fechaInicioModelo,
+    rangoFechaFin,
+    fechaProyeccionValida,
+    horizonteDias,
+    productosVista,
+    lineasVentas,
+    hayFiltrosCatalogo,
+  ]);
+  const graficaModoVentas = modeloVentas3Fechas !== null;
+
   const puntosCurvaDensa = useMemo<PuntoGrafica[]>(() => {
     if (!curvaAgregada) return [];
     const H = horizonteDias;
@@ -465,17 +574,21 @@ export default function PrediccionInventarioPage() {
     for (let d = 0; d <= H; d += step) {
       out.push({
         dia: d,
-        valor: curvaAgregada.x0 * Math.exp(curvaAgregada.k * d),
+        valor: modeloVentas3Fechas
+          ? modeloVentas3Fechas.ventasDia(d)
+          : curvaAgregada.x0 * Math.exp(curvaAgregada.k * d),
       });
     }
     if (out[out.length - 1]?.dia !== H) {
       out.push({
         dia: H,
-        valor: curvaAgregada.x0 * Math.exp(curvaAgregada.k * H),
+        valor: modeloVentas3Fechas
+          ? modeloVentas3Fechas.ventasDia(H)
+          : curvaAgregada.x0 * Math.exp(curvaAgregada.k * H),
       });
     }
     return out;
-  }, [curvaAgregada, horizonteDias]);
+  }, [curvaAgregada, horizonteDias, modeloVentas3Fechas]);
 
   const graficaReserva = useMemo(() => {
     const pts = puntosCurvaDensa;
@@ -552,6 +665,43 @@ export default function PrediccionInventarioPage() {
     if (!a || !b || a.getTime() > b.getTime()) return null;
     return { inicio: a, fin: b };
   }, [rangoFechaInicio, rangoFechaFin]);
+
+  const hitosGraficaFechas = useMemo(() => {
+    const out: Array<{
+      key: "f1" | "f2" | "f3";
+      label: string;
+      dia: number;
+      fecha: Date;
+    }> = [];
+    if (!fechaInicioModelo) return out;
+    const f1 = new Date(fechaInicioModelo);
+    f1.setHours(0, 0, 0, 0);
+    out.push({ key: "f1", label: "Inicio", dia: 0, fecha: f1 });
+    if (rangoFechasParseado) {
+      const f2 = new Date(rangoFechasParseado.fin);
+      f2.setHours(0, 0, 0, 0);
+      const d2 = Math.max(
+        0,
+        Math.round((f2.getTime() - f1.getTime()) / 86400000),
+      );
+      out.push({ key: "f2", label: "Corte", dia: d2, fecha: f2 });
+    }
+    if (fechaProyeccionValida) {
+      const f3 = new Date(fechaProyeccionValida);
+      f3.setHours(0, 0, 0, 0);
+      const d3 = Math.max(
+        0,
+        Math.round((f3.getTime() - f1.getTime()) / 86400000),
+      );
+      out.push({ key: "f3", label: "Pred.", dia: d3, fecha: f3 });
+    }
+    const unicos = new Map<number, (typeof out)[number]>();
+    out.forEach((h) => {
+      if (!unicos.has(h.dia)) unicos.set(h.dia, h);
+      else if (h.key === "f3") unicos.set(h.dia, h);
+    });
+    return [...unicos.values()].sort((a, b) => a.dia - b.dia);
+  }, [fechaInicioModelo, rangoFechasParseado, fechaProyeccionValida]);
 
   const ventanaOrigenPedidos = useMemo(() => {
     if (rangoFechasActivo && rangoFechasParseado) {
@@ -728,6 +878,14 @@ export default function PrediccionInventarioPage() {
     }
     return out;
   }, [ventanaOrigenPedidos, lineasVentanaVentas, lineasVentanaFiltradas, hayFiltrosCatalogo]);
+
+  const datoOrigenHover = useMemo(
+    () =>
+      origenBarraHover
+        ? serieOrigenVentasDia.find((p) => p.clave === origenBarraHover) ?? null
+        : null,
+    [origenBarraHover, serieOrigenVentasDia],
+  );
 
   const graficaOrigenVentas = useMemo(() => {
     const pts = serieOrigenVentasDia;
@@ -1272,6 +1430,48 @@ export default function PrediccionInventarioPage() {
             className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end border-t pt-3"
             style={sutilDivisor}
           >
+            <span
+              className="text-sm font-semibold w-full sm:w-auto mr-0 sm:mr-2"
+              style={{ color: "var(--menu-texto-principal)" }}
+            >
+              Proyección (fecha referencia)
+            </span>
+            <Input
+              type="date"
+              label="Fecha"
+              value={fechaProyeccionRef}
+              onChange={(e) => setFechaProyeccionRef(e.target.value)}
+              className="w-full min-w-0 sm:w-40"
+            />
+            {fechaProyeccionValida && horizonteDiasCalendario !== null ? (
+              <span
+                className="text-xs w-full sm:w-auto"
+                style={{ color: "var(--encabezados-alterno)" }}
+              >
+                Fecha seleccionada:{" "}
+                {fechaProyeccionValida.toLocaleDateString("es-MX", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}{" "}
+                · t = {horizonteDiasCalendario} día
+                {horizonteDiasCalendario === 1 ? "" : "s"} desde la fecha inicial.
+              </span>
+            ) : (
+              fechaProyeccionRef && (
+                <span
+                  className="text-xs w-full"
+                  style={{ color: "var(--danger)" }}
+                >
+                  Fecha no válida o anterior a la fecha inicial.
+                </span>
+              )
+            )}
+          </div>
+          <div
+            className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end border-t pt-3"
+            style={sutilDivisor}
+          >
             <Select
               label="Umbral de alerta"
               options={[
@@ -1429,6 +1629,8 @@ export default function PrediccionInventarioPage() {
                             {ventanaOrigenPedidos.dias} días
                           </span>
                         </span>
+                      ) : horizonteDiasCalendario !== null ? (
+                        `${horizonteDias} días (calendario)`
                       ) : (
                         `${periodoDias} días`
                       )}
@@ -1897,18 +2099,21 @@ export default function PrediccionInventarioPage() {
                   className="text-base font-semibold mb-1"
                   style={{ color: "var(--menu-texto-principal)" }}
                 >
-                  Stock proyectado
+                  {graficaModoVentas
+                    ? "Ventas proyectadas por día"
+                    : "Stock proyectado"}
                 </h3>
                 <p
                   className="text-xs mb-4"
                   style={{ color: "var(--encabezados-alterno)" }}
                 >
-                  Línea = stock total · rojo = umbral (
-                  {umbralModo === "auto" ? "auto" : `${umbralPct}% del total`})
+                  {graficaModoVentas
+                    ? "Línea = ventas proyectadas por día (modelo F1/F2/F3, dx/dt = kx)."
+                    : `Línea = stock total · rojo = umbral (${umbralModo === "auto" ? "auto" : `${umbralPct}% del total`})`}
                 </p>
                 {graficaReserva && curvaAgregada ? (
                   <div
-                    className="w-full overflow-x-auto p-3 sm:p-4"
+                    className="relative w-full overflow-x-auto p-3 sm:p-4"
                     style={chartWellStyle}
                   >
                     <svg
@@ -1918,6 +2123,7 @@ export default function PrediccionInventarioPage() {
                       className="min-h-[220px] max-h-[300px]"
                       role="img"
                       aria-label="Stock proyectado"
+                      onMouseLeave={() => setGraficaPredHover(null)}
                     >
                       {graficaReserva.tickVals.map((v, i) => {
                         const y = graficaReserva.toY(v);
@@ -1961,24 +2167,28 @@ export default function PrediccionInventarioPage() {
                         stroke="var(--encabezados-alterno)"
                         strokeWidth="1"
                       />
-                      <line
-                        x1={graficaReserva.padL}
-                        y1={graficaReserva.yThreshold}
-                        x2={graficaReserva.padL + graficaReserva.innerW}
-                        y2={graficaReserva.yThreshold}
-                        stroke="var(--danger)"
-                        strokeWidth="1.5"
-                        strokeDasharray="6 4"
-                      />
-                      <text
-                        x={graficaReserva.padL + graficaReserva.innerW - 2}
-                        y={graficaReserva.yThreshold - 6}
-                        textAnchor="end"
-                        fontSize="11"
-                        fill="var(--danger)"
-                      >
-                        Umbral: {umbralLineaGrafica}
-                      </text>
+                      {!graficaModoVentas && (
+                        <>
+                          <line
+                            x1={graficaReserva.padL}
+                            y1={graficaReserva.yThreshold}
+                            x2={graficaReserva.padL + graficaReserva.innerW}
+                            y2={graficaReserva.yThreshold}
+                            stroke="var(--danger)"
+                            strokeWidth="1.5"
+                            strokeDasharray="6 4"
+                          />
+                          <text
+                            x={graficaReserva.padL + graficaReserva.innerW - 2}
+                            y={graficaReserva.yThreshold - 6}
+                            textAnchor="end"
+                            fontSize="11"
+                            fill="var(--danger)"
+                          >
+                            Umbral: {umbralLineaGrafica}
+                          </text>
+                        </>
+                      )}
                       <path
                         d={graficaReserva.path}
                         fill="none"
@@ -1986,6 +2196,98 @@ export default function PrediccionInventarioPage() {
                         strokeWidth="3"
                         strokeLinejoin="round"
                       />
+                      {graficaReserva.pts.map((p) => {
+                        const dt = fechaInicioModelo
+                          ? new Date(fechaInicioModelo)
+                          : new Date();
+                        dt.setHours(0, 0, 0, 0);
+                        dt.setDate(dt.getDate() + p.dia);
+                        const fechaTxt = dt.toLocaleDateString("es-MX", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        });
+                        return (
+                          <circle
+                            key={`hover-pt-${p.dia}`}
+                            cx={graficaReserva.toX(p.dia)}
+                            cy={graficaReserva.toY(p.valor)}
+                            r="9"
+                            fill="transparent"
+                            className="cursor-pointer"
+                            onMouseEnter={(e) =>
+                              setGraficaPredHover({
+                                dia: p.dia,
+                                valor: p.valor,
+                                fechaTxt,
+                                x: e.nativeEvent.offsetX,
+                                y: e.nativeEvent.offsetY,
+                              })
+                            }
+                            onMouseMove={(e) =>
+                              setGraficaPredHover((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      x: e.nativeEvent.offsetX,
+                                      y: e.nativeEvent.offsetY,
+                                    }
+                                  : prev,
+                              )
+                            }
+                          />
+                        );
+                      })}
+                      {curvaAgregada &&
+                        hitosGraficaFechas
+                          .filter((h) => h.dia <= graficaReserva.xMax)
+                          .map((h) => {
+                            const x = graficaReserva.toX(h.dia);
+                            const valorH = modeloVentas3Fechas
+                              ? modeloVentas3Fechas.ventasDia(h.dia)
+                              : curvaAgregada.x0 * Math.exp(curvaAgregada.k * h.dia);
+                            const y = graficaReserva.toY(valorH);
+                            const ventasDiaH = modeloVentas3Fechas
+                              ? h.key === "f1"
+                                ? modeloVentas3Fechas.v1
+                                : h.key === "f2"
+                                  ? modeloVentas3Fechas.v2
+                                  : modeloVentas3Fechas.ventasDia(h.dia)
+                              : promedioDiarioVentasGlobal;
+                            return (
+                              <g key={`hito-${h.key}-${h.dia}`}>
+                                <line
+                                  x1={x}
+                                  y1={graficaReserva.padT}
+                                  x2={x}
+                                  y2={graficaReserva.padT + graficaReserva.innerH}
+                                  stroke="var(--logo-branding)"
+                                  strokeWidth="1"
+                                  strokeDasharray="2 4"
+                                  opacity={0.7}
+                                />
+                                <circle
+                                  cx={x}
+                                  cy={y}
+                                  r="5"
+                                  fill="var(--logo-branding)"
+                                  stroke="var(--superficie-elevada)"
+                                  strokeWidth="1.5"
+                                />
+                                <text
+                                  x={x}
+                                  y={Math.max(graficaReserva.padT + 10, y - 10)}
+                                  textAnchor="middle"
+                                  fontSize="10"
+                                  fontWeight="700"
+                                  fill="var(--logo-branding)"
+                                >
+                                  {h.label}
+                                </text>
+                                <title>{`${h.label} · ${h.fecha.toLocaleDateString("es-MX")} · t=${h.dia} d · ventas día=${ventasDiaH.toFixed(1)} u.`}</title>
+                              </g>
+                            );
+                          })}
                       {graficaReserva.pts
                         .filter(
                           (_, i) =>
@@ -2015,14 +2317,16 @@ export default function PrediccionInventarioPage() {
                         fill="var(--encabezados-alterno)"
                         textAnchor="middle"
                       >
-                        Stock
+                        {graficaModoVentas ? "Ventas/día" : "Stock"}
                       </text>
                       {[
                         0,
                         Math.round(graficaReserva.xMax / 2),
                         graficaReserva.xMax,
                       ].map((d) => {
-                        const dt = new Date();
+                        const dt = fechaInicioModelo
+                          ? new Date(fechaInicioModelo)
+                          : new Date();
                         dt.setHours(0, 0, 0, 0);
                         dt.setDate(dt.getDate() + d);
                         const label = dt.toLocaleDateString("es-ES", {
@@ -2044,12 +2348,160 @@ export default function PrediccionInventarioPage() {
                         );
                       })}
                     </svg>
+                    {graficaPredHover && (
+                      <div
+                        className="pointer-events-none absolute z-20 rounded-md border px-2 py-1.5 text-xs shadow-lg"
+                        style={{
+                          left: Math.min(
+                            Math.max(8, graficaPredHover.x + 12),
+                            560,
+                          ),
+                          top: Math.max(8, graficaPredHover.y - 34),
+                          color: "var(--menu-texto-principal)",
+                          backgroundColor: "var(--superficie-elevada)",
+                          borderColor:
+                            "color-mix(in srgb, var(--tarjetas-paneles) 45%, transparent)",
+                        }}
+                      >
+                        <p className="font-semibold tabular-nums">
+                          t={graficaPredHover.dia} d
+                        </p>
+                        <p>{graficaPredHover.fechaTxt}</p>
+                        <p className="tabular-nums">
+                          {graficaModoVentas
+                            ? `${graficaPredHover.valor.toFixed(1)} u./día`
+                            : `${graficaPredHover.valor.toFixed(1)} u.`}
+                        </p>
+                      </div>
+                    )}
                     <p
                       className="text-xs mt-3"
                       style={{ color: "var(--encabezados-alterno)" }}
                     >
-                      {curvaAgregada.subtitulo}
+                      {graficaModoVentas
+                        ? "Curva dinámica basada en ventas por día (F1/F2) y proyección en F3."
+                        : curvaAgregada.subtitulo}
                     </p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--encabezados-alterno)" }}
+                    >
+                      Fecha 1 (inicio):{" "}
+                      {fechaInicioModelo
+                        ? fechaInicioModelo.toLocaleDateString("es-MX")
+                        : "—"}{" "}
+                      · Fecha 2 (corte):{" "}
+                      {rangoFechasParseado
+                        ? rangoFechasParseado.fin.toLocaleDateString("es-MX")
+                        : "—"}{" "}
+                      · Fecha 3 (predicción):{" "}
+                      {fechaProyeccionValida
+                        ? fechaProyeccionValida.toLocaleDateString("es-MX")
+                        : "—"}
+                    </p>
+                    {hitosGraficaFechas.length > 0 && curvaAgregada && (
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: "var(--encabezados-alterno)" }}
+                      >
+                        {hitosGraficaFechas
+                          .map((h) => {
+                            const xh = modeloVentas3Fechas
+                              ? modeloVentas3Fechas.ventasDia(h.dia)
+                              : curvaAgregada.x0 * Math.exp(curvaAgregada.k * h.dia);
+                            const vh = modeloVentas3Fechas
+                              ? h.key === "f1"
+                                ? modeloVentas3Fechas.v1
+                                : h.key === "f2"
+                                  ? modeloVentas3Fechas.v2
+                                  : modeloVentas3Fechas.ventasDia(h.dia)
+                              : promedioDiarioVentasGlobal;
+                            return graficaModoVentas
+                              ? `${h.label}: t=${h.dia} d · ventas día ${xh.toFixed(1)} u.`
+                              : `${h.label}: t=${h.dia} d · stock ${xh.toFixed(1)} u. · ventas día ${vh.toFixed(1)} u.`;
+                          })
+                          .join("  |  ")}
+                      </p>
+                    )}
+                    {modeloVentas3Fechas && (
+                      <div
+                        className="mt-3 rounded-lg border overflow-x-auto"
+                        style={{
+                          borderColor:
+                            "color-mix(in srgb, var(--tarjetas-paneles) 45%, transparent)",
+                          backgroundColor:
+                            "color-mix(in srgb, var(--fondos-suaves) 35%, var(--superficie-elevada))",
+                        }}
+                      >
+                        <table className="w-full min-w-[560px] text-xs">
+                          <thead>
+                            <tr
+                              style={{
+                                backgroundColor:
+                                  "color-mix(in srgb, var(--tarjetas-paneles) 25%, transparent)",
+                              }}
+                            >
+                              <th className="px-3 py-2 text-left font-semibold">Punto</th>
+                              <th className="px-3 py-2 text-left font-semibold">x (ventas día)</th>
+                              <th className="px-3 py-2 text-left font-semibold">t</th>
+                              <th className="px-3 py-2 text-left font-semibold">fecha</th>
+                            </tr>
+                          </thead>
+                          <tbody style={{ color: "var(--menu-texto-principal)" }}>
+                            <tr>
+                              <td className="px-3 py-2 font-medium">CI (F1)</td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {Math.round(modeloVentas3Fechas.v1)}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums">0</td>
+                              <td className="px-3 py-2">
+                                {modeloVentas3Fechas.f1.toLocaleDateString("es-MX")}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="px-3 py-2 font-medium">k (F2)</td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {Math.round(modeloVentas3Fechas.v2)}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {modeloVentas3Fechas.t2}
+                              </td>
+                              <td className="px-3 py-2">
+                                {modeloVentas3Fechas.f2.toLocaleDateString("es-MX")}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="px-3 py-2 font-medium">p1 (F3)</td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {Math.round(modeloVentas3Fechas.v3)}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {modeloVentas3Fechas.t3}
+                              </td>
+                              <td className="px-3 py-2">
+                                {fechaProyeccionValida
+                                  ? fechaProyeccionValida.toLocaleDateString("es-MX")
+                                  : "—"}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <p
+                          className="px-3 py-2 border-t"
+                          style={{
+                            color: "var(--encabezados-alterno)",
+                            borderColor:
+                              "color-mix(in srgb, var(--tarjetas-paneles) 40%, transparent)",
+                          }}
+                        >
+                          Modelo usado: <strong>dx/dt = kx</strong> sobre ventas del día.
+                          k = ln(x₂/x₁) / (t₂ - t₁) ={" "}
+                          <span className="tabular-nums">
+                            {modeloVentas3Fechas.kVentas.toFixed(6)}
+                          </span>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p
@@ -2164,7 +2616,11 @@ export default function PrediccionInventarioPage() {
                               height={hBar}
                               fill="var(--enlaces-textos-interactivos)"
                               rx="2"
+                              className="cursor-pointer"
+                              onMouseEnter={() => setOrigenBarraHover(p.clave)}
+                              onMouseLeave={() => setOrigenBarraHover(null)}
                             />
+                            <title>{`${p.etiqueta}: ${p.u} u. · $${p.m.toFixed(2)}`}</title>
                             {serieOrigenVentasDia.length <= 14 && (
                               <text
                                 x={cx}
@@ -2189,6 +2645,14 @@ export default function PrediccionInventarioPage() {
                         baja o cero = sin unidades de venta ese día.
                       </p>
                     )}
+                    <p
+                      className="text-xs mt-2"
+                      style={{ color: "var(--menu-texto-principal)" }}
+                    >
+                      {datoOrigenHover
+                        ? `${datoOrigenHover.etiqueta}: ${datoOrigenHover.u} u. · $${datoOrigenHover.m.toFixed(2)}`
+                        : "Pasa el puntero sobre una barra para ver el detalle del día."}
+                    </p>
                   </div>
                 )}
               </Card>

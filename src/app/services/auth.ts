@@ -4,7 +4,6 @@ import { saveToken } from '../utils/security';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../utils/userStorageSync';
 import {
-  getMiPerfil,
   mergePerfilEnLocalStorage,
   normalizarPerfilUsuario,
   unwrapUsuarioPayload,
@@ -13,42 +12,31 @@ import {
 
 export interface LoginResponse {
   success: boolean;
-  user?: {
-    _id?: string;
-    id?: string;
-    nombre?: string;
-    name?: string;
-    email: string;
-    rol?: string;
-    role?: string;
-  };
-  /** Backend puede enviar el usuario como "usuario" en lugar de "user" */
   usuario?: {
-    _id?: string;
     id?: string;
     nombre?: string;
-    name?: string;
     email: string;
     rol?: string;
-    role?: string;
   };
   token?: string;
   error?: string;
-  requiereVerificacion?: boolean; // Indica si la cuenta no está confirmada
+  requiereVerificacion?: boolean;
 }
 
 export interface RegisterResponse {
   success: boolean;
-  user?: {
-    _id: string;
+  usuario?: {
+    id: string;
+    nombre: string;
     email: string;
-    name: string;
+    rol?: string;
+    activo?: boolean;
   };
   token?: string;
   error?: string;
   message?: string;
-  requiereVerificacion?: boolean; // Indica si se requiere verificación OTP
-  metodo?: 'email' | 'sms'; // ✅ NUEVO: Método de verificación usado
+  requiereVerificacion?: boolean;
+  metodo?: 'email' | 'sms';
 }
 
 export interface ForgotPasswordResponse {
@@ -90,7 +78,7 @@ export interface SMSResponse {
 
 export interface SecurityQuestionsResponse {
   questions?: Array<{
-    _id: string;
+    id: string;
     pregunta: string;
     question?: string;
   }>;
@@ -100,7 +88,7 @@ export interface SecurityQuestionsResponse {
 export interface GoogleLoginResponse {
   success: boolean;
   user?: {
-    _id: string;
+    id: string;
     email: string;
     name: string;
   };
@@ -121,6 +109,13 @@ export interface ResendOTPResponse {
   error?: string;
   retryAfter?: number;
   metodo?: 'email' | 'sms'; // ✅ NUEVO: Método usado para el reenvío
+}
+
+export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
+  const res = await apiClient.get<unknown>('/api/auth/me', getBackendBaseUrl());
+  const obj = unwrapUsuarioPayload(res);
+  if (!obj) throw new Error('No se pudo leer el perfil');
+  return normalizarPerfilUsuario(obj);
 }
 
 // Helper para guardar datos de autenticacion (usando utilidades de seguridad)
@@ -173,7 +168,7 @@ export const api = {
         });
       }
       
-      const data = await apiClient.post<LoginResponse>('/api/usuarios/login', { email: emailLimpio, password }, BACKEND_BASE);
+      const data = await apiClient.post<LoginResponse>('/api/auth/login', { email: emailLimpio, password }, BACKEND_BASE);
       
       // ✅ NO loguear respuesta completa (puede contener tokens)
       // Solo loguear información no sensible en desarrollo
@@ -181,7 +176,7 @@ export const api = {
         console.log('[Auth] Respuesta del backend:', { 
           success: data.success, 
           hasToken: !!data.token, 
-          hasUser: !!(data.user ?? data.usuario), 
+          hasUser: !!data.usuario,
           error: data.error 
           // ❌ NUNCA loguear: token, user completo, ni JSON.stringify de respuesta
         });
@@ -263,7 +258,7 @@ export const api = {
     recibePromociones: boolean;
   }): Promise<RegisterResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
-    const data = await apiClient.post<RegisterResponse>('/api/usuarios/registrar', registerData, BACKEND_BASE);
+    const data = await apiClient.post<RegisterResponse>('/api/usuarios/registro', registerData, BACKEND_BASE);
     // No guardar datos de autenticación si requiere verificación
     if (data.success && data.token && !data.requiereVerificacion) {
       saveAuthData(data);
@@ -291,7 +286,7 @@ export const api = {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
       const data = await apiClient.post<SolicitarEnlaceResponse>(
-        '/api/usuarios/solicitar-enlace-recuperacion',
+        '/api/auth/solicitar-enlace-recuperacion',
         { email },
         BACKEND_BASE
       );
@@ -312,7 +307,7 @@ export const api = {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
       const data = await apiClient.post<ValidarTokenResponse>(
-        '/api/usuarios/validar-token-recuperacion',
+        '/api/auth/validar-token-recuperacion',
         { email, token },
         BACKEND_BASE
       );
@@ -345,28 +340,28 @@ export const api = {
       });
     }
     return apiClient.post<ResetPasswordResponse>(
-      '/api/usuarios/cambiar-password',
+      '/api/auth/cambiar-password',
       payload,
       BACKEND_BASE
     );
   },
 
-  /** Enviar OTP por SMS para recuperación de contraseña. Backend: POST /api/usuarios/enviar-codigo-recuperacion-sms */
+  /** Enviar OTP por SMS para recuperación de contraseña. Backend: POST /api/auth/enviar-codigo-recuperacion-sms */
   async sendSMSCode(phone: string): Promise<SMSResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
     const data = await apiClient.post<SMSResponse>(
-      '/api/usuarios/enviar-codigo-recuperacion-sms',
+      '/api/auth/enviar-codigo-recuperacion-sms',
       { phone: phone.replace(/\s/g, '').trim() },
       BACKEND_BASE
     );
     return data;
   },
 
-  /** Verificar OTP SMS y obtener token de reset. Backend: POST /api/usuarios/verificar-codigo-recuperacion-sms → { success, token, email } */
+  /** Verificar OTP SMS y obtener token de reset. Backend: POST /api/auth/verificar-codigo-recuperacion-sms → { success, token, email } */
   async verifySMSCode(phone: string, codigo: string): Promise<SMSResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
     const data = await apiClient.post<SMSResponse>(
-      '/api/usuarios/verificar-codigo-recuperacion-sms',
+      '/api/auth/verificar-codigo-recuperacion-sms',
       { phone: phone.replace(/\s/g, '').trim(), codigo },
       BACKEND_BASE
     );
@@ -378,14 +373,14 @@ export const api = {
   async getSecurityQuestions(email: string): Promise<SecurityQuestionsResponse> {
     // Opción 1: Usar /api/pregunta-seguridad?email=... (GET)
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
-    const data = await apiClient.get<{ success?: boolean; data?: Array<{ _id: string; pregunta: string }> }>(
+    const data = await apiClient.get<{ success?: boolean; data?: Array<{ id: string; pregunta: string }> }>(
       `/api/pregunta-seguridad?email=${encodeURIComponent(email)}`,
       BACKEND_BASE
     );
-    
+
     if (data.success && data.data && data.data.length > 0) {
       return {
-        questions: data.data.map(q => ({ _id: q._id, pregunta: q.pregunta }))
+        questions: data.data.map(q => ({ id: q.id, pregunta: q.pregunta }))
       };
     }
     
@@ -394,12 +389,12 @@ export const api = {
   },
 
   // ✅ NUEVO: Obtener pregunta de seguridad del usuario para recuperación de contraseña
-  // Usa POST /api/usuarios/pregunta-seguridad según GUIA_FRONTEND_RECUPERACION_PASSWORD.md
+  // Usa POST /api/auth/pregunta-seguridad
   async getUserSecurityQuestion(email: string): Promise<{ success: boolean; pregunta?: string; message?: string; error?: string }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
       const data = await apiClient.post<{ success?: boolean; pregunta?: string; question?: string; message?: string; error?: string }>(
-        '/api/usuarios/pregunta-seguridad',
+        '/api/auth/pregunta-seguridad',
         { email },
         BACKEND_BASE
       );
@@ -455,15 +450,13 @@ export const api = {
   },
 
   async verifySecurityQuestions(email: string, answers: Record<string, string>): Promise<{ success?: boolean; token?: string; error?: string }> {
-    // El backend espera { email, respuesta } en /api/usuarios/verificar-respuesta
-    // Necesitamos extraer la respuesta del objeto answers
+    // El backend espera { email, respuesta } en /api/auth/verificar-respuesta
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const preguntaTexto = Object.keys(answers)[0];
     const respuesta = answers[preguntaTexto];
-    
-    // Usar la ruta de usuarios que devuelve el token
+
     return apiClient.post<{ success?: boolean; token?: string; email?: string; error?: string }>(
-      '/api/usuarios/verificar-respuesta',
+      '/api/auth/verificar-respuesta',
       { email, respuesta },
       BACKEND_BASE
     );
@@ -472,7 +465,7 @@ export const api = {
   async getAvailableSecurityQuestions() {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const endpoint = `/api/pregunta-seguridad`;
-    const data = await apiClient.get<{ success?: boolean; count?: number; data?: Array<{_id: string; pregunta: string}>; questions?: Array<{_id: string; pregunta: string}> }>(
+    const data = await apiClient.get<{ success?: boolean; count?: number; data?: Array<{id: string; pregunta: string}>; questions?: Array<{id: string; pregunta: string}> }>(
       endpoint,
       BACKEND_BASE
     );
@@ -503,7 +496,7 @@ export const api = {
   async verifyOTP(email: string, codigo: string): Promise<VerifyOTPResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
     return apiClient.post<VerifyOTPResponse>(
-      '/api/usuarios/verificar-otp',
+      '/api/auth/verificar-otp',
       { email, codigo },
       BACKEND_BASE
     );
@@ -513,7 +506,7 @@ export const api = {
   async resendOTPCode(email: string, metodoVerificacion?: 'email' | 'sms'): Promise<ResendOTPResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
     return apiClient.post<ResendOTPResponse>(
-      '/api/usuarios/reenviar-codigo',
+      '/api/auth/reenviar-codigo',
       { 
         email,
         metodoVerificacion: metodoVerificacion || 'email' // ✅ NUEVO: Incluir método de verificación
@@ -527,7 +520,7 @@ export const api = {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
       const data = await apiClient.post<{ success: boolean; message?: string; error?: string }>(
-        '/api/usuarios/enviar-codigo-recuperacion',
+        '/api/auth/enviar-codigo-recuperacion-sms',
         { email },
         BACKEND_BASE
       );
@@ -548,7 +541,7 @@ export const api = {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
       const data = await apiClient.post<{ success: boolean; token?: string; message?: string; error?: string }>(
-        '/api/usuarios/verificar-codigo-recuperacion',
+        '/api/auth/verificar-codigo-recuperacion-sms',
         { email, codigo },
         BACKEND_BASE
       );

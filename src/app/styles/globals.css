@@ -145,6 +145,27 @@
   /* Background y foreground (mantener compatibilidad) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Alias cortos para uso en clases Tailwind */
+  --color-fondo:        var(--fondo-general);
+  --color-fondo-soft:   var(--fondos-suaves);
+  --color-card:         var(--tarjetas-paneles);
+  --color-header:       var(--header-footer);
+  --color-brand:        var(--botones-principales);
+  --color-brand-hover:  var(--hover);
+  --color-gold:         var(--logo-branding);
+  --color-gold-soft:    var(--iconografia);
+  --color-link:         var(--enlaces-textos-interactivos);
+  --color-over-dark:    var(--texto-fondo-oscuro);
+  --color-surface:      var(--superficie-elevada);
+
+  /* Fuentes adicionales para Tailwind */
+  --font-serif:  var(--font-playfair-display), Georgia, serif;
+  --font-script: var(--font-great-vibes), cursive;
+
+  /* Sombras personalizadas */
+  --shadow-brand: 0 4px 24px -4px rgba(113, 0, 20, 0.25);
+  --shadow-card:  0 2px 16px -2px rgba(26, 16, 8, 0.12);
 }
 
 body {
@@ -436,4 +457,66 @@ p {
   .text-elegant-hero-light {
     font-size: var(--font-size-5xl);
   }
+}
+
+/* ========== UTILIDADES GLOBALES ========== */
+
+html { scroll-behavior: smooth; }
+
+@layer utilities {
+  .section-padding { @apply py-20 px-4 sm:px-6 lg:px-8; }
+  .container-max   { @apply max-w-7xl mx-auto; }
+  .text-over-dark  { color: var(--texto-fondo-oscuro); }
+  .min-touch       { @apply min-h-[44px] min-w-[44px]; }
+}
+
+/* ========== ANIMACIONES ========== */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 600ms ease-out, transform 600ms ease-out;
+}
+[data-reveal].visible {
+  opacity: 1;
+  transform: none;
+}
+[data-reveal]:nth-child(2) { transition-delay: 100ms; }
+[data-reveal]:nth-child(3) { transition-delay: 200ms; }
+[data-reveal]:nth-child(4) { transition-delay: 300ms; }
+[data-reveal]:nth-child(5) { transition-delay: 400ms; }
+[data-reveal]:nth-child(6) { transition-delay: 500ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+}
+
+/* ========== NAVEGACIÓN DESKTOP — underline animado ========== */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 1.5px;
+  background: var(--logo-branding);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms ease;
+}
+.nav-link:hover::after,
+.nav-link.active::after {
+  transform: scaleX(1);
 }

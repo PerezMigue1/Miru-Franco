@@ -2,87 +2,148 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { X } from 'lucide-react';
 
 interface MenuHamburguesaProps {
   onClose: () => void;
 }
 
+const NAV_LINKS = [
+  { label: 'Inicio',         href: '/home' },
+  { label: 'Servicios',      href: '/servicios' },
+  { label: 'Tienda',         href: '/cliente/tienda-online' },
+  { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
+  { label: 'Contacto',       href: '/contacto' },
+];
+
+const MARCAS = [
+  { label: "L'Oréal",     href: '/marcas/loreal' },
+  { label: 'Kérastase',   href: '/marcas/kerastase' },
+  { label: 'Revlon',      href: '/marcas/revlon' },
+  { label: 'Schwarzkopf', href: '/marcas/schwarzkopf' },
+  { label: 'Wella',       href: '/marcas/wella' },
+  { label: 'Matrix',      href: '/marcas/matrix' },
+];
+
 export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
   const pathname = usePathname();
-  
-  const menuItems = [
-    { name: 'Inicio', href: '/home', icon: '🏠' },
-    { name: 'Tienda en línea', href: '/cliente/tienda-online', icon: '🛒' },
-    { name: 'Servicios', href: '/cliente/servicios-citas', icon: '✨' },
-    { name: 'Tratamientos', href: '/tratamientos', icon: '💆‍♀️' },
-    { name: 'Promociones', href: '/promociones', icon: '🎁' },
-    { name: 'Sobre Nosotros', href: '/sobre-nosotros', icon: '👥' },
-    { name: 'Contacto', href: '/contacto', icon: '📞' },
-  ];
-
-  const marcas = [
-    { name: 'L\'Oréal', href: '/marcas/loreal' },
-    { name: 'Kerastase', href: '/marcas/kerastase' },
-    { name: 'Revlon', href: '/marcas/revlon' },
-    { name: 'Schwarzkopf', href: '/marcas/schwarzkopf' },
-    { name: 'Wella', href: '/marcas/wella' },
-    { name: 'Matrix', href: '/marcas/matrix' },
-    { name: 'Pantene', href: '/marcas/pantene' },
-  ];
 
   return (
-    <nav className="h-full">
-      {/* Sección de Menú Principal */}
-      <div className="p-4 border-b border-white/10 dark:border-white/20">
-        <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide text-gray-900 dark:text-white">
-          Menú Principal
-        </h3>
-        <ul className="space-y-1">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
+    <div className="flex flex-col h-full overflow-y-auto scrollbar-hide">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <p
+          className="text-xs font-semibold uppercase tracking-[0.3em]"
+          style={{ color: 'var(--iconografia)' }}
+        >
+          Menú
+        </p>
+        <button
+          onClick={onClose}
+          aria-label="Cerrar menú"
+          className="flex items-center justify-center rounded-full hover:opacity-70 transition-opacity"
+          style={{
+            color: 'var(--texto-fondo-oscuro)',
+            minHeight: '44px',
+            minWidth: '44px',
+          }}
+        >
+          <X size={22} aria-hidden />
+        </button>
+      </div>
+
+      {/* Main nav */}
+      <nav className="px-6 pt-2 flex-1">
+        <ul>
+          {NAV_LINKS.map((item, i) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/home' && pathname?.startsWith(item.href));
             return (
-              <li key={item.name}>
+              <li
+                key={item.href}
+                style={{
+                  borderBottom: '1px solid rgba(242,241,237,0.07)',
+                  opacity: 0,
+                  animation: `fadeUp 350ms ease-out ${i * 75}ms forwards`,
+                }}
+              >
                 <Link
                   href={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                    isActive ? 'bg-[var(--hover)] text-white' : 'text-gray-900 dark:text-white hover:opacity-80'
-                  }`}
+                  className="block py-4 transition-opacity hover:opacity-60"
+                  style={{
+                    fontFamily: 'var(--font-family-serif)',
+                    fontSize: 'clamp(1.625rem, 5.5vw, 2.25rem)',
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    color: isActive ? 'var(--logo-branding)' : 'var(--texto-fondo-oscuro)',
+                  }}
                 >
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="font-medium">{item.name}</span>
+                  {item.label}
                 </Link>
               </li>
             );
           })}
         </ul>
-      </div>
 
-      {/* Sección de Marcas */}
-      <div className="p-4">
-        <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide text-gray-900 dark:text-white">
-          Marcas de Productos
-        </h3>
-        <ul className="space-y-1">
-          {marcas.map((marca) => {
-            const isActive = pathname === marca.href;
-            return (
-              <li key={marca.name}>
-                <Link
-                  href={marca.href}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                    isActive ? 'bg-[var(--hover)] text-white' : 'text-gray-900 dark:text-white hover:opacity-80'
-                  }`}
-                >
-                  <span className="font-medium">{marca.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {/* CTA */}
+        <div
+          style={{
+            opacity: 0,
+            animation: `fadeUp 350ms ease-out ${NAV_LINKS.length * 75 + 60}ms forwards`,
+            marginTop: '2rem',
+            marginBottom: '2rem',
+          }}
+        >
+          <Link
+            href="/cliente/servicios-citas/crear-cita"
+            onClick={onClose}
+            className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-sm uppercase tracking-wider transition-all hover:opacity-90 hover:shadow-lg"
+            style={{
+              backgroundColor: 'var(--botones-principales)',
+              color: 'var(--texto-fondo-oscuro)',
+              minHeight: '44px',
+            }}
+          >
+            Agendar Cita
+          </Link>
+        </div>
+      </nav>
+
+      {/* Brands */}
+      <div
+        className="px-6 pb-8 border-t"
+        style={{
+          borderColor: 'rgba(242,241,237,0.07)',
+          opacity: 0,
+          animation: `fadeIn 400ms ease-out ${NAV_LINKS.length * 75 + 140}ms forwards`,
+        }}
+      >
+        <p
+          className="text-xs font-semibold uppercase tracking-[0.2em] mt-6 mb-3"
+          style={{ color: 'var(--iconografia)' }}
+        >
+          Marcas
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {MARCAS.map((marca) => (
+            <Link
+              key={marca.href}
+              href={marca.href}
+              onClick={onClose}
+              className="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium transition-opacity hover:opacity-70"
+              style={{
+                backgroundColor: 'rgba(242,241,237,0.07)',
+                color: 'var(--texto-fondo-oscuro-70)',
+                minHeight: '36px',
+              }}
+            >
+              {marca.label}
+            </Link>
+          ))}
+        </div>
       </div>
-    </nav>
+    </div>
   );
 }
-
