@@ -1,9 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <button className="p-2 rounded-lg w-10 h-10" aria-hidden="true" />;
 
   return (
     <button

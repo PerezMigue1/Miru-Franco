@@ -317,15 +317,17 @@ export default function UserProfile() {
     <div className="flex min-h-[60vh]">
       {/* Sidebar */}
       <aside
-        className={`shrink-0 border-r transition-all duration-300 ${
-          sidebarOpen ? 'w-60' : 'w-16'
-        } bg-[var(--fondos-suaves)] border-[var(--tarjetas-paneles)]`}
+        className={`shrink-0 border-r transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}
+        style={{ backgroundColor: 'var(--fondos-suaves)', borderColor: 'var(--tarjetas-paneles)' }}
       >
         <div className="sticky top-36 p-4">
           <div className="flex items-center gap-2 mb-6">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:opacity-80 text-[var(--menu-texto-principal)]"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--encabezados-alterno)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; e.currentTarget.style.color = 'var(--texto-fondo-oscuro)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--encabezados-alterno)'; }}
               aria-label={sidebarOpen ? 'Colapsar menú' : 'Expandir menú'}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,7 +335,8 @@ export default function UserProfile() {
               </svg>
             </button>
             {sidebarOpen && (
-              <h2 className="text-lg font-bold text-[var(--menu-texto-principal)]">
+              <h2 className="text-base font-bold tracking-wide"
+                style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--encabezados-alterno)' }}>
                 Mi cuenta
               </h2>
             )}
@@ -354,28 +357,27 @@ export default function UserProfile() {
                   )}
                 </>
               );
+              const itemStyle = {
+                backgroundColor: isActive ? 'var(--hover)' : 'transparent',
+                color: isActive ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
+                borderLeft: isActive ? '3px solid var(--logo-branding)' : '3px solid transparent',
+              };
               return item.href ? (
                 <a
                   key={item.id}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive ? '' : 'hover:opacity-90'
-                  }`}
-                  style={{
-                    backgroundColor: isActive ? 'var(--hover)' : 'transparent',
-                    color: isActive ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
-                  }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                  style={itemStyle}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'rgba(166,75,99,0.1)'; } }}
+                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; } }}
                 >
                   {content}
                 </a>
               ) : (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg`}
-                  style={{
-                    backgroundColor: isActive ? 'var(--hover)' : 'transparent',
-                    color: isActive ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
-                  }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
+                  style={itemStyle}
                 >
                   {content}
                 </div>
@@ -387,7 +389,10 @@ export default function UserProfile() {
               <button
                 onClick={handleLogoutAllSessions}
                 disabled={logoutAllLoading}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:opacity-90 transition-colors text-[var(--danger)]"
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors"
+                style={{ color: 'var(--danger)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; e.currentTarget.style.color = 'var(--texto-fondo-oscuro)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--danger)'; }}
               >
                 <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -418,7 +423,8 @@ export default function UserProfile() {
               type="button"
               onClick={openAvatarFotoPicker}
               disabled={avatarFotoUploading}
-              className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 border-2 border-[var(--fondos-suaves)] bg-[var(--tarjetas-paneles)] cursor-pointer ring-offset-2 ring-offset-[var(--fondo-general)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--enlaces-textos-interactivos)] group disabled:opacity-60 disabled:cursor-wait"
+              className="relative w-24 h-24 rounded-full overflow-hidden shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--enlaces-textos-interactivos)] ring-offset-2 ring-offset-[var(--fondo-general)] bg-[var(--tarjetas-paneles)] group disabled:opacity-60 disabled:cursor-wait"
+              style={{ border: '2px solid var(--logo-branding)', boxShadow: '0 0 0 4px var(--fondos-suaves)' }}
               title={fotoPerfilSrc ? 'Cambiar foto (elegir archivo)' : 'Elegir foto de perfil'}
               aria-label={fotoPerfilSrc ? 'Cambiar foto de perfil, elegir archivo' : 'Elegir foto de perfil'}
             >
@@ -428,7 +434,7 @@ export default function UserProfile() {
                   alt={user.nombre ? `Foto de ${user.nombre}` : 'Foto de perfil'}
                   fill
                   className="object-cover"
-                  sizes="80px"
+                  sizes="96px"
                   unoptimized={
                     fotoPerfilSrc.includes('http') && !fotoPerfilSrc.includes('res.cloudinary.com')
                   }
@@ -448,12 +454,18 @@ export default function UserProfile() {
               </span>
             </button>
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold mb-1 text-[var(--menu-texto-principal)]">
+              <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--encabezados-alterno)' }}>
                 {user.nombre || '—'}
               </h1>
               <p className="text-sm text-[var(--encabezados-alterno)]">
                 {user.email || '—'}
               </p>
+              <span
+                className="inline-flex items-center mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider"
+                style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--logo-branding)', border: '1px solid var(--logo-branding)', opacity: 0.85 }}
+              >
+                {roleLabel(normalizedRole)}
+              </span>
               <button
                 type="button"
                 onClick={openAvatarFotoPicker}
@@ -471,7 +483,7 @@ export default function UserProfile() {
                 Pulsa el círculo o el enlace de arriba para elegir una imagen (no abre otra pantalla).
               </p>
               {avatarFotoError && (
-                <p className="text-xs mt-2 text-red-600 dark:text-red-400" role="alert">
+                <p className="text-xs mt-2" style={{ color: 'var(--danger)' }} role="alert">
                   {avatarFotoError}
                 </p>
               )}
@@ -481,14 +493,20 @@ export default function UserProfile() {
           {/* Banner de contraseña */}
           {!dismissBanner && (
             <div
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-lg border border-[var(--fondos-suaves)] shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
-              style={{ backgroundColor: 'var(--fondos-suaves)' }}
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-2xl shadow-sm"
+              style={{
+                backgroundColor: 'var(--fondos-suaves)',
+                border: '1px solid var(--tarjetas-paneles)',
+                borderLeftWidth: '4px',
+                borderLeftColor: 'var(--logo-branding)',
+              }}
             >
               <div className="flex items-start gap-4">
                 <div
-                  className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-[var(--tarjetas-paneles)]"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
                 >
-                  <svg className="w-6 h-6 text-[var(--texto-fondo-oscuro)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" style={{ color: 'var(--logo-branding)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -563,16 +581,17 @@ export default function UserProfile() {
             <div className="space-y-4">
               {/* Email */}
               <div
-                className="rounded-lg border px-5 py-4"
+                className="rounded-xl border px-5 py-4"
                 style={{ backgroundColor: 'var(--tarjetas-paneles)', borderColor: 'var(--fondos-suaves)' }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--success)' }}>
-                    <span className="w-4 h-4 rounded-full flex items-center justify-center border border-[var(--success)] bg-transparent">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </span>
+                  <div
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--success)', color: 'var(--texto-fondo-oscuro)', opacity: 0.85 }}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                     Validado
                   </div>
                 </div>
@@ -600,16 +619,17 @@ export default function UserProfile() {
 
               {/* Teléfono */}
               <div
-                className="rounded-lg border px-5 py-4"
+                className="rounded-xl border px-5 py-4"
                 style={{ backgroundColor: 'var(--tarjetas-paneles)', borderColor: 'var(--fondos-suaves)' }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--success)' }}>
-                    <span className="w-4 h-4 rounded-full flex items-center justify-center border border-[var(--success)] bg-transparent">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </span>
+                  <div
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--success)', color: 'var(--texto-fondo-oscuro)', opacity: 0.85 }}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                     Validado
                   </div>
                 </div>
@@ -637,16 +657,17 @@ export default function UserProfile() {
 
               {/* Nombre de usuario */}
               <div
-                className="rounded-lg border px-5 py-4"
+                className="rounded-xl border px-5 py-4"
                 style={{ backgroundColor: 'var(--tarjetas-paneles)', borderColor: 'var(--fondos-suaves)' }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--success)' }}>
-                    <span className="w-4 h-4 rounded-full flex items-center justify-center border border-[var(--success)] bg-transparent">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </span>
+                  <div
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--success)', color: 'var(--texto-fondo-oscuro)', opacity: 0.85 }}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                     Validado
                   </div>
                 </div>
@@ -678,13 +699,29 @@ export default function UserProfile() {
         {/* Grid de tarjetas */}
         {!activeSection && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleCards.map((card) => {
+          {visibleCards.map((card, index) => {
+            const isInteractive = !!(card.href || card.section);
             const cardContent = (
               <button
                 type="button"
-                className={`p-6 rounded-lg h-full transition-all border bg-[var(--tarjetas-paneles)] border-[var(--fondos-suaves)] text-left w-full ${
-                  (card.href || card.section) ? 'cursor-pointer hover:shadow-md hover:border-[var(--hover)]' : ''
-                }`}
+                className="p-6 rounded-2xl h-full border text-left w-full transition-all duration-200"
+                style={{
+                  backgroundColor: 'var(--tarjetas-paneles)',
+                  borderColor: 'var(--fondos-suaves)',
+                  cursor: isInteractive ? 'pointer' : 'default',
+                }}
+                onMouseEnter={(e) => {
+                  if (isInteractive) {
+                    e.currentTarget.style.borderColor = 'var(--logo-branding)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(159,109,31,0.15)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isInteractive) {
+                    e.currentTarget.style.borderColor = 'var(--borde-visible)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
+                }}
                 onClick={
                   card.href
                     ? () => router.push(card.href!)
@@ -693,24 +730,28 @@ export default function UserProfile() {
                     : undefined
                 }
               >
-                <div className="relative">
+                <div className="relative mb-4">
                   {card.alert && (
                     <span
-                      className="absolute top-0 right-0 w-3 h-3 rounded-full bg-[var(--warning)]"
+                      className="absolute top-0 right-0 w-3 h-3 rounded-full"
+                      style={{ backgroundColor: 'var(--warning)' }}
                       title="Pendiente"
                     />
                   )}
-                  <div className="mb-4 text-[var(--menu-texto-principal)]">
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--logo-branding)' }}
+                  >
                     {card.icon}
                   </div>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-[var(--menu-texto-principal)]">
+                <h3 className="text-base font-bold mb-1.5" style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--encabezados-alterno)' }}>
                   {card.title}
                 </h3>
-                <p className="text-sm text-[var(--encabezados-alterno)]">
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
                   {card.subtitle}
                 </p>
-                {(card.href || card.section) && (
+                {isInteractive && (
                   <div className="mt-4 flex items-center gap-1 text-sm font-medium" style={{ color: LINK_BLUE }}>
                     Ver más
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -720,7 +761,11 @@ export default function UserProfile() {
                 )}
               </button>
             );
-            return <div key={card.id}>{cardContent}</div>;
+            return (
+              <div key={card.id} style={{ animation: `fadeUp 500ms ease-out ${index * 60}ms both` }}>
+                {cardContent}
+              </div>
+            );
           })}
         </div>
         )}

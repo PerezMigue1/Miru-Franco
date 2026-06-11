@@ -88,7 +88,7 @@ function CrearCitaContent() {
         <form onSubmit={manejarEnviar}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2
                   className="text-page-title mb-6"
                   style={{ color: 'var(--menu-texto-principal)' }}
@@ -119,7 +119,7 @@ function CrearCitaContent() {
                 </div>
               </Card>
 
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out 80ms both' }}>
                 <h2
                   className="text-page-title mb-6"
                   style={{ color: 'var(--menu-texto-principal)' }}
@@ -147,7 +147,7 @@ function CrearCitaContent() {
             </div>
 
             <div>
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out 160ms both' }}>
                 <h3
                   className="text-subtitle mb-4"
                   style={{ color: 'var(--menu-texto-principal)' }}

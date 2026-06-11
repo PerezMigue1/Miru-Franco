@@ -64,7 +64,7 @@ export default function CarritoComprasPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             {items.length === 0 ? (
-              <Card className="text-center py-12">
+              <Card className="text-center py-16">
                 <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                   Tu carrito está vacío
                 </p>
@@ -73,110 +73,118 @@ export default function CarritoComprasPage() {
                 </Button>
               </Card>
             ) : (
-              items.map((item) => (
-                <Card key={String(item.id)}>
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div
-                      className="w-full md:w-32 h-32 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                    >
-                      {item.imagen ? (
-                        <Image
-                          src={item.imagen}
-                          alt={item.nombre}
-                          width={256}
-                          height={256}
-                          className="w-full h-full object-contain"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>
-                          Imagen
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3
-                            className="text-subtitle mb-1"
-                            style={{ color: 'var(--menu-texto-principal)' }}
-                          >
-                            {item.nombre}
-                            {item.presentacion && (
-                              <span className="text-sm font-normal ml-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                                — {item.presentacion}
-                              </span>
-                            )}
-                          </h3>
-                          <p
-                            className="text-lg font-bold"
-                            style={{ color: 'var(--menu-texto-principal)' }}
-                          >
-                            ${item.precio.toLocaleString()}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => setItemToRemove(item)}
+              items.map((item, index) => {
+                const delay = index * 80;
+                return (
+                  <div
+                    key={String(item.id)}
+                    style={{ animation: 'fadeUp 500ms ease-out ' + delay + 'ms both' }}
+                  >
+                    <Card>
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div
+                          className="w-full md:w-32 h-32 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                          style={{ backgroundColor: 'var(--fondos-suaves)' }}
                         >
-                          Eliminar
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Cantidad:
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={cartLoading}
-                              onClick={() => handleQuantityChange(item, item.cantidad - 1)}
-                            >
-                              -
-                            </Button>
-                            <Input
-                              type="number"
-                              value={item.cantidad}
-                              disabled={cartLoading}
-                              onChange={(e) => handleQuantityChange(item, parseInt(e.target.value, 10))}
-                              className="w-20 text-center"
-                              min={1}
-                              max={999}
+                          {item.imagen ? (
+                            <Image
+                              src={item.imagen}
+                              alt={item.nombre}
+                              width={256}
+                              height={256}
+                              className="w-full h-full object-contain"
+                              unoptimized
                             />
+                          ) : (
+                            <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>
+                              Imagen
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3
+                                className="text-subtitle mb-1"
+                                style={{ color: 'var(--menu-texto-principal)' }}
+                              >
+                                {item.nombre}
+                                {item.presentacion && (
+                                  <span className="text-sm font-normal ml-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                                    — {item.presentacion}
+                                  </span>
+                                )}
+                              </h3>
+                              <p
+                                className="text-lg font-bold"
+                                style={{ color: 'var(--menu-texto-principal)' }}
+                              >
+                                ${item.precio.toLocaleString()}
+                              </p>
+                            </div>
                             <Button
                               size="sm"
-                              variant="outline"
-                              disabled={cartLoading}
-                              onClick={() => handleQuantityChange(item, item.cantidad + 1)}
+                              variant="danger"
+                              onClick={() => setItemToRemove(item)}
                             >
-                              +
+                              Eliminar
                             </Button>
                           </div>
-                        </div>
-                        <div>
-                          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Subtotal:
-                          </p>
-                          <p
-                            className="text-xl font-bold"
-                            style={{ color: 'var(--menu-texto-principal)' }}
-                          >
-                            ${(item.precio * item.cantidad).toLocaleString()}
-                          </p>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <label className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
+                                Cantidad:
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={cartLoading}
+                                  onClick={() => handleQuantityChange(item, item.cantidad - 1)}
+                                >
+                                  -
+                                </Button>
+                                <Input
+                                  type="number"
+                                  value={item.cantidad}
+                                  disabled={cartLoading}
+                                  onChange={(e) => handleQuantityChange(item, parseInt(e.target.value, 10))}
+                                  className="w-20 text-center"
+                                  min={1}
+                                  max={999}
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={cartLoading}
+                                  onClick={() => handleQuantityChange(item, item.cantidad + 1)}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                                Subtotal:
+                              </p>
+                              <p
+                                className="text-xl font-bold"
+                                style={{ color: 'var(--menu-texto-principal)' }}
+                              >
+                                ${(item.precio * item.cantidad).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   </div>
-                </Card>
-              ))
+                );
+              })
             )}
           </div>
 
-          <div>
+          <div style={{ animation: 'fadeUp 500ms ease-out 240ms both' }}>
             <Card>
               <h3
                 className="text-subtitle mb-4"

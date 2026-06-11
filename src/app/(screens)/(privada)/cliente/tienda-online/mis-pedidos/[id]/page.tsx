@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
@@ -138,7 +139,7 @@ export default function DetallePedidoPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
+            <Card style={{ animation: 'fadeUp 450ms ease-out both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Productos
               </h2>
@@ -175,7 +176,7 @@ export default function DetallePedidoPage() {
               </div>
             </Card>
 
-            <Card>
+            <Card style={{ animation: 'fadeUp 450ms ease-out 80ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Dirección de envío
               </h2>
@@ -189,7 +190,7 @@ export default function DetallePedidoPage() {
             </Card>
 
             {envio && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 450ms ease-out 160ms both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Envío
                 </h2>
@@ -219,7 +220,7 @@ export default function DetallePedidoPage() {
             )}
 
             {historial.length > 0 && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 450ms ease-out 240ms both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Historial de estados
                 </h2>
@@ -243,7 +244,7 @@ export default function DetallePedidoPage() {
               </Card>
             )}
 
-            <Card>
+            <Card style={{ animation: 'fadeUp 450ms ease-out 320ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Facturas
               </h2>
@@ -277,7 +278,7 @@ export default function DetallePedidoPage() {
               )}
             </Card>
 
-            <Card>
+            <Card style={{ animation: 'fadeUp 450ms ease-out 400ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Valoraciones de este pedido
               </h2>
@@ -290,7 +291,11 @@ export default function DetallePedidoPage() {
                   {valoraciones.map((v) => (
                     <li key={v.id} className="text-sm border-b pb-3 last:border-0" style={{ borderColor: 'var(--fondos-suaves)' }}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span style={{ color: 'var(--botones-principales)' }}>{'★'.repeat(Math.min(5, Math.max(0, v.puntuacion)))}</span>
+                        <span className="flex items-center gap-0.5">
+                          {Array.from({ length: Math.min(5, Math.max(0, v.puntuacion)) }, (_, i) => (
+                            <Star key={i} size={13} fill="currentColor" aria-hidden style={{ color: 'var(--botones-principales)' }} />
+                          ))}
+                        </span>
                         <span style={{ color: 'var(--encabezados-alterno)' }}>
                           Producto #{v.productoId}
                         </span>
@@ -307,7 +312,7 @@ export default function DetallePedidoPage() {
               )}
             </Card>
 
-            <Card>
+            <Card style={{ animation: 'fadeUp 450ms ease-out 480ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Devoluciones / cambios
               </h2>
@@ -337,7 +342,7 @@ export default function DetallePedidoPage() {
           </div>
 
           <div>
-            <Card>
+            <Card style={{ animation: 'fadeUp 450ms ease-out 80ms both' }}>
               <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Información del pedido
               </h3>

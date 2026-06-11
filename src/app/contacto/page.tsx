@@ -32,7 +32,7 @@ export default function ContactoPage() {
       <main className="flex-1" style={{ marginTop: '104px' }}>
 
         {/* Hero */}
-        <section className="section-padding text-center" style={{ backgroundColor: '#2A2A2A' }}>
+        <section className="section-padding text-center" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
           <div className="container-max max-w-2xl mx-auto">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--iconografia)' }}>
               Estamos para ti
@@ -190,9 +190,8 @@ export default function ContactoPage() {
                   </p>
                   <a
                     href="/cliente/servicios-citas/crear-cita"
-                    className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:opacity-90 hover:shadow-lg w-full sm:w-auto"
+                    className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-semibold text-sm uppercase tracking-wider bg-[var(--botones-principales)] hover:bg-[var(--hover)] hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
                     style={{
-                      backgroundColor: 'var(--botones-principales)',
                       color: 'var(--texto-fondo-oscuro)',
                       minHeight: '44px',
                     }}

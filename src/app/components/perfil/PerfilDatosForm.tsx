@@ -116,11 +116,11 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
 
   return (
     <div className="rounded-lg border border-[var(--fondos-suaves)] bg-[var(--tarjetas-paneles)] p-6">
-      <h3 className="text-lg font-semibold mb-6 text-[var(--menu-texto-principal)]">Información personal</h3>
+      <h3 className="text-elegant-title mb-6" style={{ color: 'var(--encabezados-alterno)', fontFamily: 'var(--font-family-serif)' }}>Información personal</h3>
 
       {loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>}
-      {loadError && !loadingPerfil && <p className="text-sm mb-4 text-red-600 dark:text-red-400">{loadError}</p>}
-      {saveOk && <p className="text-sm mb-4 text-green-700 dark:text-green-400" role="status">{saveOk}</p>}
+      {loadError && !loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--danger)' }}>{loadError}</p>}
+      {saveOk && <p className="text-sm mb-4" style={{ color: 'var(--success)' }} role="status">{saveOk}</p>}
 
       <div className="mb-8">
         <PerfilFotoBlock
@@ -170,8 +170,11 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
           {...register('fechaNacimiento')}
         />
 
-        <div className="md:col-span-2 border-t border-[var(--fondos-suaves)] pt-4 mt-2">
-          <h4 className="text-sm font-semibold mb-3 text-[var(--menu-texto-principal)]">Perfil capilar</h4>
+        <div className="md:col-span-2 border-t pt-6 mt-2" style={{ borderColor: 'var(--borde-visible)' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-8 h-px" style={{ backgroundColor: 'var(--logo-branding)' }} />
+            <p className="text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: 'var(--logo-branding)' }}>Perfil capilar</p>
+          </div>
         </div>
         <Select label="Tipo de cabello" fullWidth options={TIPO_CABELLO_OPTIONS} disabled={disabled} {...register('tipoCabello')} />
         <Input label="Color natural" fullWidth disabled={disabled} {...register('colorNatural')} />

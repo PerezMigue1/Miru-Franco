@@ -925,8 +925,8 @@ export default function CheckoutPage() {
             {Array.from({ length: totalPasosBarra }, (_, i) => i + 1).map((num) => (
               <div key={num} className="flex items-center">
                 <div
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                    pasoEnBarra >= num ? 'ring-2 ring-offset-2' : ''
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                    pasoEnBarra >= num ? 'ring-2 ring-offset-2 ring-[var(--botones-principales)]' : ''
                   }`}
                   style={{
                     backgroundColor:
@@ -939,7 +939,7 @@ export default function CheckoutPage() {
                 </div>
                 {num < totalPasosBarra && (
                   <div
-                    className={`w-6 sm:w-12 h-1 ${pasoEnBarra > num ? '' : 'opacity-50'}`}
+                    className={`w-6 sm:w-12 h-1 transition-all duration-300 ${pasoEnBarra > num ? '' : 'opacity-50'}`}
                     style={{
                       backgroundColor:
                         pasoEnBarra > num ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
@@ -963,7 +963,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             {paso === 1 && (
-              <div>
+              <div style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
                   Elige la forma de entrega
                 </h2>
@@ -1070,11 +1070,11 @@ export default function CheckoutPage() {
             )}
 
             {paso === 2 && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Cuándo llegará?
                 </h2>
-                <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                   <p className="font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                     {textoCuandoLlega().titulo}
                   </p>
@@ -1089,7 +1089,7 @@ export default function CheckoutPage() {
             )}
 
             {paso === 3 && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Cómo quieres pagar?
                 </h2>
@@ -1192,7 +1192,7 @@ export default function CheckoutPage() {
             )}
 
             {paso === 5 && esTarjetaCredito && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Mensualidad a pagar
                 </h2>
@@ -1228,7 +1228,7 @@ export default function CheckoutPage() {
             )}
 
             {esTarjeta && paso === pasoDatosTarjeta && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   {esTarjetaCredito ? 'Tarjeta de crédito' : 'Tarjeta de débito'}
                 </h2>
@@ -1368,7 +1368,7 @@ export default function CheckoutPage() {
             )}
 
             {paso === pasoRevision && (
-              <Card>
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
                   Revisa y confirma
                 </h2>

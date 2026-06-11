@@ -82,18 +82,18 @@ export default function MisPedidosPage() {
       </div>
 
       {loading ? (
-        <Card className="text-center py-12">
+        <Card className="text-center py-16">
           <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando pedidos…</p>
         </Card>
       ) : filtrados.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="text-center py-16">
           <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
             {pedidos.length === 0 ? 'No tienes pedidos realizados' : 'Ningún pedido coincide con la búsqueda'}
           </p>
           <Button onClick={() => router.push('/cliente/tienda-online')}>Explorar productos</Button>
         </Card>
       ) : (
-        <Card>
+        <Card style={{ animation: 'fadeUp 400ms ease-out both' }}>
           <Table
             headers={['Número', 'Fecha', 'Total', 'Método de pago', 'Estado', 'Acciones']}
           >

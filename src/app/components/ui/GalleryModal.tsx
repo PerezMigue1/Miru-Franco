@@ -55,7 +55,7 @@ export default function GalleryModal({
         onClick={onClose}
         aria-label="Cerrar galería"
         className="absolute top-4 right-4 flex items-center justify-center rounded-full hover:opacity-70 transition-opacity"
-        style={{ color: '#F2F1ED', minHeight: '44px', minWidth: '44px' }}
+        style={{ color: 'var(--texto-fondo-oscuro)', minHeight: '44px', minWidth: '44px' }}
       >
         <X size={22} aria-hidden />
       </button>
@@ -67,7 +67,7 @@ export default function GalleryModal({
           aria-label="Imagen anterior"
           className="absolute left-2 sm:left-4 flex items-center justify-center rounded-full hover:opacity-70 transition-opacity"
           style={{
-            color: '#F2F1ED',
+            color: 'var(--texto-fondo-oscuro)',
             minHeight: '44px',
             minWidth: '44px',
             top: '50%',
@@ -116,7 +116,7 @@ export default function GalleryModal({
           aria-label="Imagen siguiente"
           className="absolute right-2 sm:right-4 flex items-center justify-center rounded-full hover:opacity-70 transition-opacity"
           style={{
-            color: '#F2F1ED',
+            color: 'var(--texto-fondo-oscuro)',
             minHeight: '44px',
             minWidth: '44px',
             top: '50%',

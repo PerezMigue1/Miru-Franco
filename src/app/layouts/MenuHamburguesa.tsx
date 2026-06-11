@@ -99,12 +99,15 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
           <Link
             href="/cliente/servicios-citas/crear-cita"
             onClick={onClose}
-            className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-sm uppercase tracking-wider transition-all hover:opacity-90 hover:shadow-lg"
+            className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-sm uppercase tracking-wider hover:shadow-lg"
             style={{
               backgroundColor: 'var(--botones-principales)',
               color: 'var(--texto-fondo-oscuro)',
               minHeight: '44px',
+              transition: 'background-color 200ms ease',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
           >
             Agendar Cita
           </Link>

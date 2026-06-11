@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
+import { Camera } from 'lucide-react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
@@ -200,7 +201,7 @@ export default function ListaServiciosPage() {
       {!loading && !error && filtrados.length > 0 && (
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="lg:w-72 flex-shrink-0">
-            <Card className="p-4 space-y-4" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
+            <Card className="p-4 space-y-4 rounded-xl" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
               <h3
                 className="text-subtitle font-semibold"
                 style={{ color: 'var(--menu-texto-principal)' }}
@@ -300,15 +301,18 @@ export default function ListaServiciosPage() {
 
           <div className="flex-1 min-w-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtrados.map((servicio) => (
+              {filtrados.map((servicio, index) => {
+                const delay = index * 60;
+                return (
                 <Card
                   key={servicio.id}
-                  className="cursor-pointer text-left"
+                  className="cursor-pointer text-left transition-all duration-200 hover:scale-[1.02]"
                   onClick={() => router.push(`/cliente/servicios-citas/servicios/${servicio.id}`)}
+                  style={{ animation: 'fadeUp 500ms ease-out ' + delay + 'ms both' }}
                 >
                   <div className="mb-4">
                     <div
-                      className="w-full h-48 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden"
+                      className="w-full h-48 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden"
                       style={{ backgroundColor: 'var(--fondos-suaves)' }}
                     >
                       {(() => {
@@ -325,9 +329,7 @@ export default function ListaServiciosPage() {
                             sizes="(max-width: 768px) 100vw, 33vw"
                           />
                         ) : (
-                          <span style={{ color: 'var(--menu-texto-principal)' }}>
-                            Imagen del Servicio
-                          </span>
+                          <Camera size={36} aria-hidden style={{ color: 'var(--encabezados-alterno)' }} />
                         );
                       })()}
                     </div>
@@ -377,7 +379,8 @@ export default function ListaServiciosPage() {
                     </div>
                   </div>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

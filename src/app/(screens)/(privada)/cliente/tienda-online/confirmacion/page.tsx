@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Check, X } from 'lucide-react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
@@ -163,15 +164,16 @@ function ConfirmacionCompraContent() {
   return (
     <ModuleLayout>
       <div className="max-w-3xl mx-auto">
-        <Card className="text-center">
+        <Card className="text-center" style={{ animation: 'fadeUp 400ms ease-out both' }}>
           <div className="mb-6">
             <div
               className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
               style={{ backgroundColor: esCancelado ? 'var(--danger)' : 'var(--success)' }}
             >
-              <span className="text-4xl" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                {esCancelado ? '✕' : '✓'}
-              </span>
+              {esCancelado
+                ? <X size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />
+                : <Check size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />
+              }
             </div>
             <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               {esCancelado ? 'Pedido cancelado' : '¡Gracias por tu compra!'}
@@ -189,7 +191,7 @@ function ConfirmacionCompraContent() {
             )}
           </div>
 
-          <div className="rounded-lg p-6 mb-6 text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+          <div className="rounded-xl p-6 mb-6 text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -334,7 +336,7 @@ function ConfirmacionCompraContent() {
           </div>
 
           <div className="space-y-4">
-            <div className="p-4 rounded-lg text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+            <div className="p-4 rounded-xl text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                 Podés ver el detalle completo, envíos e historial en &quot;Mis pedidos&quot;. Si el backend envía
                 correos de confirmación, los recibirás según la configuración del servidor.

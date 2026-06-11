@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
+import { FileText, Sparkles, FlaskConical, ClipboardList, ShoppingCart, Zap, Check, Star } from 'lucide-react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
@@ -43,6 +44,7 @@ export default function DetalleProductoClient({ id }: Props) {
   const [pedidosParaValorar, setPedidosParaValorar] = useState<PedidoApi[]>([]);
   const [pedidoValoracion, setPedidoValoracion] = useState('');
   const [puntuacion, setPuntuacion] = useState('5');
+  const [hoveredStar, setHoveredStar] = useState(0);
   const [comentarioValoracion, setComentarioValoracion] = useState('');
   const [enviandoValoracion, setEnviandoValoracion] = useState(false);
   const { addItem } = useCart();
@@ -196,7 +198,7 @@ export default function DetalleProductoClient({ id }: Props) {
 
   return (
     <ModuleLayout>
-      <div className="w-full max-w-full mx-auto px-2 sm:px-3 lg:px-4 relative">
+      <div className="w-full max-w-full mx-auto px-2 sm:px-3 lg:px-4 relative" style={{ animation: 'fadeUp 400ms ease-out both' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <div className="space-y-3 sm:space-y-4">
             <div className="relative flex h-64 w-full items-center justify-center overflow-hidden rounded-lg p-4 sm:h-80 sm:p-6 lg:h-96 xl:h-[500px]" style={{ backgroundColor: 'var(--texto-fondo-oscuro)', border: '2px solid var(--tarjetas-paneles)' }}>
@@ -227,7 +229,7 @@ export default function DetalleProductoClient({ id }: Props) {
                         key={pres.id ?? pres.tamaño}
                         onClick={() => setPresentacionSeleccionada(pres.tamaño)}
                         disabled={!pres.disponible}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${presentacionSeleccionada === pres.tamaño ? 'ring-2 ring-offset-2' : ''} ${pres.disponible ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'}`}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${presentacionSeleccionada === pres.tamaño ? 'ring-2 ring-offset-2 ring-[var(--botones-principales)]' : ''} ${pres.disponible ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'}`}
                         style={{ backgroundColor: presentacionSeleccionada === pres.tamaño ? 'var(--botones-principales)' : pres.disponible ? 'var(--tarjetas-paneles)' : 'var(--fondos-suaves)', color: presentacionSeleccionada === pres.tamaño ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}
                       >
                         {pres.tamaño}{!pres.disponible && ' (Agotado)'}
@@ -256,7 +258,7 @@ export default function DetalleProductoClient({ id }: Props) {
                   </div>
                   <div className="flex items-center gap-2">
                     {disponible ? (
-                      <><span className="text-base" style={{ color: 'var(--success)' }}>✓</span><p className="text-sm sm:text-base" style={{ color: 'var(--encabezados-alterno)' }}>Stock disponible: <span className="font-semibold">{maxCantidad} unidades</span></p></>
+                      <><Check size={16} aria-hidden style={{ color: 'var(--success)' }} /><p className="text-sm sm:text-base" style={{ color: 'var(--encabezados-alterno)' }}>Stock disponible: <span className="font-semibold">{maxCantidad} unidades</span></p></>
                     ) : (
                       <p className="text-sm sm:text-base font-medium" style={{ color: 'var(--danger)' }}>{!disponibleProducto ? 'Producto no disponible en este momento' : 'Agotado'}</p>
                     )}
@@ -273,9 +275,17 @@ export default function DetalleProductoClient({ id }: Props) {
                   </div>
                 )}
                 <div className="pt-2 space-y-2">
-                  {mensajeAñadido && <p className="text-sm text-center font-medium py-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--success) 20%, transparent)', color: 'var(--success)' }}>✓ Añadido al carrito</p>}
-                  <Button fullWidth size="lg" className="text-base sm:text-lg py-3" onClick={() => void manejarAgregarCarrito()} disabled={!disponible}>{disponible ? '🛒 Agregar al Carrito' : 'No disponible'}</Button>
-                  <Button fullWidth size="lg" variant="outline" className="text-base sm:text-lg py-3" onClick={() => void manejarComprarAhora()} disabled={!disponible}>{disponible ? '⚡ Comprar ahora' : 'No disponible'}</Button>
+                  {mensajeAñadido && (
+                    <p className="text-sm text-center font-medium py-2 rounded-lg flex items-center justify-center gap-1.5" style={{ backgroundColor: 'color-mix(in srgb, var(--success) 20%, transparent)', color: 'var(--success)' }}>
+                      <Check size={14} aria-hidden /> Añadido al carrito
+                    </p>
+                  )}
+                  <Button fullWidth size="lg" className="text-base sm:text-lg py-3 flex items-center justify-center gap-2" onClick={() => void manejarAgregarCarrito()} disabled={!disponible}>
+                    {disponible ? <><ShoppingCart size={18} aria-hidden /> Agregar al Carrito</> : 'No disponible'}
+                  </Button>
+                  <Button fullWidth size="lg" variant="outline" className="text-base sm:text-lg py-3 flex items-center justify-center gap-2" onClick={() => void manejarComprarAhora()} disabled={!disponible}>
+                    {disponible ? <><Zap size={18} aria-hidden /> Comprar ahora</> : 'No disponible'}
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -284,19 +294,23 @@ export default function DetalleProductoClient({ id }: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card className="p-4 sm:p-6 lg:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>📝 Descripción</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
+              <FileText size={20} aria-hidden /> Descripción
+            </h2>
             <div className="space-y-3 sm:space-y-4">
               <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{producto.descripcion}</p>
               {producto.descripcionLarga && <p className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{producto.descripcionLarga}</p>}
             </div>
           </Card>
           <Card className="p-4 sm:p-6 lg:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>✨ Características</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
+              <Sparkles size={20} aria-hidden /> Características
+            </h2>
             {producto.caracteristicas && producto.caracteristicas.length > 0 ? (
               <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                 {producto.caracteristicas.map((c, i) => (
                   <li key={i} className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-base sm:text-lg flex-shrink-0 mt-0.5" style={{ color: 'var(--success)' }}>✓</span>
+                    <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--success)' }} aria-hidden />
                     <span className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{c}</span>
                   </li>
                 ))}
@@ -304,24 +318,51 @@ export default function DetalleProductoClient({ id }: Props) {
             ) : <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin características adicionales.</p>}
             {producto.ingredientes && (
               <div className="pt-3 sm:pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3" style={{ color: 'var(--menu-texto-principal)' }}>🧪 Ingredientes</h3>
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <FlaskConical size={18} aria-hidden /> Ingredientes
+                </h3>
                 <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{producto.ingredientes}</p>
               </div>
             )}
           </Card>
         </div>
 
+        {(producto.modoUso || producto.resultado) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+            {producto.modoUso && (
+              <Card className="p-4 sm:p-6 lg:p-8">
+                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
+                  <ClipboardList size={20} aria-hidden /> Modo de uso
+                </h2>
+                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{producto.modoUso}</p>
+              </Card>
+            )}
+            {producto.resultado && (
+              <Card className="p-4 sm:p-6 lg:p-8">
+                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
+                  <Sparkles size={20} aria-hidden /> Resultado
+                </h2>
+                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{producto.resultado}</p>
+              </Card>
+            )}
+          </div>
+        )}
+
         <Card className="p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6">
-          <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>Opiniones</h2>
+          <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
+            <Star size={20} aria-hidden /> Opiniones
+          </h2>
           {valoraciones.length === 0 ? (
             <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Sé el primero en opinar (o aún no hay reseñas públicas).</p>
           ) : (
             <ul className="space-y-4 mb-6">
               {valoraciones.map((v) => (
                 <li key={v.id} className="text-sm border-b pb-3 last:border-0" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                  <div className="mb-1" style={{ color: 'var(--botones-principales)' }}>
-                    {'★'.repeat(Math.min(5, Math.max(0, v.puntuacion)))}
-                    <span className="ml-2" style={{ color: 'var(--encabezados-alterno)' }}>Pedido #{v.pedidoId}</span>
+                  <div className="flex items-center gap-1 mb-1">
+                    {Array.from({ length: Math.min(5, Math.max(0, v.puntuacion)) }, (_, i) => (
+                      <Star key={i} size={13} fill="currentColor" aria-hidden style={{ color: 'var(--botones-principales)' }} />
+                    ))}
+                    <span className="ml-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Pedido #{v.pedidoId}</span>
                   </div>
                   {v.comentario && <p style={{ color: 'var(--menu-texto-principal)' }}>{v.comentario}</p>}
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>{v.creadoEn ? new Date(v.creadoEn).toLocaleDateString('es-MX') : ''}</p>
@@ -334,7 +375,33 @@ export default function DetalleProductoClient({ id }: Props) {
               <h3 className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Dejar reseña</h3>
               <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Una reseña por producto. Elige el pedido donde compraste este artículo.</p>
               <Select label="Pedido" value={pedidoValoracion} onChange={(e) => setPedidoValoracion(e.target.value)} options={[{ value: '', label: 'Selecciona pedido…' }, ...pedidosParaValorar.map((p) => ({ value: String(p.id), label: `#${p.id} — ${new Date(p.creadoEn ?? '').toLocaleDateString('es-MX')}` }))]} fullWidth />
-              <Select label="Puntuación" value={puntuacion} onChange={(e) => setPuntuacion(e.target.value)} options={[{ value: '5', label: '5 estrellas' }, { value: '4', label: '4 estrellas' }, { value: '3', label: '3 estrellas' }, { value: '2', label: '2 estrellas' }, { value: '1', label: '1 estrella' }]} fullWidth />
+              <div>
+                <p className="text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Puntuación</p>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setPuntuacion(String(star))}
+                      onMouseEnter={() => setHoveredStar(star)}
+                      onMouseLeave={() => setHoveredStar(0)}
+                      className="transition-transform duration-100 hover:scale-110 focus:outline-none"
+                      aria-label={star + ' estrella' + (star > 1 ? 's' : '')}
+                    >
+                      <Star
+                        size={32}
+                        strokeWidth={1.5}
+                        fill={(hoveredStar || parseInt(puntuacion)) >= star ? 'currentColor' : 'none'}
+                        style={{ color: (hoveredStar || parseInt(puntuacion)) >= star ? 'var(--logo-branding)' : 'var(--encabezados-alterno)' }}
+                        aria-hidden
+                      />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {parseInt(puntuacion)} de 5
+                  </span>
+                </div>
+              </div>
               <Textarea label="Comentario (opcional)" value={comentarioValoracion} onChange={(e) => setComentarioValoracion(e.target.value)} rows={3} fullWidth />
               <Button onClick={() => void enviarValoracion()} disabled={enviandoValoracion}>{enviandoValoracion ? 'Enviando…' : 'Publicar reseña'}</Button>
             </div>
@@ -346,23 +413,6 @@ export default function DetalleProductoClient({ id }: Props) {
             </p>
           )}
         </Card>
-
-        {(producto.modoUso || producto.resultado) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-            {producto.modoUso && (
-              <Card className="p-4 sm:p-6 lg:p-8">
-                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>📋 Modo de uso</h2>
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{producto.modoUso}</p>
-              </Card>
-            )}
-            {producto.resultado && (
-              <Card className="p-4 sm:p-6 lg:p-8">
-                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>✨ Resultado</h2>
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{producto.resultado}</p>
-              </Card>
-            )}
-          </div>
-        )}
       </div>
     </ModuleLayout>
   );

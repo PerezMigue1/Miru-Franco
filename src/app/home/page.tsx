@@ -62,9 +62,8 @@ export default async function Home() {
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-7" data-reveal style={{ transitionDelay: '400ms' }}>
                 <Link
                   href="/cliente/servicios-citas/crear-cita"
-                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:opacity-90 hover:shadow-lg"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider bg-[var(--botones-principales)] hover:bg-[var(--hover)] hover:shadow-lg transition-all duration-200"
                   style={{
-                    backgroundColor: 'var(--botones-principales)',
                     color: 'var(--texto-fondo-oscuro)',
                     minHeight: '44px',
                   }}
@@ -73,7 +72,7 @@ export default async function Home() {
                 </Link>
                 <Link
                   href="/servicios"
-                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:opacity-80 border"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider border hover:bg-[var(--hover)] hover:border-[var(--hover)] hover:text-[var(--texto-fondo-oscuro)] transition-all duration-200"
                   style={{
                     borderColor: 'var(--logo-branding)',
                     color: 'var(--hero-tagline-color)',

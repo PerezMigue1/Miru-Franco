@@ -306,9 +306,9 @@ export default function Header() {
                     </svg>
                   </button>
                   {isUserMenuOpen && (
-                    <div 
-                      className="absolute right-0 mt-2 rounded-lg shadow-xl border min-w-[240px] bg-white dark:bg-[#8a0018] overflow-hidden"
-                      style={{ borderColor: 'var(--borde-visible)' }}
+                    <div
+                      className="absolute right-0 mt-2 rounded-lg shadow-xl border min-w-[240px] overflow-hidden"
+                      style={{ borderColor: 'var(--borde-visible)', backgroundColor: 'var(--tarjetas-paneles)' }}
                     >
                       {/* Cabecera: usuario y perfil */}
                       <div className="px-4 pt-4 pb-3">
@@ -340,13 +340,14 @@ export default function Header() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-base truncate text-gray-900 dark:text-white">{userName}</p>
+                            <p className="font-bold text-base truncate" style={{ color: 'var(--texto-fondo-oscuro)' }}>{userName}</p>
                             <button
                               onClick={() => {
                                 setIsUserMenuOpen(false);
                                 router.push('/perfil');
                               }}
-                              className="text-sm font-medium hover:underline flex items-center gap-1 text-gray-700 dark:text-gray-200"
+                              className="text-sm font-medium hover:underline flex items-center gap-1"
+                              style={{ color: 'var(--enlaces-textos-interactivos)' }}
                             >
                               Mi perfil
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,10 +357,10 @@ export default function Header() {
                           </div>
                         </div>
                       </div>
-                      <hr className="border-gray-200 dark:border-white/20" />
+                      <hr style={{ borderColor: 'var(--borde-visible)' }} />
                       {/* Mi cuenta */}
                       <div className="py-2">
-                        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--texto-fondo-oscuro)', opacity: 0.5 }}>
                           Mi cuenta
                         </p>
                         <button
@@ -367,7 +368,8 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online/mis-pedidos');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
+                          style={{ color: 'var(--texto-fondo-oscuro)' }}
                         >
                           Mis pedidos
                         </button>
@@ -376,7 +378,8 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
+                          style={{ color: 'var(--texto-fondo-oscuro)' }}
                         >
                           Sigue comprando
                         </button>
@@ -385,7 +388,8 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online/carrito');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white flex items-center justify-between"
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors flex items-center justify-between"
+                          style={{ color: 'var(--texto-fondo-oscuro)' }}
                         >
                           Carrito
                           {totalItems > 0 && (
@@ -398,12 +402,13 @@ export default function Header() {
                           )}
                         </button>
                       </div>
-                      <hr className="border-gray-200 dark:border-white/20" />
+                      <hr style={{ borderColor: 'var(--borde-visible)' }} />
                       <div className="py-2">
                         <button
                           onClick={handleLogout}
                           disabled={loading}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white disabled:opacity-50"
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors disabled:opacity-50"
+                          style={{ color: 'var(--texto-fondo-oscuro)' }}
                         >
                           {loading ? 'Cerrando...' : 'Cerrar sesión'}
                         </button>
@@ -446,7 +451,7 @@ export default function Header() {
       )}
 
       {/* Barra de Navegación Secundaria */}
-      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ top: '72px', backgroundColor: '#710014' }}>
+      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ top: '72px', backgroundColor: 'var(--botones-principales)' }}>
         <div className="layout-page">
           <div className="flex items-center justify-center h-14">
             <MenuHorizontal />

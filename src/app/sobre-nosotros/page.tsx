@@ -40,7 +40,7 @@ export default function SobreNosotrosPage() {
       <main className="flex-1" style={{ marginTop: '104px' }}>
 
         {/* Hero */}
-        <section className="section-padding text-center" style={{ backgroundColor: '#2A2A2A' }}>
+        <section className="section-padding text-center" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
           <div className="container-max max-w-3xl mx-auto">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--iconografia)' }}>
               Nuestra historia
@@ -112,7 +112,7 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Valores */}
-        <section className="section-padding" style={{ backgroundColor: '#2A2A2A' }}>
+        <section className="section-padding" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
           <div className="container-max">
             <div className="text-center mb-12">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--iconografia)' }}>

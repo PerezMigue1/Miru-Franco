@@ -161,13 +161,16 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
             <button
               type="button"
               onClick={() => router.push('/cliente/tienda-online')}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:opacity-90 hover:shadow-lg"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:shadow-lg"
               style={{
                 backgroundColor: 'var(--botones-principales)',
                 color: 'var(--texto-fondo-oscuro)',
                 boxShadow: '0 4px 24px -4px rgba(113,0,20,0.25)',
                 minHeight: '44px',
+                transition: 'background-color 200ms ease',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
             >
               Ver tienda completa →
             </button>
@@ -176,7 +179,7 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
       </section>
 
       {/* ── Servicios ── */}
-      <section className="section-padding" style={{ backgroundColor: '#2A2A2A' }}>
+      <section className="section-padding" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
         <div className="container-max">
           <SectionHeader eyebrow="Lo que ofrecemos" title="Nuestros Servicios" light />
 
@@ -237,8 +240,18 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
             <button
               type="button"
               onClick={() => router.push('/cliente/servicios-citas')}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider border transition-all duration-200 hover:opacity-90"
-              style={{ borderColor: 'var(--logo-branding)', color: 'var(--logo-branding)', minHeight: '44px' }}
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider border transition-all duration-200"
+              style={{ borderColor: 'var(--logo-branding)', color: 'var(--logo-branding)', minHeight: '44px', transition: 'background-color 200ms ease, border-color 200ms ease, color 200ms ease' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--hover)';
+                e.currentTarget.style.borderColor = 'var(--hover)';
+                e.currentTarget.style.color = 'var(--texto-fondo-oscuro)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'var(--logo-branding)';
+                e.currentTarget.style.color = 'var(--logo-branding)';
+              }}
             >
               Agendar cita →
             </button>
@@ -270,10 +283,10 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
                   className="absolute inset-0 flex flex-col items-center justify-end pb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{ backgroundColor: 'rgba(113,0,20,0.6)' }}
                 >
-                  <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#F2F1ED' }}>
+                  <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                     {item.categoria}
                   </p>
-                  <p className="text-xs opacity-80 mt-1" style={{ color: '#F2F1ED' }}>
+                  <p className="text-xs opacity-80 mt-1" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                     {item.descripcion}
                   </p>
                 </div>
@@ -284,12 +297,15 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
             <button
               type="button"
               onClick={() => router.push('/cliente/galeria')}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:opacity-90"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider"
               style={{
                 backgroundColor: 'var(--botones-principales)',
                 color: 'var(--texto-fondo-oscuro)',
                 minHeight: '44px',
+                transition: 'background-color 200ms ease',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
             >
               Ver galería completa →
             </button>
@@ -362,7 +378,7 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
       </section>
 
       {/* ── CTA Final ── */}
-      <section className="section-padding" style={{ backgroundColor: '#2A2A2A' }}>
+      <section className="section-padding" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
         <div className="container-max">
           <div
             className="max-w-3xl mx-auto text-center rounded-3xl p-10 sm:p-14 border"
@@ -389,23 +405,37 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
               <button
                 type="button"
                 onClick={() => router.push('/cliente/servicios-citas/crear-cita')}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:opacity-90 hover:shadow-lg"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider hover:shadow-lg"
                 style={{
                   backgroundColor: 'var(--botones-principales)',
                   color: 'var(--texto-fondo-oscuro)',
                   minHeight: '44px',
+                  transition: 'background-color 200ms ease',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
               >
                 Agendar Cita
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/servicios')}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider border transition-all duration-200 hover:opacity-90"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider border"
                 style={{
                   borderColor: 'rgba(159,109,31,0.5)',
                   color: 'var(--logo-branding)',
                   minHeight: '44px',
+                  transition: 'background-color 200ms ease, border-color 200ms ease, color 200ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--hover)';
+                  e.currentTarget.style.borderColor = 'var(--hover)';
+                  e.currentTarget.style.color = 'var(--texto-fondo-oscuro)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'rgba(159,109,31,0.5)';
+                  e.currentTarget.style.color = 'var(--logo-branding)';
                 }}
               >
                 Ver Servicios

@@ -93,7 +93,7 @@ export default function MisCitasPage() {
         />
       </div>
 
-      <Card>
+      <Card style={{ animation: 'fadeUp 400ms ease-out both' }}>
         <Table headers={['ID', 'Servicio', 'Fecha', 'Hora', 'Especialista', 'Precio', 'Estado', 'Acciones']}>
           {citas.map((cita) => (
             <TableRow key={cita.id}>
@@ -143,7 +143,7 @@ export default function MisCitasPage() {
       </Card>
 
       {citas.length === 0 && (
-        <Card className="text-center py-12">
+        <Card className="text-center py-16">
           <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
             No tienes citas agendadas
           </p>

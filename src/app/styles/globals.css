@@ -520,3 +520,26 @@ html { scroll-behavior: smooth; }
 .nav-link.active::after {
   transform: scaleX(1);
 }
+
+/* ========== BOTONES GLOBALES ========== */
+@layer utilities {
+  .btn-primary {
+    background-color: var(--botones-principales);
+    color: var(--texto-fondo-oscuro);
+    transition: background-color 200ms ease;
+  }
+  .btn-primary:hover {
+    background-color: var(--hover);
+  }
+
+  .btn-ghost {
+    border: 1px solid var(--botones-principales);
+    color: var(--botones-principales);
+    transition: color 200ms ease, border-color 200ms ease;
+  }
+  .btn-ghost:hover {
+    color: var(--hover);
+    border-color: var(--hover);
+  }
+}
+
