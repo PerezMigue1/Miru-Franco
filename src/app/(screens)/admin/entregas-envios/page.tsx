@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarPedidos, listarEnviosPorPedido, actualizarEnvio, PedidoApi, EnvioApi } from '../../../services/ecommerce';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -9,12 +11,65 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
+interface EntregaFila {
+  id: number;
+  pedidoId: number;
+  cliente: string;
+  direccion: string;
+  tipo: string;
+  zona: string;
+  estado: string;
+  mensajero: string;
+}
+
+function mapearEnvio(e: EnvioApi, pedido: PedidoApi): EntregaFila {
+  return {
+    id: e.id,
+    pedidoId: pedido.id,
+    cliente: pedido.usuarioId ?? '-',
+    direccion: pedido.direccionTextoCompleta ?? '-',
+    tipo: 'Domicilio',
+    zona: '-',
+    estado: e.estadoEnvio ?? 'preparado',
+    mensajero: e.empresaEnvio ?? '-',
+  };
+}
+
 export default function EntregasEnviosPage() {
-  const entregas = [
-    { id: 1, cliente: 'María González', direccion: 'Col. Juárez, Calle Principal #123', tipo: 'Domicilio', zona: 'Gratuita', estado: 'en_camino', mensajero: 'Motociclista 1' },
-    { id: 2, cliente: 'Ana López', direccion: 'Centro, Av. Central #456', tipo: 'Domicilio', zona: 'Gratuita', estado: 'preparado', mensajero: '-' },
-    { id: 3, cliente: 'Carmen Ruiz', direccion: 'Tienda', tipo: 'Recolección', zona: '-', estado: 'listo', mensajero: '-' },
-  ];
+  const [entregas, setEntregas] = useState<EntregaFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const cargar = async () => {
+    setLoading(true);
+    try {
+      const pedidos = await listarPedidos();
+      const enviados = pedidos.filter((p) => ['preparando', 'enviado', 'pagado'].includes(p.estado));
+      const rows: EntregaFila[] = [];
+      await Promise.all(
+        enviados.map(async (pedido) => {
+          const envios = await listarEnviosPorPedido(pedido.id);
+          envios.forEach((e) => rows.push(mapearEnvio(e, pedido)));
+        })
+      );
+      setEntregas(rows);
+    } catch {
+      // mantener tabla vacía en error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const handleEnviar = async (id: number) => {
+    await actualizarEnvio(id, { estadoEnvio: 'en_camino' });
+    cargar();
+  };
+
+  const handleEntregado = async (id: number) => {
+    await actualizarEnvio(id, { estadoEnvio: 'entregado' });
+    cargar();
+  };
 
   const estados = {
     preparado: { label: 'Preparado', variant: 'info' as const },
@@ -58,10 +113,10 @@ export default function EntregasEnviosPage() {
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">Ver Detalles</Button>
                   {entrega.estado === 'preparado' && (
-                    <Button size="sm">Enviar</Button>
+                    <Button size="sm" onClick={() => handleEnviar(entrega.id)}>Enviar</Button>
                   )}
                   {entrega.estado === 'en_camino' && (
-                    <Button size="sm" variant="success">Marcar Entregado</Button>
+                    <Button size="sm" variant="success" onClick={() => handleEntregado(entrega.id)}>Marcar Entregado</Button>
                   )}
                 </div>
               </TableCell>
@@ -113,4 +168,3 @@ export default function EntregasEnviosPage() {
     </AdminLayout>
   );
 }
-

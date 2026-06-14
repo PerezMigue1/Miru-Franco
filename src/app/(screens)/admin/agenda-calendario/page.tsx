@@ -1,17 +1,61 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarCalendario, listarCitasDelDia, CitaApi } from '../../../services/citas';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 
+interface CitaDia {
+  hora: string;
+  cliente: string;
+  servicio: string;
+  especialista: string;
+  estado: string;
+}
+
+function mapearCitaDia(c: CitaApi): CitaDia {
+  const fechaHora = c.fechaHoraInicio ? new Date(c.fechaHoraInicio) : null;
+  return {
+    hora: fechaHora ? fechaHora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-',
+    cliente: c.clienteNombre ?? '-',
+    servicio: c.servicioNombre ?? '-',
+    especialista: c.especialistaNombre ?? '-',
+    estado: c.estado,
+  };
+}
+
 export default function AgendaCalendarioPage() {
-  const citasHoy = [
-    { hora: '09:00', cliente: 'María González', servicio: 'Corte', especialista: 'Mildred', estado: 'confirmada' },
-    { hora: '10:30', cliente: 'Ana López', servicio: 'Alaciado', especialista: 'Auxiliar', estado: 'confirmada' },
-    { hora: '14:00', cliente: 'Carmen Ruiz', servicio: 'Nanoplastía', especialista: 'Mildred', estado: 'pendiente' },
-  ];
+  const [citasHoy, setCitasHoy] = useState<CitaDia[]>([]);
+  const [citasPorDia, setCitasPorDia] = useState<Record<number, number>>({});
+  const [mesActual] = useState(() => new Date());
+
+  useEffect(() => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    listarCitasDelDia(hoy)
+      .then((data) => setCitasHoy(data.map(mapearCitaDia)))
+      .catch(() => {});
+
+    const inicioMes = new Date(mesActual.getFullYear(), mesActual.getMonth(), 1).toISOString().slice(0, 10);
+    const finMes = new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 0).toISOString().slice(0, 10);
+    listarCalendario(inicioMes, finMes)
+      .then((data) => {
+        const conteo: Record<number, number> = {};
+        data.forEach((c) => {
+          if (c.fechaHoraInicio) {
+            const dia = new Date(c.fechaHoraInicio).getDate();
+            conteo[dia] = (conteo[dia] ?? 0) + 1;
+          }
+        });
+        setCitasPorDia(conteo);
+      })
+      .catch(() => {});
+  }, [mesActual]);
+
+  const diasEnMes = new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 0).getDate();
+  const nombreMes = mesActual.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 
   return (
     <AdminLayout>
@@ -30,7 +74,7 @@ export default function AgendaCalendarioPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <Card className="lg:col-span-3">
           <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Calendario - Enero 2024
+            Calendario - {nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}
           </h2>
           <div className="grid grid-cols-7 gap-2 mb-4">
             {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia) => (
@@ -44,23 +88,23 @@ export default function AgendaCalendarioPage() {
             ))}
           </div>
           <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => (
+            {Array.from({ length: diasEnMes }, (_, i) => i + 1).map((dia) => (
               <div
                 key={dia}
                 className="aspect-square p-2 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                 style={{
-                  backgroundColor: dia === 15 ? 'var(--fondos-suaves)' : 'var(--fondo-general)',
+                  backgroundColor: dia === new Date().getDate() ? 'var(--fondos-suaves)' : 'var(--fondo-general)',
                   borderColor: 'var(--fondos-suaves)',
                 }}
               >
                 <div className="text-sm font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
                   {dia}
                 </div>
-                {dia === 15 && (
+                {citasPorDia[dia] ? (
                   <div className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                    3 citas
+                    {citasPorDia[dia]} cita{citasPorDia[dia] !== 1 ? 's' : ''}
                   </div>
-                )}
+                ) : null}
               </div>
             ))}
           </div>
@@ -104,4 +148,3 @@ export default function AgendaCalendarioPage() {
     </AdminLayout>
   );
 }
-

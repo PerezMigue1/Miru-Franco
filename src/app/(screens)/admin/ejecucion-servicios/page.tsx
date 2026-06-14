@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarCitas, checkOutCita, CitaApi } from '../../../services/citas';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -9,18 +11,66 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
+
+interface ServicioFila {
+  id: number;
+  cliente: string;
+  servicio: string;
+  especialista: string;
+  inicio: string;
+  fin: string;
+  estado: string;
+  productos: string[];
+}
+
+function mapearCita(c: CitaApi): ServicioFila {
+  const inicio = c.fechaHoraInicio ? new Date(c.fechaHoraInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-';
+  const fin = c.fechaHoraFin ? new Date(c.fechaHoraFin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
+  const estadoMap: Record<string, string> = {
+    pendiente: 'pendiente',
+    confirmada: 'pendiente',
+    en_curso: 'en_proceso',
+    completada: 'completado',
+  };
+  return {
+    id: c.id,
+    cliente: c.clienteNombre ?? '-',
+    servicio: c.servicioNombre ?? '-',
+    especialista: c.especialistaNombre ?? '-',
+    inicio,
+    fin,
+    estado: estadoMap[c.estado] ?? c.estado,
+    productos: [],
+  };
+}
+
 export default function EjecucionServiciosPage() {
-  const servicios = [
-    { id: 1, cliente: 'María González', servicio: 'Corte', especialista: 'Mildred', inicio: '10:00', fin: '10:45', estado: 'en_proceso', productos: ['Shampoo', 'Acondicionador'] },
-    { id: 2, cliente: 'Ana López', servicio: 'Alaciado', especialista: 'Auxiliar', inicio: '14:00', estado: 'pendiente', productos: [] },
-    { id: 3, cliente: 'Carmen Ruiz', servicio: 'Nanoplastía', especialista: 'Mildred', inicio: '09:00', fin: '12:30', estado: 'completado', productos: ['Nanoplastía Premium', 'Shampoo'] },
-  ];
+  const [servicios, setServicios] = useState<ServicioFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const cargar = () => {
+    setLoading(true);
+    listarCitas({ estado: 'en_curso' })
+      .then(({ data }) => setServicios(data.map(mapearCita)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const handleCheckOut = async (id: number) => {
+    await checkOutCita(id);
+    cargar();
+  };
 
   const estados = {
     pendiente: { label: 'Pendiente', variant: 'warning' as const },
     en_proceso: { label: 'En Proceso', variant: 'info' as const },
     completado: { label: 'Completado', variant: 'success' as const },
   };
+
+  const pendientes = servicios.filter((s) => s.estado === 'pendiente').length;
+  const enProceso = servicios.filter((s) => s.estado === 'en_proceso').length;
 
   return (
     <AdminLayout>
@@ -33,19 +83,19 @@ export default function EjecucionServiciosPage() {
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : pendientes}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Proceso</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>1</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enProceso}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>5</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
           </div>
         </Card>
       </div>
@@ -80,7 +130,11 @@ export default function EjecucionServiciosPage() {
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="primary">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={servicio.estado === 'en_proceso' ? () => handleCheckOut(servicio.id) : undefined}
+                  >
                     {servicio.estado === 'pendiente' ? 'Iniciar' : servicio.estado === 'en_proceso' ? 'Finalizar' : 'Ver Detalles'}
                   </Button>
                 </div>
@@ -118,4 +172,3 @@ export default function EjecucionServiciosPage() {
     </AdminLayout>
   );
 }
-

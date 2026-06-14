@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarVentas, crearVenta, cancelarVenta, VentaLocalApi } from '../../../services/pos';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -10,6 +12,27 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import { getCategoryColor } from '../../../utils/categoryColors';
 
+interface VentaFila {
+  id: number;
+  cliente: string;
+  productos: string;
+  total: string;
+  metodo: string;
+  fecha: string;
+}
+
+function mapearVenta(v: VentaLocalApi): VentaFila {
+  const itemsDesc = v.items.length > 0 ? `${v.items.length} ítem(s)` : '-';
+  return {
+    id: v.id,
+    cliente: v.clienteId ?? 'Cliente general',
+    productos: itemsDesc,
+    total: v.total != null ? `$${v.total.toFixed(2)}` : '-',
+    metodo: v.metodoPago || '-',
+    fecha: v.creadoEn ? new Date(v.creadoEn).toLocaleString('es-MX') : '-',
+  };
+}
+
 export default function VentaLocalPage() {
   const productos = [
     { id: 1, nombre: 'Shampoo Avina', precio: '$350', stock: 15, categoria: 'Cuidado' },
@@ -18,10 +41,19 @@ export default function VentaLocalPage() {
     { id: 4, nombre: 'Aceite Floractiv', precio: '$280', stock: 20, categoria: 'Tratamiento' },
   ];
 
-  const ventasHoy = [
-    { id: 1, cliente: 'María González', productos: 'Shampoo Avina', total: '$350', metodo: 'Efectivo', fecha: '2024-01-15 10:30' },
-    { id: 2, cliente: 'Ana López', productos: 'Acondicionador Tech Italy', total: '$380', metodo: 'Transferencia', fecha: '2024-01-15 11:15' },
-  ];
+  const [ventasHoy, setVentasHoy] = useState<VentaFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const cargar = () => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    setLoading(true);
+    listarVentas({ desde: hoy })
+      .then(({ data }) => setVentasHoy(data.map(mapearVenta)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
 
   return (
     <AdminLayout>
@@ -99,7 +131,7 @@ export default function VentaLocalPage() {
               <TableCell>{venta.productos}</TableCell>
               <TableCell className="font-semibold">{venta.total}</TableCell>
               <TableCell>
-                <Badge variant={venta.metodo === 'Efectivo' ? 'success' : 'info'}>
+                <Badge variant={venta.metodo === 'efectivo' || venta.metodo === 'Efectivo' ? 'success' : 'info'}>
                   {venta.metodo}
                 </Badge>
               </TableCell>
@@ -114,4 +146,3 @@ export default function VentaLocalPage() {
     </AdminLayout>
   );
 }
-

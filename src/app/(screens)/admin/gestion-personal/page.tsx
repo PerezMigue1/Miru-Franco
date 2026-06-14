@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarEmpleados, EmpleadoApi } from '../../../services/empleados';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -7,11 +9,36 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 
+interface EmpleadoFila {
+  id: string;
+  nombre: string;
+  rol: string;
+  horario: string;
+  servicios: string;
+  comisiones: string;
+}
+
+function mapearEmpleado(e: EmpleadoApi): EmpleadoFila {
+  return {
+    id: e.id || e.usuarioId,
+    nombre: e.nombre ?? '-',
+    rol: e.puesto ?? 'Empleado',
+    horario: '-',
+    servicios: '-',
+    comisiones: e.comisionPorcentaje != null ? `${e.comisionPorcentaje}%` : '-',
+  };
+}
+
 export default function GestionPersonalPage() {
-  const empleados = [
-    { id: 1, nombre: 'Mildred Franco', rol: 'Administrador', horario: '9:30 AM - 7:00 PM', servicios: 25, comisiones: '$2,500' },
-    { id: 2, nombre: 'Auxiliar', rol: 'Empleado', horario: '9:30 AM - 7:00 PM', servicios: 18, comisiones: '$1,800' },
-  ];
+  const [empleados, setEmpleados] = useState<EmpleadoFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listarEmpleados()
+      .then(({ data }) => setEmpleados(data.map(mapearEmpleado)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <AdminLayout>
@@ -27,19 +54,19 @@ export default function GestionPersonalPage() {
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Total Empleados</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : empleados.length}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>43</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Comisiones del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$4,300</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
           </div>
         </Card>
       </div>
@@ -107,4 +134,3 @@ export default function GestionPersonalPage() {
     </AdminLayout>
   );
 }
-

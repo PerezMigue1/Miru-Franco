@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarCitas, cancelarCita, CitaApi } from '../../../services/citas';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -9,18 +11,56 @@ import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { useState } from 'react';
+
+interface CitaFila {
+  id: number;
+  cliente: string;
+  telefono: string;
+  fecha: string;
+  hora: string;
+  servicio: string;
+  especialista: string;
+  estado: string;
+  anticipo: string;
+}
+
+function mapearCita(c: CitaApi): CitaFila {
+  const fechaHora = c.fechaHoraInicio ? new Date(c.fechaHoraInicio) : null;
+  return {
+    id: c.id,
+    cliente: c.clienteNombre ?? '-',
+    telefono: '-',
+    fecha: fechaHora ? fechaHora.toLocaleDateString('es-MX') : '-',
+    hora: fechaHora ? fechaHora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-',
+    servicio: c.servicioNombre ?? '-',
+    especialista: c.especialistaNombre ?? '-',
+    estado: c.estado,
+    anticipo: '-',
+  };
+}
 
 export default function GestionCitasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [citas, setCitas] = useState<CitaFila[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Datos de ejemplo
-  const citas = [
-    { id: 1, cliente: 'María González', telefono: '555-1234', fecha: '2024-01-15', hora: '10:00', servicio: 'Corte', especialista: 'Mildred', estado: 'confirmada', anticipo: '$200' },
-    { id: 2, cliente: 'Ana López', telefono: '555-5678', fecha: '2024-01-15', hora: '14:00', servicio: 'Alaciado', especialista: 'Auxiliar', estado: 'pendiente', anticipo: '$500' },
-    { id: 3, cliente: 'Carmen Ruiz', telefono: '555-9012', fecha: '2024-01-16', hora: '11:00', servicio: 'Nanoplastía', especialista: 'Mildred', estado: 'confirmada', anticipo: '$800' },
-  ];
+  const cargar = () => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const en7Dias = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    setLoading(true);
+    listarCitas({ desde: hoy, hasta: en7Dias })
+      .then(({ data }) => setCitas(data.map(mapearCita)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const handleCancelar = async (id: number) => {
+    await cancelarCita(id, { motivoCancelacion: 'Cancelada desde panel admin' });
+    cargar();
+  };
 
   const estados = {
     confirmada: 'success',
@@ -62,7 +102,7 @@ export default function GestionCitasPage() {
                   <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
                     Editar
                   </Button>
-                  <Button size="sm" variant="danger">
+                  <Button size="sm" variant="danger" onClick={() => handleCancelar(cita.id)}>
                     Cancelar
                   </Button>
                 </div>
@@ -168,4 +208,3 @@ export default function GestionCitasPage() {
     </AdminLayout>
   );
 }
-

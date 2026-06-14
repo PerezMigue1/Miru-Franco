@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarQuejas, actualizarQueja, QuejaApi } from '../../../services/quejas';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -10,12 +12,53 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
 
+interface CasoFila {
+  id: number;
+  cliente: string;
+  servicio: string;
+  fecha: string;
+  tipo: string;
+  estado: string;
+  descripcion: string;
+}
+
+const ESTADO_UI: Record<string, string> = {
+  abierta: 'nuevo',
+  en_proceso: 'en_revision',
+  resuelta: 'resuelto',
+  cerrada: 'cerrado',
+};
+
+function mapearQueja(q: QuejaApi): CasoFila {
+  return {
+    id: q.id,
+    cliente: q.clienteNombre ?? '-',
+    servicio: '-',
+    fecha: q.creadoEn ? q.creadoEn.slice(0, 10) : '-',
+    tipo: 'Queja',
+    estado: ESTADO_UI[q.estado] ?? q.estado,
+    descripcion: q.descripcion,
+  };
+}
+
 export default function QuejasGarantiasPage() {
-  const casos = [
-    { id: 1, cliente: 'María González', servicio: 'Alaciado', fecha: '2024-01-10', tipo: 'Queja', estado: 'en_revision', descripcion: 'El resultado no fue el esperado' },
-    { id: 2, cliente: 'Ana López', servicio: 'Corte', fecha: '2024-01-12', tipo: 'Garantía', estado: 'resuelto', descripcion: 'Solicita corrección del corte' },
-    { id: 3, cliente: 'Carmen Ruiz', servicio: 'Nanoplastía', fecha: '2024-01-14', tipo: 'Sugerencia', estado: 'nuevo', descripcion: 'Sugerencia sobre horarios' },
-  ];
+  const [casos, setCasos] = useState<CasoFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const cargar = () => {
+    setLoading(true);
+    listarQuejas()
+      .then(({ data }) => setCasos(data.map(mapearQueja)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const resolver = async (id: number) => {
+    await actualizarQueja(id, { estado: 'resuelta' });
+    cargar();
+  };
 
   const estados = {
     nuevo: { label: 'Nuevo', variant: 'info' as const },
@@ -52,7 +95,7 @@ export default function QuejasGarantiasPage() {
               <TableCell>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">Ver Detalles</Button>
-                  <Button size="sm">Resolver</Button>
+                  <Button size="sm" onClick={() => resolver(caso.id)}>Resolver</Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -88,4 +131,3 @@ export default function QuejasGarantiasPage() {
     </AdminLayout>
   );
 }
-

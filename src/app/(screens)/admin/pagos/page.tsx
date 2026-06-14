@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarPedidos, listarPagosPorPedido, PedidoApi, PagoApi } from '../../../services/ecommerce';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -8,12 +10,58 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+
+interface PagoFila {
+  id: number;
+  pedidoId: number;
+  cliente: string;
+  concepto: string;
+  monto: string;
+  metodo: string;
+  fecha: string;
+  tipo: string;
+}
+
+function mapearPago(p: PagoApi, pedido: PedidoApi): PagoFila {
+  return {
+    id: p.id,
+    pedidoId: pedido.id,
+    cliente: pedido.usuarioId ?? '-',
+    concepto: `Pedido #${pedido.id}`,
+    monto: `$${p.monto.toFixed(2)}`,
+    metodo: p.metodo || '-',
+    fecha: '-',
+    tipo: p.intentoNumero > 1 ? 'Anticipo' : 'Completo',
+  };
+}
+
 export default function PagosPage() {
-  const pagos = [
-    { id: 1, cliente: 'María González', concepto: 'Servicio - Corte', monto: '$350', metodo: 'Efectivo', fecha: '2024-01-15 10:30', tipo: 'Completo' },
-    { id: 2, cliente: 'Ana López', concepto: 'Anticipo - Alaciado', monto: '$500', metodo: 'Transferencia', fecha: '2024-01-14 14:00', tipo: 'Anticipo' },
-    { id: 3, cliente: 'Carmen Ruiz', concepto: 'Servicio - Nanoplastía', monto: '$1,200', metodo: 'Efectivo', fecha: '2024-01-13 12:00', tipo: 'Completo' },
-  ];
+  const [pagos, setPagos] = useState<PagoFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cargar = async () => {
+      setLoading(true);
+      try {
+        const pedidos = await listarPedidos();
+        const rows: PagoFila[] = [];
+        await Promise.all(
+          pedidos.map(async (pedido) => {
+            const ps = await listarPagosPorPedido(pedido.id);
+            ps.forEach((p) => rows.push(mapearPago(p, pedido)));
+          })
+        );
+        setPagos(rows);
+      } catch {
+        // mantener tabla vacía
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargar();
+  }, []);
+
+  const totalDia = pagos.reduce((acc, p) => acc + parseFloat(p.monto.replace('$', '') || '0'), 0);
 
   return (
     <AdminLayout>
@@ -29,25 +77,25 @@ export default function PagosPage() {
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Total del Día</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$2,050</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : `$${totalDia.toFixed(2)}`}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Efectivo</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$1,550</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Transferencias</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$500</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Anticipos Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>$1,200</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>-</p>
           </div>
         </Card>
       </div>
@@ -111,4 +159,3 @@ export default function PagosPage() {
     </AdminLayout>
   );
 }
-

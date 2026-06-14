@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { obtenerCaducidades, CaducidadApi } from '../../../services/inventarioMovimientos';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -7,18 +9,49 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 
+interface ProductoCaducidad {
+  id: number;
+  nombre: string;
+  fechaApertura: string;
+  fechaCaducidad: string;
+  estado: 'vigente' | 'proximo' | 'vencido';
+  diasRestantes: number;
+}
+
+function mapearCaducidad(c: CaducidadApi, idx: number): ProductoCaducidad {
+  let estado: 'vigente' | 'proximo' | 'vencido' = 'vigente';
+  if (c.diasRestantes < 0) estado = 'vencido';
+  else if (c.diasRestantes <= 30) estado = 'proximo';
+  return {
+    id: c.presentacionId || idx,
+    nombre: [c.productoNombre, c.tamanio].filter(Boolean).join(' ') || '-',
+    fechaApertura: '-',
+    fechaCaducidad: c.fechaCaducidad ?? '-',
+    estado,
+    diasRestantes: c.diasRestantes,
+  };
+}
+
 export default function ControlCaducidadPage() {
-  const productos = [
-    { id: 1, nombre: 'Shampoo Avina', fechaApertura: '2024-01-01', fechaCaducidad: '2024-04-01', estado: 'vigente', diasRestantes: 75 },
-    { id: 2, nombre: 'Mascarilla Alfaparf', fechaApertura: '2023-12-15', fechaCaducidad: '2024-02-15', estado: 'proximo', diasRestantes: 30 },
-    { id: 3, nombre: 'Aceite Floractiv', fechaApertura: '2023-11-20', fechaCaducidad: '2024-01-20', estado: 'vencido', diasRestantes: -5 },
-  ];
+  const [productos, setProductos] = useState<ProductoCaducidad[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    obtenerCaducidades(30)
+      .then((data) => setProductos(data.map(mapearCaducidad)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const estados = {
     vigente: { label: 'Vigente', variant: 'success' as const },
     proximo: { label: 'Próximo a Vencer', variant: 'warning' as const },
     vencido: { label: 'Vencido', variant: 'danger' as const },
   };
+
+  const vigentes = productos.filter((p) => p.estado === 'vigente').length;
+  const proximos = productos.filter((p) => p.estado === 'proximo').length;
+  const vencidos = productos.filter((p) => p.estado === 'vencido').length;
 
   return (
     <AdminLayout>
@@ -31,19 +64,19 @@ export default function ControlCaducidadPage() {
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Vigentes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--success)' }}>18</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--success)' }}>{loading ? '…' : vigentes}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Próximos a Vencer</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>3</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>{loading ? '…' : proximos}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Vencidos</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--danger)' }}>1</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--danger)' }}>{loading ? '…' : vencidos}</p>
           </div>
         </Card>
       </div>
@@ -77,4 +110,3 @@ export default function ControlCaducidadPage() {
     </AdminLayout>
   );
 }
-

@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarPedidos, listarFacturasPorPedido, PedidoApi, FacturaApi } from '../../../services/ecommerce';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -8,12 +10,52 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+
+interface FacturaFila {
+  id: number;
+  pedidoId: number;
+  cliente: string;
+  concepto: string;
+  monto: string;
+  fecha: string;
+  tipo: string;
+  estado: string;
+}
+
+function mapearFactura(f: FacturaApi, pedido: PedidoApi): FacturaFila {
+  return {
+    id: f.id,
+    pedidoId: pedido.id,
+    cliente: pedido.usuarioId ?? '-',
+    concepto: `Pedido #${pedido.id}`,
+    monto: `$${pedido.total.toFixed(2)}`,
+    fecha: f.creadoEn ? f.creadoEn.slice(0, 10) : '-',
+    tipo: 'Nota de Remisión',
+    estado: f.estado ?? 'entregada',
+  };
+}
+
 export default function FacturacionPage() {
-  const facturas = [
-    { id: 1, cliente: 'María González', concepto: 'Servicio - Corte', monto: '$350', fecha: '2024-01-15', tipo: 'Nota de Remisión', estado: 'entregada' },
-    { id: 2, cliente: 'Ana López', concepto: 'Producto - Shampoo', monto: '$380', fecha: '2024-01-14', tipo: 'Factura Electrónica', estado: 'enviada' },
-    { id: 3, cliente: 'Carmen Ruiz', concepto: 'Servicio - Nanoplastía', monto: '$1,200', fecha: '2024-01-13', tipo: 'Nota de Remisión', estado: 'entregada' },
-  ];
+  const [facturas, setFacturas] = useState<FacturaFila[]>([]);
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        const pedidos = await listarPedidos();
+        const rows: FacturaFila[] = [];
+        await Promise.all(
+          pedidos.map(async (pedido) => {
+            const facs = await listarFacturasPorPedido(pedido.id);
+            facs.forEach((f) => rows.push(mapearFactura(f, pedido)));
+          })
+        );
+        setFacturas(rows);
+      } catch {
+        // mantener tabla vacía
+      }
+    };
+    cargar();
+  }, []);
 
   return (
     <AdminLayout>
@@ -86,4 +128,3 @@ export default function FacturacionPage() {
     </AdminLayout>
   );
 }
-

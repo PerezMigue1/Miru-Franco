@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarCitas, checkInCita, CitaApi } from '../../../services/citas';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -8,12 +10,49 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 
+interface TurnoFila {
+  id: number;
+  cliente: string;
+  llegada: string;
+  servicio: string;
+  estado: string;
+  posicion: number;
+}
+
+function mapearCita(c: CitaApi, idx: number): TurnoFila {
+  const fechaHora = c.fechaHoraInicio ? new Date(c.fechaHoraInicio) : null;
+  return {
+    id: c.id,
+    cliente: c.clienteNombre ?? '-',
+    llegada: fechaHora ? fechaHora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-',
+    servicio: c.servicioNombre ?? '-',
+    estado: c.estado === 'en_curso' ? 'en_atencion' : 'esperando',
+    posicion: c.estado === 'en_curso' ? 0 : idx + 1,
+  };
+}
+
 export default function AtencionSinCitaPage() {
-  const turnos = [
-    { id: 1, cliente: 'María González', llegada: '10:15', servicio: 'Corte', estado: 'esperando', posicion: 1 },
-    { id: 2, cliente: 'Ana López', llegada: '10:30', servicio: 'Peinado', estado: 'esperando', posicion: 2 },
-    { id: 3, cliente: 'Carmen Ruiz', llegada: '09:45', servicio: 'Corte', estado: 'en_atencion', posicion: 0 },
-  ];
+  const [turnos, setTurnos] = useState<TurnoFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const cargar = () => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    setLoading(true);
+    listarCitas({ estado: 'pendiente', desde: hoy })
+      .then(({ data }) => setTurnos(data.map(mapearCita)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const handleCheckIn = async (id: number) => {
+    await checkInCita(id);
+    cargar();
+  };
+
+  const enEspera = turnos.filter((t) => t.estado === 'esperando').length;
+  const enAtencion = turnos.filter((t) => t.estado === 'en_atencion').length;
 
   return (
     <AdminLayout>
@@ -26,13 +65,13 @@ export default function AtencionSinCitaPage() {
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Espera</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enEspera}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Atención</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>1</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enAtencion}</p>
           </div>
         </Card>
         <Card>
@@ -71,7 +110,7 @@ export default function AtencionSinCitaPage() {
               <TableCell>
                 <div className="flex gap-2">
                   {turno.estado === 'esperando' && (
-                    <Button size="sm">Llamar</Button>
+                    <Button size="sm" onClick={() => handleCheckIn(turno.id)}>Llamar</Button>
                   )}
                   {turno.estado === 'en_atencion' && (
                     <Button size="sm" variant="success">Finalizar</Button>
@@ -100,4 +139,3 @@ export default function AtencionSinCitaPage() {
     </AdminLayout>
   );
 }
-

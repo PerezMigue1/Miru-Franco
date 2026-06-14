@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarSeguimientos, SeguimientoApi } from '../../../services/seguimientos';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -10,12 +12,43 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
 
+interface SeguimientoFila {
+  id: number;
+  cliente: string;
+  servicio: string;
+  fechaServicio: string;
+  fechaSeguimiento: string;
+  estado: string;
+  notas: string;
+}
+
+function mapearSeguimiento(s: SeguimientoApi): SeguimientoFila {
+  const satisfaccion = s.satisfaccion;
+  let estado = 'pendiente';
+  if (satisfaccion != null) {
+    estado = satisfaccion >= 4 ? 'satisfactoria' : 'problema';
+  }
+  return {
+    id: s.id,
+    cliente: s.clienteNombre ?? '-',
+    servicio: '-',
+    fechaServicio: s.fechaContacto ? s.fechaContacto.slice(0, 10) : '-',
+    fechaSeguimiento: s.creadoEn ? s.creadoEn.slice(0, 10) : 'Pendiente',
+    estado,
+    notas: s.notas || '-',
+  };
+}
+
 export default function SeguimientoPostServicioPage() {
-  const seguimientos = [
-    { id: 1, cliente: 'María González', servicio: 'Alaciado', fechaServicio: '2024-01-10', fechaSeguimiento: '2024-01-12', estado: 'satisfactoria', notas: 'Cliente satisfecha con el resultado' },
-    { id: 2, cliente: 'Ana López', servicio: 'Nanoplastía', fechaServicio: '2024-01-08', fechaSeguimiento: '2024-01-11', estado: 'problema', notas: 'Reporta que el cabello se ve diferente' },
-    { id: 3, cliente: 'Carmen Ruiz', servicio: 'Corte', fechaServicio: '2024-01-13', fechaSeguimiento: 'Pendiente', estado: 'pendiente', notas: '-' },
-  ];
+  const [seguimientos, setSeguimientos] = useState<SeguimientoFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listarSeguimientos({ requiereAccion: true })
+      .then(({ data }) => setSeguimientos(data.map(mapearSeguimiento)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const estados = {
     satisfactoria: { label: 'Satisfactoria', variant: 'success' as const },
@@ -86,4 +119,3 @@ export default function SeguimientoPostServicioPage() {
     </AdminLayout>
   );
 }
-

@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarPedidos, listarDevolucionesPedido, PedidoApi, DevolucionApi } from '../../../services/ecommerce';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -8,11 +10,54 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+
+interface DevolucionFila {
+  id: number;
+  pedidoId: number;
+  cliente: string;
+  producto: string;
+  motivo: string;
+  estado: string;
+  fecha: string;
+}
+
+function mapearDevolucion(d: DevolucionApi, pedido: PedidoApi): DevolucionFila {
+  return {
+    id: d.id,
+    pedidoId: pedido.id,
+    cliente: pedido.usuarioId ?? '-',
+    producto: `Pedido #${pedido.id}`,
+    motivo: d.motivo ?? '-',
+    estado: d.estado ?? 'pendiente',
+    fecha: d.creadoEn ? d.creadoEn.slice(0, 10) : '-',
+  };
+}
+
 export default function DevolucionesCambiosPage() {
-  const solicitudes = [
-    { id: 1, cliente: 'María González', producto: 'Shampoo Avina', motivo: 'Producto incorrecto', estado: 'pendiente', fecha: '2024-01-15' },
-    { id: 2, cliente: 'Ana López', producto: 'Acondicionador Tech Italy', motivo: 'Equivocación', estado: 'procesado', fecha: '2024-01-14' },
-  ];
+  const [solicitudes, setSolicitudes] = useState<DevolucionFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cargar = async () => {
+      setLoading(true);
+      try {
+        const pedidos = await listarPedidos();
+        const rows: DevolucionFila[] = [];
+        await Promise.all(
+          pedidos.map(async (pedido) => {
+            const devs = await listarDevolucionesPedido(pedido.id);
+            devs.forEach((d) => rows.push(mapearDevolucion(d, pedido)));
+          })
+        );
+        setSolicitudes(rows);
+      } catch {
+        // mantener tabla vacía
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargar();
+  }, []);
 
   return (
     <AdminLayout>
@@ -73,4 +118,3 @@ export default function DevolucionesCambiosPage() {
     </AdminLayout>
   );
 }
-

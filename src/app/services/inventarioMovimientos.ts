@@ -97,3 +97,131 @@ export async function listarMovimientosInventario(
   return { data, total: Number(res?.count ?? data.length) };
 }
 
+// --- Funciones adicionales de inventario ---
+
+export async function registrarEntrada(payload: {
+  presentacionId: number;
+  cantidad: number;
+  motivo?: string;
+}): Promise<InventarioMovimientoApi> {
+  const res = await apiClient.post<unknown>('/api/inventario/entradas', payload, getBackendBaseUrl());
+  const obj = (res as Record<string, unknown>)?.data ?? res;
+  const mov = normalizarMovimiento(obj);
+  if (!mov) throw new Error('No se pudo registrar la entrada');
+  return mov;
+}
+
+export async function registrarSalida(payload: {
+  presentacionId: number;
+  cantidad: number;
+  motivo?: string;
+}): Promise<InventarioMovimientoApi> {
+  const res = await apiClient.post<unknown>('/api/inventario/salidas', payload, getBackendBaseUrl());
+  const obj = (res as Record<string, unknown>)?.data ?? res;
+  const mov = normalizarMovimiento(obj);
+  if (!mov) throw new Error('No se pudo registrar la salida');
+  return mov;
+}
+
+export async function registrarAjuste(payload: {
+  presentacionId: number;
+  stockReal: number;
+  motivo: string;
+}): Promise<InventarioMovimientoApi> {
+  const res = await apiClient.post<unknown>('/api/inventario/ajustes', payload, getBackendBaseUrl());
+  const obj = (res as Record<string, unknown>)?.data ?? res;
+  const mov = normalizarMovimiento(obj);
+  if (!mov) throw new Error('No se pudo registrar el ajuste');
+  return mov;
+}
+
+export async function conteoFisico(payload: {
+  items: Array<{ presentacionId: number; stockReal: number }>;
+  motivo?: string;
+}): Promise<void> {
+  await apiClient.post<unknown>('/api/inventario/conteo-fisico', payload, getBackendBaseUrl());
+}
+
+export interface KardexItemApi {
+  id: string;
+  tipo: TipoMovimientoInventario;
+  motivo: string;
+  cantidad: number;
+  stockAntes: number | null;
+  stockDespues: number | null;
+  creadoEn: string;
+}
+
+export async function obtenerKardex(presentacionId: number): Promise<KardexItemApi[]> {
+  const res = await apiClient.get<unknown>(`/api/inventario/kardex/${presentacionId}`, { customBase: getBackendBaseUrl() });
+  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
+  return (arr as unknown[])
+    .map(normalizarMovimiento)
+    .filter((m): m is InventarioMovimientoApi => Boolean(m))
+    .map((m) => ({
+      id: m.id,
+      tipo: m.tipo,
+      motivo: m.motivo,
+      cantidad: m.cantidad,
+      stockAntes: m.stockAntes,
+      stockDespues: m.stockDespues,
+      creadoEn: m.creadoEn,
+    }));
+}
+
+export interface AlertaStockApi {
+  presentacionId: number;
+  productoNombre: string | null;
+  tamanio: string | null;
+  stockActual: number;
+  umbral: number;
+}
+
+export async function obtenerAlertasStock(umbral?: number): Promise<AlertaStockApi[]> {
+  const sp = new URLSearchParams();
+  if (umbral != null) sp.set('umbral', String(umbral));
+  const res = await apiClient.get<unknown>(`/api/inventario/alertas-stock?${sp.toString()}`, { customBase: getBackendBaseUrl() });
+  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
+  return (arr as unknown[]).map((x) => {
+    const r = (x || {}) as Record<string, unknown>;
+    return {
+      presentacionId: Number(n(r.presentacionId ?? r.presentacion_id, 0) ?? 0),
+      productoNombre: s(r.productoNombre ?? r.producto_nombre) || null,
+      tamanio: s(r.tamanio) || null,
+      stockActual: Number(n(r.stockActual ?? r.stock_actual, 0) ?? 0),
+      umbral: Number(n(r.umbral, 0) ?? 0),
+    };
+  });
+}
+
+export interface CaducidadApi {
+  presentacionId: number;
+  productoNombre: string | null;
+  tamanio: string | null;
+  stock: number;
+  fechaCaducidad: string | null;
+  diasRestantes: number;
+}
+
+export async function obtenerCaducidades(dias?: number): Promise<CaducidadApi[]> {
+  const sp = new URLSearchParams();
+  if (dias != null) sp.set('dias', String(dias));
+  const res = await apiClient.get<unknown>(`/api/inventario/caducidades?${sp.toString()}`, { customBase: getBackendBaseUrl() });
+  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
+  return (arr as unknown[]).map((x) => {
+    const r = (x || {}) as Record<string, unknown>;
+    const fechaCad = s(r.fechaCaducidad ?? r.fecha_caducidad) || null;
+    const diasRestantes = fechaCad
+      ? Math.round((new Date(fechaCad).getTime() - Date.now()) / 86400000)
+      : 0;
+    return {
+      presentacionId: Number(n(r.presentacionId ?? r.presentacion_id, 0) ?? 0),
+      productoNombre: s(r.productoNombre ?? r.producto_nombre) || null,
+      tamanio: s(r.tamanio) || null,
+      stock: Number(n(r.stock ?? r.stockActual ?? r.stock_actual, 0) ?? 0),
+      fechaCaducidad: fechaCad,
+      diasRestantes,
+    };
+  });
+}
+
