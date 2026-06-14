@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getPaquetes, deletePaquete } from '../../../services/paquetes'; 
+import { getPaquetes, createPaquete, deletePaquete } from '../../../services/paquetes';
 
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
@@ -10,6 +10,8 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
+import Input from '../../../components/ui/Input';
+import Textarea from '../../../components/ui/Textarea';
 import { House } from 'lucide-react';
 
 type PaqueteRow = {
@@ -54,6 +56,15 @@ export default function PaquetesPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [idParaEliminar, setIdParaEliminar] = useState<string | null>(null);
 
+  // Estados para el Modal de creación
+  const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [formTipoEvento, setFormTipoEvento] = useState('');
+  const [formPrecioEspecial, setFormPrecioEspecial] = useState('');
+  const [formDescripcion, setFormDescripcion] = useState('');
+  const [formServiciosVinculados, setFormServiciosVinculados] = useState('');
+  const [savingCrear, setSavingCrear] = useState(false);
+  const [crearError, setCrearError] = useState<string | null>(null);
+
   const cargarDatos = async () => {
     try {
       setLoadError(null);
@@ -69,6 +80,36 @@ export default function PaquetesPage() {
   };
 
   useEffect(() => { cargarDatos(); }, []);
+
+  const handleCrearPaquete = async () => {
+    if (!formTipoEvento.trim() || !formPrecioEspecial) {
+      setCrearError('Tipo de evento y precio son requeridos');
+      return;
+    }
+    setSavingCrear(true);
+    setCrearError(null);
+    try {
+      const serviciosArr = formServiciosVinculados.trim()
+        ? formServiciosVinculados.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
+      await createPaquete({
+        tipoEvento: formTipoEvento.trim(),
+        precioEspecial: Number(formPrecioEspecial),
+        descripcion: formDescripcion.trim() || undefined,
+        serviciosVinculados: serviciosArr,
+      });
+      setIsModalCrearOpen(false);
+      setFormTipoEvento('');
+      setFormPrecioEspecial('');
+      setFormDescripcion('');
+      setFormServiciosVinculados('');
+      await cargarDatos();
+    } catch (e) {
+      setCrearError(e instanceof Error ? e.message : 'Error al crear paquete');
+    } finally {
+      setSavingCrear(false);
+    }
+  };
 
   const manejarEliminacion = async () => {
     if (!idParaEliminar) return;
@@ -102,7 +143,12 @@ export default function PaquetesPage() {
       <PageHeader 
         title="Paquetes Especiales" 
         subtitle="Administra los combos de belleza"
-        actions={<Button variant="outline" onClick={() => router.push('/admin/servicios')}>Volver</Button>}
+        actions={
+          <div className="flex gap-2">
+            <Button onClick={() => { setCrearError(null); setIsModalCrearOpen(true); }}>+ Nuevo paquete</Button>
+            <Button variant="outline" onClick={() => router.push('/admin/servicios')}>Volver</Button>
+          </div>
+        }
       />
 
       {loadError && (
@@ -154,10 +200,32 @@ export default function PaquetesPage() {
         )}
       </Card>
 
+      {/* Modal: Nuevo Paquete */}
+      <Modal
+        isOpen={isModalCrearOpen}
+        onClose={() => { if (!savingCrear) { setIsModalCrearOpen(false); setCrearError(null); } }}
+        title="Nuevo Paquete"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalCrearOpen(false); setCrearError(null); }} disabled={savingCrear}>Cancelar</Button>
+            <Button onClick={handleCrearPaquete} disabled={savingCrear}>{savingCrear ? 'Guardando...' : 'Crear'}</Button>
+          </>
+        }
+      >
+        {crearError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{crearError}</p>}
+        <div className="space-y-4">
+          <Input label="Tipo de evento *" value={formTipoEvento} onChange={(e) => setFormTipoEvento(e.target.value)} placeholder="Ej. Quinceañera, Boda..." fullWidth />
+          <Input label="Precio especial *" type="number" min={0} value={formPrecioEspecial} onChange={(e) => setFormPrecioEspecial(e.target.value)} placeholder="0.00" fullWidth />
+          <Input label="Servicios vinculados (separados por coma)" value={formServiciosVinculados} onChange={(e) => setFormServiciosVinculados(e.target.value)} placeholder="Corte, Tinte, Peinado..." fullWidth />
+          <Textarea label="Descripción" value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="Descripción del paquete..." rows={3} fullWidth />
+        </div>
+      </Modal>
+
       {/* Modal de Confirmación */}
-      <Modal 
-        isOpen={showDeleteModal} 
-        onClose={() => setShowDeleteModal(false)} 
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
         title="Confirmar eliminación"
       >
         <div className="p-4 text-black">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { listarPedidos, listarEnviosPorPedido, actualizarEnvio, PedidoApi, EnvioApi } from '../../../services/ecommerce';
+import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -10,6 +11,7 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import Textarea from '../../../components/ui/Textarea';
 
 interface EntregaFila {
   id: number;
@@ -38,6 +40,20 @@ function mapearEnvio(e: EnvioApi, pedido: PedidoApi): EntregaFila {
 export default function EntregasEnviosPage() {
   const [entregas, setEntregas] = useState<EntregaFila[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  // Modal ver/editar envío
+  const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
+  const [entregaDetalle, setEntregaDetalle] = useState<EntregaFila | null>(null);
+  const [formEmpresaEnvio, setFormEmpresaEnvio] = useState('');
+  const [formNumeroGuia, setFormNumeroGuia] = useState('');
+  const [formEstadoEnvio, setFormEstadoEnvio] = useState('preparando');
+  const [formFechaEnvio, setFormFechaEnvio] = useState('');
+  const [formFechaEntrega, setFormFechaEntrega] = useState('');
+  const [formNotasEnvio, setFormNotasEnvio] = useState('');
+  const [savingDetalle, setSavingDetalle] = useState(false);
+  const [detalleError, setDetalleError] = useState<string | null>(null);
+  const [enviosRaw, setEnviosRaw] = useState<EnvioApi[]>([]);
 
   const cargar = async () => {
     setLoading(true);
@@ -45,13 +61,15 @@ export default function EntregasEnviosPage() {
       const pedidos = await listarPedidos();
       const enviados = pedidos.filter((p) => ['preparando', 'enviado', 'pagado'].includes(p.estado));
       const rows: EntregaFila[] = [];
+      const rawEnvios: EnvioApi[] = [];
       await Promise.all(
         enviados.map(async (pedido) => {
           const envios = await listarEnviosPorPedido(pedido.id);
-          envios.forEach((e) => rows.push(mapearEnvio(e, pedido)));
+          envios.forEach((e) => { rows.push(mapearEnvio(e, pedido)); rawEnvios.push(e); });
         })
       );
       setEntregas(rows);
+      setEnviosRaw(rawEnvios);
     } catch {
       // mantener tabla vacía en error
     } finally {
@@ -62,13 +80,45 @@ export default function EntregasEnviosPage() {
   useEffect(() => { cargar(); }, []);
 
   const handleEnviar = async (id: number) => {
-    await actualizarEnvio(id, { estadoEnvio: 'en_camino' });
-    cargar();
+    setSavingId(id);
+    try { await actualizarEnvio(id, { estadoEnvio: 'en_camino' }); cargar(); }
+    finally { setSavingId(null); }
   };
 
   const handleEntregado = async (id: number) => {
-    await actualizarEnvio(id, { estadoEnvio: 'entregado' });
-    cargar();
+    setSavingId(id);
+    try { await actualizarEnvio(id, { estadoEnvio: 'entregado' }); cargar(); }
+    finally { setSavingId(null); }
+  };
+
+  const openDetalle = (entrega: EntregaFila) => {
+    const raw = enviosRaw.find((e) => e.id === entrega.id);
+    setEntregaDetalle(entrega);
+    setFormEmpresaEnvio(entrega.mensajero !== '-' ? entrega.mensajero : '');
+    setFormNumeroGuia(raw?.numeroGuia ?? '');
+    setFormEstadoEnvio(raw?.estadoEnvio ?? entrega.estado ?? 'preparando');
+    setFormFechaEnvio(raw?.fechaEnvio ? raw.fechaEnvio.slice(0, 16) : '');
+    setFormFechaEntrega(raw?.fechaEntrega ? raw.fechaEntrega.slice(0, 16) : '');
+    setFormNotasEnvio(raw?.notas ?? '');
+    setDetalleError(null);
+    setIsModalDetalleOpen(true);
+  };
+
+  const handleActualizarDetalle = async () => {
+    if (!entregaDetalle) return;
+    setSavingDetalle(true); setDetalleError(null);
+    try {
+      await actualizarEnvio(entregaDetalle.id, {
+        empresaEnvio: formEmpresaEnvio.trim() || undefined,
+        numeroGuia: formNumeroGuia.trim() || undefined,
+        estadoEnvio: formEstadoEnvio || undefined,
+        fechaEnvio: formFechaEnvio ? new Date(formFechaEnvio).toISOString() : undefined,
+        fechaEntrega: formFechaEntrega ? new Date(formFechaEntrega).toISOString() : undefined,
+        notas: formNotasEnvio.trim() || undefined,
+      });
+      setIsModalDetalleOpen(false); cargar();
+    } catch (e) { setDetalleError(e instanceof Error ? e.message : 'Error al actualizar'); }
+    finally { setSavingDetalle(false); }
   };
 
   const estados = {
@@ -111,12 +161,16 @@ export default function EntregasEnviosPage() {
               <TableCell>{entrega.mensajero}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline">Ver Detalles</Button>
+                  <Button size="sm" variant="outline" onClick={() => openDetalle(entrega)}>Ver Detalles</Button>
                   {entrega.estado === 'preparado' && (
-                    <Button size="sm" onClick={() => handleEnviar(entrega.id)}>Enviar</Button>
+                    <Button size="sm" onClick={() => handleEnviar(entrega.id)} disabled={savingId === entrega.id}>
+                      {savingId === entrega.id ? '...' : 'Enviar'}
+                    </Button>
                   )}
                   {entrega.estado === 'en_camino' && (
-                    <Button size="sm" variant="success" onClick={() => handleEntregado(entrega.id)}>Marcar Entregado</Button>
+                    <Button size="sm" variant="success" onClick={() => handleEntregado(entrega.id)} disabled={savingId === entrega.id}>
+                      {savingId === entrega.id ? '...' : 'Marcar Entregado'}
+                    </Button>
                   )}
                 </div>
               </TableCell>
@@ -165,6 +219,46 @@ export default function EntregasEnviosPage() {
           </div>
         </div>
       </Card>
+      {/* Modal: Ver/Editar Envío */}
+      <Modal
+        isOpen={isModalDetalleOpen}
+        onClose={() => { if (!savingDetalle) setIsModalDetalleOpen(false); }}
+        title="Detalle de Envío"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsModalDetalleOpen(false)} disabled={savingDetalle}>Cerrar</Button>
+            <Button onClick={handleActualizarDetalle} disabled={savingDetalle}>{savingDetalle ? 'Guardando...' : 'Actualizar'}</Button>
+          </>
+        }
+      >
+        {detalleError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{detalleError}</p>}
+        {entregaDetalle && (
+          <div className="space-y-4">
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              Pedido #{entregaDetalle.pedidoId} · Cliente: <strong style={{ color: 'var(--menu-texto-principal)' }}>{entregaDetalle.cliente}</strong>
+              {' · '}{entregaDetalle.direccion}
+            </p>
+            <Select
+              label="Estado de envío"
+              value={formEstadoEnvio}
+              onChange={(e) => setFormEstadoEnvio(e.target.value)}
+              options={[
+                { value: 'preparando', label: 'Preparando' },
+                { value: 'en_transito', label: 'En tránsito' },
+                { value: 'entregado', label: 'Entregado' },
+                { value: 'fallido', label: 'Fallido' },
+              ]}
+              fullWidth
+            />
+            <Input label="Empresa / Mensajero" value={formEmpresaEnvio} onChange={(e) => setFormEmpresaEnvio(e.target.value)} placeholder="Ej. DHL, Motociclista 1..." fullWidth />
+            <Input label="Número de guía" value={formNumeroGuia} onChange={(e) => setFormNumeroGuia(e.target.value)} placeholder="Número de guía o seguimiento" fullWidth />
+            <Input label="Fecha de envío" type="datetime-local" value={formFechaEnvio} onChange={(e) => setFormFechaEnvio(e.target.value)} fullWidth />
+            <Input label="Fecha de entrega" type="datetime-local" value={formFechaEntrega} onChange={(e) => setFormFechaEntrega(e.target.value)} fullWidth />
+            <Textarea label="Notas" value={formNotasEnvio} onChange={(e) => setFormNotasEnvio(e.target.value)} placeholder="Instrucciones o notas del envío..." rows={2} fullWidth />
+          </div>
+        )}
+      </Modal>
     </AdminLayout>
   );
 }

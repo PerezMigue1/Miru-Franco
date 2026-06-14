@@ -7,6 +7,7 @@ import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
+import Textarea from '../../../../components/ui/Textarea';
 import {
   createProducto,
   getProductos,
@@ -26,10 +27,24 @@ export default function NuevoProductoAdminPage() {
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [descripcionLarga, setDescripcionLarga] = useState('');
   const [categoria, setCategoria] = useState('');
   const [marca, setMarca] = useState('');
+  const [descuento, setDescuento] = useState('0');
+  const [nuevo, setNuevo] = useState(false);
+  const [crueltyFree, setCrueltyFree] = useState(false);
+  const [caracteristicas, setCaracteristicas] = useState('');
+  const [ingredientes, setIngredientes] = useState('');
+  const [modoUso, setModoUso] = useState('');
+  const [resultado, setResultado] = useState('');
   const [disponible, setDisponible] = useState(true);
   const [imagenesPresentacion, setImagenesPresentacion] = useState<string[]>([]);
+  // Presentación inicial
+  const [presTamanio, setPresTamanio] = useState('Único');
+  const [presPrecio, setPresPrecio] = useState('');
+  const [presPrecioOrig, setPresPrecioOrig] = useState('');
+  const [presStock, setPresStock] = useState('0');
+  const [presFechaCaducidad, setPresFechaCaducidad] = useState('');
   const [categoriasCatalogo, setCategoriasCatalogo] = useState<string[]>([]);
   const [marcasCatalogo, setMarcasCatalogo] = useState<string[]>([]);
   const [showAgregarCategoria, setShowAgregarCategoria] = useState(false);
@@ -134,15 +149,24 @@ export default function NuevoProductoAdminPage() {
       const payload: ProductoPayload = {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
+        descripcionLarga: descripcionLarga.trim() || undefined,
         categoria: categoria.trim(),
         marca: marca.trim() || undefined,
+        descuento: parseFloat(descuento) || 0,
+        nuevo,
+        crueltyFree,
+        caracteristicas: caracteristicas.trim() ? caracteristicas.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        ingredientes: ingredientes.trim() || undefined,
+        modoUso: modoUso.trim() || undefined,
+        resultado: resultado.trim() || undefined,
         presentaciones: serializarPresentacionesProducto([
           {
-            tamanio: 'Único',
-            precio: '0',
-            precioOriginal: '0',
-            stock: 0,
+            tamanio: presTamanio.trim() || 'Único',
+            precio: presPrecio || '0',
+            precioOriginal: presPrecioOrig || undefined,
+            stock: parseInt(presStock, 10) || 0,
             disponible,
+            fechaCaducidad: presFechaCaducidad || undefined,
             imagenes: imagenesPresentacion,
           },
         ]),
@@ -275,6 +299,62 @@ export default function NuevoProductoAdminPage() {
               placeholder="Breve descripción del producto"
               fullWidth
             />
+          </div>
+          <div className="mb-6">
+            <Textarea
+              label="Descripción larga"
+              value={descripcionLarga}
+              onChange={(e) => setDescripcionLarga(e.target.value)}
+              placeholder="Descripción detallada del producto..."
+              rows={4}
+              fullWidth
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Input
+              label="Descuento (%)"
+              type="number"
+              value={descuento}
+              onChange={(e) => setDescuento(e.target.value)}
+              placeholder="0"
+              fullWidth
+            />
+            <Input
+              label="Características (separadas por coma)"
+              value={caracteristicas}
+              onChange={(e) => setCaracteristicas(e.target.value)}
+              placeholder="Hidratante, Sin sulfatos, Para cabello seco..."
+              fullWidth
+            />
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={nuevo} onChange={(e) => setNuevo(e.target.checked)} className="rounded" />
+                <span style={{ color: 'var(--menu-texto-principal)' }}>Marcar como nuevo</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={crueltyFree} onChange={(e) => setCrueltyFree(e.target.checked)} className="rounded" />
+                <span style={{ color: 'var(--menu-texto-principal)' }}>Cruelty Free</span>
+              </label>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Textarea label="Ingredientes" value={ingredientes} onChange={(e) => setIngredientes(e.target.value)} placeholder="Lista de ingredientes..." rows={3} fullWidth />
+            <Textarea label="Modo de uso" value={modoUso} onChange={(e) => setModoUso(e.target.value)} placeholder="Cómo aplicar el producto..." rows={3} fullWidth />
+            <div className="md:col-span-2">
+              <Textarea label="Resultado esperado" value={resultado} onChange={(e) => setResultado(e.target.value)} placeholder="Resultado tras el uso del producto..." rows={2} fullWidth />
+            </div>
+          </div>
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
+              Presentación inicial
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input label="Tamaño / presentación *" value={presTamanio} onChange={(e) => setPresTamanio(e.target.value)} placeholder="Ej. 500ml, 1L..." fullWidth />
+              <Input label="Precio *" type="number" step={0.01} min={0} value={presPrecio} onChange={(e) => setPresPrecio(e.target.value)} placeholder="0.00" fullWidth />
+              <Input label="Precio original (tachado)" type="number" step={0.01} min={0} value={presPrecioOrig} onChange={(e) => setPresPrecioOrig(e.target.value)} placeholder="0.00" fullWidth />
+              <Input label="Stock inicial" type="number" step={1} min={0} value={presStock} onChange={(e) => setPresStock(e.target.value)} placeholder="0" fullWidth />
+              <Input label="Fecha de caducidad" type="date" value={presFechaCaducidad} onChange={(e) => setPresFechaCaducidad(e.target.value)} fullWidth />
+            </div>
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1" style={{ color: 'var(--encabezados-alterno)' }}>

@@ -34,6 +34,7 @@ function mapearCita(c: CitaApi, idx: number): TurnoFila {
 export default function AtencionSinCitaPage() {
   const [turnos, setTurnos] = useState<TurnoFila[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<number | null>(null);
 
   const cargar = () => {
     const hoy = new Date().toISOString().slice(0, 10);
@@ -47,8 +48,9 @@ export default function AtencionSinCitaPage() {
   useEffect(() => { cargar(); }, []);
 
   const handleCheckIn = async (id: number) => {
-    await checkInCita(id);
-    cargar();
+    setSavingId(id);
+    try { await checkInCita(id); cargar(); }
+    finally { setSavingId(null); }
   };
 
   const enEspera = turnos.filter((t) => t.estado === 'esperando').length;
@@ -110,7 +112,9 @@ export default function AtencionSinCitaPage() {
               <TableCell>
                 <div className="flex gap-2">
                   {turno.estado === 'esperando' && (
-                    <Button size="sm" onClick={() => handleCheckIn(turno.id)}>Llamar</Button>
+                    <Button size="sm" onClick={() => handleCheckIn(turno.id)} disabled={savingId === turno.id}>
+                      {savingId === turno.id ? 'Llamando...' : 'Llamar'}
+                    </Button>
                   )}
                   {turno.estado === 'en_atencion' && (
                     <Button size="sm" variant="success">Finalizar</Button>

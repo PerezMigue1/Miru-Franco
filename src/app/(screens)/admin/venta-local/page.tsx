@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarVentas, crearVenta, cancelarVenta, VentaLocalApi } from '../../../services/pos';
+import { listarVentas, crearVenta, cancelarVenta, abrirCorte, VentaLocalApi } from '../../../services/pos';
+import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
+import { listarClientes, type ClienteApi } from '../../../services/clientes';
+import Modal from '../../../components/ui/Modal';
+import Textarea from '../../../components/ui/Textarea';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -34,15 +38,34 @@ function mapearVenta(v: VentaLocalApi): VentaFila {
 }
 
 export default function VentaLocalPage() {
-  const productos = [
-    { id: 1, nombre: 'Shampoo Avina', precio: '$350', stock: 15, categoria: 'Cuidado' },
-    { id: 2, nombre: 'Acondicionador Tech Italy', precio: '$380', stock: 12, categoria: 'Cuidado' },
-    { id: 3, nombre: 'Mascarilla Alfaparf', precio: '$450', stock: 8, categoria: 'Tratamiento' },
-    { id: 4, nombre: 'Aceite Floractiv', precio: '$280', stock: 20, categoria: 'Tratamiento' },
-  ];
-
   const [ventasHoy, setVentasHoy] = useState<VentaFila[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catProductos, setCatProductos] = useState<Producto[]>([]);
+  const [catClientes, setCatClientes] = useState<ClienteApi[]>([]);
+
+  // Formulario nueva venta
+  const [formClienteId, setFormClienteId] = useState('');
+  const [formProductoId, setFormProductoId] = useState('');
+  const [formCantidad, setFormCantidad] = useState('1');
+  const [formPrecioUnitario, setFormPrecioUnitario] = useState('');
+  const [formMetodoPago, setFormMetodoPago] = useState('efectivo');
+  const [formDescuento, setFormDescuento] = useState('0');
+  const [formNotas, setFormNotas] = useState('');
+  const [savingVenta, setSavingVenta] = useState(false);
+  const [ventaError, setVentaError] = useState<string | null>(null);
+
+  // Modal CorteCaja
+  const [isModalCorteOpen, setIsModalCorteOpen] = useState(false);
+  const [formCorteEfectivo, setFormCorteEfectivo] = useState('0');
+  const [formCorteNotas, setFormCorteNotas] = useState('');
+  const [savingCorte, setSavingCorte] = useState(false);
+  const [corteError, setCorteError] = useState<string | null>(null);
+
+  // Modal cancelar venta
+  const [isModalCancelarOpen, setIsModalCancelarOpen] = useState(false);
+  const [ventaIdCancelando, setVentaIdCancelando] = useState<number | null>(null);
+  const [cancelMotivoVenta, setCancelMotivoVenta] = useState('');
+  const [savingCancelVenta, setSavingCancelVenta] = useState(false);
 
   const cargar = () => {
     const hoy = new Date().toISOString().slice(0, 10);
@@ -53,7 +76,54 @@ export default function VentaLocalPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    cargar();
+    getProductosSinRedirigir().then(({ data }) => setCatProductos(data)).catch(() => {});
+    listarClientes().then(({ data }) => setCatClientes(data)).catch(() => {});
+  }, []);
+
+  const handleCrearVenta = async () => {
+    if (!formProductoId || !formCantidad || !formPrecioUnitario) {
+      setVentaError('Selecciona producto, cantidad y precio'); return;
+    }
+    setSavingVenta(true); setVentaError(null);
+    try {
+      const prod = catProductos.find((p) => String(p.id) === formProductoId);
+      const presId = prod?.presentaciones?.[0]?.id ?? Number(formProductoId);
+      await crearVenta({
+        items: [{ presentacionId: presId, cantidad: Number(formCantidad), precioUnitario: Number(String(formPrecioUnitario).replace(/[^0-9.]/g, '')) }],
+        metodoPago: formMetodoPago,
+        clienteId: formClienteId || undefined,
+        descuento: formDescuento ? Number(formDescuento) : undefined,
+        notas: formNotas.trim() || undefined,
+      });
+      setFormProductoId(''); setFormCantidad('1'); setFormPrecioUnitario('');
+      setFormClienteId(''); setFormDescuento('0'); setFormNotas('');
+      cargar();
+    } catch (e) { setVentaError(e instanceof Error ? e.message : 'Error al procesar venta'); }
+    finally { setSavingVenta(false); }
+  };
+
+  const handleAbrirCorte = async () => {
+    setSavingCorte(true); setCorteError(null);
+    try {
+      await abrirCorte({ efectivoInicial: Number(formCorteEfectivo) || 0, notas: formCorteNotas.trim() || undefined });
+      setIsModalCorteOpen(false); setFormCorteEfectivo('0'); setFormCorteNotas('');
+    } catch (e) { setCorteError(e instanceof Error ? e.message : 'Error al abrir corte'); }
+    finally { setSavingCorte(false); }
+  };
+
+  const openCancelarVenta = (id: number) => { setVentaIdCancelando(id); setCancelMotivoVenta(''); setIsModalCancelarOpen(true); };
+
+  const handleCancelarVenta = async () => {
+    if (!ventaIdCancelando) return;
+    setSavingCancelVenta(true);
+    try {
+      await cancelarVenta(ventaIdCancelando, { motivoCancelacion: cancelMotivoVenta.trim() || 'Cancelada desde panel admin' });
+      setIsModalCancelarOpen(false); setVentaIdCancelando(null); cargar();
+    } catch { /* silencioso */ }
+    finally { setSavingCancelVenta(false); }
+  };
 
   return (
     <AdminLayout>
@@ -61,7 +131,7 @@ export default function VentaLocalPage() {
         title="Venta de Productos en el Local"
         subtitle="Gestiona las ventas de productos directamente en el salón"
         actions={
-          <Button>+ Nueva Venta</Button>
+          <Button variant="outline" onClick={() => { setCorteError(null); setFormCorteEfectivo('0'); setFormCorteNotas(''); setIsModalCorteOpen(true); }}>Abrir Corte de Caja</Button>
         }
       />
 
@@ -71,24 +141,42 @@ export default function VentaLocalPage() {
             Nueva Venta
           </h2>
           <div className="space-y-4">
-            <Input label="Cliente" placeholder="Nombre del cliente" fullWidth />
             <Select
-              label="Producto"
-              options={productos.map(p => ({ value: p.id.toString(), label: `${p.nombre} - ${p.precio}` }))}
+              label="Cliente"
+              value={formClienteId}
+              onChange={(e) => setFormClienteId(e.target.value)}
+              options={[{ value: '', label: 'Cliente general' }, ...catClientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
               fullWidth
             />
-            <Input label="Cantidad" type="number" defaultValue="1" fullWidth />
-            <Input label="Precio Unitario" placeholder="$0.00" fullWidth />
-            <Input label="Total" placeholder="$0.00" fullWidth />
             <Select
-              label="Método de Pago"
+              label="Producto"
+              value={formProductoId}
+              onChange={(e) => {
+                setFormProductoId(e.target.value);
+                const p = catProductos.find((x) => String(x.id) === e.target.value);
+                if (p) setFormPrecioUnitario(String(p.presentaciones?.[0]?.precio ?? p.precio).replace(/[^0-9.]/g, ''));
+              }}
+              options={[{ value: '', label: 'Seleccionar producto...' }, ...catProductos.map((p) => ({ value: String(p.id), label: `${p.nombre} — $${p.presentaciones?.[0]?.precio ?? p.precio}` }))]}
+              fullWidth
+            />
+            <Input label="Cantidad" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
+            <Input label="Precio unitario" type="number" min={0} step={0.01} placeholder="0.00" value={formPrecioUnitario} onChange={(e) => setFormPrecioUnitario(e.target.value)} fullWidth />
+            <Select
+              label="Método de pago"
+              value={formMetodoPago}
+              onChange={(e) => setFormMetodoPago(e.target.value)}
               options={[
                 { value: 'efectivo', label: 'Efectivo' },
+                { value: 'tarjeta', label: 'Tarjeta' },
                 { value: 'transferencia', label: 'Transferencia' },
+                { value: 'mixto', label: 'Mixto' },
               ]}
               fullWidth
             />
-            <Button fullWidth>Procesar Venta</Button>
+            <Input label="Descuento ($)" type="number" min={0} step={0.01} value={formDescuento} onChange={(e) => setFormDescuento(e.target.value)} placeholder="0" fullWidth />
+            <Textarea label="Notas" value={formNotas} onChange={(e) => setFormNotas(e.target.value)} placeholder="Observaciones opcionales..." rows={2} fullWidth />
+            {ventaError && <p className="text-sm" style={{ color: 'var(--danger)' }}>{ventaError}</p>}
+            <Button fullWidth onClick={handleCrearVenta} disabled={savingVenta}>{savingVenta ? 'Procesando...' : 'Procesar Venta'}</Button>
           </div>
         </Card>
 
@@ -97,7 +185,7 @@ export default function VentaLocalPage() {
             Productos Disponibles
           </h2>
           <div className="space-y-3">
-            {productos.map((producto) => (
+            {catProductos.slice(0, 10).map((producto) => (
               <div
                 key={producto.id}
                 className="flex items-center justify-between p-3 rounded-lg"
@@ -108,7 +196,8 @@ export default function VentaLocalPage() {
                     {producto.nombre}
                   </p>
                   <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {producto.precio} • Stock: {producto.stock}
+                    ${producto.presentaciones?.[0]?.precio ?? producto.precio}
+                    {producto.presentaciones?.[0]?.stock != null ? ` • Stock: ${producto.presentaciones[0].stock}` : ''}
                   </p>
                 </div>
                 <Badge variant={getCategoryColor(producto.categoria)}>
@@ -116,6 +205,7 @@ export default function VentaLocalPage() {
                 </Badge>
               </div>
             ))}
+            {catProductos.length === 0 && <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Cargando productos...</p>}
           </div>
         </Card>
       </div>
@@ -137,12 +227,50 @@ export default function VentaLocalPage() {
               </TableCell>
               <TableCell>{venta.fecha}</TableCell>
               <TableCell>
-                <Button size="sm" variant="outline">Ver Detalles</Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline">Ver Detalles</Button>
+                  <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </Table>
       </Card>
+      {/* Modal: Abrir Corte de Caja */}
+      <Modal
+        isOpen={isModalCorteOpen}
+        onClose={() => { if (!savingCorte) { setIsModalCorteOpen(false); } }}
+        title="Abrir Corte de Caja"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsModalCorteOpen(false)} disabled={savingCorte}>Cancelar</Button>
+            <Button onClick={handleAbrirCorte} disabled={savingCorte}>{savingCorte ? 'Abriendo...' : 'Abrir corte'}</Button>
+          </>
+        }
+      >
+        {corteError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{corteError}</p>}
+        <div className="space-y-3">
+          <Input label="Efectivo inicial ($)" type="number" min={0} step={0.01} value={formCorteEfectivo} onChange={(e) => setFormCorteEfectivo(e.target.value)} fullWidth />
+          <Textarea label="Notas" value={formCorteNotas} onChange={(e) => setFormCorteNotas(e.target.value)} placeholder="Observaciones del turno..." rows={2} fullWidth />
+        </div>
+      </Modal>
+
+      {/* Modal: Cancelar Venta */}
+      <Modal
+        isOpen={isModalCancelarOpen}
+        onClose={() => { if (!savingCancelVenta) { setIsModalCancelarOpen(false); setVentaIdCancelando(null); } }}
+        title="Cancelar Venta"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalCancelarOpen(false); setVentaIdCancelando(null); }} disabled={savingCancelVenta}>Volver</Button>
+            <Button variant="danger" onClick={handleCancelarVenta} disabled={savingCancelVenta}>{savingCancelVenta ? 'Cancelando...' : 'Cancelar venta'}</Button>
+          </>
+        }
+      >
+        <Textarea label="Motivo de cancelación" value={cancelMotivoVenta} onChange={(e) => setCancelMotivoVenta(e.target.value)} placeholder="Describe el motivo (opcional)..." rows={3} fullWidth />
+      </Modal>
     </AdminLayout>
   );
 }

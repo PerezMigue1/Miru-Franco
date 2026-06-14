@@ -9,6 +9,8 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
+import Select from '../../../components/ui/Select';
+import Textarea from '../../../components/ui/Textarea';
 import Modal from '../../../components/ui/Modal';
 import {
   getUsuarios,
@@ -42,6 +44,14 @@ export default function ClientesCRMPage() {
   const [formNombre, setFormNombre] = useState('');
   const [formTelefono, setFormTelefono] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formFechaNacimiento, setFormFechaNacimiento] = useState('');
+  const [formFoto, setFormFoto] = useState('');
+  const [formRecibePromociones, setFormRecibePromociones] = useState(false);
+  const [formTipoCabello, setFormTipoCabello] = useState('');
+  const [formColorNatural, setFormColorNatural] = useState('');
+  const [formColorActual, setFormColorActual] = useState('');
+  const [formProductosUsados, setFormProductosUsados] = useState('');
+  const [formAlergias, setFormAlergias] = useState('');
 
   const loadClientes = async () => {
     setLoading(true);
@@ -75,11 +85,23 @@ export default function ClientesCRMPage() {
     );
   });
 
+  const resetCamposExtra = () => {
+    setFormFechaNacimiento('');
+    setFormFoto('');
+    setFormRecibePromociones(false);
+    setFormTipoCabello('');
+    setFormColorNatural('');
+    setFormColorActual('');
+    setFormProductosUsados('');
+    setFormAlergias('');
+  };
+
   const openNuevo = () => {
     setEditingUser(null);
     setFormNombre('');
     setFormTelefono('');
     setFormEmail('');
+    resetCamposExtra();
     setShowForm(true);
   };
 
@@ -88,6 +110,14 @@ export default function ClientesCRMPage() {
     setFormNombre(u.nombre);
     setFormTelefono(u.telefono ?? '');
     setFormEmail(u.email);
+    setFormFechaNacimiento(u.fechaNacimiento ? u.fechaNacimiento.slice(0, 10) : '');
+    setFormFoto(u.foto ?? '');
+    setFormRecibePromociones(u.recibePromociones ?? false);
+    setFormTipoCabello(u.tipoCabello ?? '');
+    setFormColorNatural(u.colorNatural ?? '');
+    setFormColorActual(u.colorActual ?? '');
+    setFormProductosUsados(u.productosUsados ?? '');
+    setFormAlergias(u.alergias ?? '');
     setShowForm(true);
   };
 
@@ -99,7 +129,15 @@ export default function ClientesCRMPage() {
         const actualizado = await updateUsuario(editingUser.id, {
           nombre: formNombre.trim(),
           telefono: formTelefono.trim() || null,
-        });
+          fechaNacimiento: formFechaNacimiento || undefined,
+          foto: formFoto.trim() || undefined,
+          recibePromociones: formRecibePromociones,
+          tipoCabello: formTipoCabello || undefined,
+          colorNatural: formColorNatural.trim() || undefined,
+          colorActual: formColorActual.trim() || undefined,
+          productosUsados: formProductosUsados.trim() || undefined,
+          alergias: formAlergias.trim() || undefined,
+        } as unknown as Parameters<typeof updateUsuario>[1]);
         setClientes((prev) => prev.map((c) => (c.id === actualizado.id ? actualizado : c)));
         setShowForm(false);
       } catch (err) {
@@ -259,14 +297,16 @@ export default function ClientesCRMPage() {
         }
       >
         {editingUser ? (
-          <div className="grid grid-cols-1 gap-4">
-            <Input
-              label="Nombre completo *"
-              value={formNombre}
-              onChange={(e) => setFormNombre(e.target.value)}
-              placeholder="Nombre y apellidos"
-              fullWidth
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <Input
+                label="Nombre completo *"
+                value={formNombre}
+                onChange={(e) => setFormNombre(e.target.value)}
+                placeholder="Nombre y apellidos"
+                fullWidth
+              />
+            </div>
             <Input
               label="Teléfono"
               value={formTelefono}
@@ -282,6 +322,77 @@ export default function ClientesCRMPage() {
               disabled
               title="El email no se puede cambiar desde aquí"
             />
+            <Input
+              label="Fecha de nacimiento"
+              type="date"
+              value={formFechaNacimiento}
+              onChange={(e) => setFormFechaNacimiento(e.target.value)}
+              fullWidth
+            />
+            <Input
+              label="URL de foto"
+              value={formFoto}
+              onChange={(e) => setFormFoto(e.target.value)}
+              placeholder="https://..."
+              fullWidth
+            />
+            <Select
+              label="Tipo de cabello"
+              value={formTipoCabello}
+              onChange={(e) => setFormTipoCabello(e.target.value)}
+              options={[
+                { value: '', label: 'Sin especificar' },
+                { value: 'liso', label: 'Liso' },
+                { value: 'ondulado', label: 'Ondulado' },
+                { value: 'rizado', label: 'Rizado' },
+              ]}
+              fullWidth
+            />
+            <div className="flex items-center gap-2 pt-5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formRecibePromociones}
+                  onChange={(e) => setFormRecibePromociones(e.target.checked)}
+                  className="rounded"
+                />
+                <span style={{ color: 'var(--menu-texto-principal)' }}>Acepta recibir promociones</span>
+              </label>
+            </div>
+            <Input
+              label="Color natural del cabello"
+              value={formColorNatural}
+              onChange={(e) => setFormColorNatural(e.target.value)}
+              placeholder="Ej. Castaño oscuro"
+              fullWidth
+            />
+            <Input
+              label="Color actual"
+              value={formColorActual}
+              onChange={(e) => setFormColorActual(e.target.value)}
+              placeholder="Ej. Rubio ceniza"
+              fullWidth
+            />
+            <div className="sm:col-span-2">
+              <Textarea
+                label="Productos que usa actualmente"
+                value={formProductosUsados}
+                onChange={(e) => setFormProductosUsados(e.target.value)}
+                placeholder="Shampoo, acondicionador, mascarilla..."
+                rows={2}
+                fullWidth
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Textarea
+                label="Alergias conocidas"
+                value={formAlergias}
+                onChange={(e) => setFormAlergias(e.target.value)}
+                placeholder="Ninguna / describir si las hay..."
+                rows={2}
+                fullWidth
+              />
+            </div>
           </div>
         ) : (
           <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>

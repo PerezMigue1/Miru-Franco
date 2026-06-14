@@ -17,6 +17,8 @@ import {
   type Producto,
 } from '../../../services/productos';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../utils/catalogStockSync';
+import { registrarEntrada, registrarSalida, registrarAjuste } from '../../../services/inventarioMovimientos';
+import Modal from '../../../components/ui/Modal';
 
 // Helper simple para sacar número de un precio tipo \"$350\"
 function precioANumero(precio: string | undefined): number {
@@ -54,6 +56,17 @@ export default function InventarioPage() {
   const [porcentajeDescuento, setPorcentajeDescuento] = useState('');
   const [aplicandoDescuento, setAplicandoDescuento] = useState(false);
   const [resultadoDescuento, setResultadoDescuento] = useState<{ ok: boolean; mensaje: string } | null>(null);
+
+  // Modales de movimiento
+  const [isModalEntradaOpen, setIsModalEntradaOpen] = useState(false);
+  const [isModalSalidaOpen, setIsModalSalidaOpen] = useState(false);
+  const [isModalAjusteOpen, setIsModalAjusteOpen] = useState(false);
+  const [movPresentacionId, setMovPresentacionId] = useState('');
+  const [movCantidad, setMovCantidad] = useState('');
+  const [movMotivo, setMovMotivo] = useState('');
+  const [movStockReal, setMovStockReal] = useState('');
+  const [movSaving, setMovSaving] = useState(false);
+  const [movError, setMovError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +125,28 @@ export default function InventarioPage() {
     [categorias]
   );
 
+  const presentacionesOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    for (const p of productos) {
+      for (const pr of p.presentaciones ?? []) {
+        if (pr.id != null) {
+          opts.push({ value: String(pr.id), label: `${p.nombre} - ${pr.tamaño}` });
+        }
+      }
+    }
+    return opts;
+  }, [productos]);
+
+  const stockPresentacionSeleccionada = useMemo(() => {
+    if (!movPresentacionId) return null;
+    for (const p of productos) {
+      for (const pr of p.presentaciones ?? []) {
+        if (String(pr.id) === movPresentacionId) return pr.stock;
+      }
+    }
+    return null;
+  }, [productos, movPresentacionId]);
+
   const productosAfectadosDescuento = useMemo(() => {
     return productos.filter((p) => {
       const cumpleMarca =
@@ -164,6 +199,67 @@ export default function InventarioPage() {
       });
     } finally {
       setAplicandoDescuento(false);
+    }
+  };
+
+  const resetMovForm = () => {
+    setMovPresentacionId('');
+    setMovCantidad('');
+    setMovMotivo('');
+    setMovStockReal('');
+    setMovError(null);
+  };
+
+  const recargarProductos = async () => {
+    const result = await getProductosSinRedirigir({ incluirNoDisponibles: true });
+    setProductos(result.data);
+  };
+
+  const handleEntrada = async () => {
+    if (!movPresentacionId || !movCantidad) { setMovError('Presentación y cantidad son requeridas'); return; }
+    setMovSaving(true);
+    setMovError(null);
+    try {
+      await registrarEntrada({ presentacionId: Number(movPresentacionId), cantidad: Number(movCantidad), motivo: movMotivo || undefined });
+      setIsModalEntradaOpen(false);
+      resetMovForm();
+      await recargarProductos();
+    } catch (e) {
+      setMovError(e instanceof Error ? e.message : 'Error al registrar entrada');
+    } finally {
+      setMovSaving(false);
+    }
+  };
+
+  const handleSalida = async () => {
+    if (!movPresentacionId || !movCantidad) { setMovError('Presentación y cantidad son requeridas'); return; }
+    setMovSaving(true);
+    setMovError(null);
+    try {
+      await registrarSalida({ presentacionId: Number(movPresentacionId), cantidad: Number(movCantidad), motivo: movMotivo || undefined });
+      setIsModalSalidaOpen(false);
+      resetMovForm();
+      await recargarProductos();
+    } catch (e) {
+      setMovError(e instanceof Error ? e.message : 'Error al registrar salida');
+    } finally {
+      setMovSaving(false);
+    }
+  };
+
+  const handleAjuste = async () => {
+    if (!movPresentacionId || !movStockReal || !movMotivo.trim()) { setMovError('Todos los campos son requeridos'); return; }
+    setMovSaving(true);
+    setMovError(null);
+    try {
+      await registrarAjuste({ presentacionId: Number(movPresentacionId), stockReal: Number(movStockReal), motivo: movMotivo });
+      setIsModalAjusteOpen(false);
+      resetMovForm();
+      await recargarProductos();
+    } catch (e) {
+      setMovError(e instanceof Error ? e.message : 'Error al registrar ajuste');
+    } finally {
+      setMovSaving(false);
     }
   };
 
@@ -343,7 +439,12 @@ export default function InventarioPage() {
 
         <Card variant="elevated" padding="lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Listado de productos</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Listado de productos</h2>
+              <Button size="sm" variant="outline" onClick={() => { resetMovForm(); setIsModalEntradaOpen(true); }}>+ Entrada</Button>
+              <Button size="sm" variant="outline" onClick={() => { resetMovForm(); setIsModalSalidaOpen(true); }}>- Salida</Button>
+              <Button size="sm" variant="outline" onClick={() => { resetMovForm(); setIsModalAjusteOpen(true); }}>Ajuste</Button>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Input
                 placeholder="Buscar producto..."
@@ -439,6 +540,96 @@ export default function InventarioPage() {
           </Table>
         </Card>
       </div>
+
+      {/* Modal: Registrar Entrada */}
+      <Modal
+        isOpen={isModalEntradaOpen}
+        onClose={() => { if (!movSaving) { setIsModalEntradaOpen(false); resetMovForm(); } }}
+        title="Registrar Entrada"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalEntradaOpen(false); resetMovForm(); }} disabled={movSaving}>Cancelar</Button>
+            <Button onClick={handleEntrada} disabled={movSaving}>{movSaving ? 'Guardando...' : 'Registrar'}</Button>
+          </>
+        }
+      >
+        {movError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{movError}</p>}
+        <div className="space-y-4">
+          <Select
+            label="Presentación *"
+            value={movPresentacionId}
+            onChange={(e) => setMovPresentacionId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar...' }, ...presentacionesOptions]}
+            fullWidth
+          />
+          <Input label="Cantidad *" type="number" min={1} value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} fullWidth />
+          <Input label="Motivo" value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder="Ej. Compra a proveedor" fullWidth />
+        </div>
+      </Modal>
+
+      {/* Modal: Registrar Salida */}
+      <Modal
+        isOpen={isModalSalidaOpen}
+        onClose={() => { if (!movSaving) { setIsModalSalidaOpen(false); resetMovForm(); } }}
+        title="Registrar Salida"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalSalidaOpen(false); resetMovForm(); }} disabled={movSaving}>Cancelar</Button>
+            <Button onClick={handleSalida} disabled={movSaving}>{movSaving ? 'Guardando...' : 'Registrar'}</Button>
+          </>
+        }
+      >
+        {movError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{movError}</p>}
+        <div className="space-y-4">
+          <Select
+            label="Presentación *"
+            value={movPresentacionId}
+            onChange={(e) => setMovPresentacionId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar...' }, ...presentacionesOptions]}
+            fullWidth
+          />
+          {stockPresentacionSeleccionada != null && (
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Stock actual: <strong>{stockPresentacionSeleccionada}</strong></p>
+          )}
+          {movCantidad && stockPresentacionSeleccionada != null && Number(movCantidad) > stockPresentacionSeleccionada && (
+            <p className="text-sm" style={{ color: 'var(--warning)' }}>Aviso: la cantidad supera el stock disponible.</p>
+          )}
+          <Input label="Cantidad *" type="number" min={1} value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} fullWidth />
+          <Input label="Motivo" value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder="Ej. Uso en servicio" fullWidth />
+        </div>
+      </Modal>
+
+      {/* Modal: Ajuste de Stock */}
+      <Modal
+        isOpen={isModalAjusteOpen}
+        onClose={() => { if (!movSaving) { setIsModalAjusteOpen(false); resetMovForm(); } }}
+        title="Ajuste de Stock"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalAjusteOpen(false); resetMovForm(); }} disabled={movSaving}>Cancelar</Button>
+            <Button onClick={handleAjuste} disabled={movSaving}>{movSaving ? 'Guardando...' : 'Ajustar'}</Button>
+          </>
+        }
+      >
+        {movError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{movError}</p>}
+        <div className="space-y-4">
+          <Select
+            label="Presentación *"
+            value={movPresentacionId}
+            onChange={(e) => setMovPresentacionId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar...' }, ...presentacionesOptions]}
+            fullWidth
+          />
+          {stockPresentacionSeleccionada != null && (
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Stock actual: <strong>{stockPresentacionSeleccionada}</strong></p>
+          )}
+          <Input label="Stock real (conteo físico) *" type="number" min={0} value={movStockReal} onChange={(e) => setMovStockReal(e.target.value)} fullWidth />
+          <Input label="Motivo *" value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder="Ej. Conteo físico mensual" fullWidth />
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }

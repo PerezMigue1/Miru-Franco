@@ -17,6 +17,7 @@ import {
   eliminarNotificacion,
   type NotificacionApi,
 } from '../../../services/ecommerce';
+import { getUsuarios, type Usuario } from '../../../services/usuarios';
 import { showAlert, showToast } from '../../../utils/toast';
 
 export default function NotificacionesPage() {
@@ -24,11 +25,13 @@ export default function NotificacionesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [tipo, setTipo] = useState('pedido');
+  const [tipo, setTipo] = useState('info');
   const [titulo, setTitulo] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [usuarioId, setUsuarioId] = useState('');
+  const [formMetadata, setFormMetadata] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [todosUsuarios, setTodosUsuarios] = useState<Usuario[]>([]);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -45,6 +48,7 @@ export default function NotificacionesPage() {
 
   useEffect(() => {
     void cargar();
+    getUsuarios().then(setTodosUsuarios).catch(() => {});
   }, [cargar]);
 
   const crear = async () => {
@@ -58,16 +62,22 @@ export default function NotificacionesPage() {
     }
     setEnviando(true);
     try {
+      let metadataObj: Record<string, unknown> | undefined;
+      if (formMetadata.trim()) {
+        try { metadataObj = JSON.parse(formMetadata.trim()); } catch { metadataObj = undefined; }
+      }
       await crearNotificacion({
         tipo,
         titulo: titulo.trim(),
         mensaje: mensaje.trim(),
         usuarioId: usuarioId.trim(),
-      });
+        ...(metadataObj ? { metadata: metadataObj } : {}),
+      } as Parameters<typeof crearNotificacion>[0]);
       showToast('Notificación creada', 'success');
       setTitulo('');
       setMensaje('');
       setUsuarioId('');
+      setFormMetadata('');
       await cargar();
     } catch (e) {
       void showAlert(e instanceof Error ? e.message : 'No se pudo crear (¿permisos admin?)');
@@ -172,30 +182,37 @@ export default function NotificacionesPage() {
           Nueva notificación (POST /api/notificaciones)
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="ID usuario destino (UUID)"
-            placeholder="id en tabla usuarios"
+          <Select
+            label="Destinatario *"
             value={usuarioId}
             onChange={(e) => setUsuarioId(e.target.value)}
+            options={[
+              { value: '', label: 'Seleccionar usuario...' },
+              ...todosUsuarios.map((u) => ({ value: u.id, label: `${u.nombre} (${u.email})` })),
+            ]}
             fullWidth
           />
           <Select
-            label="Tipo"
+            label="Tipo *"
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
             options={[
-              { value: 'pedido', label: 'Pedido' },
-              { value: 'cita', label: 'Cita' },
+              { value: 'info', label: 'Info' },
+              { value: 'alerta', label: 'Alerta' },
               { value: 'promocion', label: 'Promoción' },
+              { value: 'recordatorio', label: 'Recordatorio' },
               { value: 'sistema', label: 'Sistema' },
             ]}
             fullWidth
           />
           <div className="md:col-span-2">
-            <Input label="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} fullWidth />
+            <Input label="Título *" value={titulo} onChange={(e) => setTitulo(e.target.value)} fullWidth />
           </div>
           <div className="md:col-span-2">
-            <Textarea label="Mensaje" value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={4} fullWidth />
+            <Textarea label="Mensaje *" value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={4} fullWidth />
+          </div>
+          <div className="md:col-span-2">
+            <Textarea label="Metadata JSON (opcional)" value={formMetadata} onChange={(e) => setFormMetadata(e.target.value)} placeholder={'{"clave": "valor"}'} rows={2} fullWidth />
           </div>
           <div className="md:col-span-2">
             <Button fullWidth onClick={() => void crear()} disabled={enviando}>

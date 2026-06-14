@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { obtenerCaducidades, CaducidadApi } from '../../../services/inventarioMovimientos';
+import { obtenerCaducidades, registrarSalida, CaducidadApi } from '../../../services/inventarioMovimientos';
+import Input from '../../../components/ui/Input';
+import Textarea from '../../../components/ui/Textarea';
+import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -35,13 +38,45 @@ function mapearCaducidad(c: CaducidadApi, idx: number): ProductoCaducidad {
 export default function ControlCaducidadPage() {
   const [productos, setProductos] = useState<ProductoCaducidad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [caducidadesRaw, setCaducidadesRaw] = useState<CaducidadApi[]>([]);
 
-  useEffect(() => {
+  // Modal descartar
+  const [isModalDescartarOpen, setIsModalDescartarOpen] = useState(false);
+  const [productoDescartando, setProductoDescartando] = useState<ProductoCaducidad | null>(null);
+  const [savingDescartar, setSavingDescartar] = useState(false);
+  const [descartarError, setDescartarError] = useState<string | null>(null);
+  const [formCantidadDescartar, setFormCantidadDescartar] = useState('1');
+  const [formMotivoDescartar, setFormMotivoDescartar] = useState('Producto vencido');
+
+  const cargar = () => {
+    setLoading(true);
     obtenerCaducidades(30)
-      .then((data) => setProductos(data.map(mapearCaducidad)))
+      .then((data) => { setCaducidadesRaw(data); setProductos(data.map(mapearCaducidad)); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const openDescartar = (producto: ProductoCaducidad) => {
+    setProductoDescartando(producto);
+    setFormCantidadDescartar('1');
+    setFormMotivoDescartar('Producto vencido');
+    setDescartarError(null);
+    setIsModalDescartarOpen(true);
+  };
+
+  const handleDescartar = async () => {
+    if (!productoDescartando) return;
+    const raw = caducidadesRaw.find((c) => (c.presentacionId || 0) === productoDescartando.id);
+    const presentacionId = raw?.presentacionId ?? productoDescartando.id;
+    setSavingDescartar(true); setDescartarError(null);
+    try {
+      await registrarSalida({ presentacionId, cantidad: parseInt(formCantidadDescartar, 10) || 1, motivo: formMotivoDescartar.trim() || 'Producto vencido' });
+      setIsModalDescartarOpen(false); setProductoDescartando(null); cargar();
+    } catch (e) { setDescartarError(e instanceof Error ? e.message : 'Error al descartar'); }
+    finally { setSavingDescartar(false); }
+  };
 
   const estados = {
     vigente: { label: 'Vigente', variant: 'success' as const },
@@ -100,13 +135,48 @@ export default function ControlCaducidadPage() {
               </TableCell>
               <TableCell>
                 {producto.estado === 'vencido' && (
-                  <Button size="sm" variant="danger">Descartar</Button>
+                  <Button size="sm" variant="danger" onClick={() => openDescartar(producto)}>Descartar</Button>
                 )}
               </TableCell>
             </TableRow>
           ))}
         </Table>
       </Card>
+      {/* Modal: Confirmar Descartar */}
+      <Modal
+        isOpen={isModalDescartarOpen}
+        onClose={() => { if (!savingDescartar) { setIsModalDescartarOpen(false); setProductoDescartando(null); } }}
+        title="Descartar Producto"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalDescartarOpen(false); setProductoDescartando(null); }} disabled={savingDescartar}>Cancelar</Button>
+            <Button variant="danger" onClick={handleDescartar} disabled={savingDescartar}>{savingDescartar ? 'Descartando...' : 'Descartar'}</Button>
+          </>
+        }
+      >
+        {descartarError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{descartarError}</p>}
+        <p className="mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Registrar salida de <strong>{productoDescartando?.nombre}</strong> por producto vencido.
+        </p>
+        <div className="space-y-3">
+          <Input
+            label="Cantidad a descartar"
+            type="number"
+            min={1}
+            value={formCantidadDescartar}
+            onChange={(e) => setFormCantidadDescartar(e.target.value)}
+            fullWidth
+          />
+          <Textarea
+            label="Motivo"
+            value={formMotivoDescartar}
+            onChange={(e) => setFormMotivoDescartar(e.target.value)}
+            rows={2}
+            fullWidth
+          />
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }

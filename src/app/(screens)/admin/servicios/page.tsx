@@ -9,6 +9,7 @@ import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
+import Textarea from '../../../components/ui/Textarea';
 import Modal from '../../../components/ui/Modal';
 import { CheckCircle2, ClipboardList } from 'lucide-react';
 import { getCategoryColor } from '../../../utils/categoryColors';
@@ -57,8 +58,12 @@ export default function ServiciosPage() {
   const [formDuracion, setFormDuracion] = useState('');
   const [formCategoria, setFormCategoria] = useState('');
   const [formDescripcion, setFormDescripcion] = useState('');
+  const [formDescripcionLarga, setFormDescripcionLarga] = useState('');
   const [formImagenUrl, setFormImagenUrl] = useState('');
   const [formIncluye, setFormIncluye] = useState('');
+  const [formRecomendaciones, setFormRecomendaciones] = useState('');
+  const [formRequiereEvaluacion, setFormRequiereEvaluacion] = useState(false);
+  const [formActivo, setFormActivo] = useState(true);
 
   // --- CONFIGURACIÓN DE COLORES PARA CONTRASTE ---
   const colorGuindaHex = '#4a0404';
@@ -98,16 +103,19 @@ export default function ServiciosPage() {
     setSaving(true);
     setError(null);
     try {
-      const payload: ServicioPayload = {
+      const payload = {
         nombre: formNombre.trim(),
         precio: parseFloat(formPrecio) || 0,
         duracionMinutos: parseInt(formDuracion),
         categoria: formCategoria,
         descripcion: formDescripcion.trim() || formNombre.trim(),
-        imagen: formImagenUrl.trim(), 
+        descripcionLarga: formDescripcionLarga.trim() || undefined,
+        imagen: formImagenUrl.trim(),
         incluye: formIncluye.trim() ? formIncluye.split(',').map(i => i.trim()) : [],
-        activo: true
-      };
+        recomendaciones: formRecomendaciones.trim() ? formRecomendaciones.split(',').map(r => r.trim()).filter(Boolean) : [],
+        requiereEvaluacion: formRequiereEvaluacion,
+        activo: formActivo,
+      } as ServicioPayload;
       await createServicio(payload);
       setSuccess("¡Servicio guardado correctamente!");
       setShowForm(false);
@@ -121,9 +129,10 @@ export default function ServiciosPage() {
   };
 
   const resetServicioForm = () => {
-    setFormNombre(''); setFormPrecio(''); setFormDuracion(''); 
-    setFormCategoria(''); setFormDescripcion(''); setFormImagenUrl('');
-    setFormIncluye('');
+    setFormNombre(''); setFormPrecio(''); setFormDuracion('');
+    setFormCategoria(''); setFormDescripcion(''); setFormDescripcionLarga('');
+    setFormImagenUrl(''); setFormIncluye(''); setFormRecomendaciones('');
+    setFormRequiereEvaluacion(false); setFormActivo(true);
   };
 
   const handleCrearPaquete = async () => {
@@ -278,8 +287,11 @@ export default function ServiciosPage() {
         <div className="flex flex-col gap-4">
           <h2 className="text-xl font-bold" style={{ color: colorGuindaHex }}>Nuevo Servicio</h2>
           <Input label="Nombre del Servicio *" value={formNombre} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormNombre(e.target.value)} fullWidth />
+          <Textarea label="Descripción corta" value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="Breve descripción del servicio..." rows={2} fullWidth />
+          <Textarea label="Descripción larga" value={formDescripcionLarga} onChange={(e) => setFormDescripcionLarga(e.target.value)} placeholder="Descripción detallada del servicio..." rows={3} fullWidth />
           <Input label="URL de la Imagen" value={formImagenUrl} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormImagenUrl(e.target.value)} fullWidth />
           <Input label="Productos que incluye (Separar por comas)" value={formIncluye} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormIncluye(e.target.value)} fullWidth />
+          <Input label="Recomendaciones (separar por coma)" value={formRecomendaciones} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormRecomendaciones(e.target.value)} placeholder="Evitar lavar el cabello 48h, No usar productos con sulfatos..." fullWidth />
           <div className="grid grid-cols-2 gap-4 items-end">
             <Input label="Precio ($) *" value={formPrecio} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPrecio(e.target.value)} />
             <div className="flex flex-col">
@@ -296,6 +308,16 @@ export default function ServiciosPage() {
               <option value="">Elegir categoría...</option>
               {CATEGORIAS_OPCIONES.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
             </select>
+          </div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-black">
+              <input type="checkbox" checked={formRequiereEvaluacion} onChange={(e) => setFormRequiereEvaluacion(e.target.checked)} className="rounded" />
+              Requiere evaluación previa
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-black">
+              <input type="checkbox" checked={formActivo} onChange={(e) => setFormActivo(e.target.checked)} className="rounded" />
+              Servicio activo
+            </label>
           </div>
           <div className="flex justify-end gap-2 mt-4">
              <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>

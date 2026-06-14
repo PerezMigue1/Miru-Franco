@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarSeguimientos, SeguimientoApi } from '../../../services/seguimientos';
+import { listarSeguimientos, crearSeguimiento, SeguimientoApi } from '../../../services/seguimientos';
+import { listarClientes, type ClienteApi } from '../../../services/clientes';
+import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -43,12 +45,56 @@ export default function SeguimientoPostServicioPage() {
   const [seguimientos, setSeguimientos] = useState<SeguimientoFila[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Modal crear seguimiento
+  const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [catClientes, setCatClientes] = useState<ClienteApi[]>([]);
+  const [formUsuarioId, setFormUsuarioId] = useState('');
+  const [formCitaId, setFormCitaId] = useState('');
+  const [formNotas, setFormNotas] = useState('');
+  const [formFechaContacto, setFormFechaContacto] = useState('');
+  const [formSatisfaccion, setFormSatisfaccion] = useState('');
+  const [formRequiereAccion, setFormRequiereAccion] = useState('no');
+  const [savingSeg, setSavingSeg] = useState(false);
+  const [segError, setSegError] = useState<string | null>(null);
+
+  const cargar = () => {
+    setLoading(true);
     listarSeguimientos({ requiereAccion: true })
       .then(({ data }) => setSeguimientos(data.map(mapearSeguimiento)))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const openCrear = async () => {
+    setFormUsuarioId(''); setFormCitaId(''); setFormNotas(''); setFormFechaContacto(new Date().toISOString().slice(0, 10));
+    setFormSatisfaccion(''); setFormRequiereAccion('no'); setSegError(null);
+    try {
+      const { data } = await listarClientes();
+      setCatClientes(data);
+    } catch { setCatClientes([]); }
+    setIsModalCrearOpen(true);
+  };
+
+  const handleCrearSeguimiento = async () => {
+    if (!formUsuarioId || !formNotas.trim() || !formFechaContacto) {
+      setSegError('Usuario, notas y fecha de contacto son requeridos'); return;
+    }
+    setSavingSeg(true); setSegError(null);
+    try {
+      await crearSeguimiento({
+        usuarioId: formUsuarioId,
+        citaId: formCitaId ? Number(formCitaId) : undefined,
+        notas: formNotas.trim(),
+        fechaContacto: formFechaContacto,
+        satisfaccion: formSatisfaccion ? Number(formSatisfaccion) : undefined,
+        requiereAccion: formRequiereAccion === 'si',
+      });
+      setIsModalCrearOpen(false); cargar();
+    } catch (e) { setSegError(e instanceof Error ? e.message : 'Error al crear seguimiento'); }
+    finally { setSavingSeg(false); }
+  };
 
   const estados = {
     satisfactoria: { label: 'Satisfactoria', variant: 'success' as const },
@@ -61,6 +107,7 @@ export default function SeguimientoPostServicioPage() {
       <PageHeader
         title="Seguimiento Post-Servicio"
         subtitle="Realiza seguimiento a clientas después de servicios, especialmente tratamientos químicos"
+        actions={<Button onClick={openCrear}>+ Nuevo Seguimiento</Button>}
       />
 
       <Card>
@@ -81,7 +128,7 @@ export default function SeguimientoPostServicioPage() {
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">Ver Detalles</Button>
                   {seguimiento.estado === 'pendiente' && (
-                    <Button size="sm">Realizar Seguimiento</Button>
+                    <Button size="sm" onClick={openCrear}>Realizar Seguimiento</Button>
                   )}
                 </div>
               </TableCell>
@@ -116,6 +163,59 @@ export default function SeguimientoPostServicioPage() {
           </div>
         </div>
       </Card>
+
+      {/* Modal: Nuevo Seguimiento */}
+      <Modal
+        isOpen={isModalCrearOpen}
+        onClose={() => { if (!savingSeg) setIsModalCrearOpen(false); }}
+        title="Nuevo Seguimiento"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsModalCrearOpen(false)} disabled={savingSeg}>Cancelar</Button>
+            <Button onClick={handleCrearSeguimiento} disabled={savingSeg}>{savingSeg ? 'Guardando...' : 'Registrar'}</Button>
+          </>
+        }
+      >
+        {segError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{segError}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <Select
+              label="Cliente *"
+              value={formUsuarioId}
+              onChange={(e) => setFormUsuarioId(e.target.value)}
+              options={[{ value: '', label: 'Seleccionar cliente...' }, ...catClientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
+              fullWidth
+            />
+          </div>
+          <Input label="Fecha de contacto *" type="date" value={formFechaContacto} onChange={(e) => setFormFechaContacto(e.target.value)} fullWidth />
+          <Input label="ID de cita (opcional)" type="number" min={1} value={formCitaId} onChange={(e) => setFormCitaId(e.target.value)} placeholder="Ej. 42" fullWidth />
+          <Select
+            label="Satisfacción (1-5)"
+            value={formSatisfaccion}
+            onChange={(e) => setFormSatisfaccion(e.target.value)}
+            options={[
+              { value: '', label: 'No aplica' },
+              { value: '1', label: '1 — Muy insatisfecha' },
+              { value: '2', label: '2 — Insatisfecha' },
+              { value: '3', label: '3 — Regular' },
+              { value: '4', label: '4 — Satisfecha' },
+              { value: '5', label: '5 — Muy satisfecha' },
+            ]}
+            fullWidth
+          />
+          <Select
+            label="¿Requiere acción?"
+            value={formRequiereAccion}
+            onChange={(e) => setFormRequiereAccion(e.target.value)}
+            options={[{ value: 'no', label: 'No' }, { value: 'si', label: 'Sí' }]}
+            fullWidth
+          />
+          <div className="sm:col-span-2">
+            <Textarea label="Notas *" value={formNotas} onChange={(e) => setFormNotas(e.target.value)} placeholder="Resultado del seguimiento, observaciones..." rows={4} fullWidth />
+          </div>
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }

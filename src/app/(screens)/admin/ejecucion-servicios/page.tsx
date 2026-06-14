@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarCitas, checkOutCita, CitaApi } from '../../../services/citas';
+import { listarCitas, checkOutCita, registrarMateriales, CitaApi } from '../../../services/citas';
+import { getProductosSinRedirigir } from '../../../services/productos';
+import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
@@ -44,9 +46,51 @@ function mapearCita(c: CitaApi): ServicioFila {
   };
 }
 
+interface PresentacionOpcion {
+  id: number;
+  label: string;
+}
+
 export default function EjecucionServiciosPage() {
   const [servicios, setServicios] = useState<ServicioFila[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal materiales
+  const [isModalMaterialesOpen, setIsModalMaterialesOpen] = useState(false);
+  const [citaIdMateriales, setCitaIdMateriales] = useState<number | null>(null);
+  const [presentaciones, setPresentaciones] = useState<PresentacionOpcion[]>([]);
+  const [formPresentacionId, setFormPresentacionId] = useState('');
+  const [formCantidad, setFormCantidad] = useState('');
+  const [formMotivoMat, setFormMotivoMat] = useState('');
+  const [savingMat, setSavingMat] = useState(false);
+  const [matError, setMatError] = useState<string | null>(null);
+
+  const openMateriales = async (citaId: number) => {
+    setCitaIdMateriales(citaId);
+    setFormPresentacionId(''); setFormCantidad(''); setFormMotivoMat(''); setMatError(null);
+    try {
+      const { data: productos } = await getProductosSinRedirigir();
+      const opts: PresentacionOpcion[] = [];
+      productos.forEach((p) => (p.presentaciones ?? []).forEach((pr) => {
+        const id = Number(pr.id);
+        if (!isNaN(id)) opts.push({ id, label: `${p.nombre} — ${pr.tamaño ?? pr.id}` });
+      }));
+      setPresentaciones(opts);
+    } catch { setPresentaciones([]); }
+    setIsModalMaterialesOpen(true);
+  };
+
+  const handleRegistrarMateriales = async () => {
+    if (!citaIdMateriales || !formPresentacionId || !formCantidad) {
+      setMatError('Presentación y cantidad son requeridos'); return;
+    }
+    setSavingMat(true); setMatError(null);
+    try {
+      await registrarMateriales(citaIdMateriales, { presentacionId: Number(formPresentacionId), cantidad: Number(formCantidad), motivo: formMotivoMat.trim() || undefined });
+      setIsModalMaterialesOpen(false); setCitaIdMateriales(null);
+    } catch (e) { setMatError(e instanceof Error ? e.message : 'Error al registrar materiales'); }
+    finally { setSavingMat(false); }
+  };
 
   const cargar = () => {
     setLoading(true);
@@ -137,6 +181,9 @@ export default function EjecucionServiciosPage() {
                   >
                     {servicio.estado === 'pendiente' ? 'Iniciar' : servicio.estado === 'en_proceso' ? 'Finalizar' : 'Ver Detalles'}
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => openMateriales(servicio.id)}>
+                    + Materiales
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -169,6 +216,33 @@ export default function EjecucionServiciosPage() {
           </div>
         </div>
       </Card>
+
+      {/* Modal: Registrar Materiales */}
+      <Modal
+        isOpen={isModalMaterialesOpen}
+        onClose={() => { if (!savingMat) { setIsModalMaterialesOpen(false); setCitaIdMateriales(null); } }}
+        title="Registrar Materiales"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalMaterialesOpen(false); setCitaIdMateriales(null); }} disabled={savingMat}>Cancelar</Button>
+            <Button onClick={handleRegistrarMateriales} disabled={savingMat}>{savingMat ? 'Guardando...' : 'Registrar'}</Button>
+          </>
+        }
+      >
+        {matError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{matError}</p>}
+        <div className="space-y-4">
+          <Select
+            label="Presentación / Producto *"
+            value={formPresentacionId}
+            onChange={(e) => setFormPresentacionId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar presentación...' }, ...presentaciones.map((p) => ({ value: String(p.id), label: p.label }))]}
+            fullWidth
+          />
+          <Input label="Cantidad *" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} placeholder="1" fullWidth />
+          <Textarea label="Motivo (opcional)" value={formMotivoMat} onChange={(e) => setFormMotivoMat(e.target.value)} placeholder="Ej. Aplicación en servicio de tinte..." rows={3} fullWidth />
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }
