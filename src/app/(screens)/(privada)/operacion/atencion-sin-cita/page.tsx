@@ -1,102 +1,177 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
+import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
+import Select from '../../../../components/ui/Select';
+import { listarVentas, crearVenta, VentaLocalApi } from '../../../../services/pos';
+import { getServicios, Servicio } from '../../../../services/servicios';
+import { listarClientes, ClienteApi } from '../../../../services/clientes';
+
+function precioNum(p?: string): number {
+  return Number(String(p ?? '').replace(/[^0-9.]/g, '')) || 0;
+}
+function fmtMoneda(v?: number | null): string {
+  return `$${Number(v ?? 0).toFixed(2)}`;
+}
+function hora(iso?: string): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+}
 
 export default function AtencionSinCitaPage() {
-  const turnos = [
-    { id: 1, cliente: 'María González', llegada: '10:15', servicio: 'Corte', estado: 'esperando', posicion: 1 },
-    { id: 2, cliente: 'Ana López', llegada: '10:30', servicio: 'Peinado', estado: 'esperando', posicion: 2 },
-    { id: 3, cliente: 'Carmen Ruiz', llegada: '09:45', servicio: 'Corte', estado: 'en_atencion', posicion: 0 },
-  ];
+  const [ventas, setVentas] = useState<VentaLocalApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [clientes, setClientes] = useState<ClienteApi[]>([]);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [fServicioId, setFServicioId] = useState('');
+  const [fCantidad, setFCantidad] = useState('1');
+  const [fMetodoPago, setFMetodoPago] = useState('efectivo');
+  const [fClienteId, setFClienteId] = useState('');
+
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    listarVentas({ desde: hoy, limit: 100 })
+      .then(({ data }) => setVentas(data))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar las ventas'))
+      .finally(() => setLoading(false));
+  }, [hoy]);
+
+  useEffect(() => {
+    cargar();
+    getServicios().then(({ data }) => setServicios(data)).catch(() => {});
+    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
+  }, [cargar]);
+
+  const reset = () => {
+    setFServicioId(''); setFCantidad('1'); setFMetodoPago('efectivo'); setFClienteId('');
+    setFormError(null);
+  };
+
+  const handleCobrar = async () => {
+    if (!fServicioId || !fCantidad || Number(fCantidad) < 1) {
+      setFormError('Selecciona un servicio y una cantidad válida');
+      return;
+    }
+    const servicio = servicios.find((s) => String(s.id) === fServicioId);
+    if (!servicio) { setFormError('Servicio no válido'); return; }
+    setSaving(true); setFormError(null);
+    try {
+      await crearVenta({
+        items: [{
+          servicioId: Number(fServicioId),
+          cantidad: Number(fCantidad),
+          precioUnitario: precioNum(servicio.precio),
+        }],
+        metodoPago: fMetodoPago,
+        clienteId: fClienteId || undefined,
+      });
+      setIsOpen(false); reset(); cargar();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'No se pudo registrar el cobro');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <OperacionLayout>
       <PageHeader
-        title="Atención de Clientes sin Cita"
-        subtitle="Gestiona clientes que llegan sin cita previa por orden de turno"
+        title="Atención Sin Cita"
+        subtitle="Cobra servicios de clientes que llegan sin cita previa (venta en mostrador)"
+        actions={<Button onClick={() => { reset(); setIsOpen(true); }}>+ Cobrar servicio</Button>}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Espera</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Atención</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>1</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo Promedio</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>25 min</p>
-          </div>
-        </Card>
-      </div>
-
       <Card>
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Lista de Turnos
-        </h2>
-        <Table headers={['Posición', 'Cliente', 'Hora de Llegada', 'Servicio', 'Estado', 'Tiempo de Espera', 'Acciones']}>
-          {turnos.map((turno) => (
-            <TableRow key={turno.id}>
-              <TableCell>
-                {turno.posicion > 0 ? (
-                  <Badge variant="info">{turno.posicion}</Badge>
-                ) : (
-                  <Badge variant="success">En Atención</Badge>
-                )}
-              </TableCell>
-              <TableCell className="font-semibold">{turno.cliente}</TableCell>
-              <TableCell>{turno.llegada}</TableCell>
-              <TableCell>{turno.servicio}</TableCell>
-              <TableCell>
-                <Badge variant={turno.estado === 'en_atencion' ? 'success' : 'warning'}>
-                  {turno.estado === 'en_atencion' ? 'En Atención' : 'Esperando'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {turno.estado === 'esperando' ? '15 min' : '-'}
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  {turno.estado === 'esperando' && (
-                    <Button size="sm">Llamar</Button>
-                  )}
-                  {turno.estado === 'en_atencion' && (
-                    <Button size="sm" variant="success">Finalizar</Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </Table>
+        {loading ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando ventas del día…</p>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="mb-3" style={{ color: 'var(--danger)' }}>{error}</p>
+            <Button variant="outline" onClick={cargar}>Reintentar</Button>
+          </div>
+        ) : ventas.length === 0 ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
+            No hay ventas sin cita registradas hoy.
+          </p>
+        ) : (
+          <Table headers={['Folio', 'Hora', 'Items', 'Método', 'Total', 'Estado']}>
+            {ventas.map((v) => (
+              <TableRow key={v.id}>
+                <TableCell>{v.id}</TableCell>
+                <TableCell>{hora(v.creadoEn)}</TableCell>
+                <TableCell>{v.items.length}</TableCell>
+                <TableCell>{v.metodoPago}</TableCell>
+                <TableCell>{fmtMoneda(v.total)}</TableCell>
+                <TableCell>
+                  <Badge variant={v.estado === 'pagada' ? 'success' : v.estado === 'cancelada' ? 'danger' : 'warning'}>
+                    {v.estado}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        )}
       </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Registrar Nuevo Turno
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Nombre del Cliente" placeholder="Nombre completo" fullWidth />
-          <Input label="Teléfono (opcional)" placeholder="555-1234-5678" fullWidth />
-          <Input label="Servicio Deseado" placeholder="Tipo de servicio" fullWidth />
-          <Input label="Hora de Llegada" type="time" fullWidth />
-          <div className="md:col-span-2">
-            <Button fullWidth>Agregar a Lista de Espera</Button>
-          </div>
+      <Modal
+        isOpen={isOpen}
+        onClose={() => { if (!saving) { setIsOpen(false); reset(); } }}
+        title="Cobrar servicio (sin cita)"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsOpen(false); reset(); }} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleCobrar} disabled={saving}>{saving ? 'Cobrando…' : 'Registrar cobro'}</Button>
+          </>
+        }
+      >
+        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{formError}</p>}
+        <div className="space-y-4">
+          <Select
+            label="Servicio *"
+            value={fServicioId}
+            onChange={(e) => setFServicioId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar servicio…' }, ...servicios.map((s) => ({ value: String(s.id), label: `${s.nombre} — ${fmtMoneda(precioNum(s.precio))}` }))]}
+            fullWidth
+          />
+          <Input label="Cantidad *" type="number" min={1} value={fCantidad} onChange={(e) => setFCantidad(e.target.value)} fullWidth />
+          <Select
+            label="Método de pago *"
+            value={fMetodoPago}
+            onChange={(e) => setFMetodoPago(e.target.value)}
+            options={[
+              { value: 'efectivo', label: 'Efectivo' },
+              { value: 'tarjeta', label: 'Tarjeta' },
+              { value: 'transferencia', label: 'Transferencia' },
+              { value: 'mixto', label: 'Mixto' },
+            ]}
+            fullWidth
+          />
+          <Select
+            label="Cliente (opcional)"
+            value={fClienteId}
+            onChange={(e) => setFClienteId(e.target.value)}
+            options={[{ value: '', label: 'Público general' }, ...clientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
+            fullWidth
+          />
         </div>
-      </Card>
+      </Modal>
     </OperacionLayout>
   );
 }

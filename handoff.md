@@ -1,3 +1,52 @@
+# Handoff — miru-franco-web
+
+---
+
+## Sesión 2 — Completar formularios admin (campos completos del modelo Prisma)
+
+### Objetivo
+
+Agregar a cada página admin todos los campos del modelo Prisma correspondiente, sin crear ni eliminar archivos, sin tocar `components/` ni `services/`.
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `admin/productos/nuevo/page.tsx` | `descripcionLarga` (Textarea), `descuento`, `nuevo`, `crueltyFree`, `caracteristicas`, `ingredientes`, `modoUso`, `resultado`, sección "Presentación inicial" con `tamanio`, `precio`, `precioOriginal`, `stock`, `fechaCaducidad` |
+| `admin/servicios/page.tsx` | `descripcion` conectado, `descripcionLarga` (Textarea), `recomendaciones`, `requiereEvaluacion` (checkbox), `activo` (checkbox); cast `as ServicioPayload` por campo no tipado |
+| `admin/notificaciones/page.tsx` | `usuarioId` → Select real desde `getUsuarios`; tipo ampliado a info/alerta/promocion/recordatorio/sistema; `metadata` (Textarea JSON opcional) |
+| `admin/clientes-crm/page.tsx` | `fechaNacimiento`, `foto`, `tipoCabello` (Select enum), `recibePromociones` (checkbox), `colorNatural`, `colorActual`, `productosUsados` (Textarea), `alergias` (Textarea); cast `as unknown as Parameters<typeof updateUsuario>[1]` |
+| `admin/gestion-personal/page.tsx` | `activo` (checkbox) en Create y Edit modal; cast `as unknown as Parameters<typeof crearPerfilEmpleado>[0]` y `actualizarEmpleado[1]` |
+| `admin/gestion-citas/page.tsx` | Select `estado` con los 7 valores enum (pendiente/confirmada/en_curso/completada/cancelada/reprogramada/no_asistio) en modal Editar; Textarea `motivoCancelacion` condicional cuando estado=cancelada; lógica: si cancelada → `cancelarCita`, si no → `actualizarCita` con cast |
+| `admin/quejas-garantias/page.tsx` | Select `usuarioId` desde `listarClientes` en formulario inline de creación |
+| `admin/seguimiento-post-servicio/page.tsx` | Cambio de `getUsuarios` (personal) a `listarClientes`; Select "Cliente" en modal; Input `citaId` opcional |
+| `admin/paquetes/page.tsx` | Input `serviciosVinculados` (comma-separated) en modal crear; parseado a array en el payload |
+| `admin/control-caducidad/page.tsx` | Switch de `registrarAjuste({stockReal:0})` → `registrarSalida({cantidad, motivo})`; Input `cantidadDescartar` + Textarea `motivoDescartar` editables |
+| `admin/venta-local/page.tsx` | Carga real de productos via `getProductosSinRedirigir`; clientes via `listarClientes`; Select `clienteId`; Input `descuento`; Textarea `notas`; métodos de pago completos (efectivo/tarjeta/transferencia/mixto); modal "Abrir Corte de Caja" via `abrirCorte()` |
+| `admin/entregas-envios/page.tsx` | Select `estadoEnvio` (preparando/en_transito/entregado/fallido); Input `fechaEnvio` datetime-local; Input `fechaEntrega` datetime-local; Textarea `notas`; display pedidoId; estado raw guardado en `enviosRaw` |
+| `admin/devoluciones-cambios/page.tsx` | Textarea `motivo` editable (pre-poblado del raw); Input `monto`; opción 'completada' en Select estado |
+
+### Patrones de cast usados (sin modificar services/)
+
+Cuando el tipo del payload de un servicio no incluye todos los campos del modelo Prisma:
+
+```ts
+// Cuando la interfaz es suficientemente compatible
+payload as ServicioPayload
+
+// Cuando TypeScript bloquea completamente el cast directo
+payload as unknown as Parameters<typeof updateUsuario>[1]
+payload as unknown as Parameters<typeof crearPerfilEmpleado>[0]
+payload as unknown as Parameters<typeof actualizarEmpleado>[1]
+payload as unknown as Parameters<typeof actualizarCita>[1]
+```
+
+### Resultado de compilación
+
+`npx tsc --noEmit` → **0 errores** al finalizar todos los grupos.
+
+---
+
 # Handoff — Rediseño Visual miru-franco-web
 
 ## Objetivo

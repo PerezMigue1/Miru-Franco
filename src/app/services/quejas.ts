@@ -107,7 +107,7 @@ export async function actualizarQueja(
   id: number,
   payload: { estado?: EstadoQueja; asunto?: string; descripcion?: string }
 ): Promise<QuejaApi> {
-  const res = await apiClient.patch<unknown>(`/api/quejas/${id}`, payload, getBackendBaseUrl());
+  const res = await apiClient.put<unknown>(`/api/quejas/${id}`, payload, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const queja = normalizarQueja(obj);
   if (!queja) throw new Error('No se pudo actualizar la queja');

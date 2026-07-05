@@ -12,17 +12,20 @@ interface RequestOptions extends RequestInit {
   skip403Redirect?: boolean;
   /** Si es true, en 500 no se redirige a /500; se lanza el error para que la página lo maneje */
   skip500Redirect?: boolean;
+  /** Si es true, en 401 no se redirige a /login ni se limpia sesión; se lanza el error.
+   *  Útil en endpoints públicos donde 401 = "código/credencial incorrecta", no "sesión expirada" (ej. verificar OTP). */
+  skip401Redirect?: boolean;
 }
 
 /** Tercer argumento opcional de post/put/delete cuando no basta con un string `customBase`. */
-export type ApiClientCustomBase = string | { customBase?: string; skip500Redirect?: boolean };
+export type ApiClientCustomBase = string | { customBase?: string; skipAuth?: boolean; skip500Redirect?: boolean; skip403Redirect?: boolean; skip401Redirect?: boolean };
 
 class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    const { skipAuth = false, endpoint: customEndpoint, skip403Redirect = false, skip500Redirect = false, ...fetchOptions } = options;
+    const { skipAuth = false, endpoint: customEndpoint, skip403Redirect = false, skip500Redirect = false, skip401Redirect = false, ...fetchOptions } = options;
     
     // Calcular API_BASE en runtime para evitar problemas con builds cacheados
     // Usar getApiBaseUrl() que calcula en runtime en lugar de la constante
@@ -157,7 +160,7 @@ class ApiClient {
           const isManualLogout = typeof window !== 'undefined' &&
             localStorage.getItem('manualLogout') === 'true';
 
-          if (typeof window !== 'undefined' && !isLoginPage) {
+          if (typeof window !== 'undefined' && !isLoginPage && !skip401Redirect) {
             // ✅ Manejar error 401 según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
             // Verificar si es por inactividad
             // NO mostrar mensaje de inactividad si el login fue reciente (menos de 10 segundos)
@@ -446,30 +449,36 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect });
   }
 
-  private resolveCustomBaseOpts(opts?: ApiClientCustomBase): { url?: string; skip500Redirect: boolean } {
-    if (opts == null) return { skip500Redirect: false };
+  private resolveCustomBaseOpts(opts?: ApiClientCustomBase): { url?: string; skip500Redirect: boolean; skip403Redirect: boolean; skip401Redirect: boolean } {
+    if (opts == null) return { skip500Redirect: false, skip403Redirect: false, skip401Redirect: false };
     if (typeof opts === 'string') {
       const customBase = opts;
       return {
         url: customBase ? `${customBase.replace(/\/$/, '')}` : undefined,
         skip500Redirect: false,
+        skip403Redirect: false,
+        skip401Redirect: false,
       };
     }
     const customBase = opts.customBase?.replace(/\/$/, '') ?? '';
     return {
       url: customBase ? `${customBase}` : undefined,
       skip500Redirect: Boolean(opts.skip500Redirect),
+      skip403Redirect: Boolean(opts.skip403Redirect),
+      skip401Redirect: Boolean(opts.skip401Redirect),
     };
   }
 
   async post<T>(endpoint: string, body?: unknown, customBaseOrOpts?: ApiClientCustomBase): Promise<T> {
-    const { url: basePart, skip500Redirect } = this.resolveCustomBaseOpts(customBaseOrOpts);
+    const { url: basePart, skip500Redirect, skip403Redirect, skip401Redirect } = this.resolveCustomBaseOpts(customBaseOrOpts);
     const fullUrl = basePart ? `${basePart}${endpoint}` : undefined;
     return this.request<T>(endpoint, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
       endpoint: fullUrl,
       skip500Redirect,
+      skip403Redirect,
+      skip401Redirect,
     });
   }
 

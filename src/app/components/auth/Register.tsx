@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { validatePassword, sanitizeInput, sanitizeEmail, hasDangerousCharacters } from '../../utils/security';
 import {
   esTelefonoMexicoValido,
@@ -61,6 +61,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
     watch,
     getValues,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
@@ -532,20 +533,32 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       {/* Tipo de cabello */}
       <div>
         <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">Tipo de cabello</label>
-        <div className="space-y-2">
-          {['Lacio', 'Ondulado', 'Rizado'].map((type) => (
-            <label key={type} className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                value={type.toLowerCase()}
-                disabled={isSubmitting}
-                className="h-4 w-4"
-                {...register('hairType', { required: 'Selecciona tu tipo de cabello' })}
-              />
-              <span className="ml-2" style={{ color: '#F2F1ED' }}>{type}</span>
-            </label>
-          ))}
-        </div>
+        <Controller
+          name="hairType"
+          control={control}
+          rules={{ required: 'Selecciona tu tipo de cabello' }}
+          render={({ field }) => (
+            <div className="space-y-2">
+              {['Lacio', 'Ondulado', 'Rizado'].map((type) => {
+                const val = type.toLowerCase();
+                return (
+                  <label key={type} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value={val}
+                      disabled={isSubmitting}
+                      className="h-4 w-4"
+                      checked={field.value === val}
+                      onChange={() => field.onChange(val)}
+                      onBlur={field.onBlur}
+                    />
+                    <span className="ml-2" style={{ color: '#F2F1ED' }}>{type}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        />
         {errors.hairType && <p className="mt-1 text-sm text-red-600">{errors.hairType.message}</p>}
       </div>
 
@@ -571,19 +584,31 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       <div>
         <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">¿Tienes alergias a productos?</label>
         <div className="space-y-3">
-          <label className="flex items-center cursor-pointer">
-            <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4"
-              {...register('hasAllergies', { required: 'Debes indicar si tienes alergias a productos' })}
-              onChange={() => { setValue('hasAllergies', 'no'); setValue('allergies', ''); }}
-            />
-            <span className="ml-2" style={{ color: '#F2F1ED' }}>No</span>
-          </label>
-          <label className="flex items-center cursor-pointer">
-            <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4"
-              {...register('hasAllergies', { required: 'Debes indicar si tienes alergias a productos' })}
-            />
-            <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
-          </label>
+          <Controller
+            name="hasAllergies"
+            control={control}
+            rules={{ required: 'Debes indicar si tienes alergias a productos' }}
+            render={({ field }) => (
+              <>
+                <label className="flex items-center cursor-pointer">
+                  <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4"
+                    checked={field.value === 'no'}
+                    onChange={() => { field.onChange('no'); setValue('allergies', ''); }}
+                    onBlur={field.onBlur}
+                  />
+                  <span className="ml-2" style={{ color: '#F2F1ED' }}>No</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4"
+                    checked={field.value === 'yes'}
+                    onChange={() => field.onChange('yes')}
+                    onBlur={field.onBlur}
+                  />
+                  <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
+                </label>
+              </>
+            )}
+          />
           {hasAllergiesValue === 'yes' && (
             <input
               type="text"
@@ -610,19 +635,31 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       <div>
         <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">¿Tratamientos químicos previos?</label>
         <div className="space-y-3">
-          <label className="flex items-center cursor-pointer">
-            <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4"
-              {...register('hasChemicalTreatments', { required: 'Debes indicar si has tenido tratamientos químicos previos' })}
-              onChange={() => { setValue('hasChemicalTreatments', 'no'); setValue('chemicalTreatments', ''); }}
-            />
-            <span className="ml-2" style={{ color: '#F2F1ED' }}>No</span>
-          </label>
-          <label className="flex items-center cursor-pointer">
-            <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4"
-              {...register('hasChemicalTreatments', { required: 'Debes indicar si has tenido tratamientos químicos previos' })}
-            />
-            <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
-          </label>
+          <Controller
+            name="hasChemicalTreatments"
+            control={control}
+            rules={{ required: 'Debes indicar si has tenido tratamientos químicos previos' }}
+            render={({ field }) => (
+              <>
+                <label className="flex items-center cursor-pointer">
+                  <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4"
+                    checked={field.value === 'no'}
+                    onChange={() => { field.onChange('no'); setValue('chemicalTreatments', ''); }}
+                    onBlur={field.onBlur}
+                  />
+                  <span className="ml-2" style={{ color: '#F2F1ED' }}>No</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4"
+                    checked={field.value === 'yes'}
+                    onChange={() => field.onChange('yes')}
+                    onBlur={field.onBlur}
+                  />
+                  <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
+                </label>
+              </>
+            )}
+          />
           {hasChemicalTreatmentsValue === 'yes' && (
             <input
               type="text"
@@ -648,11 +685,20 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       {/* Términos */}
       <div className="space-y-3 pt-4">
         <label className="flex items-start cursor-pointer">
-          <input
-            type="checkbox"
-            disabled={isSubmitting}
-            className="mt-1 h-4 w-4 rounded border-zinc-300"
-            {...register('acceptTerms', { required: 'Debes aceptar los Términos y Condiciones' })}
+          <Controller
+            name="acceptTerms"
+            control={control}
+            rules={{ required: 'Debes aceptar los Términos y Condiciones' }}
+            render={({ field }) => (
+              <input
+                type="checkbox"
+                disabled={isSubmitting}
+                className="mt-1 h-4 w-4 rounded border-zinc-300"
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
           <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>
             Acepto los{' '}
@@ -663,7 +709,20 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         </label>
         {errors.acceptTerms && <p className="text-sm text-red-600">{errors.acceptTerms.message}</p>}
         <label className="flex items-start cursor-pointer">
-          <input type="checkbox" disabled={isSubmitting} className="mt-1 h-4 w-4 rounded border-zinc-300" {...register('receivePromotions')} />
+          <Controller
+            name="receivePromotions"
+            control={control}
+            render={({ field }) => (
+              <input
+                type="checkbox"
+                disabled={isSubmitting}
+                className="mt-1 h-4 w-4 rounded border-zinc-300"
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
           <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>Deseo recibir promociones</span>
         </label>
       </div>

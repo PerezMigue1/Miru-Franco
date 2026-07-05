@@ -98,8 +98,20 @@ export default function ActivateAccount({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setMensaje('❌ Error de conexión al verificar el código');
-      setError('No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta de nuevo.');
+      const lower = errorMessage.toLowerCase();
+      // Distinguir un código incorrecto/expirado (respuesta del backend) de un fallo real de conexión.
+      const esErrorDeCodigo =
+        lower.includes('código') || lower.includes('codigo') ||
+        lower.includes('inválido') || lower.includes('invalido') ||
+        lower.includes('expirado') || lower.includes('incorrecto') ||
+        lower.includes('utilizado');
+      if (esErrorDeCodigo) {
+        setMensaje(errorMessage);
+        setError('El código es incorrecto o ha expirado. Solicita uno nuevo con "Reenviar código".');
+      } else {
+        setMensaje('❌ Error de conexión al verificar el código');
+        setError('No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta de nuevo.');
+      }
       console.error('Error verificando OTP:', errorMessage);
     } finally {
       setIsLoading(false);

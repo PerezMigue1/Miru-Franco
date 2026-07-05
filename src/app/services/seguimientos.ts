@@ -109,7 +109,7 @@ export async function actualizarSeguimiento(
   id: number,
   payload: Partial<CrearSeguimientoPayload>
 ): Promise<SeguimientoApi> {
-  const res = await apiClient.patch<unknown>(`/api/seguimientos/${id}`, payload, getBackendBaseUrl());
+  const res = await apiClient.put<unknown>(`/api/seguimientos/${id}`, payload, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const seg = normalizarSeguimiento(obj);
   if (!seg) throw new Error('No se pudo actualizar el seguimiento');

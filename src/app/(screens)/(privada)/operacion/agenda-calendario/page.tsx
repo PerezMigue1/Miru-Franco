@@ -1,17 +1,45 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
+import Input from '../../../../components/ui/Input';
+import { listarCitasDelDia, CitaApi } from '../../../../services/citas';
+
+const estadoVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
+  confirmada: 'success',
+  pendiente: 'warning',
+  en_curso: 'info',
+  completada: 'info',
+  reprogramada: 'warning',
+  cancelada: 'danger',
+  no_asistio: 'danger',
+};
+
+function hora(iso: string): string {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+}
 
 export default function AgendaCalendarioPage() {
-  const citasHoy = [
-    { hora: '09:00', cliente: 'María González', servicio: 'Corte', especialista: 'Mildred', estado: 'confirmada' },
-    { hora: '10:30', cliente: 'Ana López', servicio: 'Alaciado', especialista: 'Auxiliar', estado: 'confirmada' },
-    { hora: '14:00', cliente: 'Carmen Ruiz', servicio: 'Nanoplastía', especialista: 'Mildred', estado: 'pendiente' },
-  ];
+  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [citas, setCitas] = useState<CitaApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const cargar = useCallback((f: string) => {
+    setLoading(true);
+    setError(null);
+    listarCitasDelDia(f)
+      .then((data) => setCitas([...data].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio))))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar la agenda'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { cargar(fecha); }, [fecha, cargar]);
 
   return (
     <OperacionLayout>
@@ -19,88 +47,46 @@ export default function AgendaCalendarioPage() {
         title="Agenda / Calendario"
         subtitle="Visualiza y gestiona la disponibilidad del salón y las citas programadas"
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline">Vista Semanal</Button>
-            <Button variant="outline">Vista Mensual</Button>
-            <Button>+ Nueva Cita</Button>
-          </div>
+          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="lg:col-span-3">
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Calendario - Enero 2024
-          </h2>
-          <div className="grid grid-cols-7 gap-2 mb-4">
-            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia) => (
-              <div
-                key={dia}
-                className="text-center font-semibold py-2"
-                style={{ color: 'var(--menu-texto-principal)' }}
-              >
-                {dia}
-              </div>
-            ))}
+      <Card>
+        {loading ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando agenda…</p>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="mb-3" style={{ color: 'var(--danger)' }}>{error}</p>
+            <Button variant="outline" onClick={() => cargar(fecha)}>Reintentar</Button>
           </div>
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => (
-              <div
-                key={dia}
-                className="aspect-square p-2 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                style={{
-                  backgroundColor: dia === 15 ? 'var(--fondos-suaves)' : 'var(--fondo-general)',
-                  borderColor: 'var(--fondos-suaves)',
-                }}
-              >
-                <div className="text-sm font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
-                  {dia}
-                </div>
-                {dia === 15 && (
-                  <div className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                    3 citas
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Citas de Hoy
-          </h2>
+        ) : citas.length === 0 ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
+            No hay citas para el {new Date(fecha).toLocaleDateString('es-MX')}.
+          </p>
+        ) : (
           <div className="space-y-3">
-            {citasHoy.map((cita, index) => (
+            {citas.map((c) => (
               <div
-                key={index}
-                className="p-3 rounded-lg"
-                style={{ backgroundColor: 'var(--fondos-suaves)' }}
+                key={c.id}
+                className="flex items-center gap-4 p-3 rounded-lg"
+                style={{ border: '1px solid var(--bordes)' }}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-                      {cita.hora}
-                    </p>
-                    <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                      {cita.cliente}
-                    </p>
-                  </div>
-                  <Badge variant={cita.estado === 'confirmada' ? 'success' : 'warning'}>
-                    {cita.estado}
-                  </Badge>
+                <div className="text-center min-w-[70px]">
+                  <p className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{hora(c.fechaHoraInicio)}</p>
+                  <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{hora(c.fechaHoraFin)}</p>
                 </div>
-                <p className="text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                  {cita.servicio}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                  {cita.especialista}
-                </p>
+                <div className="flex-1">
+                  <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{c.clienteNombre ?? c.clienteId}</p>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {(c.servicioNombre ?? 'Servicio')} · {(c.especialistaNombre ?? c.especialistaId)}
+                  </p>
+                </div>
+                <Badge variant={estadoVariant[c.estado] || 'default'}>{c.estado}</Badge>
               </div>
             ))}
           </div>
-        </Card>
-      </div>
+        )}
+      </Card>
     </OperacionLayout>
   );
 }

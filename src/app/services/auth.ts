@@ -168,7 +168,13 @@ export const api = {
         });
       }
       
-      const data = await apiClient.post<LoginResponse>('/api/auth/login', { email: emailLimpio, password }, BACKEND_BASE);
+      // skip403Redirect: una cuenta no activada devuelve 403; NO redirigir a /403,
+      // dejar que el catch lo detecte y devuelva requiereVerificacion para ir a la activación.
+      const data = await apiClient.post<LoginResponse>(
+        '/api/auth/login',
+        { email: emailLimpio, password },
+        { customBase: BACKEND_BASE, skip403Redirect: true },
+      );
       
       // ✅ NO loguear respuesta completa (puede contener tokens)
       // Solo loguear información no sensible en desarrollo
@@ -495,23 +501,24 @@ export const api = {
   // Verificar código OTP para activar cuenta
   async verifyOTP(email: string, codigo: string): Promise<VerifyOTPResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
+    // skip401Redirect: un código OTP inválido/expirado devuelve 401 pero NO es una sesión
+    // expirada; no debe expulsar al usuario a /login (rompía la activación desde /register).
     return apiClient.post<VerifyOTPResponse>(
       '/api/auth/verificar-otp',
       { email, codigo },
-      BACKEND_BASE
+      { customBase: BACKEND_BASE, skip401Redirect: true }
     );
   },
 
   // Reenviar código OTP
-  async resendOTPCode(email: string, metodoVerificacion?: 'email' | 'sms'): Promise<ResendOTPResponse> {
+  // NOTA: el backend (ReenviarCodigoDto) SOLO acepta { email } y rechaza cualquier
+  // otra propiedad (forbidNonWhitelisted). Enviar metodoVerificacion provocaba 400.
+  async resendOTPCode(email: string, _metodoVerificacion?: 'email' | 'sms'): Promise<ResendOTPResponse> {
     const BACKEND_BASE = getBackendBaseUrl();
     return apiClient.post<ResendOTPResponse>(
       '/api/auth/reenviar-codigo',
-      { 
-        email,
-        metodoVerificacion: metodoVerificacion || 'email' // ✅ NUEVO: Incluir método de verificación
-      },
-      BACKEND_BASE
+      { email },
+      { customBase: BACKEND_BASE, skip401Redirect: true }
     );
   },
 

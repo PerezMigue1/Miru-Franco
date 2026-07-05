@@ -193,5 +193,8 @@ export async function registrarMateriales(
   citaId: number,
   payload: { presentacionId: number; cantidad: number; motivo?: string }
 ): Promise<void> {
-  await apiClient.post<unknown>(`/api/citas/${citaId}/materiales`, payload, getBackendBaseUrl());
+  // El backend (MaterialesCitaDto) espera { materiales: [{ presentacionId, cantidad }] }.
+  // Con forbidNonWhitelisted activo, enviar el objeto plano provoca 400.
+  const body = { materiales: [{ presentacionId: payload.presentacionId, cantidad: payload.cantidad }] };
+  await apiClient.post<unknown>(`/api/citas/${citaId}/materiales`, body, getBackendBaseUrl());
 }

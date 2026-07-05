@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
@@ -10,23 +10,181 @@ import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
+import Textarea from '../../../../components/ui/Textarea';
+import {
+  listarCitas,
+  crearCita,
+  cancelarCita,
+  checkInCita,
+  checkOutCita,
+  reprogramarCita,
+  CitaApi,
+  EstadoCita,
+} from '../../../../services/citas';
+import { listarClientes, ClienteApi } from '../../../../services/clientes';
+import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
+import { getServicios, Servicio } from '../../../../services/servicios';
+
+const estados: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
+  confirmada: 'success',
+  pendiente: 'warning',
+  en_curso: 'info',
+  completada: 'info',
+  reprogramada: 'warning',
+  cancelada: 'danger',
+  no_asistio: 'danger',
+};
+
+/** Combina fecha (YYYY-MM-DD) + hora (HH:mm) en un ISO string. */
+function combinar(fecha: string, hora: string): string {
+  return new Date(`${fecha}T${hora}:00`).toISOString();
+}
+
+function fmtFecha(iso: string): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-MX');
+}
+function fmtHora(iso: string): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+}
 
 export default function GestionCitasPage() {
+  const [citas, setCitas] = useState<CitaApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Catálogos para selects
+  const [clientes, setClientes] = useState<ClienteApi[]>([]);
+  const [especialistas, setEspecialistas] = useState<EmpleadoApi[]>([]);
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+
+  // Modal crear
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [fClienteId, setFClienteId] = useState('');
+  const [fEspecialistaId, setFEspecialistaId] = useState('');
+  const [fServicioId, setFServicioId] = useState('');
+  const [fFecha, setFFecha] = useState('');
+  const [fHoraInicio, setFHoraInicio] = useState('');
+  const [fHoraFin, setFHoraFin] = useState('');
+  const [fNotas, setFNotas] = useState('');
 
-  const citas = [
-    { id: 1, cliente: 'María González', telefono: '555-1234', fecha: '2024-01-15', hora: '10:00', servicio: 'Corte', especialista: 'Mildred', estado: 'confirmada', anticipo: '$200' },
-    { id: 2, cliente: 'Ana López', telefono: '555-5678', fecha: '2024-01-15', hora: '14:00', servicio: 'Alaciado', especialista: 'Auxiliar', estado: 'pendiente', anticipo: '$500' },
-    { id: 3, cliente: 'Carmen Ruiz', telefono: '555-9012', fecha: '2024-01-16', hora: '11:00', servicio: 'Nanoplastía', especialista: 'Mildred', estado: 'confirmada', anticipo: '$800' },
-  ];
+  // Modal reprogramar
+  const [isReprogOpen, setIsReprogOpen] = useState(false);
+  const [reprogId, setReprogId] = useState<number | null>(null);
+  const [rFecha, setRFecha] = useState('');
+  const [rHoraInicio, setRHoraInicio] = useState('');
+  const [rHoraFin, setRHoraFin] = useState('');
+  const [reprogError, setReprogError] = useState<string | null>(null);
+  const [reprogSaving, setReprogSaving] = useState(false);
 
-  const estados = {
-    confirmada: 'success',
-    pendiente: 'warning',
-    cancelada: 'danger',
-    completada: 'info',
-  } as const;
+  const cargar = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    listarCitas({ limit: 100 })
+      .then(({ data }) => setCitas(data))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar las citas'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    cargar();
+    // Catálogos (no bloquean la tabla; si fallan, los selects quedan vacíos)
+    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
+    listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
+    getServicios().then(({ data }) => setServicios(data)).catch(() => {});
+  }, [cargar]);
+
+  const resetForm = () => {
+    setFClienteId(''); setFEspecialistaId(''); setFServicioId('');
+    setFFecha(''); setFHoraInicio(''); setFHoraFin(''); setFNotas('');
+    setFormError(null);
+  };
+
+  const handleCrear = async () => {
+    if (!fClienteId || !fEspecialistaId || !fServicioId || !fFecha || !fHoraInicio || !fHoraFin) {
+      setFormError('Cliente, especialista, servicio, fecha y horas son obligatorios');
+      return;
+    }
+    if (fHoraFin <= fHoraInicio) {
+      setFormError('La hora de fin debe ser posterior a la de inicio');
+      return;
+    }
+    setSaving(true); setFormError(null);
+    try {
+      await crearCita({
+        clienteId: fClienteId,
+        especialistaId: fEspecialistaId,
+        servicioId: Number(fServicioId),
+        fechaHoraInicio: combinar(fFecha, fHoraInicio),
+        fechaHoraFin: combinar(fFecha, fHoraFin),
+        notas: fNotas.trim() || undefined,
+      });
+      setIsModalOpen(false);
+      resetForm();
+      cargar();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'No se pudo crear la cita');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelar = async (id: number) => {
+    const motivo = window.prompt('Motivo de cancelación:');
+    if (!motivo) return;
+    try {
+      await cancelarCita(id, { motivoCancelacion: motivo });
+      cargar();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'No se pudo cancelar la cita');
+    }
+  };
+
+  const handleCheckIn = async (id: number) => {
+    try { await checkInCita(id); cargar(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'No se pudo hacer check-in'); }
+  };
+  const handleCheckOut = async (id: number) => {
+    try { await checkOutCita(id); cargar(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'No se pudo hacer check-out'); }
+  };
+
+  const openReprogramar = (c: CitaApi) => {
+    setReprogId(c.id);
+    const d = new Date(c.fechaHoraInicio);
+    setRFecha(isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10));
+    setRHoraInicio(fmtHora(c.fechaHoraInicio).replace(/[^0-9:]/g, '') || '');
+    setRHoraFin(fmtHora(c.fechaHoraFin).replace(/[^0-9:]/g, '') || '');
+    setReprogError(null);
+    setIsReprogOpen(true);
+  };
+
+  const handleReprogramar = async () => {
+    if (!reprogId || !rFecha || !rHoraInicio || !rHoraFin) {
+      setReprogError('Fecha y horas son obligatorias'); return;
+    }
+    if (rHoraFin <= rHoraInicio) { setReprogError('La hora de fin debe ser posterior a la de inicio'); return; }
+    setReprogSaving(true); setReprogError(null);
+    try {
+      await reprogramarCita(reprogId, {
+        fechaHoraInicio: combinar(rFecha, rHoraInicio),
+        fechaHoraFin: combinar(rFecha, rHoraFin),
+      });
+      setIsReprogOpen(false); setReprogId(null);
+      cargar();
+    } catch (e) {
+      setReprogError(e instanceof Error ? e.message : 'No se pudo reprogramar');
+    } finally {
+      setReprogSaving(false);
+    }
+  };
+
+  const esFinal = (e: EstadoCita) => ['cancelada', 'completada', 'no_asistio'].includes(e);
 
   return (
     <OperacionLayout>
@@ -34,124 +192,122 @@ export default function GestionCitasPage() {
         title="Gestión de Citas"
         subtitle="Administra las citas del salón: agendar, confirmar, modificar o cancelar servicios"
         actions={
-          <Button onClick={() => setIsModalOpen(true)}>
-            + Nueva Cita
-          </Button>
+          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>+ Nueva Cita</Button>
         }
       />
 
       <Card>
-        <Table headers={['Cliente', 'Teléfono', 'Fecha', 'Hora', 'Servicio', 'Especialista', 'Estado', 'Anticipo', 'Acciones']}>
-          {citas.map((cita) => (
-            <TableRow key={cita.id}>
-              <TableCell>{cita.cliente}</TableCell>
-              <TableCell>{cita.telefono}</TableCell>
-              <TableCell>{cita.fecha}</TableCell>
-              <TableCell>{cita.hora}</TableCell>
-              <TableCell>{cita.servicio}</TableCell>
-              <TableCell>{cita.especialista}</TableCell>
-              <TableCell>
-                <Badge variant={estados[cita.estado as keyof typeof estados] || 'default'}>
-                  {cita.estado}
-                </Badge>
-              </TableCell>
-              <TableCell>{cita.anticipo}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
-                    Editar
-                  </Button>
-                  <Button size="sm" variant="danger">
-                    Cancelar
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </Table>
+        {loading ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="mb-3" style={{ color: 'var(--danger)' }}>{error}</p>
+            <Button variant="outline" onClick={cargar}>Reintentar</Button>
+          </div>
+        ) : citas.length === 0 ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
+            No hay citas registradas.
+          </p>
+        ) : (
+          <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Acciones']}>
+            {citas.map((cita) => (
+              <TableRow key={cita.id}>
+                <TableCell>{cita.clienteNombre ?? cita.clienteId}</TableCell>
+                <TableCell>{cita.especialistaNombre ?? cita.especialistaId}</TableCell>
+                <TableCell>{fmtFecha(cita.fechaHoraInicio)}</TableCell>
+                <TableCell>{fmtHora(cita.fechaHoraInicio)}</TableCell>
+                <TableCell>{fmtHora(cita.fechaHoraFin)}</TableCell>
+                <TableCell>{cita.servicioNombre ?? cita.servicioId}</TableCell>
+                <TableCell>
+                  <Badge variant={estados[cita.estado] || 'default'}>{cita.estado}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2 flex-wrap">
+                    {(cita.estado === 'pendiente' || cita.estado === 'confirmada') && (
+                      <Button size="sm" variant="primary" onClick={() => handleCheckIn(cita.id)}>Check-in</Button>
+                    )}
+                    {cita.estado === 'en_curso' && (
+                      <Button size="sm" variant="primary" onClick={() => handleCheckOut(cita.id)}>Check-out</Button>
+                    )}
+                    {!esFinal(cita.estado) && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => openReprogramar(cita)}>Reprogramar</Button>
+                        <Button size="sm" variant="danger" onClick={() => handleCancelar(cita.id)}>Cancelar</Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        )}
       </Card>
 
+      {/* Modal: Nueva Cita */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { if (!saving) { setIsModalOpen(false); resetForm(); } }}
         title="Nueva Cita"
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button onClick={() => setIsModalOpen(false)}>Agendar Cita</Button>
+            <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm(); }} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleCrear} disabled={saving}>{saving ? 'Agendando…' : 'Agendar Cita'}</Button>
           </>
         }
       >
+        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{formError}</p>}
         <div className="space-y-4">
-          <Input label="Nombre del Cliente" placeholder="Ingresa el nombre completo" fullWidth />
-          <Input label="Teléfono" placeholder="555-1234-5678" fullWidth />
+          <Select
+            label="Cliente *"
+            value={fClienteId}
+            onChange={(e) => setFClienteId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar cliente…' }, ...clientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
+            fullWidth
+          />
+          <Select
+            label="Especialista *"
+            value={fEspecialistaId}
+            onChange={(e) => setFEspecialistaId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar especialista…' }, ...especialistas.map((e) => ({ value: e.usuarioId, label: e.nombre ?? e.puesto ?? e.usuarioId }))]}
+            fullWidth
+          />
+          <Select
+            label="Servicio *"
+            value={fServicioId}
+            onChange={(e) => setFServicioId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar servicio…' }, ...servicios.map((s) => ({ value: String(s.id), label: s.nombre }))]}
+            fullWidth
+          />
+          <Input label="Fecha *" type="date" value={fFecha} onChange={(e) => setFFecha(e.target.value)} fullWidth />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Fecha" type="date" fullWidth />
-            <Input label="Hora" type="time" fullWidth />
+            <Input label="Hora inicio *" type="time" value={fHoraInicio} onChange={(e) => setFHoraInicio(e.target.value)} fullWidth />
+            <Input label="Hora fin *" type="time" value={fHoraFin} onChange={(e) => setFHoraFin(e.target.value)} fullWidth />
           </div>
-          <Select
-            label="Tipo de Servicio"
-            options={[
-              { value: 'corte', label: 'Corte' },
-              { value: 'alaciado', label: 'Alaciado' },
-              { value: 'nanoplastia', label: 'Nanoplastía' },
-              { value: 'depilacion', label: 'Depilación' },
-            ]}
-            fullWidth
-          />
-          <Select
-            label="Especialista"
-            options={[
-              { value: 'mildred', label: 'Mildred' },
-              { value: 'auxiliar', label: 'Auxiliar' },
-            ]}
-            fullWidth
-          />
-          <Input label="Anticipo" placeholder="$0.00" type="number" fullWidth />
+          <Textarea label="Notas (opcional)" value={fNotas} onChange={(e) => setFNotas(e.target.value)} rows={3} fullWidth />
         </div>
       </Modal>
 
+      {/* Modal: Reprogramar */}
       <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Editar Cita"
+        isOpen={isReprogOpen}
+        onClose={() => { if (!reprogSaving) { setIsReprogOpen(false); setReprogId(null); } }}
+        title="Reprogramar Cita"
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button>
-            <Button onClick={() => setIsEditModalOpen(false)}>Guardar Cambios</Button>
+            <Button variant="outline" onClick={() => { setIsReprogOpen(false); setReprogId(null); }} disabled={reprogSaving}>Cancelar</Button>
+            <Button onClick={handleReprogramar} disabled={reprogSaving}>{reprogSaving ? 'Guardando…' : 'Reprogramar'}</Button>
           </>
         }
       >
+        {reprogError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{reprogError}</p>}
         <div className="space-y-4">
-          <Input label="Nombre del Cliente" defaultValue="María González" fullWidth />
-          <Input label="Teléfono" defaultValue="555-1234" fullWidth />
+          <Input label="Nueva fecha *" type="date" value={rFecha} onChange={(e) => setRFecha(e.target.value)} fullWidth />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Fecha" type="date" defaultValue="2024-01-15" fullWidth />
-            <Input label="Hora" type="time" defaultValue="10:00" fullWidth />
+            <Input label="Hora inicio *" type="time" value={rHoraInicio} onChange={(e) => setRHoraInicio(e.target.value)} fullWidth />
+            <Input label="Hora fin *" type="time" value={rHoraFin} onChange={(e) => setRHoraFin(e.target.value)} fullWidth />
           </div>
-          <Select
-            label="Tipo de Servicio"
-            options={[
-              { value: 'corte', label: 'Corte' },
-              { value: 'alaciado', label: 'Alaciado' },
-              { value: 'nanoplastia', label: 'Nanoplastía' },
-            ]}
-            defaultValue="corte"
-            fullWidth
-          />
-          <Select
-            label="Estado"
-            options={[
-              { value: 'pendiente', label: 'Pendiente' },
-              { value: 'confirmada', label: 'Confirmada' },
-              { value: 'completada', label: 'Completada' },
-              { value: 'cancelada', label: 'Cancelada' },
-            ]}
-            defaultValue="confirmada"
-            fullWidth
-          />
         </div>
       </Modal>
     </OperacionLayout>
