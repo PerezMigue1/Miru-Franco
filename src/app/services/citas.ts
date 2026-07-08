@@ -68,11 +68,12 @@ function normalizarCita(x: unknown): CitaApi | null {
   return {
     id: Number(n(r.id, 0) ?? 0),
     clienteId: s(r.clienteId ?? r.cliente_id),
-    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre) || null,
+    // El backend anida el nombre en cliente/especialista/servicio; usarlo como respaldo.
+    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre ?? (r.cliente as Record<string, unknown>)?.nombre) || null,
     especialistaId: s(r.especialistaId ?? r.especialista_id),
-    especialistaNombre: s(r.especialistaNombre ?? r.especialista_nombre) || null,
+    especialistaNombre: s(r.especialistaNombre ?? r.especialista_nombre ?? (r.especialista as Record<string, unknown>)?.nombre) || null,
     servicioId: Number(n(r.servicioId ?? r.servicio_id, 0) ?? 0),
-    servicioNombre: s(r.servicioNombre ?? r.servicio_nombre) || null,
+    servicioNombre: s(r.servicioNombre ?? r.servicio_nombre ?? (r.servicio as Record<string, unknown>)?.nombre) || null,
     fechaHoraInicio: s(r.fechaHoraInicio ?? r.fecha_hora_inicio),
     fechaHoraFin: s(r.fechaHoraFin ?? r.fecha_hora_fin),
     estado,

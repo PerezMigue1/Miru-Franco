@@ -24,6 +24,18 @@ import {
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
 import { getServicios, Servicio } from '../../../../services/servicios';
+import { getRolFromUser } from '../../../../utils/adminAuth';
+
+/** Lee el usuario logueado desde localStorage: { id, rol }. */
+function sesionActual(): { id?: string; rol?: string } {
+  if (typeof window === 'undefined') return {};
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || '{}') as Record<string, unknown>;
+    return { id: typeof u.id === 'string' ? u.id : undefined, rol: getRolFromUser(u)?.toLowerCase() };
+  } catch {
+    return {};
+  }
+}
 
 const estados: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   confirmada: 'success',
@@ -86,7 +98,16 @@ export default function GestionCitasPage() {
     setLoading(true);
     setError(null);
     listarCitas({ limit: 100 })
-      .then(({ data }) => setCitas(data))
+      .then(({ data }) => {
+        // Defensa en profundidad: estilista/becario solo ven SUS citas asignadas.
+        // (El backend ya aplica este scope; este filtro es redundante por seguridad.)
+        const { id, rol } = sesionActual();
+        const propias =
+          (rol === 'estilista' || rol === 'becario' || rol === 'becado') && id
+            ? data.filter((c) => c.especialistaId === id)
+            : data;
+        setCitas(propias);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar las citas'))
       .finally(() => setLoading(false));
   }, []);

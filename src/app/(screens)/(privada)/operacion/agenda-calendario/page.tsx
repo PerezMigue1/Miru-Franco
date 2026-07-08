@@ -8,6 +8,18 @@ import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import { listarCitasDelDia, CitaApi } from '../../../../services/citas';
+import { getRolFromUser } from '../../../../utils/adminAuth';
+
+/** Lee el usuario logueado desde localStorage: { id, rol }. */
+function sesionActual(): { id?: string; rol?: string } {
+  if (typeof window === 'undefined') return {};
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || '{}') as Record<string, unknown>;
+    return { id: typeof u.id === 'string' ? u.id : undefined, rol: getRolFromUser(u)?.toLowerCase() };
+  } catch {
+    return {};
+  }
+}
 
 const estadoVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   confirmada: 'success',
@@ -34,7 +46,15 @@ export default function AgendaCalendarioPage() {
     setLoading(true);
     setError(null);
     listarCitasDelDia(f)
-      .then((data) => setCitas([...data].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio))))
+      .then((data) => {
+        // Defensa en profundidad: estilista/becario solo ven SUS citas (backend ya lo scopea).
+        const { id, rol } = sesionActual();
+        const propias =
+          (rol === 'estilista' || rol === 'becario' || rol === 'becado') && id
+            ? data.filter((c) => c.especialistaId === id)
+            : data;
+        setCitas([...propias].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio)));
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar la agenda'))
       .finally(() => setLoading(false));
   }, []);

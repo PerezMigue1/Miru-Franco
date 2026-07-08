@@ -7,6 +7,7 @@ import { getToken } from '../../utils/security';
 import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
+import { STAFF_ROLES, getRolFromUser } from '../../utils/adminAuth';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 
 interface OperacionLayoutProps {
@@ -15,19 +16,10 @@ interface OperacionLayoutProps {
 
 const BAR_HEIGHT = 56;
 
-/** Roles que pueden acceder al módulo operación (estilista, empleado, becario). */
-const ROLES_OPERACION = ['estilista', 'empleado', 'becario', 'becado', 'auxiliar'];
-
+/** Roles que pueden acceder al módulo operación (staff: estilista, empleado, becario/becado). Match exacto. */
 function isRolOperacion(rol: string | undefined): boolean {
   if (!rol || typeof rol !== 'string') return false;
-  const r = rol.toLowerCase().trim();
-  return ROLES_OPERACION.some((allowed) => r === allowed || r.includes(allowed));
-}
-
-function getRolFromUser(user: Record<string, unknown> | null | undefined): string | undefined {
-  if (!user || typeof user !== 'object') return undefined;
-  const rol = user.rol ?? user.role ?? user.tipo ?? user.rolNombre;
-  return typeof rol === 'string' ? rol : undefined;
+  return STAFF_ROLES.includes(rol.toLowerCase().trim());
 }
 
 export default function OperacionLayout({ children }: OperacionLayoutProps) {

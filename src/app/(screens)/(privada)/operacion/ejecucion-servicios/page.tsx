@@ -1,5 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { listarCitas, checkOutCita, registrarMateriales, CitaApi } from '../../../../services/citas';
+import { getProductosSinRedirigir } from '../../../../services/productos';
+import Modal from '../../../../components/ui/Modal';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
@@ -10,18 +14,107 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 
+interface ServicioFila {
+  id: number;
+  cliente: string;
+  servicio: string;
+  especialista: string;
+  inicio: string;
+  fin: string;
+  estado: string;
+  productos: string[];
+}
+
+function mapearCita(c: CitaApi): ServicioFila {
+  const inicio = c.fechaHoraInicio ? new Date(c.fechaHoraInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-';
+  const fin = c.fechaHoraFin ? new Date(c.fechaHoraFin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
+  const estadoMap: Record<string, string> = {
+    pendiente: 'pendiente',
+    confirmada: 'pendiente',
+    en_curso: 'en_proceso',
+    completada: 'completado',
+  };
+  return {
+    id: c.id,
+    cliente: c.clienteNombre ?? '-',
+    servicio: c.servicioNombre ?? '-',
+    especialista: c.especialistaNombre ?? '-',
+    inicio,
+    fin,
+    estado: estadoMap[c.estado] ?? c.estado,
+    productos: [],
+  };
+}
+
+interface PresentacionOpcion {
+  id: number;
+  label: string;
+}
+
 export default function EjecucionServiciosPage() {
-  const servicios = [
-    { id: 1, cliente: 'María González', servicio: 'Corte', especialista: 'Mildred', inicio: '10:00', fin: '10:45', estado: 'en_proceso', productos: ['Shampoo', 'Acondicionador'] },
-    { id: 2, cliente: 'Ana López', servicio: 'Alaciado', especialista: 'Auxiliar', inicio: '14:00', estado: 'pendiente', productos: [] },
-    { id: 3, cliente: 'Carmen Ruiz', servicio: 'Nanoplastía', especialista: 'Mildred', inicio: '09:00', fin: '12:30', estado: 'completado', productos: ['Nanoplastía Premium', 'Shampoo'] },
-  ];
+  const [servicios, setServicios] = useState<ServicioFila[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Modal materiales
+  const [isModalMaterialesOpen, setIsModalMaterialesOpen] = useState(false);
+  const [citaIdMateriales, setCitaIdMateriales] = useState<number | null>(null);
+  const [presentaciones, setPresentaciones] = useState<PresentacionOpcion[]>([]);
+  const [formPresentacionId, setFormPresentacionId] = useState('');
+  const [formCantidad, setFormCantidad] = useState('');
+  const [formMotivoMat, setFormMotivoMat] = useState('');
+  const [savingMat, setSavingMat] = useState(false);
+  const [matError, setMatError] = useState<string | null>(null);
+
+  const openMateriales = async (citaId: number) => {
+    setCitaIdMateriales(citaId);
+    setFormPresentacionId(''); setFormCantidad(''); setFormMotivoMat(''); setMatError(null);
+    try {
+      const { data: productos } = await getProductosSinRedirigir();
+      const opts: PresentacionOpcion[] = [];
+      productos.forEach((p) => (p.presentaciones ?? []).forEach((pr) => {
+        const id = Number(pr.id);
+        if (!isNaN(id)) opts.push({ id, label: `${p.nombre} — ${pr.tamaño ?? pr.id}` });
+      }));
+      setPresentaciones(opts);
+    } catch { setPresentaciones([]); }
+    setIsModalMaterialesOpen(true);
+  };
+
+  const handleRegistrarMateriales = async () => {
+    if (!citaIdMateriales || !formPresentacionId || !formCantidad) {
+      setMatError('Presentación y cantidad son requeridos'); return;
+    }
+    setSavingMat(true); setMatError(null);
+    try {
+      await registrarMateriales(citaIdMateriales, { presentacionId: Number(formPresentacionId), cantidad: Number(formCantidad), motivo: formMotivoMat.trim() || undefined });
+      setIsModalMaterialesOpen(false); setCitaIdMateriales(null);
+    } catch (e) { setMatError(e instanceof Error ? e.message : 'Error al registrar materiales'); }
+    finally { setSavingMat(false); }
+  };
+
+  const cargar = () => {
+    setLoading(true);
+    listarCitas({ estado: 'en_curso' })
+      .then(({ data }) => setServicios(data.map(mapearCita)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const handleCheckOut = async (id: number) => {
+    await checkOutCita(id);
+    cargar();
+  };
 
   const estados = {
     pendiente: { label: 'Pendiente', variant: 'warning' as const },
     en_proceso: { label: 'En Proceso', variant: 'info' as const },
     completado: { label: 'Completado', variant: 'success' as const },
   };
+
+  const pendientes = servicios.filter((s) => s.estado === 'pendiente').length;
+  const enProceso = servicios.filter((s) => s.estado === 'en_proceso').length;
 
   return (
     <OperacionLayout>
@@ -34,19 +127,19 @@ export default function EjecucionServiciosPage() {
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>2</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : pendientes}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Proceso</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>1</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enProceso}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
             <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>5</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
           </div>
         </Card>
       </div>
@@ -81,8 +174,15 @@ export default function EjecucionServiciosPage() {
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="primary">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={servicio.estado === 'en_proceso' ? () => handleCheckOut(servicio.id) : undefined}
+                  >
                     {servicio.estado === 'pendiente' ? 'Iniciar' : servicio.estado === 'en_proceso' ? 'Finalizar' : 'Ver Detalles'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => openMateriales(servicio.id)}>
+                    + Materiales
                   </Button>
                 </div>
               </TableCell>
@@ -116,6 +216,33 @@ export default function EjecucionServiciosPage() {
           </div>
         </div>
       </Card>
+
+      {/* Modal: Registrar Materiales */}
+      <Modal
+        isOpen={isModalMaterialesOpen}
+        onClose={() => { if (!savingMat) { setIsModalMaterialesOpen(false); setCitaIdMateriales(null); } }}
+        title="Registrar Materiales"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setIsModalMaterialesOpen(false); setCitaIdMateriales(null); }} disabled={savingMat}>Cancelar</Button>
+            <Button onClick={handleRegistrarMateriales} disabled={savingMat}>{savingMat ? 'Guardando...' : 'Registrar'}</Button>
+          </>
+        }
+      >
+        {matError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{matError}</p>}
+        <div className="space-y-4">
+          <Select
+            label="Presentación / Producto *"
+            value={formPresentacionId}
+            onChange={(e) => setFormPresentacionId(e.target.value)}
+            options={[{ value: '', label: 'Seleccionar presentación...' }, ...presentaciones.map((p) => ({ value: String(p.id), label: p.label }))]}
+            fullWidth
+          />
+          <Input label="Cantidad *" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} placeholder="1" fullWidth />
+          <Textarea label="Motivo (opcional)" value={formMotivoMat} onChange={(e) => setFormMotivoMat(e.target.value)} placeholder="Ej. Aplicación en servicio de tinte..." rows={3} fullWidth />
+        </div>
+      </Modal>
     </OperacionLayout>
   );
 }

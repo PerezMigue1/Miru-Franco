@@ -7,12 +7,14 @@ import { getToken } from '../../utils/security';
 import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
+import { isAdminRol, getRolFromUser, rutaPorRol } from '../../utils/adminAuth';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 import ThemeToggle from '../ui/ThemeToggle';
 import {
   BarChart3,
   Bell,
   CalendarDays,
+  ClipboardCheck,
   CreditCard,
   Database,
   FileText,
@@ -27,6 +29,7 @@ import {
   Store,
   Truck,
   User,
+  UserPlus,
   Users,
   X,
   type LucideIcon,
@@ -37,20 +40,6 @@ interface AdminLayoutProps {
 }
 
 const ADMIN_BAR_HEIGHT = 56;
-
-const ADMIN_ROL_VALORES = ['admin', 'administrador'];
-
-function isAdminRol(rol: string | undefined): boolean {
-  if (!rol || typeof rol !== 'string') return false;
-  const r = rol.toLowerCase().trim();
-  return ADMIN_ROL_VALORES.some((allowed) => r === allowed || r.includes('admin'));
-}
-
-function getRolFromUser(user: Record<string, unknown> | null | undefined): string | undefined {
-  if (!user || typeof user !== 'object') return undefined;
-  const rol = user.rol ?? user.role ?? user.tipo ?? user.rolNombre;
-  return typeof rol === 'string' ? rol : undefined;
-}
 
 const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; icon: LucideIcon }[] }[] = [
   {
@@ -67,6 +56,10 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     items: [
       { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: Users },
       { label: 'Gestión de citas', href: '/admin/gestion-citas', icon: CalendarDays },
+      { label: 'Agenda / Calendario', href: '/admin/agenda-calendario', icon: CalendarDays },
+      { label: 'Atención sin cita', href: '/admin/atencion-sin-cita', icon: UserPlus },
+      { label: 'Ejecución de servicios', href: '/admin/ejecucion-servicios', icon: Scissors },
+      { label: 'Seguimiento post-servicio', href: '/admin/seguimiento-post-servicio', icon: ClipboardCheck },
     ],
   },
   {
@@ -173,7 +166,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           }
           return;
         }
-        router.replace('/403');
+        // Tiene rol pero NO es admin → destino según rol (staff→/operacion, cliente→/403)
+        router.replace(rutaPorRol(rolBackend));
       })
       .catch(() => {
         router.replace(`/login?returnUrl=${encodeURIComponent(pathname || '/admin')}`);
