@@ -50,7 +50,8 @@ export default function InventarioPage() {
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('all');
-  const [filtroDisponibilidad, setFiltroDisponibilidad] = useState<'all' | 'disponibles' | 'noDisponibles'>('all');
+  // Desmarcado = solo disponibles (como hoy); marcado = SOLO no disponibles. Mismo patrón que Servicios.
+  const [mostrarSoloInactivos, setMostrarSoloInactivos] = useState(false);
   const [marcaDescuento, setMarcaDescuento] = useState('');
   const [categoriaDescuento, setCategoriaDescuento] = useState('');
   const [porcentajeDescuento, setPorcentajeDescuento] = useState('');
@@ -268,10 +269,7 @@ export default function InventarioPage() {
     const q = busqueda.toLowerCase();
     const coincideBusqueda = !q || texto.includes(q);
     const coincideCategoria = categoriaFiltro === 'all' || p.categoria === categoriaFiltro;
-    const coincideDisponibilidad =
-      filtroDisponibilidad === 'all' ||
-      (filtroDisponibilidad === 'disponibles' && p.stock) ||
-      (filtroDisponibilidad === 'noDisponibles' && !p.stock);
+    const coincideDisponibilidad = mostrarSoloInactivos ? !p.disponible : p.disponible;
     return coincideBusqueda && coincideCategoria && coincideDisponibilidad;
   });
 
@@ -460,15 +458,15 @@ export default function InventarioPage() {
                   label: cat === 'all' ? 'Todas las categorías' : cat,
                 }))}
               />
-              <Select
-                value={filtroDisponibilidad}
-                onChange={(e) => setFiltroDisponibilidad(e.target.value as 'all' | 'disponibles' | 'noDisponibles')}
-                options={[
-                  { value: 'all', label: 'Todos (disponibles y no disponibles)' },
-                  { value: 'disponibles', label: 'Solo disponibles' },
-                  { value: 'noDisponibles', label: 'Solo no disponibles' },
-                ]}
-              />
+              <label className="flex items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                <input
+                  type="checkbox"
+                  checked={mostrarSoloInactivos}
+                  onChange={(e) => setMostrarSoloInactivos(e.target.checked)}
+                  className="rounded"
+                />
+                Mostrar solo inactivos
+              </label>
             </div>
           </div>
           <Table headers={['Producto', 'Categoría', 'Stock', 'Próxima caducidad', 'Estado', 'Acciones']}>
@@ -508,8 +506,8 @@ export default function InventarioPage() {
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={getEstadoColor(!!producto.stock)}>
-                  {producto.stock ? 'Disponible' : 'Agotado'}
+                <Badge variant={getEstadoColor(!!producto.disponible)}>
+                  {producto.disponible ? 'Disponible' : 'No disponible'}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -517,20 +515,9 @@ export default function InventarioPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() =>
-                      router.push(
-                        `/admin/inventario/prediccion?producto=${encodeURIComponent(String(producto.id))}`
-                      )
-                    }
-                  >
-                    Predicción y análisis
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
                     onClick={() => router.push(`/admin/productos/${producto.id}`)}
                   >
-                    Ver y editar
+                    Editar
                   </Button>
                 </div>
               </TableCell>

@@ -7,17 +7,18 @@ import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
-import Input from '../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Modal from '../../../../components/ui/Modal';
 import {
   getUsuarioById,
   getUsuarioDatosRelacionados,
-  updateUsuario,
   patchUsuarioEstado,
   type Usuario,
   type UsuarioDatosRelacionados,
 } from '../../../../services/usuarios';
+import { historialCitasCliente, historialComprasCliente } from '../../../../services/clientes';
+import { listarQuejasPorCliente, type QuejaApi } from '../../../../services/quejas';
+import { listarSeguimientosPorCliente, type SeguimientoApi } from '../../../../services/seguimientos';
 
 function formatearFecha(iso?: string | null): string {
   if (!iso) return '—';
@@ -33,6 +34,20 @@ function siNo(value?: boolean): string {
   return value ? 'Sí' : 'No';
 }
 
+function r(x: unknown): Record<string, unknown> {
+  return x && typeof x === 'object' ? (x as Record<string, unknown>) : {};
+}
+
+const estadoQuejaLabel: Record<string, string> = {
+  abierta: 'Abierta',
+  en_proceso: 'En proceso',
+  resuelta: 'Resuelta',
+  cerrada: 'Cerrada',
+};
+
+/** Estado de carga de una sección secundaria de la ficha (independiente entre sí). */
+type EstadoSeccion<T> = { loading: boolean; error: boolean; data: T[] };
+
 export default function ClienteDetallePage() {
   const params = useParams();
   const router = useRouter();
@@ -41,13 +56,14 @@ export default function ClienteDetallePage() {
   const [cliente, setCliente] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rel, setRel] = useState<UsuarioDatosRelacionados>({ pedidos: [], notificaciones: [], direcciones: [] });
 
-  const [formNombre, setFormNombre] = useState('');
-  const [formTelefono, setFormTelefono] = useState('');
+  const [citas, setCitas] = useState<EstadoSeccion<Record<string, unknown>>>({ loading: true, error: false, data: [] });
+  const [compras, setCompras] = useState<EstadoSeccion<Record<string, unknown>>>({ loading: true, error: false, data: [] });
+  const [quejas, setQuejas] = useState<EstadoSeccion<QuejaApi>>({ loading: true, error: false, data: [] });
+  const [seguimientos, setSeguimientos] = useState<EstadoSeccion<SeguimientoApi>>({ loading: true, error: false, data: [] });
 
   useEffect(() => {
     if (!id) return;
@@ -56,11 +72,7 @@ export default function ClienteDetallePage() {
     setError(null);
     getUsuarioById(id)
       .then((u) => {
-        if (!cancelled) {
-          setCliente(u);
-          setFormNombre(u.nombre);
-          setFormTelefono(u.telefono ?? '');
-        }
+        if (!cancelled) setCliente(u);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar cliente');
@@ -75,6 +87,23 @@ export default function ClienteDetallePage() {
       .catch(() => {
         if (!cancelled) setRel({ pedidos: [], notificaciones: [], direcciones: [] });
       });
+
+    historialCitasCliente(id)
+      .then((data) => { if (!cancelled) setCitas({ loading: false, error: false, data: data.map(r) }); })
+      .catch(() => { if (!cancelled) setCitas({ loading: false, error: true, data: [] }); });
+
+    historialComprasCliente(id)
+      .then((data) => { if (!cancelled) setCompras({ loading: false, error: false, data: data.map(r) }); })
+      .catch(() => { if (!cancelled) setCompras({ loading: false, error: true, data: [] }); });
+
+    listarQuejasPorCliente(id)
+      .then((data) => { if (!cancelled) setQuejas({ loading: false, error: false, data }); })
+      .catch(() => { if (!cancelled) setQuejas({ loading: false, error: true, data: [] }); });
+
+    listarSeguimientosPorCliente(id)
+      .then((data) => { if (!cancelled) setSeguimientos({ loading: false, error: false, data }); })
+      .catch(() => { if (!cancelled) setSeguimientos({ loading: false, error: true, data: [] }); });
+
     return () => { cancelled = true; };
   }, [id]);
 
@@ -89,23 +118,6 @@ export default function ClienteDetallePage() {
     } finally {
       setSaving(false);
       setShowDeleteModal(false);
-    }
-  };
-
-  const handleGuardar = async () => {
-    if (!cliente) return;
-    setSaving(true);
-    try {
-      const actualizado = await updateUsuario(cliente.id, {
-        nombre: formNombre.trim(),
-        telefono: formTelefono.trim() || null,
-      });
-      setCliente(actualizado);
-      setShowEditModal(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -134,15 +146,6 @@ export default function ClienteDetallePage() {
     );
   }
 
-  const servicios: { id: number; servicio: string; fecha: string; especialista: string; precio: string; estado: string }[] =
-    rel.pedidos.slice(0, 8).map((p) => ({
-      id: p.id,
-      servicio: `Pedido #${p.id}`,
-      fecha: formatearFecha(p.creadoEn),
-      especialista: '—',
-      precio: `$${(p.total || 0).toFixed(2)}`,
-      estado: p.estado,
-    }));
   return (
     <AdminLayout>
       <PageHeader
@@ -150,7 +153,7 @@ export default function ClienteDetallePage() {
         subtitle="Perfil del cliente"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowEditModal(true)}>Editar</Button>
+            <Button variant="outline" onClick={() => router.push(`/admin/clientes-crm/${id}/editar`)}>Editar</Button>
             <Button onClick={() => router.push('/admin/gestion-citas')}>Nueva Cita</Button>
           </div>
         }
@@ -212,50 +215,6 @@ export default function ClienteDetallePage() {
 
               <Card>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Seguridad y Sesión
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Cuenta confirmada</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{siNo(cliente.confirmado !== false)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Intentos login fallidos</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.intentosLoginFallidos ?? 0}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Cuenta bloqueada hasta</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.cuentaBloqueadaHasta)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Último intento login</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.ultimoIntentoLogin)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Reset password expira</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.resetPasswordExpires)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>OTP expira</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.otpExpira)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Código OTP</label>
-                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.codigoOtp || '—'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Reset password token</label>
-                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.resetPasswordToken || '—'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Tokens revocados desde</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.tokensRevocadosDesde)}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Perfil Capilar y Salud
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -279,37 +238,127 @@ export default function ClienteDetallePage() {
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Alergias</label>
                     <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.alergias || '—'}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Pregunta de seguridad</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.preguntaSeguridad || '—'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Respuesta de seguridad</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.respuestaSeguridad || '—'}</p>
-                  </div>
                 </div>
               </Card>
 
               <Card>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Historial de Servicios
+                  Historial de Citas
                 </h2>
-                {servicios.length > 0 ? (
+                {citas.loading ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
+                ) : citas.error ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el historial de citas.</p>
+                ) : citas.data.length > 0 ? (
                   <Table headers={['Servicio', 'Fecha', 'Especialista', 'Precio', 'Estado']}>
-                    {servicios.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell>{s.servicio}</TableCell>
-                        <TableCell>{s.fecha}</TableCell>
-                        <TableCell>{s.especialista}</TableCell>
-                        <TableCell className="font-semibold">{s.precio}</TableCell>
-                        <TableCell><Badge variant="success">{s.estado}</Badge></TableCell>
-                      </TableRow>
-                    ))}
+                    {citas.data.map((c) => {
+                      const servicio = r(c.servicio);
+                      const especialista = r(c.especialista);
+                      return (
+                        <TableRow key={String(c.id)}>
+                          <TableCell>{String(servicio.nombre ?? '—')}</TableCell>
+                          <TableCell>{formatearFecha(c.fechaHoraInicio as string | undefined)}</TableCell>
+                          <TableCell>{String(especialista.nombre ?? '—')}</TableCell>
+                          <TableCell className="font-semibold">
+                            {servicio.precio != null ? `$${Number(servicio.precio).toFixed(2)}` : '—'}
+                          </TableCell>
+                          <TableCell><Badge variant="info">{String(c.estado ?? '—')}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </Table>
                 ) : (
-                  <p className="text-sm py-6" style={{ color: 'var(--encabezados-alterno)' }}>
-                    No hay historial de servicios registrado. Cuando exista un endpoint de citas/servicios, se mostrará aquí.
-                  </p>
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin registros de citas.</p>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Historial de Compras
+                </h2>
+                {compras.loading ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando compras…</p>
+                ) : compras.error ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el historial de compras.</p>
+                ) : compras.data.length > 0 ? (
+                  <Table headers={['Pedido', 'Fecha', 'Artículos', 'Total', 'Estado']}>
+                    {compras.data.map((p) => {
+                      const items = Array.isArray(p.items) ? p.items : [];
+                      return (
+                        <TableRow key={String(p.id)}>
+                          <TableCell>#{String(p.id)}</TableCell>
+                          <TableCell>{formatearFecha(p.creadoEn as string | undefined)}</TableCell>
+                          <TableCell>{items.length}</TableCell>
+                          <TableCell className="font-semibold">
+                            {p.total != null ? `$${Number(p.total).toFixed(2)}` : '—'}
+                          </TableCell>
+                          <TableCell><Badge variant="info">{String(p.estado ?? '—')}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </Table>
+                ) : (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin registros de compras.</p>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Quejas
+                </h2>
+                {quejas.loading ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando quejas…</p>
+                ) : quejas.error ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el historial de quejas.</p>
+                ) : quejas.data.length > 0 ? (
+                  <div className="space-y-2">
+                    {quejas.data.map((q) => (
+                      <div key={q.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{q.asunto}</p>
+                          <Badge variant={q.estado === 'resuelta' || q.estado === 'cerrada' ? 'success' : 'danger'}>
+                            {estadoQuejaLabel[q.estado] ?? q.estado}
+                          </Badge>
+                        </div>
+                        <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>{q.descripcion}</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>{formatearFecha(q.creadoEn)}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin registros de quejas.</p>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Seguimiento Post-Servicio
+                </h2>
+                {seguimientos.loading ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando seguimientos…</p>
+                ) : seguimientos.error ? (
+                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el seguimiento post-servicio.</p>
+                ) : seguimientos.data.length > 0 ? (
+                  <div className="space-y-2">
+                    {seguimientos.data.map((sgm) => (
+                      <div key={sgm.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                            {formatearFecha(sgm.fechaContacto)}
+                          </p>
+                          {sgm.requiereAccion && <Badge variant="danger">Requiere acción</Badge>}
+                        </div>
+                        <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>{sgm.notas}</p>
+                        {sgm.satisfaccion != null && (
+                          <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                            Satisfacción: {sgm.satisfaccion}/5
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin registros de seguimiento.</p>
                 )}
               </Card>
 
@@ -388,8 +437,12 @@ export default function ClienteDetallePage() {
                     </span>
                   </div>
                   <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                    <span style={{ color: 'var(--encabezados-alterno)' }}>Pedidos ligados:</span>
-                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{rel.pedidos.length}</span>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Citas registradas:</span>
+                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{citas.data.length}</span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Compras registradas:</span>
+                    <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{compras.data.length}</span>
                   </div>
                   <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Direcciones ligadas:</span>
@@ -438,39 +491,6 @@ export default function ClienteDetallePage() {
         <p style={{ color: 'var(--menu-texto-principal)' }}>
           ¿Eliminar a &quot;{cliente.nombre}&quot;? Se desactivará y no podrá iniciar sesión.
         </p>
-      </Modal>
-
-      <Modal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        title="Editar Cliente"
-        size="md"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={saving}>Cancelar</Button>
-            <Button onClick={handleGuardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
-          </>
-        }
-      >
-        <div className="grid grid-cols-1 gap-4">
-          <Input
-            label="Nombre completo *"
-            value={formNombre}
-            onChange={(e) => setFormNombre(e.target.value)}
-            placeholder="Nombre y apellidos"
-            fullWidth
-          />
-          <Input
-            label="Teléfono"
-            value={formTelefono}
-            onChange={(e) => setFormTelefono(e.target.value)}
-            placeholder="555-0000"
-            fullWidth
-          />
-          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-            El email no se puede cambiar desde aquí.
-          </p>
-        </div>
       </Modal>
     </AdminLayout>
   );

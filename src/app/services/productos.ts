@@ -21,6 +21,12 @@ export interface Producto {
   /** URLs de imágenes (Cloudinary). En listado/detalle usar imagenes[0] o imagen. */
   imagenes?: string[];
   stock: boolean;
+  /**
+   * Disponibilidad real (independiente de la cantidad en stock): true si AL MENOS UNA
+   * presentación tiene `disponible: true`. Un producto puede estar agotado (stock=0)
+   * y seguir "disponible" (listado), o tener stock y estar "no disponible" (dado de baja).
+   */
+  disponible: boolean;
   nuevo?: boolean;
   crueltyFree?: boolean;
   /** Para detalle: descripción larga */
@@ -176,6 +182,9 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
   ) ?? false;
   // Disponible y stock se derivan solo de productos_presentacion: sin presentaciones = no disponible
   const disponible = presentacionesRaw?.length ? algunaPresentacionDisponible : false;
+  // Disponibilidad REAL (independiente de la cantidad): basta con que una presentación
+  // esté habilitada (disponible:true), sin importar si su stock es 0.
+  const disponibleReal = presentacionesNormalizadas?.some((p) => p.disponible === true) ?? false;
 
   const precioNumFromRaw = typeof raw.precio === 'number' ? raw.precio : parseFloat(String(raw.precio || 0)) || 0;
   const precioOriginalFromRaw = raw.precioOriginal != null
@@ -227,6 +236,7 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
     imagen,
     imagenes,
     stock: disponible,
+    disponible: disponibleReal,
     nuevo: Boolean(raw.nuevo),
     crueltyFree: Boolean(raw.crueltyFree ?? (raw as Record<string, unknown>).cruelty_free),
     descripcionLarga:

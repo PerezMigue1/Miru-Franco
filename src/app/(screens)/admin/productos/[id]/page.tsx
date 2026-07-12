@@ -828,7 +828,16 @@ export default function ProductoDetalleAdminPage() {
                       <input
                         type="checkbox"
                         checked={disponible}
-                        onChange={(e) => setDisponible(e.target.checked)}
+                        onChange={(e) => {
+                          const nuevoValor = e.target.checked;
+                          setDisponible(nuevoValor);
+                          // Este checkbox es la fuente de la verdad "Disponible" del producto en el
+                          // panel; el backend deriva disponible de las presentaciones, así que hay
+                          // que aplicar el cambio a TODAS para que se guarde de verdad.
+                          setPresentaciones((prev) =>
+                            prev.map((p) => ({ ...p, disponible: nuevoValor }))
+                          );
+                        }}
                         className="rounded"
                       />
                       <span style={{ color: 'var(--menu-texto-principal)' }}>{disponible ? 'Sí' : 'No'}</span>

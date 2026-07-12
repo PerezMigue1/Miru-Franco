@@ -38,6 +38,8 @@ export interface Servicio {
   categoria?: string;
   /** Indica si el servicio requiere evaluación previa (Prisma `requiereEvaluacion`). */
   requiereEvaluacion?: boolean;
+  /** Si el servicio está activo (Prisma `activo`). El backend lo devuelve en GET /api/servicios/:id. */
+  activo?: boolean;
   imagen?: string;
   /** URLs de imágenes (desde Prisma: imagen Json, puede ser [] o ["url", ...]). */
   imagenes?: string[];
@@ -216,6 +218,8 @@ function normalizarServicio(raw: ApiServicioRaw): Servicio {
     precio,
     categoria: raw.categoria != null ? String(raw.categoria) : undefined,
     requiereEvaluacion,
+    // Exponer el estado real; si el backend no lo envía (respuestas antiguas), asumir activo.
+    activo: typeof raw.activo === 'boolean' ? raw.activo : true,
     imagen,
     imagenes,
     incluye: incluye?.length ? incluye : undefined,
@@ -264,6 +268,29 @@ export async function getServicios(): Promise<ServiciosResult> {
   }
 }
 
+/**
+ * Listado para el panel admin: requiere JWT + rol admin (backend lo valida).
+ * A diferencia de getServicios() (pública, solo activos), esta puede incluir inactivos.
+ */
+export async function getServiciosAdmin(incluirInactivos = false): Promise<ServiciosResult> {
+  try {
+    const base = getBackendBaseUrl();
+    const query = incluirInactivos ? '?incluirInactivos=true' : '';
+    const res = await apiClient.get<unknown>(`/api/servicios/admin${query}`, base);
+    let list: ApiServicioRaw[] = [];
+    if (Array.isArray(res)) {
+      list = res as ApiServicioRaw[];
+    } else if (res && typeof res === 'object') {
+      const obj = res as Record<string, unknown>;
+      if (Array.isArray(obj.data)) list = obj.data as ApiServicioRaw[];
+    }
+    return { data: list.map(normalizarServicio), error: null };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    return { data: [], error: msg };
+  }
+}
+
 /** Payload para crear/actualizar servicio (admin). Alineado con Prisma Servicio. */
 export interface ServicioPayload {
   nombre: string;
@@ -274,10 +301,11 @@ export interface ServicioPayload {
   duracionMinutos?: number;
   precio?: number | string;
   categoria?: string;
-  imagen?: string | string[];
-  imagenes?: string[];
+  /** El backend (create/update-servicio.dto.ts) espera SIEMPRE un array, nunca un string suelto. */
+  imagen?: string[];
   incluye?: string[];
   recomendaciones?: string[];
+  requiereEvaluacion?: boolean;
   activo?: boolean;
 }
 

@@ -202,6 +202,39 @@ export async function listarCortes(
   return { data, total: Number(res?.count ?? data.length) };
 }
 
+export interface ResumenVentasApi {
+  totalVentas: number;
+  totalMonto: number;
+  porMetodo: {
+    efectivo: number;
+    tarjeta: number;
+    transferencia: number;
+    mixto: number;
+  };
+}
+
+/** GET /api/pos/resumen — los montos llegan como string (Decimal de Prisma serializado); se normalizan a number. */
+export async function resumenVentas(desde?: string, hasta?: string): Promise<ResumenVentasApi> {
+  const sp = new URLSearchParams();
+  if (desde) sp.set('desde', desde);
+  if (hasta) sp.set('hasta', hasta);
+  const endpoint = `/api/pos/resumen?${sp.toString()}`;
+  const res = await apiClient.get<unknown>(endpoint, { customBase: getBackendBaseUrl() });
+  const obj = (res as Record<string, unknown>)?.data ?? res;
+  const r = (obj && typeof obj === 'object' ? obj : {}) as Record<string, unknown>;
+  const metodo = (r.porMetodo && typeof r.porMetodo === 'object' ? r.porMetodo : {}) as Record<string, unknown>;
+  return {
+    totalVentas: n(r.totalVentas, 0) ?? 0,
+    totalMonto: n(r.totalMonto, 0) ?? 0,
+    porMetodo: {
+      efectivo: n(metodo.efectivo, 0) ?? 0,
+      tarjeta: n(metodo.tarjeta, 0) ?? 0,
+      transferencia: n(metodo.transferencia, 0) ?? 0,
+      mixto: n(metodo.mixto, 0) ?? 0,
+    },
+  };
+}
+
 export async function obtenerCorte(id: number): Promise<CorteApi | null> {
   const res = await apiClient.get<unknown>(`/api/pos/cortes/${id}`, { customBase: getBackendBaseUrl() });
   const obj = (res as Record<string, unknown>)?.data ?? res;

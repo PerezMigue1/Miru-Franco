@@ -177,19 +177,34 @@ export interface AlertaStockApi {
   umbral: number;
 }
 
+/** Extrae el nombre del producto, ya sea plano (`productoNombre`) o anidado (`producto.nombre`, forma real del backend). */
+function nombreProducto(r: Record<string, unknown>): string | null {
+  if (typeof r.productoNombre === 'string' && r.productoNombre) return r.productoNombre;
+  if (typeof r.producto_nombre === 'string' && r.producto_nombre) return r.producto_nombre;
+  const producto = r.producto;
+  if (producto && typeof producto === 'object') {
+    const nombre = (producto as Record<string, unknown>).nombre;
+    if (typeof nombre === 'string' && nombre) return nombre;
+  }
+  return null;
+}
+
 export async function obtenerAlertasStock(umbral?: number): Promise<AlertaStockApi[]> {
   const sp = new URLSearchParams();
   if (umbral != null) sp.set('umbral', String(umbral));
   const res = await apiClient.get<unknown>(`/api/inventario/alertas-stock?${sp.toString()}`, { customBase: getBackendBaseUrl() });
-  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
+  const resObj = (res && typeof res === 'object') ? (res as Record<string, unknown>) : {};
+  const umbralRespuesta = Number(n(resObj.umbral, umbral ?? 0) ?? 0);
+  const arr = Array.isArray(res) ? res : Array.isArray(resObj.data) ? (resObj.data as unknown[]) : [];
   return (arr as unknown[]).map((x) => {
     const r = (x || {}) as Record<string, unknown>;
     return {
-      presentacionId: Number(n(r.presentacionId ?? r.presentacion_id, 0) ?? 0),
-      productoNombre: s(r.productoNombre ?? r.producto_nombre) || null,
+      // El backend identifica la presentación con `id`, no `presentacionId`.
+      presentacionId: Number(n(r.presentacionId ?? r.presentacion_id ?? r.id, 0) ?? 0),
+      productoNombre: nombreProducto(r),
       tamanio: s(r.tamanio) || null,
-      stockActual: Number(n(r.stockActual ?? r.stock_actual, 0) ?? 0),
-      umbral: Number(n(r.umbral, 0) ?? 0),
+      stockActual: Number(n(r.stockActual ?? r.stock_actual ?? r.stock, 0) ?? 0),
+      umbral: Number(n(r.umbral, umbralRespuesta) ?? umbralRespuesta),
     };
   });
 }
@@ -201,6 +216,7 @@ export interface CaducidadApi {
   stock: number;
   fechaCaducidad: string | null;
   diasRestantes: number;
+  vencida: boolean;
 }
 
 export async function obtenerCaducidades(dias?: number): Promise<CaducidadApi[]> {
@@ -211,16 +227,21 @@ export async function obtenerCaducidades(dias?: number): Promise<CaducidadApi[]>
   return (arr as unknown[]).map((x) => {
     const r = (x || {}) as Record<string, unknown>;
     const fechaCad = s(r.fechaCaducidad ?? r.fecha_caducidad) || null;
-    const diasRestantes = fechaCad
-      ? Math.round((new Date(fechaCad).getTime() - Date.now()) / 86400000)
-      : 0;
+    // El backend ya calcula diasRestantes/vencida; se usa ese valor y solo se recalcula si faltara.
+    const diasRestantes = typeof r.diasRestantes === 'number'
+      ? r.diasRestantes
+      : fechaCad
+        ? Math.round((new Date(fechaCad).getTime() - Date.now()) / 86400000)
+        : 0;
     return {
-      presentacionId: Number(n(r.presentacionId ?? r.presentacion_id, 0) ?? 0),
-      productoNombre: s(r.productoNombre ?? r.producto_nombre) || null,
+      // El backend identifica la presentación con `id`, no `presentacionId`.
+      presentacionId: Number(n(r.presentacionId ?? r.presentacion_id ?? r.id, 0) ?? 0),
+      productoNombre: nombreProducto(r),
       tamanio: s(r.tamanio) || null,
       stock: Number(n(r.stock ?? r.stockActual ?? r.stock_actual, 0) ?? 0),
       fechaCaducidad: fechaCad,
       diasRestantes,
+      vencida: r.vencida === true || diasRestantes < 0,
     };
   });
 }

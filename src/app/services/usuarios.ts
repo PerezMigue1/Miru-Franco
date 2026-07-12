@@ -288,8 +288,12 @@ const BASE = () => getBackendBaseUrl();
  * Lista de usuarios (admin). GET /api/usuarios
  * Acepta: array, { data: [] }, { data: {...} } (un solo usuario), { usuarios: [] }, { users: [] }
  */
-export async function getUsuarios(): Promise<Usuario[]> {
-  const res = await apiClient.get<unknown>('/api/usuarios', BASE());
+export async function getUsuarios(q?: string, incluirInactivos = false): Promise<Usuario[]> {
+  const sp = new URLSearchParams();
+  if (q) sp.set('q', q);
+  if (incluirInactivos) sp.set('incluirInactivos', 'true');
+  const query = sp.toString() ? `?${sp.toString()}` : '';
+  const res = await apiClient.get<unknown>(`/api/usuarios${query}`, BASE());
   let list: ApiUsuarioRaw[] = [];
   if (Array.isArray(res)) {
     list = res as ApiUsuarioRaw[];
@@ -438,6 +442,14 @@ export interface ActualizarUsuarioPayload {
   activo?: boolean;
   /** Algunos backends permiten cambiar contraseña en PUT (opcional). */
   password?: string;
+  fechaNacimiento?: string | null;
+  foto?: string | null;
+  recibePromociones?: boolean;
+  tipoCabello?: string | null;
+  colorNatural?: string | null;
+  colorActual?: string | null;
+  productosUsados?: string | null;
+  alergias?: string | null;
 }
 
 export interface UsuarioPedidoRelacionado {
