@@ -12,7 +12,7 @@ import {
   ESTADOS_PEDIDO_CONTABLES_VENTA,
   type LineaVentaProducto,
 } from "../../../../utils/inventarioVentasOnline";
-import { Search } from "lucide-react";
+import { Search, Receipt, ListOrdered, DollarSign } from "lucide-react";
 
 const PAGE_SIZE = 80;
 
@@ -91,6 +91,11 @@ export default function InventarioHistorialVentasPage() {
     setPage(1);
   }, [busqueda]);
 
+  const totalIngresos = useMemo(
+    () => lineas.reduce((acc, l) => acc + l.subtotal, 0),
+    [lineas],
+  );
+
   const totalPages = Math.max(1, Math.ceil(filtradas.length / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
   const slice = useMemo(() => {
@@ -121,10 +126,7 @@ export default function InventarioHistorialVentasPage() {
         </header>
 
         <div>
-          <h1
-            className="text-2xl sm:text-3xl font-bold tracking-tight"
-            style={{ color: "var(--menu-texto-principal)" }}
-          >
+          <h1 className="text-elegant-title" style={{ color: "var(--menu-texto-principal)" }}>
             Historial de ventas (tienda online)
           </h1>
           <p
@@ -136,13 +138,43 @@ export default function InventarioHistorialVentasPage() {
               {ESTADOS_PEDIDO_CONTABLES_VENTA.join(", ")}
             </span>
             , con fecha de pedido, cantidad y subtotal por ítem.
-            {pedidosAnalizados > 0 && !loading && (
-              <>
-                {" "}
-                ({pedidosAnalizados} pedidos, {lineas.length} filas).
-              </>
-            )}
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--fondos-suaves)" }}>
+                <ListOrdered size={20} style={{ color: "var(--encabezados-alterno)" }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>Pedidos analizados</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--menu-texto-principal)" }}>{loading ? "…" : pedidosAnalizados}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--fondos-suaves)" }}>
+                <Receipt size={20} style={{ color: "var(--encabezados-alterno)" }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>Líneas de venta</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--menu-texto-principal)" }}>{loading ? "…" : lineas.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--fondos-suaves)" }}>
+                <DollarSign size={20} style={{ color: "var(--encabezados-alterno)" }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>Ingresos totales</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--oro-texto)" }}>{loading ? "…" : fmtMoneda.format(totalIngresos)}</p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <Card variant="elevated" padding="lg" className="rounded-2xl border-0 space-y-4">
@@ -158,7 +190,7 @@ export default function InventarioHistorialVentasPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            <p className="text-sm" style={{ color: "var(--danger-texto)" }} role="alert">
               {error}
             </p>
           )}
@@ -177,6 +209,7 @@ export default function InventarioHistorialVentasPage() {
             <>
               <Table
                 headersLegibles
+                headerSutil
                 headers={[
                   "Fecha pedido",
                   "Pedido",
@@ -195,20 +228,20 @@ export default function InventarioHistorialVentasPage() {
                     <TableRow
                       key={`${l.pedidoId}-${l.productoId}-${l.fechaIso}-${i}`}
                     >
-                      <TableCell>{fechaTxt}</TableCell>
-                      <TableCell className="font-mono tabular-nums">
+                      <TableCell rowPadding="lg">{fechaTxt}</TableCell>
+                      <TableCell className="font-mono tabular-nums" rowPadding="lg">
                         #{l.pedidoId}
                       </TableCell>
-                      <TableCell className="font-mono tabular-nums">
+                      <TableCell className="font-mono tabular-nums" rowPadding="lg">
                         {String(l.productoId)}
                       </TableCell>
-                      <TableCell className="whitespace-normal max-w-[min(280px,40vw)]">
+                      <TableCell className="whitespace-normal max-w-[min(280px,40vw)]" rowPadding="lg">
                         {l.nombreProducto ?? "—"}
                       </TableCell>
-                      <TableCell className="tabular-nums text-right">
+                      <TableCell className="tabular-nums text-right" rowPadding="lg">
                         {l.cantidad}
                       </TableCell>
-                      <TableCell className="tabular-nums text-right">
+                      <TableCell className="tabular-nums text-right font-semibold" rowPadding="lg" style={{ color: "var(--oro-texto)" }}>
                         {fmtMoneda.format(l.subtotal)}
                       </TableCell>
                     </TableRow>

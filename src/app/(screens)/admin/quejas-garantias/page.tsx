@@ -5,7 +5,6 @@ import { listarQuejas, crearQueja, actualizarQueja, QuejaApi, EstadoQueja } from
 import { listarClientes, type ClienteApi } from '../../../services/clientes';
 import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
@@ -13,6 +12,7 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
+import { AlertTriangle, CheckCircle2, ClipboardList, Inbox } from 'lucide-react';
 
 interface CasoFila {
   id: number;
@@ -119,32 +119,91 @@ export default function QuejasGarantiasPage() {
     cerrado: { label: 'Cerrado', variant: 'default' as const },
   };
 
+  const nuevos = casos.filter((c) => c.estado === 'nuevo').length;
+  const enRevision = casos.filter((c) => c.estado === 'en_revision').length;
+  const resueltos = casos.filter((c) => c.estado === 'resuelto' || c.estado === 'cerrado').length;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Manejo de Quejas, Sugerencias y Garantías"
-        subtitle="Gestiona las garantías de satisfacción y resolución de casos"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
-        <Table headers={['Cliente', 'Servicio', 'Fecha', 'Tipo', 'Descripción', 'Estado', 'Acciones']}>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Quejas y Garantías
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {casos.length} caso{casos.length === 1 ? '' : 's'} registrados
+          </p>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card
+            variant="elevated"
+            padding="lg"
+            style={nuevos > 0 ? { boxShadow: '0 0 0 1.5px var(--danger), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: nuevos > 0 ? 'rgba(113, 0, 20, 0.15)' : 'var(--fondos-suaves)' }}>
+                <Inbox size={20} style={{ color: nuevos > 0 ? 'var(--danger)' : 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Nuevos</p>
+                <p className="text-3xl font-bold mt-0.5" style={{ color: nuevos > 0 ? 'var(--danger-texto)' : 'var(--menu-texto-principal)' }}>{nuevos}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <AlertTriangle size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En revisión</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{enRevision}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Resueltos</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{resueltos}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList size={18} style={{ color: 'var(--hover)' }} />
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Casos</h2>
+          </div>
+        <Table headers={['Cliente', 'Servicio', 'Fecha', 'Tipo', 'Descripción', 'Estado', 'Acciones']} headerSutil>
           {casos.map((caso) => (
             <TableRow key={caso.id}>
-              <TableCell className="font-semibold">{caso.cliente}</TableCell>
-              <TableCell>{caso.servicio}</TableCell>
-              <TableCell>{caso.fecha}</TableCell>
-              <TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{caso.cliente}</TableCell>
+              <TableCell rowPadding="lg">{caso.servicio}</TableCell>
+              <TableCell rowPadding="lg">{caso.fecha}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={caso.tipo === 'Garantía' ? 'warning' : caso.tipo === 'Queja' ? 'danger' : 'info'}>
                   {caso.tipo}
                 </Badge>
               </TableCell>
-              <TableCell className="max-w-xs truncate">{caso.descripcion}</TableCell>
-              <TableCell>
+              <TableCell className="max-w-xs truncate" rowPadding="lg">{caso.descripcion}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={estados[caso.estado as keyof typeof estados]?.variant || 'default'}>
                   {estados[caso.estado as keyof typeof estados]?.label || caso.estado}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => openEditar(caso.id)}>Ver Detalles</Button>
                   <Button size="sm" onClick={() => resolver(caso.id)} disabled={savingId === caso.id}>
@@ -155,11 +214,11 @@ export default function QuejasGarantiasPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Registrar Nuevo Caso
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Registrar nuevo caso
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
@@ -190,12 +249,13 @@ export default function QuejasGarantiasPage() {
           <div className="md:col-span-2">
             <Textarea label="Descripción" value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="Detalles del caso..." rows={4} fullWidth />
           </div>
-          {quejaError && <p className="md:col-span-2 text-sm" style={{ color: 'var(--danger)' }}>{quejaError}</p>}
+          {quejaError && <p className="md:col-span-2 text-sm" style={{ color: 'var(--danger-texto)' }}>{quejaError}</p>}
           <div className="md:col-span-2">
             <Button onClick={handleCrearQueja} disabled={savingQueja}>{savingQueja ? 'Guardando...' : 'Registrar Caso'}</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
       {/* Modal: Editar Estado */}
       <Modal
         isOpen={isModalEditarOpen}
@@ -209,7 +269,7 @@ export default function QuejasGarantiasPage() {
           </>
         }
       >
-        {quejaError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{quejaError}</p>}
+        {quejaError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{quejaError}</p>}
         {quejaEditando && (
           <div className="space-y-3">
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{quejaEditando.asunto}</p>

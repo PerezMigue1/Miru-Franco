@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { listarCitas, checkInCita, CitaApi } from '../../../services/citas';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
+import { Users, UserCheck, Timer } from 'lucide-react';
 
 interface TurnoFila {
   id: number;
@@ -31,7 +31,7 @@ function mapearCita(c: CitaApi, idx: number): TurnoFila {
   };
 }
 
-export default function AtencionSinCitaPage() {
+export default function ColaAtencionPage() {
   const [turnos, setTurnos] = useState<TurnoFila[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -58,58 +58,82 @@ export default function AtencionSinCitaPage() {
 
   return (
     <AdminLayout>
-      <PageHeader
-        title="Atención de Clientes sin Cita"
-        subtitle="Gestiona clientes que llegan sin cita previa por orden de turno"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Espera</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enEspera}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Atención</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enAtencion}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo Promedio</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>25 min</p>
-          </div>
-        </Card>
-      </div>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Cola de Atención
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            Registro de llegada (check-in) de clientes sin cita previa — {turnos.length} turno{turnos.length === 1 ? '' : 's'} en lista de espera
+          </p>
+        </div>
 
-      <Card>
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg" style={enEspera > 0 ? { boxShadow: '0 0 0 2px var(--warning)' } : undefined}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Users size={20} style={{ color: 'var(--warning-texto)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En Espera</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning-texto)' }}>{loading ? '…' : enEspera}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <UserCheck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En Atención</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enAtencion}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Timer size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo Promedio</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>25 min</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Lista de Turnos
         </h2>
-        <Table headers={['Posición', 'Cliente', 'Hora de Llegada', 'Servicio', 'Estado', 'Tiempo de Espera', 'Acciones']}>
+        <Table headers={['Posición', 'Cliente', 'Hora de Llegada', 'Servicio', 'Estado', 'Tiempo de Espera', 'Acciones']} headerSutil>
           {turnos.map((turno) => (
             <TableRow key={turno.id}>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 {turno.posicion > 0 ? (
                   <Badge variant="info">{turno.posicion}</Badge>
                 ) : (
                   <Badge variant="success">En Atención</Badge>
                 )}
               </TableCell>
-              <TableCell className="font-semibold">{turno.cliente}</TableCell>
-              <TableCell>{turno.llegada}</TableCell>
-              <TableCell>{turno.servicio}</TableCell>
-              <TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{turno.cliente}</TableCell>
+              <TableCell rowPadding="lg">{turno.llegada}</TableCell>
+              <TableCell rowPadding="lg">{turno.servicio}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={turno.estado === 'en_atencion' ? 'success' : 'warning'}>
                   {turno.estado === 'en_atencion' ? 'En Atención' : 'Esperando'}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 {turno.estado === 'esperando' ? '15 min' : '-'}
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   {turno.estado === 'esperando' && (
                     <Button size="sm" onClick={() => handleCheckIn(turno.id)} disabled={savingId === turno.id}>
@@ -124,10 +148,10 @@ export default function AtencionSinCitaPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar Nuevo Turno
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -139,7 +163,8 @@ export default function AtencionSinCitaPage() {
             <Button fullWidth>Agregar a Lista de Espera</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }

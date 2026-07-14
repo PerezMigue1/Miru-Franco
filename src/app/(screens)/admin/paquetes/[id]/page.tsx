@@ -63,30 +63,51 @@ export default function DetallePaquetePage() {
     }
   };
 
-  if (loading) return <AdminLayout><p className="p-10 text-white">Cargando...</p></AdminLayout>;
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="w-full max-w-none space-y-8">
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>Editar Paquete</h1>
+          <Card variant="elevated" padding="lg">
+            <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando paquete…</p>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Encabezado con Volver */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Detalles del Paquete</h1>
-          <Button variant="outline" onClick={() => router.push('/admin/paquetes')}>
-            ← Volver
-          </Button>
+      <div className="w-full max-w-none space-y-8">
+
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              {form.tipo_evento || 'Editar Paquete'}
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Editar paquete
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push('/admin/paquetes')} disabled={saving}>Cancelar</Button>
+            <Button variant="primary" onClick={handleGuardar} disabled={saving}>
+              {saving ? 'Guardando...' : 'Actualizar Paquete'}
+            </Button>
+          </div>
         </div>
 
-        {/* Recuadro Principal */}
-        <Card className="bg-[#121212] border-gray-800 p-8 shadow-xl">
+        <Card variant="elevated" padding="lg">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input 
+              <Input
                 label="Evento"
                 value={form.tipo_evento}
                 onChange={(e) => setForm({...form, tipo_evento: e.target.value})}
                 fullWidth
               />
-              <Input 
+              <Input
                 label="Precio Especial ($)"
                 type="number"
                 value={form.precio_especial}
@@ -95,7 +116,7 @@ export default function DetallePaquetePage() {
               />
             </div>
 
-            <Textarea 
+            <Textarea
               label="Descripción"
               value={form.descripcion}
               onChange={(e) => setForm({...form, descripcion: e.target.value})}
@@ -104,22 +125,26 @@ export default function DetallePaquetePage() {
             />
 
             {/* Sección de Servicios */}
-            <div className="p-4 bg-black/40 rounded-lg border border-gray-800">
-              <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase">Servicios Incluidos</h3>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <h3 className="text-sm font-semibold mb-3 uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Incluidos</h3>
               <div className="flex flex-wrap gap-2">
                 {form.servicios_vinculados.map((srv, i) => (
-                  <span key={i} className="px-3 py-1 bg-red-900/30 text-red-400 border border-red-900/50 rounded-full text-xs font-medium">
+                  <span
+                    key={i}
+                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: 'var(--tarjetas-paneles)',
+                      color: 'var(--danger-texto)',
+                      border: '1px solid var(--danger)',
+                    }}
+                  >
                     {srv}
                   </span>
                 ))}
-                {form.servicios_vinculados.length === 0 && <span className="text-gray-600 text-sm italic">Sin servicios vinculados</span>}
+                {form.servicios_vinculados.length === 0 && (
+                  <span className="text-sm italic" style={{ color: 'var(--encabezados-alterno)' }}>Sin servicios vinculados</span>
+                )}
               </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
-              <Button onClick={handleGuardar} disabled={saving} className="bg-red-700 hover:bg-red-800 text-white px-8">
-                {saving ? 'Guardando...' : 'Actualizar Paquete'}
-              </Button>
             </div>
           </div>
         </Card>

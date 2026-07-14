@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import PublicLayout from '../../../../components/layouts/PublicLayout';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -19,9 +19,8 @@ export default function GarantiasClientePage() {
   ];
 
   return (
-    <PublicLayout>
-      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
-        <div className="max-w-4xl mx-auto">
+    <ModuleLayout>
+      <div className="max-w-4xl mx-auto py-4">
           <div className="text-center mb-8">
             <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Garantías y Soporte
@@ -100,9 +99,8 @@ export default function GarantiasClientePage() {
               </div>
             </Card>
           )}
-        </div>
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
 

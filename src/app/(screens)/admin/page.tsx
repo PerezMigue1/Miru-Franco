@@ -426,7 +426,7 @@ export default function AdminDashboardPage() {
                   <Clock3 size={17} style={{ color: 'var(--hover)' }} />
                   <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Agenda de hoy</h3>
                 </div>
-                <Link href="/admin/gestion-citas" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--enlaces-textos-interactivos)' }}>
+                <Link href="/operacion/gestion-citas" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
                   Ver agenda →
                 </Link>
               </div>
@@ -466,7 +466,7 @@ export default function AdminDashboardPage() {
                       <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Stock bajo</span>
                     </div>
-                    <Link href="/admin/inventario" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--enlaces-textos-interactivos)' }}>
+                    <Link href="/admin/inventario" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
                       Ver todos →
                     </Link>
                   </div>
@@ -498,7 +498,7 @@ export default function AdminDashboardPage() {
                       <PackageX size={14} style={{ color: 'var(--danger)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Por caducar</span>
                     </div>
-                    <Link href="/admin/control-caducidad" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--enlaces-textos-interactivos)' }}>
+                    <Link href="/admin/control-caducidad" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
                       Ver todos →
                     </Link>
                   </div>
@@ -530,7 +530,7 @@ export default function AdminDashboardPage() {
                       <MessageSquareWarning size={14} style={{ color: 'var(--danger)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Quejas abiertas</span>
                     </div>
-                    <Link href="/admin/quejas-garantias" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--enlaces-textos-interactivos)' }}>
+                    <Link href="/admin/quejas-garantias" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
                       Ver todas →
                     </Link>
                   </div>
@@ -617,7 +617,7 @@ export default function AdminDashboardPage() {
                   <UserPlus size={17} style={{ color: 'var(--hover)' }} />
                   <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Clientes nuevos</h3>
                 </div>
-                <Link href="/admin/clientes-crm" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--enlaces-textos-interactivos)' }}>
+                <Link href="/admin/clientes-crm" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
                   Ver todos →
                 </Link>
               </div>
@@ -670,7 +670,7 @@ export default function AdminDashboardPage() {
             <Card variant="elevated" padding="lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Pedidos recientes</h3>
-                <Link href="/admin/venta-online" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--enlaces-textos-interactivos)' }}>
+                <Link href="/admin/venta-online" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
                   Ver todos →
                 </Link>
               </div>

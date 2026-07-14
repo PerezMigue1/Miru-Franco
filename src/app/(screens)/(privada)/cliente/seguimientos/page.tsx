@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import PublicLayout from '../../../../components/layouts/PublicLayout';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
@@ -16,9 +16,8 @@ export default function SeguimientosClientePage() {
   ];
 
   return (
-    <PublicLayout>
-      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
-        <div className="max-w-4xl mx-auto">
+    <ModuleLayout>
+      <div className="max-w-4xl mx-auto py-4">
           <div className="text-center mb-8">
             <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Seguimientos Post-Servicio
@@ -57,9 +56,8 @@ export default function SeguimientosClientePage() {
               Contactar Soporte
             </Button>
           </Card>
-        </div>
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
 

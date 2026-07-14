@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { listarPedidos, listarEnviosPorPedido, actualizarEnvio, PedidoApi, EnvioApi } from '../../../services/ecommerce';
 import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
@@ -12,6 +11,7 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
+import { CheckCircle2, Truck, Clock3 } from 'lucide-react';
 
 interface EntregaFila {
   id: number;
@@ -128,38 +128,88 @@ export default function EntregasEnviosPage() {
     listo: { label: 'Listo para Recolectar', variant: 'success' as const },
   };
 
+  const enCamino = entregas.filter((e) => e.estado === 'en_camino').length;
+  const entregadas = entregas.filter((e) => e.estado === 'entregado' || e.estado === 'listo').length;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Gestión de Entregas y Envíos"
-        subtitle="Coordina entregas a domicilio y recolecciones en tienda"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
-        <Table headers={['Cliente', 'Dirección', 'Tipo', 'Zona', 'Estado', 'Mensajero', 'Acciones']}>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Entregas y Envíos
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {entregas.length} entrega{entregas.length === 1 ? '' : 's'} en curso
+          </p>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Truck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total entregas</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{entregas.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En camino</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{enCamino}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Entregadas</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{entregadas}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Cliente', 'Dirección', 'Tipo', 'Zona', 'Estado', 'Mensajero', 'Acciones']} headerSutil>
           {entregas.map((entrega) => (
             <TableRow key={entrega.id}>
-              <TableCell>{entrega.cliente}</TableCell>
-              <TableCell>{entrega.direccion}</TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">{entrega.cliente}</TableCell>
+              <TableCell rowPadding="lg">{entrega.direccion}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={entrega.tipo === 'Domicilio' ? 'info' : 'default'}>
                   {entrega.tipo}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 {entrega.zona === 'Gratuita' ? (
                   <Badge variant="success">{entrega.zona}</Badge>
                 ) : (
                   entrega.zona
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={estados[entrega.estado as keyof typeof estados]?.variant || 'default'}>
                   {estados[entrega.estado as keyof typeof estados]?.label || entrega.estado}
                 </Badge>
               </TableCell>
-              <TableCell>{entrega.mensajero}</TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">{entrega.mensajero}</TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => openDetalle(entrega)}>Ver Detalles</Button>
                   {entrega.estado === 'preparado' && (
@@ -177,11 +227,11 @@ export default function EntregasEnviosPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Coordinar Nueva Entrega
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Coordinar nueva entrega
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Cliente" placeholder="Nombre del cliente" fullWidth />
@@ -218,7 +268,8 @@ export default function EntregasEnviosPage() {
             <Button fullWidth>Coordinar Entrega</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
       {/* Modal: Ver/Editar Envío */}
       <Modal
         isOpen={isModalDetalleOpen}
@@ -232,7 +283,7 @@ export default function EntregasEnviosPage() {
           </>
         }
       >
-        {detalleError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{detalleError}</p>}
+        {detalleError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{detalleError}</p>}
         {entregaDetalle && (
           <div className="space-y-4">
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
-import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
@@ -10,6 +9,7 @@ import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
+import { BadgeDollarSign, ShoppingBag } from 'lucide-react';
 import { listarVentas, crearVenta, VentaLocalApi } from '../../../../services/pos';
 import { getServicios, Servicio } from '../../../../services/servicios';
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
@@ -26,7 +26,7 @@ function hora(iso?: string): string {
   return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function AtencionSinCitaPage() {
+export default function CobroSinCitaPage() {
   const [ventas, setVentas] = useState<VentaLocalApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,20 +89,58 @@ export default function AtencionSinCitaPage() {
     }
   };
 
+  const totalCobrado = ventas.reduce((s, v) => s + (Number(v.total) || 0), 0);
+
   return (
     <OperacionLayout>
-      <PageHeader
-        title="Atención Sin Cita"
-        subtitle="Cobra servicios de clientes que llegan sin cita previa (venta en mostrador)"
-        actions={<Button onClick={() => { reset(); setIsOpen(true); }}>+ Cobrar servicio</Button>}
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Cobro sin Cita
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Cobra servicios de clientes que llegan sin cita previa (venta en mostrador)
+            </p>
+          </div>
+          <Button onClick={() => { reset(); setIsOpen(true); }}>+ Cobrar servicio</Button>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <ShoppingBag size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : ventas.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total cobrado</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>{loading ? '…' : fmtMoneda(totalCobrado)}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando ventas del día…</p>
         ) : error ? (
           <div className="text-center py-8">
-            <p className="mb-3" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="mb-3" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             <Button variant="outline" onClick={cargar}>Reintentar</Button>
           </div>
         ) : ventas.length === 0 ? (
@@ -110,15 +148,15 @@ export default function AtencionSinCitaPage() {
             No hay ventas sin cita registradas hoy.
           </p>
         ) : (
-          <Table headers={['Folio', 'Hora', 'Items', 'Método', 'Total', 'Estado']}>
+          <Table headers={['Folio', 'Hora', 'Items', 'Método', 'Total', 'Estado']} headerSutil>
             {ventas.map((v) => (
               <TableRow key={v.id}>
-                <TableCell>{v.id}</TableCell>
-                <TableCell>{hora(v.creadoEn)}</TableCell>
-                <TableCell>{v.items.length}</TableCell>
-                <TableCell>{v.metodoPago}</TableCell>
-                <TableCell>{fmtMoneda(v.total)}</TableCell>
-                <TableCell>
+                <TableCell rowPadding="lg">{v.id}</TableCell>
+                <TableCell rowPadding="lg">{hora(v.creadoEn)}</TableCell>
+                <TableCell rowPadding="lg">{v.items.length}</TableCell>
+                <TableCell rowPadding="lg">{v.metodoPago}</TableCell>
+                <TableCell rowPadding="lg">{fmtMoneda(v.total)}</TableCell>
+                <TableCell rowPadding="lg">
                   <Badge variant={v.estado === 'pagada' ? 'success' : v.estado === 'cancelada' ? 'danger' : 'warning'}>
                     {v.estado}
                   </Badge>
@@ -127,7 +165,8 @@ export default function AtencionSinCitaPage() {
             ))}
           </Table>
         )}
-      </Card>
+        </Card>
+      </div>
 
       <Modal
         isOpen={isOpen}
@@ -141,7 +180,7 @@ export default function AtencionSinCitaPage() {
           </>
         }
       >
-        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{formError}</p>}
+        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
         <div className="space-y-4">
           <Select
             label="Servicio *"

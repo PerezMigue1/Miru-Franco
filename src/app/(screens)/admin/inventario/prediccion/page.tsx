@@ -30,6 +30,7 @@ import {
   type LineaVentaProducto,
 } from "../../../../utils/inventarioVentasOnline";
 import { parseCategoriaSub } from "../../../../utils/inventarioInteligente";
+import { CHART_COLORS_MARCA } from "../../../../utils/chartColors";
 import {
   Activity,
   AlertTriangle,
@@ -1011,12 +1012,6 @@ export default function PrediccionInventarioPage() {
     boxShadow: sombraPanelPrediccion,
   };
 
-  const kpiTileStyle: CSSProperties = {
-    ...superficieCard,
-    borderRadius: "1rem",
-    minHeight: "6.5rem",
-  };
-
   const sutilDivisor: CSSProperties = {
     borderColor: "color-mix(in srgb, var(--tarjetas-paneles) 32%, transparent)",
   };
@@ -1038,14 +1033,20 @@ export default function PrediccionInventarioPage() {
           border: bordePanelPrediccion,
         }}
       >
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p
-            className="text-[11px] font-semibold uppercase tracking-[0.14em] order-2 sm:order-1"
-            style={{ color: "var(--encabezados-alterno)" }}
-          >
-            Inventario · predicción
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2 sm:justify-end">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: "var(--menu-texto-principal)" }}>
+              Predicción del inventario
+            </h1>
+            <p
+              className="text-sm mt-1 max-w-xl leading-relaxed"
+              style={{ color: "var(--encabezados-alterno)" }}
+            >
+              Pedidos online + stock del catálogo. Elige 7, 30 o 90 días, o
+              aplica un rango de fechas al origen de ventas.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:justify-end">
             <Button
               variant="outline"
               className="shrink-0 w-full sm:w-auto"
@@ -1076,142 +1077,84 @@ export default function PrediccionInventarioPage() {
             background: fondoHeroPrediccion,
           }}
         >
-          <div className="min-w-0">
-            <h1
-              className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight"
-              style={{ color: "var(--menu-texto-principal)" }}
-            >
-              Predicción del inventario
-            </h1>
-            <p
-              className="text-sm mt-3 max-w-xl leading-relaxed"
-              style={{ color: "var(--encabezados-alterno)" }}
-            >
-              Pedidos online + stock del catálogo. Elige 7, 30 o 90 días, o
-              aplica un rango de fechas al origen de ventas.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mt-9 sm:mt-10">
-            <div className="flex gap-4 items-center p-4" style={kpiTileStyle}>
-              <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--iconografia) 30%, var(--superficie-elevada))",
-                }}
-              >
-                <Package
-                  className="h-7 w-7"
-                  style={{ color: "var(--logo-branding)" }}
-                  aria-hidden
-                />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            <Card variant="elevated" padding="lg">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "var(--fondos-suaves)" }}
+                >
+                  <Package className="h-5 w-5" style={{ color: "var(--logo-branding)" }} aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>
+                    Unidades vendidas
+                  </p>
+                  <p className="text-2xl font-bold mt-0.5 tabular-nums" style={{ color: "var(--menu-texto-principal)" }}>
+                    {loading ? "…" : contextoPedidos.unidades}
+                  </p>
+                  <p className="text-xs mt-1 leading-snug" style={{ color: "var(--encabezados-alterno)" }}>
+                    {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                      ? hayFiltrosCatalogo
+                        ? "Vista · rango de fechas"
+                        : "Global · rango de fechas"
+                      : hayFiltrosCatalogo
+                        ? `Vista · últimos ${contextoPedidos.dias} d`
+                        : `Global · últimos ${contextoPedidos.dias} d`}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p
-                  className="text-xs font-medium uppercase tracking-wide"
-                  style={{ color: "var(--encabezados-alterno)" }}
+            </Card>
+            <Card variant="elevated" padding="lg">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "var(--fondos-suaves)" }}
                 >
-                  Unidades vendidas
-                </p>
-                <p
-                  className="text-2xl md:text-3xl font-bold tabular-nums"
-                  style={{ color: "var(--menu-texto-principal)" }}
-                >
-                  {loading ? "…" : contextoPedidos.unidades}
-                </p>
-                <p
-                  className="text-xs mt-1 leading-snug"
-                  style={{ color: "var(--encabezados-alterno)" }}
-                >
-                  {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
-                    ? hayFiltrosCatalogo
-                      ? "Vista · rango de fechas"
-                      : "Global · rango de fechas"
-                    : hayFiltrosCatalogo
-                      ? `Vista · últimos ${contextoPedidos.dias} d`
-                      : `Global · últimos ${contextoPedidos.dias} d`}
-                </p>
+                  <ShoppingBag className="h-5 w-5" style={{ color: "var(--enlaces-textos-interactivos)" }} aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>
+                    Pedidos analizados
+                  </p>
+                  <p className="text-2xl font-bold mt-0.5 tabular-nums" style={{ color: "var(--menu-texto-principal)" }}>
+                    {loading ? "…" : contextoPedidos.pedidos}
+                  </p>
+                  <p className="text-xs mt-1 leading-snug" style={{ color: "var(--encabezados-alterno)" }}>
+                    {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                      ? hayFiltrosCatalogo
+                        ? "Pedidos con líneas en vista (rango)"
+                        : "Pedidos con líneas en rango (origen de datos)"
+                      : hayFiltrosCatalogo
+                        ? `Pedidos con líneas en vista · ${contextoPedidos.dias} d`
+                        : `Pedidos contables (API). Unidades: últimos ${contextoPedidos.dias} d`}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-4 items-center p-4" style={kpiTileStyle}>
-              <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--enlaces-textos-interactivos) 18%, var(--superficie-elevada))",
-                }}
-              >
-                <ShoppingBag
-                  className="h-7 w-7"
-                  style={{ color: "var(--enlaces-textos-interactivos)" }}
-                  aria-hidden
-                />
+            </Card>
+            <Card variant="elevated" padding="lg">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "var(--fondos-suaves)" }}
+                >
+                  <Activity className="h-5 w-5" style={{ color: "var(--success)" }} aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>
+                    Promedio diario
+                  </p>
+                  <p className="text-2xl font-bold mt-0.5 tabular-nums" style={{ color: "var(--menu-texto-principal)" }}>
+                    {loading ? "…" : promedioDiarioVentasGlobal.toFixed(1)}
+                  </p>
+                  <p className="text-xs mt-1 leading-snug" style={{ color: "var(--encabezados-alterno)" }}>
+                    {hayFiltrosCatalogo
+                      ? "Media diaria (vista)"
+                      : "Media diaria (ventana)"}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p
-                  className="text-xs font-medium uppercase tracking-wide"
-                  style={{ color: "var(--encabezados-alterno)" }}
-                >
-                  Pedidos analizados
-                </p>
-                <p
-                  className="text-2xl md:text-3xl font-bold tabular-nums"
-                  style={{ color: "var(--menu-texto-principal)" }}
-                >
-                  {loading ? "…" : contextoPedidos.pedidos}
-                </p>
-                <p
-                  className="text-xs mt-1 leading-snug"
-                  style={{ color: "var(--encabezados-alterno)" }}
-                >
-                  {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
-                    ? hayFiltrosCatalogo
-                      ? "Pedidos con líneas en vista (rango)"
-                      : "Pedidos con líneas en rango (origen de datos)"
-                    : hayFiltrosCatalogo
-                      ? `Pedidos con líneas en vista · ${contextoPedidos.dias} d`
-                      : `Pedidos contables (API). Unidades: últimos ${contextoPedidos.dias} d`}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4 items-center p-4" style={kpiTileStyle}>
-              <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--success) 20%, var(--superficie-elevada))",
-                }}
-              >
-                <Activity
-                  className="h-7 w-7"
-                  style={{ color: "var(--success)" }}
-                  aria-hidden
-                />
-              </div>
-              <div className="min-w-0">
-                <p
-                  className="text-xs font-medium uppercase tracking-wide"
-                  style={{ color: "var(--encabezados-alterno)" }}
-                >
-                  Promedio diario
-                </p>
-                <p
-                  className="text-2xl md:text-3xl font-bold tabular-nums"
-                  style={{ color: "var(--menu-texto-principal)" }}
-                >
-                  {loading ? "…" : promedioDiarioVentasGlobal.toFixed(1)}
-                </p>
-                <p
-                  className="text-xs mt-1 leading-snug"
-                  style={{ color: "var(--encabezados-alterno)" }}
-                >
-                  {hayFiltrosCatalogo
-                    ? "Media diaria (vista)"
-                    : "Media diaria (ventana)"}
-                </p>
-              </div>
-            </div>
+            </Card>
           </div>
           {!loading &&
             !errorVentas &&
@@ -1278,7 +1221,7 @@ export default function PrediccionInventarioPage() {
           >
             <p
               className="text-sm font-medium"
-              style={{ color: "var(--danger)" }}
+              style={{ color: "var(--danger-texto)" }}
             >
               {error}
             </p>
@@ -1420,7 +1363,7 @@ export default function PrediccionInventarioPage() {
               !rangoFechasParseado && (
                 <span
                   className="text-xs w-full"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-texto)" }}
                 >
                   Fechas no válidas (revisa inicio y fin).
                 </span>
@@ -1461,7 +1404,7 @@ export default function PrediccionInventarioPage() {
               fechaProyeccionRef && (
                 <span
                   className="text-xs w-full"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-texto)" }}
                 >
                   Fecha no válida o anterior a la fecha inicial.
                 </span>
@@ -1506,7 +1449,7 @@ export default function PrediccionInventarioPage() {
 
         <Card
           variant="elevated"
-          padding="md"
+          padding="lg"
           className="mb-6 rounded-2xl border-0"
           style={superficieCard}
         >
@@ -1594,7 +1537,7 @@ export default function PrediccionInventarioPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <h3
-                    className="text-base font-semibold"
+                    className="text-lg font-semibold"
                     style={{ color: "var(--menu-texto-principal)" }}
                   >
                     Resumen
@@ -1740,7 +1683,7 @@ export default function PrediccionInventarioPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <h3
-                    className="text-base font-semibold tracking-tight"
+                    className="text-lg font-semibold tracking-tight"
                     style={{ color: "var(--menu-texto-principal)" }}
                   >
                     Total de días para reabastecer
@@ -1799,7 +1742,7 @@ export default function PrediccionInventarioPage() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                   <h3
-                    className="text-base font-semibold tracking-tight"
+                    className="text-lg font-semibold tracking-tight"
                     style={{ color: "var(--menu-texto-principal)" }}
                   >
                     Reorden
@@ -2096,7 +2039,7 @@ export default function PrediccionInventarioPage() {
                 style={superficieCard}
               >
                 <h3
-                  className="text-base font-semibold mb-1"
+                  className="text-lg font-semibold mb-1"
                   style={{ color: "var(--menu-texto-principal)" }}
                 >
                   {graficaModoVentas
@@ -2520,7 +2463,7 @@ export default function PrediccionInventarioPage() {
                 style={superficieCard}
               >
                 <h3
-                  className="text-base font-semibold mb-1 flex items-center gap-2"
+                  className="text-lg font-semibold mb-1 flex items-center gap-2"
                   style={{ color: "var(--menu-texto-principal)" }}
                 >
                   <CalendarDays
@@ -2614,7 +2557,7 @@ export default function PrediccionInventarioPage() {
                               y={yTop}
                               width={graficaOrigenVentas.barW}
                               height={hBar}
-                              fill="var(--enlaces-textos-interactivos)"
+                              fill={CHART_COLORS_MARCA[0]}
                               rx="2"
                               className="cursor-pointer"
                               onMouseEnter={() => setOrigenBarraHover(p.clave)}
@@ -2664,7 +2607,7 @@ export default function PrediccionInventarioPage() {
                 style={superficieCard}
               >
                 <h3
-                  className="text-base font-semibold mb-2"
+                  className="text-lg font-semibold mb-2"
                   style={{ color: "var(--menu-texto-principal)" }}
                 >
                   Tabla
@@ -2804,7 +2747,7 @@ export default function PrediccionInventarioPage() {
                 style={superficieCard}
               >
                 <h3
-                  className="text-base font-semibold mb-1"
+                  className="text-lg font-semibold mb-1"
                   style={{ color: "var(--menu-texto-principal)" }}
                 >
                   Más riesgo de quiebre
@@ -2926,7 +2869,7 @@ export default function PrediccionInventarioPage() {
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
                   <h3
-                    className="text-base sm:text-lg font-semibold"
+                    className="text-lg font-semibold"
                     style={{ color: "var(--menu-texto-principal)" }}
                   >
                     Tabla completa de predicción

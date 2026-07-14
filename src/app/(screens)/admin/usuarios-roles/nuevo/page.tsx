@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
-import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -163,18 +162,34 @@ export default function NuevoUsuarioPage() {
 
   return (
     <AdminLayout>
-      <PageHeader title="Nuevo usuario" subtitle="Alta de personal (admin, estilista, empleado, becado)" />
+      <div className="w-full max-w-none space-y-8">
 
-      {error && (
-        <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded mb-4 text-xs font-bold shadow-md whitespace-pre-line">
-          {error}
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Nuevo Usuario
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Alta de personal (admin, estilista, empleado, becado)
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push('/admin/usuarios-roles')} disabled={saving}>Cancelar</Button>
+            <Button variant="primary" onClick={handleCrear} disabled={saving || emailYaRegistrado}>{saving ? 'Creando...' : 'Crear usuario'}</Button>
+          </div>
         </div>
-      )}
 
-      <Card>
+        {error && (
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium whitespace-pre-line" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
+      <Card variant="elevated" padding="lg">
         <div className="space-y-6">
           <div>
-            <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Datos básicos</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Datos básicos</h3>
             <div className={gridForm}>
               <Input label="Nombre completo *" placeholder="Nombre del usuario" value={nombre} onChange={(e) => setNombre(e.target.value)} fullWidth required />
               <div>
@@ -201,7 +216,7 @@ export default function NuevoUsuarioPage() {
           </div>
 
           <div>
-            <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Seguridad</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Seguridad</h3>
             <div className={gridForm}>
               <div>
                 <Select
@@ -223,7 +238,7 @@ export default function NuevoUsuarioPage() {
           </div>
 
           <div>
-            <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar (opcional)</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar (opcional)</h3>
             <div className={gridForm}>
               <Select
                 label="Tipo de cabello"
@@ -267,12 +282,9 @@ export default function NuevoUsuarioPage() {
             </label>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => router.push('/admin/usuarios-roles')} disabled={saving}>Cancelar</Button>
-            <Button onClick={handleCrear} disabled={saving || emailYaRegistrado}>{saving ? 'Creando...' : 'Crear usuario'}</Button>
-          </div>
         </div>
       </Card>
+      </div>
     </AdminLayout>
   );
 }

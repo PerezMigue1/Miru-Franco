@@ -7,7 +7,6 @@ import { listarClientes, type ClienteApi } from '../../../services/clientes';
 import Modal from '../../../components/ui/Modal';
 import Textarea from '../../../components/ui/Textarea';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
@@ -15,6 +14,7 @@ import Select from '../../../components/ui/Select';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import { getCategoryColor } from '../../../utils/categoryColors';
+import { BadgeDollarSign, Receipt, ShoppingCart } from 'lucide-react';
 
 interface VentaFila {
   id: number;
@@ -125,19 +125,54 @@ export default function VentaLocalPage() {
     finally { setSavingCancelVenta(false); }
   };
 
+  const totalDia = ventasHoy.reduce((acc, v) => acc + (parseFloat(v.total.replace(/[^0-9.]/g, '')) || 0), 0);
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Venta de Productos en el Local"
-        subtitle="Gestiona las ventas de productos directamente en el salón"
-        actions={
-          <Button variant="outline" onClick={() => { setCorteError(null); setFormCorteEfectivo('0'); setFormCorteNotas(''); setIsModalCorteOpen(true); }}>Abrir Corte de Caja</Button>
-        }
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Venta Local
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              {ventasHoy.length} venta{ventasHoy.length === 1 ? '' : 's'} hoy
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => { setCorteError(null); setFormCorteEfectivo('0'); setFormCorteNotas(''); setIsModalCorteOpen(true); }}>Abrir Corte de Caja</Button>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <ShoppingCart size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : ventasHoy.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total del día</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${totalDia.toLocaleString('es-MX')}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Nueva Venta
           </h2>
           <div className="space-y-4">
@@ -175,13 +210,13 @@ export default function VentaLocalPage() {
             />
             <Input label="Descuento ($)" type="number" min={0} step={0.01} value={formDescuento} onChange={(e) => setFormDescuento(e.target.value)} placeholder="0" fullWidth />
             <Textarea label="Notas" value={formNotas} onChange={(e) => setFormNotas(e.target.value)} placeholder="Observaciones opcionales..." rows={2} fullWidth />
-            {ventaError && <p className="text-sm" style={{ color: 'var(--danger)' }}>{ventaError}</p>}
+            {ventaError && <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{ventaError}</p>}
             <Button fullWidth onClick={handleCrearVenta} disabled={savingVenta}>{savingVenta ? 'Procesando...' : 'Procesar Venta'}</Button>
           </div>
         </Card>
 
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Productos Disponibles
           </h2>
           <div className="space-y-3">
@@ -210,23 +245,23 @@ export default function VentaLocalPage() {
         </Card>
       </div>
 
-      <Card>
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+      <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Ventas de Hoy
         </h2>
-        <Table headers={['Cliente', 'Productos', 'Total', 'Método de Pago', 'Fecha', 'Acciones']}>
+        <Table headers={['Cliente', 'Productos', 'Total', 'Método de Pago', 'Fecha', 'Acciones']} headerSutil>
           {ventasHoy.map((venta) => (
             <TableRow key={venta.id}>
-              <TableCell>{venta.cliente}</TableCell>
-              <TableCell>{venta.productos}</TableCell>
-              <TableCell className="font-semibold">{venta.total}</TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">{venta.cliente}</TableCell>
+              <TableCell rowPadding="lg">{venta.productos}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{venta.total}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={venta.metodo === 'efectivo' || venta.metodo === 'Efectivo' ? 'success' : 'info'}>
                   {venta.metodo}
                 </Badge>
               </TableCell>
-              <TableCell>{venta.fecha}</TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">{venta.fecha}</TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">Ver Detalles</Button>
                   <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
@@ -236,6 +271,7 @@ export default function VentaLocalPage() {
           ))}
         </Table>
       </Card>
+      </div>
       {/* Modal: Abrir Corte de Caja */}
       <Modal
         isOpen={isModalCorteOpen}
@@ -249,7 +285,7 @@ export default function VentaLocalPage() {
           </>
         }
       >
-        {corteError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{corteError}</p>}
+        {corteError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{corteError}</p>}
         <div className="space-y-3">
           <Input label="Efectivo inicial ($)" type="number" min={0} step={0.01} value={formCorteEfectivo} onChange={(e) => setFormCorteEfectivo(e.target.value)} fullWidth />
           <Textarea label="Notas" value={formCorteNotas} onChange={(e) => setFormCorteNotas(e.target.value)} placeholder="Observaciones del turno..." rows={2} fullWidth />

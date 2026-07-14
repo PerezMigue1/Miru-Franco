@@ -56,15 +56,15 @@ export default function SubirImagenesPage() {
 
   return (
     <OperacionLayout>
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+      <div className="max-w-2xl mx-auto py-4">
+        <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
           Subir imágenes a Cloudinary
         </h1>
-        <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
+        <p className="text-sm mt-1 mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
           Elige el tipo, selecciona una o varias imágenes y obtendrás las URLs para usar en productos o servicios.
         </p>
 
-        <Card className="mb-6 p-6">
+        <Card variant="elevated" padding="lg" className="mb-6">
           <p className="text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             ¿Dónde guardar?
           </p>
@@ -109,8 +109,8 @@ export default function SubirImagenesPage() {
         </Card>
 
         {error && (
-          <Card className="mb-6 p-4" style={{ borderColor: 'var(--danger)' }}>
-            <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+          <Card variant="elevated" padding="md" className="mb-6 border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
               Revisa que en tu .env tengas NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_PRODUCTOS (y _SERVICIOS si usas servicios). En Cloudinary el preset debe ser Unsigned.
             </p>
@@ -118,7 +118,7 @@ export default function SubirImagenesPage() {
         )}
 
         {urls.length > 0 && (
-          <Card className="p-6">
+          <Card variant="elevated" padding="lg">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                 URLs generadas ({urls.length})

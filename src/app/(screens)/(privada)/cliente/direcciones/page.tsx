@@ -1,11 +1,9 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import PublicLayout from '../../../../components/layouts/PublicLayout';
-import Breadcrumb from '../../../../components/ui/Breadcrumb';
+import { useRouter, useSearchParams } from 'next/navigation';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
-import { getBreadcrumbsForPath } from '../../../../utils/breadcrumbs';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
@@ -42,7 +40,6 @@ function returnUrlSeguro(raw: string | null): string | null {
 }
 
 function DireccionesPageContent() {
-  const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = returnUrlSeguro(searchParams.get('returnUrl'));
@@ -172,11 +169,9 @@ function DireccionesPageContent() {
   };
 
   return (
-    <PublicLayout>
-      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
-        <div className="max-w-4xl mx-auto">
-          <Breadcrumb items={getBreadcrumbsForPath(pathname ?? '/cliente/direcciones')} />
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8 mt-2">
+    <ModuleLayout>
+      <div className="max-w-4xl mx-auto py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <h1 className="text-hero" style={{ color: 'var(--menu-texto-principal)' }}>
               Mis direcciones
             </h1>
@@ -366,9 +361,8 @@ function DireccionesPageContent() {
               </form>
             </Card>
           )}
-        </div>
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
 
@@ -376,11 +370,11 @@ export default function DireccionesPage() {
   return (
     <Suspense
       fallback={
-        <PublicLayout>
-          <div className="layout-page py-12" style={{ marginTop: '136px' }}>
+        <ModuleLayout>
+          <div className="max-w-4xl mx-auto py-4">
             <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
           </div>
-        </PublicLayout>
+        </ModuleLayout>
       }
     >
       <DireccionesPageContent />

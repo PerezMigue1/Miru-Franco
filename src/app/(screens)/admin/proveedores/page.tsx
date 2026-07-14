@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
+import { BadgeDollarSign, Package, Truck } from 'lucide-react';
 
 export interface ProveedorItem {
   id: number;
@@ -99,24 +99,76 @@ export default function ProveedoresPage() {
     }
   };
 
+  const totalCompras = proveedores.reduce((acc, p) => acc + p.compras, 0);
+  const promedioCompras = proveedores.length > 0 ? Math.round(totalCompras / proveedores.length) : 0;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Proveedores"
-        subtitle="Gestiona la relación con proveedores de productos profesionales"
-        actions={<Button onClick={openNuevo}>+ Nuevo Proveedor</Button>}
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
-        <Table headers={['Proveedor', 'Contacto', 'Productos', 'Compras', 'Última Compra', 'Acciones']}>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Proveedores
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              {proveedores.length} proveedor{proveedores.length === 1 ? '' : 'es'} registrados
+            </p>
+          </div>
+          <Button onClick={openNuevo}>+ Nuevo Proveedor</Button>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Truck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total proveedores</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{proveedores.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Package size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Compras totales</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalCompras}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Compras promedio</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{promedioCompras}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Proveedor', 'Contacto', 'Productos', 'Compras', 'Última Compra', 'Acciones']} headerSutil>
           {proveedores.map((proveedor) => (
             <TableRow key={proveedor.id}>
-              <TableCell className="font-semibold">{proveedor.nombre}</TableCell>
-              <TableCell>{proveedor.contacto}</TableCell>
-              <TableCell>{proveedor.productos}</TableCell>
-              <TableCell>{proveedor.compras}</TableCell>
-              <TableCell>{proveedor.ultimaCompra}</TableCell>
-              <TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{proveedor.nombre}</TableCell>
+              <TableCell rowPadding="lg">{proveedor.contacto}</TableCell>
+              <TableCell rowPadding="lg">{proveedor.productos}</TableCell>
+              <TableCell rowPadding="lg">{proveedor.compras}</TableCell>
+              <TableCell rowPadding="lg">{proveedor.ultimaCompra}</TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => openEditar(proveedor)}>
                     Editar
@@ -136,7 +188,8 @@ export default function ProveedoresPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
+      </div>
 
       <Modal
         isOpen={showForm}

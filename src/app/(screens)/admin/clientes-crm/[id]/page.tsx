@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
-import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
@@ -124,7 +123,7 @@ export default function ClienteDetallePage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="layout-page py-12">
+        <div className="w-full max-w-none py-12">
           <p className="text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando cliente...</p>
         </div>
       </AdminLayout>
@@ -134,8 +133,8 @@ export default function ClienteDetallePage() {
   if (error || !cliente) {
     return (
       <AdminLayout>
-        <div className="layout-page py-12">
-          <p className="text-center" style={{ color: 'var(--danger)' }}>{error || 'Cliente no encontrado'}</p>
+        <div className="w-full max-w-none py-12">
+          <p className="text-center" style={{ color: 'var(--danger-texto)' }}>{error || 'Cliente no encontrado'}</p>
           <div className="text-center mt-4">
             <Button variant="outline" onClick={() => router.push('/admin/clientes-crm')}>
               Volver al listado
@@ -148,22 +147,27 @@ export default function ClienteDetallePage() {
 
   return (
     <AdminLayout>
-      <PageHeader
-        title={cliente.nombre}
-        subtitle="Perfil del cliente"
-        actions={
+      <div className="w-full max-w-none space-y-8">
+
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              {cliente.nombre}
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Perfil del cliente
+            </p>
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push(`/admin/clientes-crm/${id}/editar`)}>Editar</Button>
-            <Button onClick={() => router.push('/admin/gestion-citas')}>Nueva Cita</Button>
+            <Button variant="primary" onClick={() => router.push('/operacion/gestion-citas')}>Nueva Cita</Button>
           </div>
-        }
-      />
+        </div>
 
-      <div className="layout-page pb-12">
-        <div className="w-full max-w-none">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <Card>
+              <Card variant="elevated" padding="lg">
                 <div className="flex items-center gap-2 mb-6">
                   <Badge variant={cliente.activo ? 'success' : 'danger'}>
                     {cliente.activo ? 'Activo' : 'Inactivo'}
@@ -213,8 +217,8 @@ export default function ClienteDetallePage() {
                 </div>
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Perfil Capilar y Salud
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -241,14 +245,14 @@ export default function ClienteDetallePage() {
                 </div>
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Historial de Citas
                 </h2>
                 {citas.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
                 ) : citas.error ? (
-                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el historial de citas.</p>
+                  <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el historial de citas.</p>
                 ) : citas.data.length > 0 ? (
                   <Table headers={['Servicio', 'Fecha', 'Especialista', 'Precio', 'Estado']}>
                     {citas.data.map((c) => {
@@ -272,14 +276,14 @@ export default function ClienteDetallePage() {
                 )}
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Historial de Compras
                 </h2>
                 {compras.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando compras…</p>
                 ) : compras.error ? (
-                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el historial de compras.</p>
+                  <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el historial de compras.</p>
                 ) : compras.data.length > 0 ? (
                   <Table headers={['Pedido', 'Fecha', 'Artículos', 'Total', 'Estado']}>
                     {compras.data.map((p) => {
@@ -302,14 +306,14 @@ export default function ClienteDetallePage() {
                 )}
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Quejas
                 </h2>
                 {quejas.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando quejas…</p>
                 ) : quejas.error ? (
-                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el historial de quejas.</p>
+                  <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el historial de quejas.</p>
                 ) : quejas.data.length > 0 ? (
                   <div className="space-y-2">
                     {quejas.data.map((q) => (
@@ -330,14 +334,14 @@ export default function ClienteDetallePage() {
                 )}
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Seguimiento Post-Servicio
                 </h2>
                 {seguimientos.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando seguimientos…</p>
                 ) : seguimientos.error ? (
-                  <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>No se pudo cargar el seguimiento post-servicio.</p>
+                  <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el seguimiento post-servicio.</p>
                 ) : seguimientos.data.length > 0 ? (
                   <div className="space-y-2">
                     {seguimientos.data.map((sgm) => (
@@ -362,8 +366,8 @@ export default function ClienteDetallePage() {
                 )}
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Direcciones Ligadas
                 </h2>
                 {rel.direcciones.length > 0 ? (
@@ -386,8 +390,8 @@ export default function ClienteDetallePage() {
                 )}
               </Card>
 
-              <Card>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Observaciones Importantes
                 </h2>
                 {rel.notificaciones.length > 0 ? (
@@ -413,8 +417,8 @@ export default function ClienteDetallePage() {
             </div>
 
             <div className="space-y-6">
-              <Card>
-                <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Resumen
                 </h3>
                 <div className="space-y-3">
@@ -451,12 +455,12 @@ export default function ClienteDetallePage() {
                 </div>
               </Card>
 
-              <Card>
-                <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Acciones Rápidas
                 </h3>
                 <div className="space-y-2">
-                  <Button fullWidth onClick={() => router.push('/admin/gestion-citas')}>
+                  <Button fullWidth onClick={() => router.push('/operacion/gestion-citas')}>
                     Agendar Nueva Cita
                   </Button>
                   <Button fullWidth variant="outline" onClick={() => router.push('/admin/clientes-crm')}>
@@ -471,7 +475,6 @@ export default function ClienteDetallePage() {
               </Card>
             </div>
           </div>
-        </div>
       </div>
 
       <Modal

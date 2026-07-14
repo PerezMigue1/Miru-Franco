@@ -1,6 +1,6 @@
 'use client';
 
-import PublicLayout from '../../../../components/layouts/PublicLayout';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
@@ -14,8 +14,8 @@ export default function PromocionesPage() {
   ];
 
   return (
-    <PublicLayout>
-      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
+    <ModuleLayout>
+      <div className="w-full max-w-none py-4">
         <div className="text-center mb-12">
           <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Promociones Especiales
@@ -54,7 +54,7 @@ export default function PromocionesPage() {
           ))}
         </div>
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
 

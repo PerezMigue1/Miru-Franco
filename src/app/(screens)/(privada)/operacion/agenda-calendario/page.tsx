@@ -2,24 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
-import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
+import Select from '../../../../components/ui/Select';
 import { listarCitasDelDia, CitaApi } from '../../../../services/citas';
-import { getRolFromUser } from '../../../../utils/adminAuth';
-
-/** Lee el usuario logueado desde localStorage: { id, rol }. */
-function sesionActual(): { id?: string; rol?: string } {
-  if (typeof window === 'undefined') return {};
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || '{}') as Record<string, unknown>;
-    return { id: typeof u.id === 'string' ? u.id : undefined, rol: getRolFromUser(u)?.toLowerCase() };
-  } catch {
-    return {};
-  }
-}
+import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
+import { CalendarDays } from 'lucide-react';
 
 const estadoVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   confirmada: 'success',
@@ -41,43 +31,76 @@ export default function AgendaCalendarioPage() {
   const [citas, setCitas] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [especialistas, setEspecialistas] = useState<EmpleadoApi[]>([]);
+  const [filtroEspecialistaId, setFiltroEspecialistaId] = useState('');
 
-  const cargar = useCallback((f: string) => {
+  const cargar = useCallback((f: string, especialistaId: string) => {
     setLoading(true);
     setError(null);
-    listarCitasDelDia(f)
+    listarCitasDelDia(f, especialistaId || undefined)
       .then((data) => {
-        // Defensa en profundidad: estilista/becario solo ven SUS citas (backend ya lo scopea).
-        const { id, rol } = sesionActual();
-        const propias =
-          (rol === 'estilista' || rol === 'becario' || rol === 'becado') && id
-            ? data.filter((c) => c.especialistaId === id)
-            : data;
-        setCitas([...propias].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio)));
+        setCitas([...data].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio)));
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar la agenda'))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { cargar(fecha); }, [fecha, cargar]);
+  useEffect(() => { cargar(fecha, filtroEspecialistaId); }, [fecha, filtroEspecialistaId, cargar]);
+  useEffect(() => {
+    listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
+  }, []);
 
   return (
     <OperacionLayout>
-      <PageHeader
-        title="Agenda / Calendario"
-        subtitle="Visualiza y gestiona la disponibilidad del salón y las citas programadas"
-        actions={
-          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-        }
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Agenda / Calendario
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Visualiza la disponibilidad del salón y las citas programadas
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Select
+              value={filtroEspecialistaId}
+              onChange={(e) => setFiltroEspecialistaId(e.target.value)}
+              options={[
+                { value: '', label: 'Todos los especialistas' },
+                ...especialistas.map((esp) => ({ value: esp.usuarioId, label: esp.nombre ?? esp.puesto ?? esp.usuarioId })),
+              ]}
+              className="sm:w-56"
+            />
+            <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          </div>
+        </div>
+
+        {/* KPI */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CalendarDays size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Citas del día</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : citas.length}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando agenda…</p>
         ) : error ? (
           <div className="text-center py-8">
-            <p className="mb-3" style={{ color: 'var(--danger)' }}>{error}</p>
-            <Button variant="outline" onClick={() => cargar(fecha)}>Reintentar</Button>
+            <p className="mb-3" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+            <Button variant="outline" onClick={() => cargar(fecha, filtroEspecialistaId)}>Reintentar</Button>
           </div>
         ) : citas.length === 0 ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -89,7 +112,7 @@ export default function AgendaCalendarioPage() {
               <div
                 key={c.id}
                 className="flex items-center gap-4 p-3 rounded-lg"
-                style={{ border: '1px solid var(--bordes)' }}
+                style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <div className="text-center min-w-[70px]">
                   <p className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{hora(c.fechaHoraInicio)}</p>
@@ -106,7 +129,8 @@ export default function AgendaCalendarioPage() {
             ))}
           </div>
         )}
-      </Card>
+        </Card>
+      </div>
     </OperacionLayout>
   );
 }

@@ -5,7 +5,6 @@ import { listarCitas, checkOutCita, registrarMateriales, CitaApi } from '../../.
 import { getProductosSinRedirigir } from '../../../../services/productos';
 import Modal from '../../../../components/ui/Modal';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
-import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
@@ -13,6 +12,7 @@ import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
+import { Wrench, Clock3, CheckCircle2 } from 'lucide-react';
 
 interface ServicioFila {
   id: number;
@@ -118,45 +118,69 @@ export default function EjecucionServiciosPage() {
 
   return (
     <OperacionLayout>
-      <PageHeader
-        title="Ejecución de Servicios"
-        subtitle="Gestiona los servicios en curso y registra la información detallada de cada trabajo"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : pendientes}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>En Proceso</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enProceso}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
-          </div>
-        </Card>
-      </div>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Ejecución de Servicios
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {servicios.length} servicio{servicios.length === 1 ? '' : 's'} en curso
+          </p>
+        </div>
 
-      <Card>
-        <Table headers={['Cliente', 'Servicio', 'Especialista', 'Inicio', 'Fin', 'Duración', 'Productos', 'Estado', 'Acciones']}>
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg" style={pendientes > 0 ? { boxShadow: '0 0 0 2px var(--warning)' } : undefined}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: 'var(--warning-texto)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Pendientes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning-texto)' }}>{loading ? '…' : pendientes}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Wrench size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En Proceso</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enProceso}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Cliente', 'Servicio', 'Especialista', 'Inicio', 'Fin', 'Duración', 'Productos', 'Estado', 'Acciones']} headerSutil>
           {servicios.map((servicio) => (
             <TableRow key={servicio.id}>
-              <TableCell>{servicio.cliente}</TableCell>
-              <TableCell>{servicio.servicio}</TableCell>
-              <TableCell>{servicio.especialista}</TableCell>
-              <TableCell>{servicio.inicio}</TableCell>
-              <TableCell>{servicio.fin || '-'}</TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">{servicio.cliente}</TableCell>
+              <TableCell rowPadding="lg">{servicio.servicio}</TableCell>
+              <TableCell rowPadding="lg">{servicio.especialista}</TableCell>
+              <TableCell rowPadding="lg">{servicio.inicio}</TableCell>
+              <TableCell rowPadding="lg">{servicio.fin || '-'}</TableCell>
+              <TableCell rowPadding="lg">
                 {servicio.fin ? `${servicio.inicio} - ${servicio.fin}` : 'En curso'}
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 {servicio.productos.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {servicio.productos.map((p, i) => (
@@ -167,12 +191,12 @@ export default function EjecucionServiciosPage() {
                   '-'
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={estados[servicio.estado as keyof typeof estados]?.variant || 'default'}>
                   {estados[servicio.estado as keyof typeof estados]?.label || servicio.estado}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -189,10 +213,10 @@ export default function EjecucionServiciosPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar Nuevo Servicio
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -215,7 +239,8 @@ export default function EjecucionServiciosPage() {
             <Button>Registrar Servicio</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
 
       {/* Modal: Registrar Materiales */}
       <Modal
@@ -230,7 +255,7 @@ export default function EjecucionServiciosPage() {
           </>
         }
       >
-        {matError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{matError}</p>}
+        {matError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{matError}</p>}
         <div className="space-y-4">
           <Select
             label="Presentación / Producto *"

@@ -20,6 +20,26 @@
   --enlaces-textos-interactivos: #4A7BA7;
   --fondos-suaves: #d0b29c;
   --iconografia: #BFA181;
+  /* Auditoría de contraste WCAG AA: variantes "texto" de acentos cálidos que fallan
+     como texto pequeño/número sobre --tarjetas-paneles y --fondo-general. --logo-branding,
+     --warning y --danger NO se tocan (identidad de marca / fondos sólidos, ya cumplen ahí). */
+  --oro-texto: #37280b;
+  --warning-texto: #4b3002;
+  --danger-texto: var(--danger);
+  --success-texto: #242d1b;
+  --boton-acento-bg: #758764;
+  --texto-sobre-acento: var(--header-footer);
+  /* Vino como texto de acento/ítem activo (ej. sidebar) es ilegible en modo oscuro (1.48:1).
+     En claro se mantiene el vino; en dark se sobreescribe a una variante más clara del azul
+     de --enlaces-textos-interactivos (ver .dark), no un color inventado. */
+  --texto-acento-dark: var(--botones-principales);
+  /* Azul (--enlaces-textos-interactivos) sobre superficies cálidas claras (--tarjetas-paneles,
+     --fondo-general, --fondos-suaves) cae a 1.5-2.8:1 — ilegible. En dark esas superficies son
+     grises neutros (no cálidas), el azul ya funciona ahí, no se toca.
+     Verde bosque saturado (no --success-texto, para no afectar los números de KPI que ya lo usan):
+     4.56:1 sobre --tarjetas-paneles (la superficie más dura de la paleta), 8.43:1 y 6.84:1 en las
+     otras dos — mínimo de oscurecimiento necesario para pasar AA en esa superficie específica. */
+  --texto-enlace-sobre-calido: #14341e;
   --hero-brand-color: #161616;
   --hero-tagline-color: #2A2A2A;
   --borde-sutil: rgba(255, 255, 255, 0.1);
@@ -102,6 +122,23 @@
   --enlaces-textos-interactivos: #4a7ba7;
   --hero-brand-color: var(--texto-fondo-oscuro);
   --hero-tagline-color: rgba(242, 241, 237, 0.85);
+
+  /* Auditoría de contraste WCAG AA (modo oscuro): --logo-branding y --warning no se sobreescriben
+     aquí porque ya cumplen en superficies oscuras; --danger sí, porque el vino oscuro
+     como texto/acento sobre una Card oscura cae a ~1.17:1 (prácticamente invisible). */
+  --oro-texto: #c4954d;
+  --warning-texto: var(--warning);
+  --danger-texto: #e0748f;
+  --success-texto: #82a163;
+  --boton-acento-bg: #758764;
+  --texto-sobre-acento: var(--header-footer);
+  /* Vino (#710014) como texto sobre fondos oscuros da 1.48:1 (sidebar) — ilegible.
+     Variante más clara del mismo azul de --enlaces-textos-interactivos: 6.07:1 sobre
+     --fondo-general dark, 4.81:1 sobre --tarjetas-paneles dark. Cumple AA en ambas. */
+  --texto-acento-dark: #689bc0;
+  /* En dark, --tarjetas-paneles/--fondo-general son grises neutros, no cálidos: el azul
+     original ya funciona ahí (no se toca, per instrucción). */
+  --texto-enlace-sobre-calido: var(--enlaces-textos-interactivos);
 }
 
 /* Más ancho útil que el `container` por defecto de Tailwind (mejor en monitores comunes) */
@@ -177,6 +214,14 @@ body {
   font-weight: var(--font-weight-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Placeholder determinista (no depender de la opacidad por defecto del navegador, que
+   lava vino/oro sobre fondos claros). Auditoría de contraste: ver globals.css tokens arriba. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--encabezados-alterno);
+  opacity: 0.85;
 }
 
 /* Scrollbar personalizado para el menú horizontal */

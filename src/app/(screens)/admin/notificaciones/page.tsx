@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
@@ -19,6 +18,7 @@ import {
 } from '../../../services/ecommerce';
 import { getUsuarios, type Usuario } from '../../../services/usuarios';
 import { showAlert, showToast } from '../../../utils/toast';
+import { Bell, BellOff, CheckCheck } from 'lucide-react';
 
 export default function NotificacionesPage() {
   const [items, setItems] = useState<NotificacionApi[]>([]);
@@ -105,26 +105,80 @@ export default function NotificacionesPage() {
     }
   };
 
+  const noLeidas = items.filter((n) => !n.leida).length;
+  const leidas = items.length - noLeidas;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Notificaciones"
-        subtitle="Listado vía API y envío a usuarios (requiere rol administrador en el backend)"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      {error && (
-        <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
-          <p style={{ color: 'var(--danger)' }}>{error}</p>
-        </Card>
-      )}
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Notificaciones
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {items.length} notificación{items.length === 1 ? '' : 'es'} en el sistema
+          </p>
+        </div>
 
-      <Card>
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Bell size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{items.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            variant="elevated"
+            padding="lg"
+            style={noLeidas > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: noLeidas > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}>
+                <BellOff size={20} style={{ color: noLeidas > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>No leídas</p>
+                <p className="text-3xl font-bold mt-0.5" style={{ color: noLeidas > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{noLeidas}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCheck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Leídas</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{leidas}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {error && (
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
         {loading ? (
           <p className="p-6 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando…
           </p>
         ) : (
-          <Table headers={['Tipo', 'Usuario', 'Título', 'Estado', 'Fecha', 'Acciones']}>
+          <Table headers={['Tipo', 'Usuario', 'Título', 'Estado', 'Fecha', 'Acciones']} headerSutil>
             {items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -134,15 +188,15 @@ export default function NotificacionesPage() {
             ) : (
               items.map((n) => (
                 <TableRow key={n.id}>
-                  <TableCell>
+                  <TableCell rowPadding="lg">
                     <Badge variant="info" size="sm">
                       {n.tipo}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs font-mono max-w-[120px] truncate">
+                  <TableCell className="text-xs font-mono max-w-[120px] truncate" rowPadding="lg">
                     <span title={n.usuarioId}>{n.usuarioId || '—'}</span>
                   </TableCell>
-                  <TableCell className="max-w-xs">
+                  <TableCell className="max-w-xs" rowPadding="lg">
                     <span className="font-semibold block truncate" title={n.titulo}>
                       {n.titulo}
                     </span>
@@ -150,15 +204,15 @@ export default function NotificacionesPage() {
                       {n.mensaje}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell rowPadding="lg">
                     <Badge variant={n.leida ? 'success' : 'warning'} size="sm">
                       {n.leida ? 'Leída' : 'Nueva'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
+                  <TableCell className="text-xs whitespace-nowrap" rowPadding="lg">
                     {n.creadoEn ? new Date(n.creadoEn).toLocaleString('es-MX') : '—'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell rowPadding="lg">
                     <div className="flex flex-wrap gap-1">
                       {!n.leida && (
                         <Button size="sm" variant="outline" onClick={() => void marcarLeida(n)}>
@@ -175,11 +229,11 @@ export default function NotificacionesPage() {
             )}
           </Table>
         )}
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Nueva notificación (POST /api/notificaciones)
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Nueva notificación
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
@@ -220,7 +274,8 @@ export default function NotificacionesPage() {
             </Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }

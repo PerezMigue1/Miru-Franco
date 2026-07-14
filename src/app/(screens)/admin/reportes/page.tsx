@@ -1,49 +1,78 @@
 'use client';
 
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
+import { BarChart3, Scissors, UserPlus, ShoppingBag } from 'lucide-react';
+
 export default function ReportesPage() {
   return (
     <AdminLayout>
-      <PageHeader
-        title="Reportes"
-        subtitle="Genera reportes automáticos y personalizados sobre las operaciones del negocio"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Ventas del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>$45,000</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Servicios del Mes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>120</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Clientes Nuevos</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>25</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Productos Vendidos</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>85</p>
-          </div>
-        </Card>
-      </div>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Reportes
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            Genera reportes automáticos y personalizados sobre las operaciones del negocio
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BarChart3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas del Mes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>$45,000</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Scissors size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Servicios del Mes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>120</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <UserPlus size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Clientes Nuevos</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>25</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <ShoppingBag size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Productos Vendidos</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>85</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Generar Reporte
           </h2>
           <div className="space-y-4">
@@ -77,8 +106,8 @@ export default function ReportesPage() {
           </div>
         </Card>
 
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Reportes Recientes
           </h2>
           <div className="space-y-3">
@@ -105,6 +134,7 @@ export default function ReportesPage() {
             ))}
           </div>
         </Card>
+        </div>
       </div>
     </AdminLayout>
   );

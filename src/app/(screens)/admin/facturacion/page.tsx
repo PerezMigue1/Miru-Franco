@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { listarPedidos, listarFacturasPorPedido, PedidoApi, FacturaApi } from '../../../services/ecommerce';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { BadgeDollarSign, Clock3, Receipt } from 'lucide-react';
 
 interface FacturaFila {
   id: number;
@@ -57,35 +57,85 @@ export default function FacturacionPage() {
     cargar();
   }, []);
 
+  const pendientes = facturas.filter((f) => f.estado !== 'entregada').length;
+  const montoTotal = facturas.reduce((acc, f) => acc + (parseFloat(f.monto.replace(/[^0-9.]/g, '')) || 0), 0);
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Facturación"
-        subtitle="Gestiona notas de remisión y facturas electrónicas"
-        actions={
-          <Button>+ Nueva Nota/Factura</Button>
-        }
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
-        <Table headers={['Cliente', 'Concepto', 'Monto', 'Fecha', 'Tipo', 'Estado', 'Acciones']}>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Facturación
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              {facturas.length} documento{facturas.length === 1 ? '' : 's'} registrados
+            </p>
+          </div>
+          <Button>+ Nueva Nota/Factura</Button>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Receipt size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total documentos</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{facturas.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{pendientes}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Monto total</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${montoTotal.toLocaleString('es-MX')}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Cliente', 'Concepto', 'Monto', 'Fecha', 'Tipo', 'Estado', 'Acciones']} headerSutil>
           {facturas.map((factura) => (
             <TableRow key={factura.id}>
-              <TableCell className="font-semibold">{factura.cliente}</TableCell>
-              <TableCell>{factura.concepto}</TableCell>
-              <TableCell className="font-semibold">{factura.monto}</TableCell>
-              <TableCell>{factura.fecha}</TableCell>
-              <TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{factura.cliente}</TableCell>
+              <TableCell rowPadding="lg">{factura.concepto}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{factura.monto}</TableCell>
+              <TableCell rowPadding="lg">{factura.fecha}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={factura.tipo === 'Factura Electrónica' ? 'info' : 'default'}>
                   {factura.tipo}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={factura.estado === 'entregada' ? 'success' : 'warning'}>
                   {factura.estado}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">Ver</Button>
                   <Button size="sm">Descargar</Button>
@@ -94,11 +144,11 @@ export default function FacturacionPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Generar Nota/Factura
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Generar nota/factura
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Cliente" placeholder="Nombre del cliente" fullWidth />
@@ -124,7 +174,8 @@ export default function FacturacionPage() {
             <Button fullWidth>Generar Documento</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }

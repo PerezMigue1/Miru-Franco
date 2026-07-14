@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { listarPedidos, listarPagosPorPedido, PedidoApi, PagoApi } from '../../../services/ecommerce';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { BadgeDollarSign, Banknote, Clock3, CreditCard } from 'lucide-react';
 
 interface PagoFila {
   id: number;
@@ -65,70 +65,99 @@ export default function PagosPage() {
 
   return (
     <AdminLayout>
-      <PageHeader
-        title="Pagos"
-        subtitle="Registra y gestiona todos los pagos realizados por servicios, productos y anticipos"
-        actions={
+      <div className="w-full max-w-none space-y-8">
+
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Pagos
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              {pagos.length} pago{pagos.length === 1 ? '' : 's'} registrados
+            </p>
+          </div>
           <Button>+ Registrar Pago</Button>
-        }
-      />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Total del Día</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : `$${totalDia.toFixed(2)}`}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Efectivo</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Transferencias</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Anticipos Pendientes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>-</p>
-          </div>
-        </Card>
-      </div>
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total del día</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : `$${totalDia.toFixed(2)}`}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Banknote size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Efectivo</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CreditCard size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Transferencias</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Anticipos pendientes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning-texto)' }}>-</p>
+              </div>
+            </div>
+          </Card>
+        </div>
 
-      <Card>
-        <Table headers={['Cliente', 'Concepto', 'Monto', 'Método', 'Fecha', 'Tipo', 'Acciones']}>
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Cliente', 'Concepto', 'Monto', 'Método', 'Fecha', 'Tipo', 'Acciones']} headerSutil>
           {pagos.map((pago) => (
             <TableRow key={pago.id}>
-              <TableCell className="font-semibold">{pago.cliente}</TableCell>
-              <TableCell>{pago.concepto}</TableCell>
-              <TableCell className="font-semibold">{pago.monto}</TableCell>
-              <TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{pago.cliente}</TableCell>
+              <TableCell rowPadding="lg">{pago.concepto}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{pago.monto}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={pago.metodo === 'Efectivo' ? 'success' : 'info'}>
                   {pago.metodo}
                 </Badge>
               </TableCell>
-              <TableCell>{pago.fecha}</TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">{pago.fecha}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={pago.tipo === 'Completo' ? 'success' : 'warning'}>
                   {pago.tipo}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <Button size="sm" variant="outline">Ver Detalles</Button>
               </TableCell>
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Registrar Nuevo Pago
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Registrar nuevo pago
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Cliente" placeholder="Nombre del cliente" fullWidth />
@@ -155,7 +184,8 @@ export default function PagosPage() {
             <Button fullWidth>Registrar Pago</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }

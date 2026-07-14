@@ -12,6 +12,8 @@ interface TableProps {
    */
   headersLegibles?: boolean;
   stickyFirstColumn?: boolean;
+  /** true = header con fondo sutil (borde inferior) en vez del fondo oscuro sólido por defecto. */
+  headerSutil?: boolean;
 }
 
 export default function Table({
@@ -20,6 +22,7 @@ export default function Table({
   className = '',
   headersLegibles,
   stickyFirstColumn = false,
+  headerSutil = false,
 }: TableProps) {
   const legible = headersLegibles === true;
   return (
@@ -29,7 +32,13 @@ export default function Table({
     >
       <table className={`w-full ${className}`}>
         <thead>
-          <tr style={{ backgroundColor: 'var(--encabezados-alterno)' }}>
+          <tr
+            style={
+              headerSutil
+                ? { backgroundColor: 'transparent', borderBottom: '2px solid var(--fondos-suaves)' }
+                : { backgroundColor: 'var(--encabezados-alterno)' }
+            }
+          >
             {headers.map((header, index) => (
               <th
                 key={index}
@@ -37,7 +46,8 @@ export default function Table({
                   legible ? 'normal-case leading-snug' : 'uppercase tracking-wider'
                 }`}
                 style={{
-                  color: 'var(--texto-fondo-oscuro)',
+                  color: headerSutil ? 'var(--encabezados-alterno)' : 'var(--texto-fondo-oscuro)',
+                  backgroundColor: headerSutil ? 'var(--fondo-general)' : undefined,
                   ...(stickyFirstColumn && index === 0
                     ? { left: 0, zIndex: 12, boxShadow: '1px 0 0 var(--borde-sutil)' }
                     : {}),
@@ -96,13 +106,15 @@ interface TableCellProps {
   colSpan?: number;
   style?: React.CSSProperties;
   stickyLeft?: boolean;
+  /** 'lg' = más aire vertical (py-5) en vez del py-3 por defecto. */
+  rowPadding?: 'default' | 'lg';
 }
 
-export function TableCell({ children, className = '', colSpan, style, stickyLeft = false }: TableCellProps) {
+export function TableCell({ children, className = '', colSpan, style, stickyLeft = false, rowPadding = 'default' }: TableCellProps) {
   return (
     <td
       colSpan={colSpan}
-      className={`px-4 py-3 whitespace-nowrap text-sm ${className}`}
+      className={`px-4 whitespace-nowrap text-sm ${rowPadding === 'lg' ? 'py-5' : 'py-3'} ${className}`}
       style={{
         color: 'var(--menu-texto-principal)',
         ...(stickyLeft

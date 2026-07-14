@@ -182,21 +182,35 @@ export default function NuevoProductoAdminPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-          Nuevo producto
-        </h1>
-        <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
-          Completa los datos del producto. Los campos con * son obligatorios.
-        </p>
+      <div className="w-full max-w-none space-y-8">
+
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Nuevo Producto
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Completa los datos del producto. Los campos con * son obligatorios.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push('/admin/inventario')} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={handleCrear} disabled={saving}>
+              {saving ? 'Creando...' : 'Crear producto'}
+            </Button>
+          </div>
+        </div>
 
         {error && (
-          <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
-            <p className="text-sm font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
 
-        <Card padding="lg">
+        <Card variant="elevated" padding="lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <Input
               label="Nombre *"
@@ -345,7 +359,7 @@ export default function NuevoProductoAdminPage() {
             </div>
           </div>
           <div className="mb-6">
-            <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
               Presentación inicial
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -365,14 +379,6 @@ export default function NuevoProductoAdminPage() {
               onChange={setImagenesPresentacion}
               disabled={saving}
             />
-          </div>
-          <div className="flex gap-3">
-            <Button onClick={handleCrear} disabled={saving}>
-              {saving ? 'Creando...' : 'Crear producto'}
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/admin/inventario')} disabled={saving}>
-              Cancelar
-            </Button>
           </div>
         </Card>
       </div>

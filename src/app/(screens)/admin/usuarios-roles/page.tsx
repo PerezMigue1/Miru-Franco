@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
@@ -11,6 +10,7 @@ import Badge from '../../../components/ui/Badge';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
+import { CheckCircle2, PowerOff, UserCog, Users } from 'lucide-react';
 import {
   getUsuarios,
   getRoles,
@@ -63,11 +63,14 @@ export default function UsuariosRolesPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
 
-  const loadData = async (incluirInactivos: boolean, q?: string) => {
+  // Siempre trae activos + inactivos (incluirInactivos=true): los KPIs (Activos/Inactivos)
+  // necesitan el total real sin depender del toggle. El toggle solo filtra qué se MUESTRA
+  // en la tabla (usuariosVisibles, más abajo), igual que ya se corrigió en Servicios.
+  const loadData = async (q?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const [usuariosRes, rolesRes] = await Promise.all([getUsuarios(q || undefined, incluirInactivos), getRoles()]);
+      const [usuariosRes, rolesRes] = await Promise.all([getUsuarios(q || undefined, true), getRoles()]);
       setUsuarios(usuariosRes);
       setRoles(rolesRes);
       const profileRes = await authApi.getProfile().catch(() => null);
@@ -84,11 +87,11 @@ export default function UsuariosRolesPage() {
     }
   };
 
-  // Debounce solo cuando hay texto de búsqueda; el toggle de inactivos recarga al instante.
+  // Debounce solo cuando hay texto de búsqueda.
   useEffect(() => {
-    const t = setTimeout(() => { loadData(mostrarInactivos, busqueda); }, busqueda ? 300 : 0);
+    const t = setTimeout(() => { loadData(busqueda); }, busqueda ? 300 : 0);
     return () => clearTimeout(t);
-  }, [mostrarInactivos, busqueda]);
+  }, [busqueda]);
 
   const handleCambiarRol = async (usuario: Usuario, nuevoRol: string) => {
     setCambiandoRolId(usuario.id);
@@ -216,25 +219,93 @@ export default function UsuariosRolesPage() {
     .filter((u) => (mostrarInactivos ? !u.activo : u.activo))
     .filter((u) => rolFiltro === 'all' || rolValorParaSelect(u.rol) === rolFiltro);
 
+  const totalUsuarios = usuarios.length;
+  const usuariosActivos = usuarios.filter((u) => u.activo).length;
+  const usuariosInactivos = usuarios.filter((u) => !u.activo).length;
+  const totalClientes = usuarios.filter((u) => rolValorParaSelect(u.rol) === 'cliente').length;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Usuarios y Roles"
-        subtitle="Administra usuarios y promuévelos a estilista, empleado, becado o admin"
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Usuarios y Roles
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {totalUsuarios} usuario{totalUsuarios === 1 ? '' : 's'} registrados
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <Users size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total usuarios</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalUsuarios}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Activos</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{usuariosActivos}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          variant="elevated"
+          padding="lg"
+          style={usuariosInactivos > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: usuariosInactivos > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}
+            >
+              <PowerOff size={20} style={{ color: usuariosInactivos > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Inactivos</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: usuariosInactivos > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{usuariosInactivos}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <UserCog size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Clientes</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalClientes}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {successMessage && (
-        <p className="text-sm font-medium mb-4" style={{ color: 'var(--success)' }}>
+        <p className="text-sm font-medium mb-4" style={{ color: 'var(--success-texto)' }}>
           {successMessage}
         </p>
       )}
       {error && (
         <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
-          <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+          <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
         </Card>
       )}
 
-      <div className="flex flex-wrap items-center gap-4 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <Input
           placeholder="Buscar por nombre, email o teléfono..."
           value={busqueda}
@@ -247,7 +318,7 @@ export default function UsuariosRolesPage() {
           options={opcionesFiltroRol}
           className="w-full sm:w-48"
         />
-        <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+        <label className="flex items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
           <input
             type="checkbox"
             checked={mostrarInactivos}
@@ -270,13 +341,13 @@ export default function UsuariosRolesPage() {
           ) : (
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <div className="min-w-[600px] px-4 sm:px-0">
-                <Table headers={['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado', 'Acciones']}>
+                <Table headers={['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado', 'Acciones']} headerSutil>
                   {usuariosVisibles.map((usuario) => (
                     <TableRow key={usuario.id}>
-                      <TableCell className="font-semibold">{usuario.nombre}</TableCell>
-                      <TableCell className="text-sm">{usuario.email}</TableCell>
-                      <TableCell className="text-sm">{usuario.telefono || '—'}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-semibold" rowPadding="lg">{usuario.nombre}</TableCell>
+                      <TableCell className="text-sm" rowPadding="lg">{usuario.email}</TableCell>
+                      <TableCell className="text-sm" rowPadding="lg">{usuario.telefono || '—'}</TableCell>
+                      <TableCell rowPadding="lg">
                         <div className="flex flex-col gap-1">
                           <Badge variant={rolValorParaSelect(usuario.rol) === 'cliente' ? 'default' : 'info'} size="sm">
                             {rolLabel(usuario.rol)}
@@ -291,12 +362,12 @@ export default function UsuariosRolesPage() {
                           />
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell rowPadding="lg">
                         <Badge variant={usuario.activo ? 'success' : 'danger'}>
                           {usuario.activo ? 'Activo' : 'Inactivo'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell rowPadding="lg">
                         <div className="flex flex-wrap gap-1 sm:gap-2">
                           <Button size="sm" variant="outline" onClick={() => router.push(`/admin/usuarios-roles/${usuario.id}`)}>
                             Editar

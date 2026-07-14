@@ -1,7 +1,6 @@
 'use client';
 
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
@@ -11,17 +10,24 @@ import Select from '../../../components/ui/Select';
 export default function MarketingPage() {
   return (
     <AdminLayout>
-      <PageHeader
-        title="Marketing y Atracción de Clientes"
-        subtitle="Gestiona contenido visual, promociones y estrategias de marketing"
-        actions={
-          <Button>+ Nueva Publicación</Button>
-        }
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Marketing y Atracción de Clientes
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Gestiona contenido visual, promociones y estrategias de marketing
+            </p>
+          </div>
+          <Button>+ Nueva Publicación</Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Programar Publicación
           </h2>
           <div className="space-y-4">
@@ -42,8 +48,8 @@ export default function MarketingPage() {
           </div>
         </Card>
 
-        <Card>
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Crear Promoción
           </h2>
           <div className="space-y-4">
@@ -66,10 +72,10 @@ export default function MarketingPage() {
             <Button fullWidth>Crear Promoción</Button>
           </div>
         </Card>
-      </div>
+        </div>
 
-      <Card>
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Galería de Trabajos
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -88,7 +94,8 @@ export default function MarketingPage() {
         <div className="mt-4">
           <Button>+ Subir Más Trabajos</Button>
         </div>
-      </Card>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }

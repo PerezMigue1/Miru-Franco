@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { useEffect, useState, type ChangeEvent, type SyntheticEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '../../../../components/layouts/AdminLayout';
 import Card from '../../../../components/ui/Card';
@@ -11,7 +10,6 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import Modal from '../../../../components/ui/Modal';
-import { X } from 'lucide-react';
 import { getCategoryColor } from '../../../../utils/categoryColors';
 import {
   getServicioPorId,
@@ -20,7 +18,8 @@ import {
   type Servicio,
   type ServicioPayload,
 } from '../../../../services/servicios';
-import { IMG_SERVICIO_PLACEHOLDER } from '../../../../utils/serviceImagePlaceholder';
+import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
+import { PRESET_SERVICIOS } from '../../../../utils/cloudinary';
 
 const CATEGORIAS_OPCIONES = [
   { label: 'Alaciados y Alisados', value: 'Alaciados y Alisados' },
@@ -68,9 +67,8 @@ export default function ServicioDetalleAdminPage() {
   const [requiereEvaluacion, setRequiereEvaluacion] = useState(false);
   const [activo, setActivo] = useState(true);
 
-  // --- ESTADOS PARA IMÁGENES (galería, se conserva) ---
+  // --- ESTADO DE IMÁGENES (galería, se conserva) ---
   const [imagenes, setImagenes] = useState<string[]>([]);
-  const [nuevaImagenUrl, setNuevaImagenUrl] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -116,20 +114,6 @@ export default function ServicioDetalleAdminPage() {
   if (categoria && !CATEGORIAS_OPCIONES.some((c) => c.value === categoria)) {
     categoriaOptions.push({ value: categoria, label: categoria });
   }
-
-  const handleAgregarImagen = () => {
-    if (!nuevaImagenUrl.trim()) return;
-    if (imagenes.length >= 5) {
-      alert("Máximo 5 imágenes permitidas");
-      return;
-    }
-    setImagenes([...imagenes, nuevaImagenUrl.trim()]);
-    setNuevaImagenUrl('');
-  };
-
-  const handleQuitarImagen = (index: number) => {
-    setImagenes(imagenes.filter((_, i) => i !== index));
-  };
 
   const handleGuardar = async () => {
     if (!servicio) return;
@@ -182,7 +166,7 @@ export default function ServicioDetalleAdminPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="layout-page py-12">
+        <div className="w-full max-w-none py-12">
           <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando servicio...</p>
         </div>
       </AdminLayout>
@@ -192,8 +176,8 @@ export default function ServicioDetalleAdminPage() {
   if (error && !servicio) {
     return (
       <AdminLayout>
-        <div className="layout-page py-12">
-          <p className="mb-4" style={{ color: 'var(--danger)' }}>{error}</p>
+        <div className="w-full max-w-none py-12">
+          <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           <Button variant="outline" onClick={() => router.push('/admin/servicios')}>Volver a servicios</Button>
         </div>
       </AdminLayout>
@@ -204,35 +188,42 @@ export default function ServicioDetalleAdminPage() {
 
   return (
     <AdminLayout>
-      <div className="layout-page py-12">
-        <div className="max-w-4xl mx-auto">
-          {error && (
-            <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
-              <p className="text-sm font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
-            </Card>
-          )}
+      <div className="w-full max-w-none space-y-8">
 
-          <Card>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  {nombre || servicio.nombre}
-                </h1>
-                <Badge variant={getCategoryColor((categoria || servicio.categoria) ?? '')} size="lg">
-                  {categoria || servicio.categoria || 'Sin categoría'}
-                </Badge>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => router.push('/admin/servicios')} disabled={saving}>
-                  Cancelar
-                </Button>
-                <Button variant="primary" onClick={handleGuardar} disabled={saving}>
-                  {saving ? 'Guardando...' : 'Guardar cambios'}
-                </Button>
-                <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-                  Eliminar
-                </Button>
-              </div>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              {nombre || servicio.nombre}
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Editar servicio
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push('/admin/servicios')} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={handleGuardar} disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+            <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
+              Eliminar
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
+          <Card variant="elevated" padding="lg">
+            <div className="mb-4">
+              <Badge variant={getCategoryColor((categoria || servicio.categoria) ?? '')} size="lg">
+                {categoria || servicio.categoria || 'Sin categoría'}
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,57 +259,16 @@ export default function ServicioDetalleAdminPage() {
               {/* --- SECCIÓN DE GESTIÓN DE IMÁGENES (galería, se conserva) --- */}
               <div className="md:col-span-2 mt-4 border-t pt-4">
                 <label className="block text-sm font-bold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Galería de Imágenes (Máx. 5)
+                  Galería de Imágenes
                 </label>
-
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    placeholder="Pegar URL de la imagen..."
-                    value={nuevaImagenUrl}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setNuevaImagenUrl(e.target.value)}
-                    fullWidth
-                  />
-                  <Button variant="outline" onClick={handleAgregarImagen} disabled={imagenes.length >= 5}>
-                    Agregar
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                  {imagenes.map((img, index) => (
-                    <div key={index} className="relative aspect-square border rounded-md overflow-hidden bg-gray-50 group">
-                      <Image
-                        src={img}
-                        alt={`Servicio ${index}`}
-                        fill
-                        sizes="160px"
-                        className="object-cover"
-                        unoptimized
-                        onError={(e: SyntheticEvent<HTMLImageElement>) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = IMG_SERVICIO_PLACEHOLDER;
-                        }}
-                      />
-                      <button
-                        onClick={() => handleQuitarImagen(index)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        title="Quitar imagen"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Espacios vacíos sugeridos */}
-                  {Array.from({ length: 5 - imagenes.length }).map((_, i) => (
-                    <div key={`empty-${i}`} className="aspect-square border-2 border-dashed border-gray-200 rounded-md flex items-center justify-center text-gray-300 text-xs">
-                      Vacío
-                    </div>
-                  ))}
-                </div>
+                <EditorImagenesPresentacionCloudinary
+                  urls={imagenes}
+                  onChange={setImagenes}
+                  preset={PRESET_SERVICIOS}
+                />
               </div>
             </div>
           </Card>
-        </div>
       </div>
 
       <Modal

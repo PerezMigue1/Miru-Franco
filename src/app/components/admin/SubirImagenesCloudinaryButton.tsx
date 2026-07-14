@@ -27,15 +27,18 @@ type Props = {
   disabled?: boolean;
   /** Texto del botón cuando no está subiendo. */
   label?: string;
+  /** Upload preset a usar. Por defecto, el de productos (comportamiento histórico). */
+  preset?: string;
 };
 
 /**
- * Selector de archivos locales → subida unsigned a Cloudinary (preset productos).
+ * Selector de archivos locales → subida unsigned a Cloudinary (preset productos por defecto).
  */
 export function SubirImagenesCloudinaryButton({
   onUrlsAdded,
   disabled,
   label = 'Subir imágenes',
+  preset = PRESET_PRODUCTOS,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export function SubirImagenesCloudinaryButton({
       setError(null);
       setBusy(true);
       try {
-        const urls = await subirImagenesCloudinary(list, PRESET_PRODUCTOS || '');
+        const urls = await subirImagenesCloudinary(list, preset || '');
         onUrlsAdded(urls);
         if (urls.length) {
           showToast(`${urls.length} imagen(es) subida(s).`, 'success');

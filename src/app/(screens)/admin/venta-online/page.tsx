@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { CheckCircle2, Clock3, Package, Truck } from 'lucide-react';
 import {
   listarPedidos,
   actualizarPedido,
@@ -367,25 +368,73 @@ export default function VentaOnlinePage() {
 
   return (
     <AdminLayout>
-      <PageHeader
-        title="Venta de Productos en Línea"
-        subtitle="Módulo operativo conectado a pedidos, pagos y envíos"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      {error && (
-        <Card className="mb-6">
-          <p style={{ color: 'var(--danger)' }}>{error}</p>
-        </Card>
-      )}
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Venta Online
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {pedidos.length} pedido{pedidos.length === 1 ? '' : 's'} · conectado a pedidos, pagos y envíos
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card><div className="text-center"><p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p><p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{stats.pendiente}</p></div></Card>
-        <Card><div className="text-center"><p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Preparando</p><p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{stats.preparando}</p></div></Card>
-        <Card><div className="text-center"><p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Enviados</p><p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{stats.enviado}</p></div></Card>
-        <Card><div className="text-center"><p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Entregados</p><p className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{stats.entregado}</p></div></Card>
-      </div>
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.pendiente}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Package size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Preparando</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.preparando}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Truck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Enviados</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.enviado}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Entregados</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.entregado}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
 
-      <Card className="mb-6">
+        {error && (
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
+      <Card variant="elevated" padding="lg">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <Select
             label="Filtrar por cliente"
@@ -408,52 +457,37 @@ export default function VentaOnlinePage() {
         </div>
       </Card>
 
-      <Card className="mb-6">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr style={{ color: 'var(--encabezados-alterno)' }}>
-                <th className="text-left py-2">Pedido</th>
-                <th className="text-left py-2">Cliente</th>
-                <th className="text-left py-2">Total</th>
-                <th className="text-left py-2">Método</th>
-                <th className="text-left py-2">Estado</th>
-                <th className="text-left py-2">Fecha</th>
-                <th className="text-left py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pedidosFiltrados.map((p) => (
-                <tr key={p.id} className="border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                  <td className="py-2">#{p.id}</td>
-                  <td className="py-2">
-                    {usersMap.get(p.usuarioId ?? '')?.nombre ?? p.usuarioId ?? '—'}
-                  </td>
-                  <td className="py-2">{fmtMoneda(p.total, p.moneda)}</td>
-                  <td className="py-2">{p.metodoPago || '—'}</td>
-                  <td className="py-2">
-                    <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado)}</Badge>
-                  </td>
-                  <td className="py-2">{formatearFecha(p.creadoEn)}</td>
-                  <td className="py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setSelectedPedidoId(p.id)}>Editar</Button>
-                      <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'preparando')} disabled={saving}>Preparar</Button>
-                      <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'enviado')} disabled={saving}>Enviar</Button>
-                      <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'entregado')} disabled={saving}>Entregar</Button>
-                      <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'cancelado')} disabled={saving}>Cancelar</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <Card variant="elevated" padding="lg">
+        <Table headers={['Pedido', 'Cliente', 'Total', 'Método', 'Estado', 'Fecha', 'Acciones']} headerSutil>
+          {pedidosFiltrados.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell rowPadding="lg">#{p.id}</TableCell>
+              <TableCell rowPadding="lg">
+                {usersMap.get(p.usuarioId ?? '')?.nombre ?? p.usuarioId ?? '—'}
+              </TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{fmtMoneda(p.total, p.moneda)}</TableCell>
+              <TableCell rowPadding="lg">{p.metodoPago || '—'}</TableCell>
+              <TableCell rowPadding="lg">
+                <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado)}</Badge>
+              </TableCell>
+              <TableCell rowPadding="lg">{formatearFecha(p.creadoEn)}</TableCell>
+              <TableCell rowPadding="lg">
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setSelectedPedidoId(p.id)}>Editar</Button>
+                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'preparando')} disabled={saving}>Preparar</Button>
+                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'enviado')} disabled={saving}>Enviar</Button>
+                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'entregado')} disabled={saving}>Entregar</Button>
+                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'cancelado')} disabled={saving}>Cancelar</Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </Table>
       </Card>
 
       {selectedPedido && (
-        <Card className="mb-6">
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card variant="elevated" padding="lg">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Editar pedido #{selectedPedido.id}
           </h2>
           <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -497,8 +531,8 @@ export default function VentaOnlinePage() {
         </Card>
       )}
 
-      <Card>
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+      <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Nuevo pedido online (admin)
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -597,6 +631,7 @@ export default function VentaOnlinePage() {
           <Button onClick={() => void crearPedidoManualAdmin()} disabled={saving}>Registrar pedido</Button>
         </div>
       </Card>
+      </div>
     </AdminLayout>
   );
 }

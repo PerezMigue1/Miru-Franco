@@ -8,6 +8,7 @@ import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
+import Textarea from '../../../../components/ui/Textarea';
 import { getCategoryColor, getDescuentoColor } from '../../../../utils/categoryColors';
 import {
   getProductos,
@@ -476,7 +477,7 @@ export default function ProductoDetalleAdminPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="layout-page py-12" >
+        <div className="w-full max-w-none py-12">
           <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando producto...
           </p>
@@ -488,8 +489,8 @@ export default function ProductoDetalleAdminPage() {
   if (error || !producto) {
     return (
       <AdminLayout>
-        <div className="layout-page py-12" >
-          <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
+        <div className="w-full max-w-none py-12">
+          <p className="text-lead mb-4" style={{ color: 'var(--danger-texto)' }}>
             {error ?? 'Producto no encontrado'}
           </p>
         </div>
@@ -501,29 +502,35 @@ export default function ProductoDetalleAdminPage() {
 
   return (
     <AdminLayout>
-      <div className="layout-page py-12" >
-        <div className="w-full max-w-none">
-          <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              {successMessage && (
-                <span className="text-sm font-medium" style={{ color: 'var(--success)' }}>{successMessage}</span>
-              )}
-              <Button variant="primary" onClick={handleGuardar} disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </Button>
-              <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-                {deleting ? 'Eliminando...' : 'Eliminar'}
-              </Button>
-            </div>
+      <div className="w-full max-w-none space-y-8">
+
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              {nombre || 'Producto'}
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Editar producto
+            </p>
           </div>
+          <div className="flex items-center gap-3">
+            {successMessage && (
+              <span className="text-sm font-medium" style={{ color: 'var(--success-texto)' }}>{successMessage}</span>
+            )}
+            <Button variant="primary" onClick={handleGuardar} disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+            <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
+              {deleting ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </div>
+        </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <Card>
+              <Card variant="elevated" padding="lg">
                 <div className="mb-6">
-                  <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                    {nombre}
-                  </h1>
                   <Badge variant={getCategoryColor(limpiarTexto(categoria))} size="lg">
                     {limpiarTexto(categoria) || '—'}
                   </Badge>
@@ -654,26 +661,20 @@ export default function ProductoDetalleAdminPage() {
                   />
                 </div>
                 <div className="mt-4">
-                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Descripción larga
-                  </label>
-                  <textarea
-                    className="w-full rounded-md border px-3 py-2 text-sm min-h-[100px]"
+                  <Textarea
+                    label="Descripción larga"
                     value={descripcionLarga}
                     onChange={(e) => setDescripcionLarga(e.target.value)}
                     placeholder="Descripción detallada del producto..."
-                    style={{
-                      borderColor: 'var(--tarjetas-paneles)',
-                      backgroundColor: 'var(--fondos-suaves)',
-                      color: 'var(--menu-texto-principal)',
-                    }}
+                    rows={4}
+                    fullWidth
                   />
                 </div>
               </Card>
 
-              <Card>
+              <Card variant="elevated" padding="lg">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-subtitle" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                     Presentaciones (tamaños, precios y stock)
                   </h3>
                   <Button size="sm" variant="outline" onClick={agregarPresentacion}>
@@ -817,8 +818,8 @@ export default function ProductoDetalleAdminPage() {
             </div>
 
             <div className="space-y-6">
-              <Card>
-                <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Card variant="elevated" padding="lg">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Estado del Producto
                 </h3>
                 <div className="space-y-3">
@@ -875,7 +876,7 @@ export default function ProductoDetalleAdminPage() {
                   </div>
                   <div className="flex justify-between">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Stock total:</span>
-                    <span className="font-semibold" style={{ color: presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) <= 0 ? 'var(--danger)' : 'var(--success)' }}>
+                    <span className="font-semibold" style={{ color: presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) <= 0 ? 'var(--danger-texto)' : 'var(--success-texto)' }}>
                       {presentaciones.reduce((s, pr) => s + (parseInt(pr.stock || '0', 10) || 0), 0) > 0
                         ? <span className="inline-flex items-center gap-1"><Check size={14} /> OK</span>
                         : <span className="inline-flex items-center gap-1"><AlertTriangle size={14} /> Sin stock</span>}
@@ -884,68 +885,45 @@ export default function ProductoDetalleAdminPage() {
                 </div>
               </Card>
 
-              <Card>
-                <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Características (una por línea)
-                </h3>
-                <textarea
-                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
-                  value={caracteristicasText}
-                  onChange={(e) => setCaracteristicasText(e.target.value)}
-                  placeholder={'Ej: Sin parabenos\nVegano\n...'}
-                  style={{
-                    borderColor: 'var(--tarjetas-paneles)',
-                    backgroundColor: 'var(--fondos-suaves)',
-                    color: 'var(--menu-texto-principal)',
-                  }}
-                />
-                <h3 className="text-subtitle mt-4 mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Ingredientes
-                </h3>
-                <textarea
-                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
-                  value={ingredientes}
-                  onChange={(e) => setIngredientes(e.target.value)}
-                  placeholder="Lista o descripción de ingredientes..."
-                  style={{
-                    borderColor: 'var(--tarjetas-paneles)',
-                    backgroundColor: 'var(--fondos-suaves)',
-                    color: 'var(--menu-texto-principal)',
-                  }}
-                />
-                <h3 className="text-subtitle mt-4 mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Modo de uso
-                </h3>
-                <textarea
-                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
-                  value={modoUso}
-                  onChange={(e) => setModoUso(e.target.value)}
-                  placeholder="Instrucciones de uso del producto..."
-                  style={{
-                    borderColor: 'var(--tarjetas-paneles)',
-                    backgroundColor: 'var(--fondos-suaves)',
-                    color: 'var(--menu-texto-principal)',
-                  }}
-                />
-                <h3 className="text-subtitle mt-4 mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Resultado
-                </h3>
-                <textarea
-                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
-                  value={resultado}
-                  onChange={(e) => setResultado(e.target.value)}
-                  placeholder="Resultado o beneficios esperados..."
-                  style={{
-                    borderColor: 'var(--tarjetas-paneles)',
-                    backgroundColor: 'var(--fondos-suaves)',
-                    color: 'var(--menu-texto-principal)',
-                  }}
-                />
+              <Card variant="elevated" padding="lg">
+                <div className="space-y-4">
+                  <Textarea
+                    label="Características (una por línea)"
+                    value={caracteristicasText}
+                    onChange={(e) => setCaracteristicasText(e.target.value)}
+                    placeholder={'Ej: Sin parabenos\nVegano\n...'}
+                    rows={3}
+                    fullWidth
+                  />
+                  <Textarea
+                    label="Ingredientes"
+                    value={ingredientes}
+                    onChange={(e) => setIngredientes(e.target.value)}
+                    placeholder="Lista o descripción de ingredientes..."
+                    rows={3}
+                    fullWidth
+                  />
+                  <Textarea
+                    label="Modo de uso"
+                    value={modoUso}
+                    onChange={(e) => setModoUso(e.target.value)}
+                    placeholder="Instrucciones de uso del producto..."
+                    rows={3}
+                    fullWidth
+                  />
+                  <Textarea
+                    label="Resultado"
+                    value={resultado}
+                    onChange={(e) => setResultado(e.target.value)}
+                    placeholder="Resultado o beneficios esperados..."
+                    rows={3}
+                    fullWidth
+                  />
+                </div>
               </Card>
 
             </div>
           </div>
-        </div>
       </div>
 
       <Modal

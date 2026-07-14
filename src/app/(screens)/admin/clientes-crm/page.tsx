@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
+import { CheckCircle2, Filter, PowerOff, Users } from 'lucide-react';
 import {
   getUsuarios,
   patchUsuarioEstado,
@@ -36,11 +36,13 @@ export default function ClientesCRMPage() {
   const [clienteToDelete, setClienteToDelete] = useState<Usuario | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // incluirInactivos=true: igual que en Usuarios y Roles y Servicios, los KPIs (Activos/Inactivos)
+  // necesitan el total real. Antes solo se pedían activos y "Inactivos" siempre mostraba 0.
   const loadClientes = async () => {
     setLoading(true);
     setError(null);
     try {
-      const todos = await getUsuarios();
+      const todos = await getUsuarios(undefined, true);
       const soloClientes = todos.filter((u) => {
         const r = String(u.rol || '').toLowerCase();
         return r === 'cliente';
@@ -85,48 +87,112 @@ export default function ClientesCRMPage() {
     }
   };
 
+  const clientesActivos = clientes.filter((c) => c.activo).length;
+  const clientesInactivos = clientes.filter((c) => !c.activo).length;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Clientes (CRM)"
-        subtitle="Gestiona la información de las clientas"
-      />
+      <div className="mb-8">
+        <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+          Clientes CRM
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+          {clientes.length} cliente{clientes.length === 1 ? '' : 's'} registrados
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <Users size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total clientes</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{clientes.length}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Activos</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{clientesActivos}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          variant="elevated"
+          padding="lg"
+          style={clientesInactivos > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: clientesInactivos > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}
+            >
+              <PowerOff size={20} style={{ color: clientesInactivos > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Inactivos</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: clientesInactivos > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{clientesInactivos}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+              <Filter size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Filtrados</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{filtrados.length}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {error && (
         <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
-          <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+          <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
         </Card>
       )}
 
       <div className="mb-6">
         <Input
           placeholder="Buscar por nombre, teléfono o email..."
-          className="w-full"
+          className="w-full sm:w-64"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
       </div>
 
-      <Card>
+      <Card variant="elevated" padding="lg">
         {loading ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando clientes...
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <Table headers={['Cliente', 'Teléfono', 'Email', 'Estado', 'Última actividad', 'Acciones']}>
+            <Table headers={['Cliente', 'Teléfono', 'Email', 'Estado', 'Última actividad', 'Acciones']} headerSutil>
               {filtrados.map((cliente) => (
                 <TableRow key={cliente.id}>
-                  <TableCell className="font-semibold">{cliente.nombre}</TableCell>
-                  <TableCell>{cliente.telefono || '—'}</TableCell>
-                  <TableCell>{cliente.email}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-semibold" rowPadding="lg">{cliente.nombre}</TableCell>
+                  <TableCell rowPadding="lg">{cliente.telefono || '—'}</TableCell>
+                  <TableCell rowPadding="lg">{cliente.email}</TableCell>
+                  <TableCell rowPadding="lg">
                     <Badge variant={cliente.activo ? 'success' : 'danger'}>
                       {cliente.activo ? 'Activo' : 'Inactivo'}
                     </Badge>
                   </TableCell>
-                  <TableCell>{formatearFecha(cliente.ultimaActividad ?? cliente.creadoEn)}</TableCell>
-                  <TableCell>
+                  <TableCell rowPadding="lg">{formatearFecha(cliente.ultimaActividad ?? cliente.creadoEn)}</TableCell>
+                  <TableCell rowPadding="lg">
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
@@ -159,38 +225,6 @@ export default function ClientesCRMPage() {
             No hay clientes. Los usuarios con rol «Cliente» aparecerán aquí.
           </p>
         )}
-      </Card>
-
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Estadísticas
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-            <p className="text-2xl font-bold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
-              {clientes.length}
-            </p>
-            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Total Clientes</p>
-          </div>
-          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-            <p className="text-2xl font-bold mb-1" style={{ color: 'var(--success)' }}>
-              {clientes.filter((c) => c.activo).length}
-            </p>
-            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Activos</p>
-          </div>
-          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-            <p className="text-2xl font-bold mb-1" style={{ color: 'var(--danger)' }}>
-              {clientes.filter((c) => !c.activo).length}
-            </p>
-            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Inactivos</p>
-          </div>
-          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-            <p className="text-2xl font-bold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
-              {filtrados.length}
-            </p>
-            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Filtrados</p>
-          </div>
-        </div>
       </Card>
 
       <Modal

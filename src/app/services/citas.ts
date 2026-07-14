@@ -90,6 +90,8 @@ export interface ListarCitasParams {
   especialistaId?: string;
   page?: number;
   limit?: number;
+  /** Campo de orden. Por defecto 'fechaHoraInicio' (asc). */
+  orden?: 'fechaHoraInicio' | 'creadoEn';
 }
 
 export async function listarCitas(
@@ -100,6 +102,7 @@ export async function listarCitas(
   if (params?.hasta) sp.set('hasta', params.hasta);
   if (params?.estado) sp.set('estado', params.estado);
   if (params?.especialistaId) sp.set('especialistaId', params.especialistaId);
+  if (params?.orden) sp.set('orden', params.orden);
   sp.set('page', String(params?.page ?? 1));
   sp.set('limit', String(params?.limit ?? 50));
   const endpoint = `/api/citas?${sp.toString()}`;
@@ -112,16 +115,18 @@ export async function listarCitas(
   return { data, total: Number(res?.count ?? data.length) };
 }
 
-export async function listarCitasDelDia(fecha?: string): Promise<CitaApi[]> {
+export async function listarCitasDelDia(fecha?: string, especialistaId?: string): Promise<CitaApi[]> {
   const sp = new URLSearchParams();
   if (fecha) sp.set('fecha', fecha);
+  if (especialistaId) sp.set('especialistaId', especialistaId);
   const res = await apiClient.get<unknown>(`/api/citas/dia?${sp.toString()}`, { customBase: getBackendBaseUrl() });
   const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
   return (arr as unknown[]).map(normalizarCita).filter((c): c is CitaApi => Boolean(c));
 }
 
-export async function listarCalendario(desde: string, hasta: string): Promise<CitaApi[]> {
+export async function listarCalendario(desde: string, hasta: string, especialistaId?: string): Promise<CitaApi[]> {
   const sp = new URLSearchParams({ desde, hasta });
+  if (especialistaId) sp.set('especialistaId', especialistaId);
   const res = await apiClient.get<unknown>(`/api/citas/calendario?${sp.toString()}`, { customBase: getBackendBaseUrl() });
   const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
   return (arr as unknown[]).map(normalizarCita).filter((c): c is CitaApi => Boolean(c));

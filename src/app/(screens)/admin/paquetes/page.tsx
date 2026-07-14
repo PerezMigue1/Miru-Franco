@@ -5,14 +5,13 @@ import { useRouter } from 'next/navigation';
 import { getPaquetes, createPaquete, deletePaquete } from '../../../services/paquetes';
 
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import Textarea from '../../../components/ui/Textarea';
-import { House } from 'lucide-react';
+import { Gift } from 'lucide-react';
 
 type PaqueteRow = {
   id?: string | number;
@@ -127,60 +126,90 @@ export default function PaquetesPage() {
     }
   };
 
+  const preciosNumericos = paquetes
+    .map((p) => Number(p.precio_especial ?? p.precioEspecial))
+    .filter((n) => Number.isFinite(n));
+  const precioPromedio = preciosNumericos.length > 0
+    ? Math.round(preciosNumericos.reduce((acc, n) => acc + n, 0) / preciosNumericos.length)
+    : 0;
+
   return (
     <AdminLayout>
-      {/* Breadcrumbs de navegación */}
-      <div className="flex items-center gap-2 mb-6 text-sm">
-        <button onClick={() => router.push('/')} className="px-3 py-1.5 rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors"><House size={14} className="inline-block mr-1" />Inicio</button>
-        <span className="text-gray-600">›</span>
-        <button onClick={() => router.push('/admin')} className="px-3 py-1.5 rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Panel</button>
-        <span className="text-gray-600">›</span>
-        <button onClick={() => router.push('/admin/servicios')} className="px-3 py-1.5 rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Servicios</button>
-        <span className="text-gray-600">›</span>
-        <span className="px-4 py-1.5 rounded-full bg-[#4a0404] text-white font-bold border border-[#4a0404]">Paquetes</span>
-      </div>
+      <div className="w-full max-w-none space-y-8">
 
-      <PageHeader 
-        title="Paquetes Especiales" 
-        subtitle="Administra los combos de belleza"
-        actions={
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Paquetes Especiales
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              {paquetes.length} paquete{paquetes.length === 1 ? '' : 's'} en catálogo
+            </p>
+          </div>
           <div className="flex gap-2">
             <Button onClick={() => { setCrearError(null); setIsModalCrearOpen(true); }}>+ Nuevo paquete</Button>
             <Button variant="outline" onClick={() => router.push('/admin/servicios')}>Volver</Button>
           </div>
-        }
-      />
+        </div>
 
-      {loadError && (
-        <Card className="mb-4 border-amber-700/50 bg-amber-950/30">
-          <div className="p-4 text-amber-100 text-sm space-y-2">
-            <p className="font-semibold text-amber-50">No se pudieron cargar los paquetes</p>
-            <p className="text-amber-200/90 whitespace-pre-wrap">{loadError}</p>
-            <Button variant="outline" size="sm" onClick={() => cargarDatos()}>
-              Reintentar
-            </Button>
-          </div>
-        </Card>
-      )}
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Gift size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total paquetes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{paquetes.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Gift size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Precio promedio</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${precioPromedio.toLocaleString('es-MX')}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
 
-      <Card>
-        <Table headers={['Evento', 'Servicios', 'Precio', 'Acciones']}>
+        {loadError && (
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--warning)' }}>
+            <div className="text-sm space-y-2">
+              <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>No se pudieron cargar los paquetes</p>
+              <p className="whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{loadError}</p>
+              <Button variant="outline" size="sm" onClick={() => cargarDatos()}>
+                Reintentar
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Evento', 'Servicios', 'Precio', 'Acciones']} headerSutil>
           {!loading && paquetes.map((p) => {
             const currentId = getPaqueteId(p);
             if (!currentId) return null;
             return (
               <TableRow key={currentId}>
-                <TableCell className="font-bold text-white">{etiquetaTipoEvento(p)}</TableCell>
-                <TableCell className="text-gray-400 text-xs">
+                <TableCell className="font-bold" rowPadding="lg">{etiquetaTipoEvento(p)}</TableCell>
+                <TableCell className="text-xs" rowPadding="lg" style={{ color: 'var(--encabezados-alterno)' }}>
                   {listaServiciosVinculados(p).length ? listaServiciosVinculados(p).join(', ') : 'N/A'}
                 </TableCell>
-                <TableCell className="text-yellow-400 font-bold">${precioMostrar(p)}</TableCell>
-                <TableCell>
+                <TableCell className="font-bold" rowPadding="lg" style={{ color: 'var(--oro-texto)' }}>${precioMostrar(p)}</TableCell>
+                <TableCell rowPadding="lg">
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => router.push(`/admin/paquetes/${currentId}`)}>Ver</Button>
-                    <Button 
-                      variant="danger" 
-                      size="sm" 
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => {
                         setIdParaEliminar(currentId);
                         setShowDeleteModal(true);
@@ -194,11 +223,12 @@ export default function PaquetesPage() {
             );
           })}
         </Table>
-        {loading && <div className="p-10 text-center">Cargando paquetes...</div>}
+        {loading && <p className="p-10 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando paquetes...</p>}
         {!loading && !loadError && paquetes.length === 0 && (
-          <div className="p-10 text-center text-gray-500">No hay paquetes registrados.</div>
+          <p className="p-10 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay paquetes registrados.</p>
         )}
-      </Card>
+        </Card>
+      </div>
 
       {/* Modal: Nuevo Paquete */}
       <Modal
@@ -213,7 +243,7 @@ export default function PaquetesPage() {
           </>
         }
       >
-        {crearError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{crearError}</p>}
+        {crearError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{crearError}</p>}
         <div className="space-y-4">
           <Input label="Tipo de evento *" value={formTipoEvento} onChange={(e) => setFormTipoEvento(e.target.value)} placeholder="Ej. Quinceañera, Boda..." fullWidth />
           <Input label="Precio especial *" type="number" min={0} value={formPrecioEspecial} onChange={(e) => setFormPrecioEspecial(e.target.value)} placeholder="0.00" fullWidth />
@@ -228,8 +258,8 @@ export default function PaquetesPage() {
         onClose={() => setShowDeleteModal(false)}
         title="Confirmar eliminación"
       >
-        <div className="p-4 text-black">
-          <p className="mb-6 text-lg">¿Estás seguro de que deseas borrar este paquete? Esta acción es permanente.</p>
+        <div className="p-4">
+          <p className="mb-6 text-lg" style={{ color: 'var(--menu-texto-principal)' }}>¿Estás seguro de que deseas borrar este paquete? Esta acción es permanente.</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancelar</Button>
             <Button variant="danger" onClick={manejarEliminacion}>Sí, eliminar ahora</Button>

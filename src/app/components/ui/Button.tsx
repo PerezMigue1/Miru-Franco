@@ -48,13 +48,17 @@ export default function Button({
       hover: 'var(--hover)',
     },
     success: {
-      bg: 'var(--success)',
-      text: 'var(--texto-fondo-oscuro)',
+      // --success (#6E7D57) con texto claro no cumple AA (auditoría de contraste): fondo
+      // aclarado a --boton-acento-bg + texto oscuro --texto-sobre-acento sí cumple.
+      bg: 'var(--boton-acento-bg)',
+      text: 'var(--texto-sobre-acento)',
       hover: 'var(--hover)',
     },
     warning: {
+      // --warning (#D98E04) con texto claro fallaba AA (auditoría de contraste): texto
+      // oscuro --texto-sobre-acento sí cumple; el fondo no necesitó cambiar.
       bg: 'var(--warning)',
-      text: 'var(--texto-fondo-oscuro)',
+      text: 'var(--texto-sobre-acento)',
       hover: 'var(--hover)',
     },
     outline: {

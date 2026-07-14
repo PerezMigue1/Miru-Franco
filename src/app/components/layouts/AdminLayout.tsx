@@ -368,7 +368,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         style={{
                           backgroundColor: isActive ? 'var(--fondos-suaves)' : 'transparent',
                           borderLeft: isActive ? '3px solid var(--hover)' : '3px solid transparent',
-                          color: isActive ? 'var(--botones-principales)' : 'var(--menu-texto-principal)',
+                          color: isActive ? 'var(--texto-acento-dark)' : 'var(--menu-texto-principal)',
                         }}
                         onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fondos-suaves)'; }}
                         onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}

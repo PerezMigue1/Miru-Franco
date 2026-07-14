@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import PublicLayout from '../../../../components/layouts/PublicLayout';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
@@ -22,8 +22,8 @@ export default function GaleriaPage() {
   ];
 
   return (
-    <PublicLayout>
-      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
+    <ModuleLayout>
+      <div className="w-full max-w-none py-4">
         <div className="text-center mb-12">
           <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Galería de Trabajos
@@ -84,7 +84,7 @@ export default function GaleriaPage() {
           </Modal>
         )}
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
 

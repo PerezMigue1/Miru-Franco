@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
-import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
@@ -11,6 +10,7 @@ import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
+import { CalendarClock, CheckCircle2, Clock3, XCircle } from 'lucide-react';
 import {
   listarCitas,
   crearCita,
@@ -24,18 +24,6 @@ import {
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
 import { getServicios, Servicio } from '../../../../services/servicios';
-import { getRolFromUser } from '../../../../utils/adminAuth';
-
-/** Lee el usuario logueado desde localStorage: { id, rol }. */
-function sesionActual(): { id?: string; rol?: string } {
-  if (typeof window === 'undefined') return {};
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || '{}') as Record<string, unknown>;
-    return { id: typeof u.id === 'string' ? u.id : undefined, rol: getRolFromUser(u)?.toLowerCase() };
-  } catch {
-    return {};
-  }
-}
 
 const estados: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   confirmada: 'success',
@@ -73,6 +61,12 @@ export default function GestionCitasPage() {
   const [especialistas, setEspecialistas] = useState<EmpleadoApi[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
 
+  // Filtro: ver citas de todos los especialistas o solo de uno
+  const [filtroEspecialistaId, setFiltroEspecialistaId] = useState('');
+  // Filtro por fecha de la cita (rango)
+  const [filtroDesde, setFiltroDesde] = useState('');
+  const [filtroHasta, setFiltroHasta] = useState('');
+
   // Modal crear
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -97,20 +91,17 @@ export default function GestionCitasPage() {
   const cargar = useCallback(() => {
     setLoading(true);
     setError(null);
-    listarCitas({ limit: 100 })
-      .then(({ data }) => {
-        // Defensa en profundidad: estilista/becario solo ven SUS citas asignadas.
-        // (El backend ya aplica este scope; este filtro es redundante por seguridad.)
-        const { id, rol } = sesionActual();
-        const propias =
-          (rol === 'estilista' || rol === 'becario' || rol === 'becado') && id
-            ? data.filter((c) => c.especialistaId === id)
-            : data;
-        setCitas(propias);
-      })
+    listarCitas({
+      limit: 100,
+      especialistaId: filtroEspecialistaId || undefined,
+      desde: filtroDesde || undefined,
+      hasta: filtroHasta || undefined,
+      orden: 'creadoEn',
+    })
+      .then(({ data }) => setCitas(data))
       .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar las citas'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [filtroEspecialistaId, filtroDesde, filtroHasta]);
 
   useEffect(() => {
     cargar();
@@ -207,22 +198,108 @@ export default function GestionCitasPage() {
 
   const esFinal = (e: EstadoCita) => ['cancelada', 'completada', 'no_asistio'].includes(e);
 
+  const pendientes = citas.filter((c) => c.estado === 'pendiente' || c.estado === 'confirmada').length;
+  const enCurso = citas.filter((c) => c.estado === 'en_curso').length;
+  const canceladas = citas.filter((c) => c.estado === 'cancelada').length;
+
   return (
     <OperacionLayout>
-      <PageHeader
-        title="Gestión de Citas"
-        subtitle="Administra las citas del salón: agendar, confirmar, modificar o cancelar servicios"
-        actions={
-          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>+ Nueva Cita</Button>
-        }
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Gestión de Citas
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Administra las citas del salón: agendar, confirmar, modificar o cancelar servicios
+            </p>
+          </div>
+          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>+ Nueva Cita</Button>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes / confirmadas</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : pendientes}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En curso</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enCurso}</p>
+              </div>
+            </div>
+          </Card>
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <XCircle size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Canceladas</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : canceladas}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-4">
+          <div className="max-w-xs w-full sm:w-56">
+            <Select
+              label="Filtrar por especialista"
+              value={filtroEspecialistaId}
+              onChange={(e) => setFiltroEspecialistaId(e.target.value)}
+              options={[
+                { value: '', label: 'Todos los especialistas' },
+                ...especialistas.map((e) => ({ value: e.usuarioId, label: e.nombre ?? e.puesto ?? e.usuarioId })),
+              ]}
+              fullWidth
+            />
+          </div>
+          <Input
+            label="Desde"
+            type="date"
+            value={filtroDesde}
+            onChange={(e) => setFiltroDesde(e.target.value)}
+            className="w-full sm:w-40"
+          />
+          <Input
+            label="Hasta"
+            type="date"
+            value={filtroHasta}
+            onChange={(e) => setFiltroHasta(e.target.value)}
+            className="w-full sm:w-40"
+          />
+          {(filtroDesde || filtroHasta) && (
+            <div className="flex items-end">
+              <Button variant="outline" size="sm" onClick={() => { setFiltroDesde(''); setFiltroHasta(''); }}>
+                Limpiar fechas
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
         ) : error ? (
           <div className="text-center py-8">
-            <p className="mb-3" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="mb-3" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             <Button variant="outline" onClick={cargar}>Reintentar</Button>
           </div>
         ) : citas.length === 0 ? (
@@ -230,19 +307,19 @@ export default function GestionCitasPage() {
             No hay citas registradas.
           </p>
         ) : (
-          <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Acciones']}>
+          <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Acciones']} headerSutil>
             {citas.map((cita) => (
               <TableRow key={cita.id}>
-                <TableCell>{cita.clienteNombre ?? cita.clienteId}</TableCell>
-                <TableCell>{cita.especialistaNombre ?? cita.especialistaId}</TableCell>
-                <TableCell>{fmtFecha(cita.fechaHoraInicio)}</TableCell>
-                <TableCell>{fmtHora(cita.fechaHoraInicio)}</TableCell>
-                <TableCell>{fmtHora(cita.fechaHoraFin)}</TableCell>
-                <TableCell>{cita.servicioNombre ?? cita.servicioId}</TableCell>
-                <TableCell>
+                <TableCell rowPadding="lg">{cita.clienteNombre ?? cita.clienteId}</TableCell>
+                <TableCell rowPadding="lg">{cita.especialistaNombre ?? cita.especialistaId}</TableCell>
+                <TableCell rowPadding="lg">{fmtFecha(cita.fechaHoraInicio)}</TableCell>
+                <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraInicio)}</TableCell>
+                <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraFin)}</TableCell>
+                <TableCell rowPadding="lg">{cita.servicioNombre ?? cita.servicioId}</TableCell>
+                <TableCell rowPadding="lg">
                   <Badge variant={estados[cita.estado] || 'default'}>{cita.estado}</Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell rowPadding="lg">
                   <div className="flex gap-2 flex-wrap">
                     {(cita.estado === 'pendiente' || cita.estado === 'confirmada') && (
                       <Button size="sm" variant="primary" onClick={() => handleCheckIn(cita.id)}>Check-in</Button>
@@ -262,7 +339,8 @@ export default function GestionCitasPage() {
             ))}
           </Table>
         )}
-      </Card>
+        </Card>
+      </div>
 
       {/* Modal: Nueva Cita */}
       <Modal
@@ -277,7 +355,7 @@ export default function GestionCitasPage() {
           </>
         }
       >
-        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{formError}</p>}
+        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
         <div className="space-y-4">
           <Select
             label="Cliente *"
@@ -322,7 +400,7 @@ export default function GestionCitasPage() {
           </>
         }
       >
-        {reprogError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{reprogError}</p>}
+        {reprogError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{reprogError}</p>}
         <div className="space-y-4">
           <Input label="Nueva fecha *" type="date" value={rFecha} onChange={(e) => setRFecha(e.target.value)} fullWidth />
           <div className="grid grid-cols-2 gap-4">

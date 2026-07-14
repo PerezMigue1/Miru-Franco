@@ -5,13 +5,13 @@ import { listarPedidos, listarDevolucionesPedido, actualizarDevolucion, PedidoAp
 import Modal from '../../../components/ui/Modal';
 import Textarea from '../../../components/ui/Textarea';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { CheckCircle2, Clock3, RotateCcw } from 'lucide-react';
 
 interface DevolucionFila {
   id: number;
@@ -99,27 +99,81 @@ export default function DevolucionesCambiosPage() {
     finally { setSavingDev(false); }
   };
 
+  const pendientes = solicitudes.filter((s) => s.estado === 'pendiente').length;
+  const resueltas = solicitudes.length - pendientes;
+
   return (
     <AdminLayout>
-      <PageHeader
-        title="Devoluciones y Cambios de Productos"
-        subtitle="Gestiona cambios de productos (no se realizan reembolsos en efectivo)"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <Card>
-        <Table headers={['Cliente', 'Producto', 'Motivo', 'Fecha', 'Estado', 'Acciones']}>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Devoluciones y Cambios
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {solicitudes.length} solicitud{solicitudes.length === 1 ? '' : 'es'} · no se realizan reembolsos en efectivo
+          </p>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <RotateCcw size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total solicitudes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{solicitudes.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            variant="elevated"
+            padding="lg"
+            style={pendientes > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: pendientes > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: pendientes > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p>
+                <p className="text-3xl font-bold mt-0.5" style={{ color: pendientes > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{pendientes}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Resueltas</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{resueltas}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+        <Table headers={['Cliente', 'Producto', 'Motivo', 'Fecha', 'Estado', 'Acciones']} headerSutil>
           {solicitudes.map((solicitud) => (
             <TableRow key={solicitud.id}>
-              <TableCell className="font-semibold">{solicitud.cliente}</TableCell>
-              <TableCell>{solicitud.producto}</TableCell>
-              <TableCell>{solicitud.motivo}</TableCell>
-              <TableCell>{solicitud.fecha}</TableCell>
-              <TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{solicitud.cliente}</TableCell>
+              <TableCell rowPadding="lg">{solicitud.producto}</TableCell>
+              <TableCell rowPadding="lg">{solicitud.motivo}</TableCell>
+              <TableCell rowPadding="lg">{solicitud.fecha}</TableCell>
+              <TableCell rowPadding="lg">
                 <Badge variant={solicitud.estado === 'pendiente' ? 'warning' : 'success'}>
                   {solicitud.estado}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => openProcesar(solicitud.id)}>Ver Detalles</Button>
                   {solicitud.estado === 'pendiente' && (
@@ -130,11 +184,11 @@ export default function DevolucionesCambiosPage() {
             </TableRow>
           ))}
         </Table>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Nueva Solicitud de Cambio
+        <Card variant="elevated" padding="lg">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          Nueva solicitud de cambio
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Cliente" placeholder="Nombre del cliente" fullWidth />
@@ -154,7 +208,8 @@ export default function DevolucionesCambiosPage() {
             <Button fullWidth>Procesar Cambio</Button>
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
       {/* Modal: Procesar Cambio / Ver Detalles */}
       <Modal
         isOpen={isModalProcesarOpen}
@@ -168,7 +223,7 @@ export default function DevolucionesCambiosPage() {
           </>
         }
       >
-        {devError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{devError}</p>}
+        {devError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{devError}</p>}
         {devolucionProcesando && (
           <div className="space-y-4">
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>

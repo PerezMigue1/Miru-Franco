@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AdminLayout from '../../../../../components/layouts/AdminLayout';
-import PageHeader from '../../../../../components/ui/PageHeader';
 import Card from '../../../../../components/ui/Card';
 import Button from '../../../../../components/ui/Button';
 import Input from '../../../../../components/ui/Input';
@@ -94,10 +93,12 @@ export default function EditarClientePage() {
   if (loading) {
     return (
       <AdminLayout>
-        <PageHeader title="Editar cliente" subtitle="Cargando..." />
-        <Card>
-          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando cliente…</p>
-        </Card>
+        <div className="w-full max-w-none space-y-8">
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>Editar Cliente</h1>
+          <Card variant="elevated" padding="lg">
+            <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando cliente…</p>
+          </Card>
+        </div>
       </AdminLayout>
     );
   }
@@ -105,31 +106,49 @@ export default function EditarClientePage() {
   if (notFound) {
     return (
       <AdminLayout>
-        <PageHeader title="Editar cliente" subtitle="Cliente no encontrado" />
-        <Card>
-          <div className="text-center py-8">
-            <p className="mb-4" style={{ color: 'var(--danger)' }}>No se encontró el cliente solicitado.</p>
-            <Button variant="outline" onClick={() => router.push('/admin/clientes-crm')}>Volver a clientes</Button>
-          </div>
-        </Card>
+        <div className="w-full max-w-none space-y-8">
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>Editar Cliente</h1>
+          <Card variant="elevated" padding="lg">
+            <div className="text-center py-8">
+              <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>No se encontró el cliente solicitado.</p>
+              <Button variant="outline" onClick={() => router.push('/admin/clientes-crm')}>Volver a clientes</Button>
+            </div>
+          </Card>
+        </div>
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      <PageHeader title="Editar cliente" subtitle="Modifica los datos del cliente" />
+      <div className="w-full max-w-none space-y-8">
 
-      {error && (
-        <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded mb-4 text-xs font-bold shadow-md whitespace-pre-line">
-          {error}
+        {/* Encabezado */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              {nombre || 'Editar Cliente'}
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              Editar cliente
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push(`/admin/clientes-crm/${id}`)} disabled={saving}>Cancelar</Button>
+            <Button variant="primary" onClick={handleGuardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</Button>
+          </div>
         </div>
-      )}
 
-      <Card>
+        {error && (
+          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium whitespace-pre-line" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
+      <Card variant="elevated" padding="lg">
         <div className="space-y-6">
           <div>
-            <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Datos básicos</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Datos básicos</h3>
             <div className={gridForm}>
               <Input label="Nombre completo *" value={nombre} onChange={(e) => setNombre(e.target.value)} fullWidth />
               <div>
@@ -155,7 +174,7 @@ export default function EditarClientePage() {
           </div>
 
           <div>
-            <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar</h3>
             <div className={gridForm}>
               <Select
                 label="Tipo de cabello"
@@ -187,12 +206,9 @@ export default function EditarClientePage() {
             </label>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => router.push(`/admin/clientes-crm/${id}`)} disabled={saving}>Cancelar</Button>
-            <Button onClick={handleGuardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</Button>
-          </div>
         </div>
       </Card>
+      </div>
     </AdminLayout>
   );
 }

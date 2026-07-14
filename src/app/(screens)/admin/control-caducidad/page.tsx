@@ -6,11 +6,11 @@ import Input from '../../../components/ui/Input';
 import Textarea from '../../../components/ui/Textarea';
 import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
+import { CheckCircle2, Clock3, PackageX } from 'lucide-react';
 
 interface ProductoCaducidad {
   id: number;
@@ -90,58 +90,93 @@ export default function ControlCaducidadPage() {
 
   return (
     <AdminLayout>
-      <PageHeader
-        title="Control de Productos con Caducidad"
-        subtitle="Monitorea productos abiertos y próximos a caducar"
-      />
+      <div className="w-full max-w-none space-y-8">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Vigentes</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--success)' }}>{loading ? '…' : vigentes}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Próximos a Vencer</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--warning)' }}>{loading ? '…' : proximos}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Vencidos</p>
-            <p className="text-3xl font-bold" style={{ color: 'var(--danger)' }}>{loading ? '…' : vencidos}</p>
-          </div>
+        {/* Encabezado */}
+        <div>
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+            Control de Caducidad
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {productos.length} producto{productos.length === 1 ? '' : 's'} monitoreados
+          </p>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card variant="elevated" padding="lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Vigentes</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : vigentes}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            variant="elevated"
+            padding="lg"
+            style={proximos > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: proximos > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}>
+                <Clock3 size={20} style={{ color: proximos > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Próximos a vencer</p>
+                <p className="text-3xl font-bold mt-0.5" style={{ color: proximos > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{loading ? '…' : proximos}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            variant="elevated"
+            padding="lg"
+            style={vencidos > 0 ? { boxShadow: '0 0 0 1.5px var(--danger), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: vencidos > 0 ? 'rgba(113, 0, 20, 0.15)' : 'var(--fondos-suaves)' }}>
+                <PackageX size={22} style={{ color: vencidos > 0 ? 'var(--danger)' : 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Vencidos</p>
+                <p className="text-4xl font-bold mt-0.5" style={{ color: vencidos > 0 ? 'var(--danger-texto)' : 'var(--menu-texto-principal)' }}>{loading ? '…' : vencidos}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Listado */}
+        <Card variant="elevated" padding="lg">
+          <Table headers={['Producto', 'Fecha de Apertura', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']} headerSutil>
+            {productos.map((producto) => (
+              <TableRow key={producto.id}>
+                <TableCell className="font-semibold" rowPadding="lg">{producto.nombre}</TableCell>
+                <TableCell rowPadding="lg">{producto.fechaApertura}</TableCell>
+                <TableCell rowPadding="lg">{producto.fechaCaducidad}</TableCell>
+                <TableCell rowPadding="lg">
+                  <span style={{ color: producto.diasRestantes < 0 ? 'var(--danger-texto)' : producto.diasRestantes < 30 ? 'var(--warning-texto)' : 'var(--success-texto)' }}>
+                    {producto.diasRestantes > 0 ? `${producto.diasRestantes} días` : `Vencido hace ${Math.abs(producto.diasRestantes)} días`}
+                  </span>
+                </TableCell>
+                <TableCell rowPadding="lg">
+                  <Badge variant={estados[producto.estado as keyof typeof estados]?.variant || 'default'}>
+                    {estados[producto.estado as keyof typeof estados]?.label || producto.estado}
+                  </Badge>
+                </TableCell>
+                <TableCell rowPadding="lg">
+                  {producto.estado === 'vencido' && (
+                    <Button size="sm" variant="danger" onClick={() => openDescartar(producto)}>Descartar</Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
         </Card>
       </div>
-
-      <Card>
-        <Table headers={['Producto', 'Fecha de Apertura', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']}>
-          {productos.map((producto) => (
-            <TableRow key={producto.id}>
-              <TableCell className="font-semibold">{producto.nombre}</TableCell>
-              <TableCell>{producto.fechaApertura}</TableCell>
-              <TableCell>{producto.fechaCaducidad}</TableCell>
-              <TableCell>
-                <span style={{ color: producto.diasRestantes < 0 ? 'var(--danger)' : producto.diasRestantes < 30 ? 'var(--warning)' : 'var(--success)' }}>
-                  {producto.diasRestantes > 0 ? `${producto.diasRestantes} días` : `Vencido hace ${Math.abs(producto.diasRestantes)} días`}
-                </span>
-              </TableCell>
-              <TableCell>
-                <Badge variant={estados[producto.estado as keyof typeof estados]?.variant || 'default'}>
-                  {estados[producto.estado as keyof typeof estados]?.label || producto.estado}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {producto.estado === 'vencido' && (
-                  <Button size="sm" variant="danger" onClick={() => openDescartar(producto)}>Descartar</Button>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </Table>
-      </Card>
       {/* Modal: Confirmar Descartar */}
       <Modal
         isOpen={isModalDescartarOpen}
@@ -155,7 +190,7 @@ export default function ControlCaducidadPage() {
           </>
         }
       >
-        {descartarError && <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>{descartarError}</p>}
+        {descartarError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{descartarError}</p>}
         <p className="mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar salida de <strong>{productoDescartando?.nombre}</strong> por producto vencido.
         </p>

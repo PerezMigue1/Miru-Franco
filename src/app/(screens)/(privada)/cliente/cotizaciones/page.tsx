@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import PublicLayout from '../../../../components/layouts/PublicLayout';
+import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -25,9 +25,8 @@ export default function CotizacionesPage() {
   ];
 
   return (
-    <PublicLayout>
-      <div className="layout-page py-12" style={{ marginTop: '136px' }}>
-        <div className="w-full max-w-none">
+    <ModuleLayout>
+      <div className="w-full max-w-none py-4">
           <div className="text-center mb-12">
             <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
               Cotizaciones para Eventos Especiales
@@ -142,9 +141,8 @@ export default function CotizacionesPage() {
               </div>
             </Card>
           )}
-        </div>
       </div>
-    </PublicLayout>
+    </ModuleLayout>
   );
 }
 

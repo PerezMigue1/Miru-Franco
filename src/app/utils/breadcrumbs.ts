@@ -40,8 +40,6 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'clientes-crm': { label: 'Clientes (CRM)', href: '/admin/clientes-crm' },
       proveedores: { label: 'Proveedores', href: '/admin/proveedores' },
       'usuarios-roles': { label: 'Usuarios y roles', href: '/admin/usuarios-roles' },
-      'gestion-citas': { label: 'Gestión de citas', href: '/admin/gestion-citas' },
-      'agenda-calendario': { label: 'Agenda', href: '/admin/agenda-calendario' },
       'venta-local': { label: 'Venta local', href: '/admin/venta-local' },
       'venta-online': { label: 'Venta online', href: '/admin/venta-online' },
       facturacion: { label: 'Facturación', href: '/admin/facturacion' },
@@ -55,9 +53,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'cotizaciones-eventos': { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos' },
       'devoluciones-cambios': { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios' },
       'entregas-envios': { label: 'Entregas y envíos', href: '/admin/entregas-envios' },
-      'ejecucion-servicios': { label: 'Ejecución de servicios', href: '/admin/ejecucion-servicios' },
-      'atencion-sin-cita': { label: 'Atención sin cita', href: '/admin/atencion-sin-cita' },
-      'seguimiento-post-servicio': { label: 'Seguimiento post servicio', href: '/admin/seguimiento-post-servicio' },
+      'cola-atencion': { label: 'Cola de atención', href: '/admin/cola-atencion' },
       'quejas-garantias': { label: 'Quejas y garantías', href: '/admin/quejas-garantias' },
       'base-datos': { label: 'Base de datos', href: '/admin/base-datos' },
     };
@@ -173,9 +169,6 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     }
     return perfil;
   }
-
-  // Subir imágenes
-  if (first === 'subir-imagenes') return [...base, { label: 'Subir imágenes' }];
 
   return [...base, { label: segments[segments.length - 1] || pathname }];
 }
