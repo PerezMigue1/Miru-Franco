@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarCitas, checkOutCita, registrarMateriales, CitaApi } from '../../../../services/citas';
+import { listarCitas, checkInCita, checkOutCita, registrarMateriales, CitaApi } from '../../../../services/citas';
 import { getProductosSinRedirigir } from '../../../../services/productos';
+import { getServicios, Servicio } from '../../../../services/servicios';
 import Modal from '../../../../components/ui/Modal';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
@@ -21,6 +22,7 @@ interface ServicioFila {
   especialista: string;
   inicio: string;
   fin: string;
+  duracionMinutos: number | null;
   estado: string;
   productos: string[];
 }
@@ -28,6 +30,12 @@ interface ServicioFila {
 function mapearCita(c: CitaApi): ServicioFila {
   const inicio = c.fechaHoraInicio ? new Date(c.fechaHoraInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-';
   const fin = c.fechaHoraFin ? new Date(c.fechaHoraFin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
+  const inicioDate = c.fechaHoraInicio ? new Date(c.fechaHoraInicio) : null;
+  const finDate = c.fechaHoraFin ? new Date(c.fechaHoraFin) : null;
+  const duracionMinutos =
+    inicioDate && finDate && !isNaN(inicioDate.getTime()) && !isNaN(finDate.getTime())
+      ? Math.max(0, Math.round((finDate.getTime() - inicioDate.getTime()) / 60000))
+      : null;
   const estadoMap: Record<string, string> = {
     pendiente: 'pendiente',
     confirmada: 'pendiente',
@@ -41,9 +49,23 @@ function mapearCita(c: CitaApi): ServicioFila {
     especialista: c.especialistaNombre ?? '-',
     inicio,
     fin,
+    duracionMinutos,
     estado: estadoMap[c.estado] ?? c.estado,
     productos: [],
   };
+}
+
+/**
+ * Rango [inicio, fin] del día de hoy en hora local, como datetimes ISO completos.
+ * El backend interpreta 'YYYY-MM-DD' como medianoche UTC, así que desde=hasta='YYYY-MM-DD'
+ * produce una ventana de ancho cero que excluye casi todas las citas reales del día — por eso
+ * se envían límites de día completo (00:00:00.000 a 23:59:59.999 locales) ya convertidos a ISO.
+ */
+function rangoHoyISO(): { desde: string; hasta: string } {
+  const d = new Date();
+  const inicio = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  const fin = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+  return { desde: inicio.toISOString(), hasta: fin.toISOString() };
 }
 
 interface PresentacionOpcion {
@@ -53,7 +75,12 @@ interface PresentacionOpcion {
 
 export default function EjecucionServiciosPage() {
   const [servicios, setServicios] = useState<ServicioFila[]>([]);
+  const [citasHoy, setCitasHoy] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [catalogoServicios, setCatalogoServicios] = useState<Servicio[]>([]);
+  const [catalogoError, setCatalogoError] = useState(false);
 
   // Modal materiales
   const [isModalMaterialesOpen, setIsModalMaterialesOpen] = useState(false);
@@ -94,17 +121,48 @@ export default function EjecucionServiciosPage() {
 
   const cargar = () => {
     setLoading(true);
-    listarCitas({ estado: 'en_curso' })
-      .then(({ data }) => setServicios(data.map(mapearCita)))
-      .catch(() => {})
+    const { desde, hasta } = rangoHoyISO();
+    Promise.allSettled([
+      // En proceso: sin filtrar por fecha (un servicio puede seguir en_curso de un día anterior).
+      listarCitas({ estado: 'en_curso' }),
+      // Todas las citas de hoy (sin filtrar por estado), para pendientes/completados y sus KPIs.
+      listarCitas({ desde, hasta, limit: 200 }),
+    ])
+      .then(([enCursoRes, hoyRes]) => {
+        const enCurso = enCursoRes.status === 'fulfilled' ? enCursoRes.value.data : [];
+        const hoy = hoyRes.status === 'fulfilled' ? hoyRes.value.data : [];
+        setCitasHoy(hoy);
+        const pendientesHoy = hoy.filter((c) => c.estado === 'pendiente' || c.estado === 'confirmada');
+        const idsEnCurso = new Set(enCurso.map((c) => c.id));
+        const combinadas = [...enCurso, ...pendientesHoy.filter((c) => !idsEnCurso.has(c.id))]
+          .sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio));
+        setServicios(combinadas.map(mapearCita));
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { cargar(); }, []);
 
+  useEffect(() => {
+    getServicios()
+      .then(({ data }) => setCatalogoServicios(data))
+      .catch(() => setCatalogoError(true));
+  }, []);
+
+  const handleCheckIn = async (id: number) => {
+    setSavingId(id);
+    setError(null);
+    try { await checkInCita(id); cargar(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'No se pudo iniciar el servicio'); }
+    finally { setSavingId(null); }
+  };
+
   const handleCheckOut = async (id: number) => {
-    await checkOutCita(id);
-    cargar();
+    setSavingId(id);
+    setError(null);
+    try { await checkOutCita(id); cargar(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'No se pudo finalizar el servicio'); }
+    finally { setSavingId(null); }
   };
 
   const estados = {
@@ -113,8 +171,9 @@ export default function EjecucionServiciosPage() {
     completado: { label: 'Completado', variant: 'success' as const },
   };
 
-  const pendientes = servicios.filter((s) => s.estado === 'pendiente').length;
+  const pendientes = citasHoy.filter((c) => c.estado === 'pendiente' || c.estado === 'confirmada').length;
   const enProceso = servicios.filter((s) => s.estado === 'en_proceso').length;
+  const completadosHoy = citasHoy.filter((c) => c.estado === 'completada').length;
 
   return (
     <OperacionLayout>
@@ -126,9 +185,15 @@ export default function EjecucionServiciosPage() {
             Ejecución de Servicios
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            {servicios.length} servicio{servicios.length === 1 ? '' : 's'} en curso
+            {enProceso} servicio{enProceso === 1 ? '' : 's'} en curso
           </p>
         </div>
+
+        {error && (
+          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -161,7 +226,7 @@ export default function EjecucionServiciosPage() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>-</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : completadosHoy}</p>
               </div>
             </div>
           </Card>
@@ -178,7 +243,7 @@ export default function EjecucionServiciosPage() {
               <TableCell rowPadding="lg">{servicio.inicio}</TableCell>
               <TableCell rowPadding="lg">{servicio.fin || '-'}</TableCell>
               <TableCell rowPadding="lg">
-                {servicio.fin ? `${servicio.inicio} - ${servicio.fin}` : 'En curso'}
+                {servicio.duracionMinutos != null ? `${servicio.duracionMinutos} min` : '-'}
               </TableCell>
               <TableCell rowPadding="lg">
                 {servicio.productos.length > 0 ? (
@@ -198,13 +263,16 @@ export default function EjecucionServiciosPage() {
               </TableCell>
               <TableCell rowPadding="lg">
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={servicio.estado === 'en_proceso' ? () => handleCheckOut(servicio.id) : undefined}
-                  >
-                    {servicio.estado === 'pendiente' ? 'Iniciar' : servicio.estado === 'en_proceso' ? 'Finalizar' : 'Ver Detalles'}
-                  </Button>
+                  {servicio.estado === 'pendiente' && (
+                    <Button size="sm" variant="primary" onClick={() => handleCheckIn(servicio.id)} disabled={savingId === servicio.id}>
+                      {savingId === servicio.id ? 'Iniciando...' : 'Iniciar'}
+                    </Button>
+                  )}
+                  {servicio.estado === 'en_proceso' && (
+                    <Button size="sm" variant="primary" onClick={() => handleCheckOut(servicio.id)} disabled={savingId === servicio.id}>
+                      {savingId === servicio.id ? 'Finalizando...' : 'Finalizar'}
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => openMateriales(servicio.id)}>
                     + Materiales
                   </Button>
@@ -223,11 +291,14 @@ export default function EjecucionServiciosPage() {
           <Input label="Cliente" placeholder="Buscar cliente..." fullWidth />
           <Select
             label="Tipo de Servicio"
-            options={[
-              { value: 'corte', label: 'Corte' },
-              { value: 'alaciado', label: 'Alaciado' },
-              { value: 'nanoplastia', label: 'Nanoplastía' },
-            ]}
+            options={
+              catalogoError
+                ? [{ value: '', label: 'No se pudo cargar el catálogo de servicios' }]
+                : [
+                    { value: '', label: 'Selecciona un servicio…' },
+                    ...catalogoServicios.map((s) => ({ value: String(s.id), label: s.nombre })),
+                  ]
+            }
             fullWidth
           />
           <Input label="Productos Utilizados" placeholder="Separar por comas" fullWidth />

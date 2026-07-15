@@ -24,16 +24,7 @@ import {
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
 import { getServicios, Servicio } from '../../../../services/servicios';
-
-const estados: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
-  confirmada: 'success',
-  pendiente: 'warning',
-  en_curso: 'info',
-  completada: 'info',
-  reprogramada: 'warning',
-  cancelada: 'danger',
-  no_asistio: 'danger',
-};
+import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
 
 /** Combina fecha (YYYY-MM-DD) + hora (HH:mm) en un ISO string. */
 function combinar(fecha: string, hora: string): string {
@@ -265,7 +256,7 @@ export default function GestionCitasPage() {
               onChange={(e) => setFiltroEspecialistaId(e.target.value)}
               options={[
                 { value: '', label: 'Todos los especialistas' },
-                ...especialistas.map((e) => ({ value: e.usuarioId, label: e.nombre ?? e.puesto ?? e.usuarioId })),
+                ...especialistas.map((e) => ({ value: e.usuarioId, label: e.nombre ?? e.puesto ?? 'Especialista sin nombre' })),
               ]}
               fullWidth
             />
@@ -310,14 +301,14 @@ export default function GestionCitasPage() {
           <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Acciones']} headerSutil>
             {citas.map((cita) => (
               <TableRow key={cita.id}>
-                <TableCell rowPadding="lg">{cita.clienteNombre ?? cita.clienteId}</TableCell>
-                <TableCell rowPadding="lg">{cita.especialistaNombre ?? cita.especialistaId}</TableCell>
+                <TableCell rowPadding="lg">{cita.clienteNombre ?? 'Cliente sin nombre'}</TableCell>
+                <TableCell rowPadding="lg">{cita.especialistaNombre ?? 'Especialista sin nombre'}</TableCell>
                 <TableCell rowPadding="lg">{fmtFecha(cita.fechaHoraInicio)}</TableCell>
                 <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraInicio)}</TableCell>
                 <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraFin)}</TableCell>
-                <TableCell rowPadding="lg">{cita.servicioNombre ?? cita.servicioId}</TableCell>
+                <TableCell rowPadding="lg">{cita.servicioNombre ?? 'Servicio'}</TableCell>
                 <TableCell rowPadding="lg">
-                  <Badge variant={estados[cita.estado] || 'default'}>{cita.estado}</Badge>
+                  <Badge variant={varianteEstadoCita(cita.estado)}>{etiquetaEstadoCita(cita.estado)}</Badge>
                 </TableCell>
                 <TableCell rowPadding="lg">
                   <div className="flex gap-2 flex-wrap">
@@ -368,7 +359,7 @@ export default function GestionCitasPage() {
             label="Especialista *"
             value={fEspecialistaId}
             onChange={(e) => setFEspecialistaId(e.target.value)}
-            options={[{ value: '', label: 'Seleccionar especialista…' }, ...especialistas.map((e) => ({ value: e.usuarioId, label: e.nombre ?? e.puesto ?? e.usuarioId }))]}
+            options={[{ value: '', label: 'Seleccionar especialista…' }, ...especialistas.map((e) => ({ value: e.usuarioId, label: e.nombre ?? e.puesto ?? 'Especialista sin nombre' }))]}
             fullWidth
           />
           <Select

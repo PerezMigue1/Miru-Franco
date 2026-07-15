@@ -54,7 +54,8 @@ function normalizarQueja(x: unknown): QuejaApi | null {
     descripcion: s(r.descripcion),
     estado,
     usuarioId: s(r.usuarioId ?? r.usuario_id) || null,
-    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre) || null,
+    // El backend anida el nombre del cliente en usuario; usarlo como respaldo (mismo patrón que citas.ts).
+    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre ?? (r.usuario as Record<string, unknown>)?.nombre) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
     actualizadoEn: s(r.actualizadoEn ?? r.actualizado_en) || undefined,
   };

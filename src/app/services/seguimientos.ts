@@ -49,7 +49,8 @@ function normalizarSeguimiento(x: unknown): SeguimientoApi | null {
   return {
     id: Number(n(r.id, 0) ?? 0),
     usuarioId: s(r.usuarioId ?? r.usuario_id),
-    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre) || null,
+    // El backend anida el nombre del cliente en usuario; usarlo como respaldo (mismo patrón que citas.ts).
+    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre ?? (r.usuario as Record<string, unknown>)?.nombre) || null,
     citaId: n(r.citaId ?? r.cita_id),
     notas: s(r.notas),
     fechaContacto: s(r.fechaContacto ?? r.fecha_contacto),

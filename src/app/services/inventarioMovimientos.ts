@@ -73,7 +73,8 @@ function normalizarMovimiento(x: unknown): InventarioMovimientoApi | null {
     productoNombre: s(r.productoNombre) || null,
     tamanio: s(r.tamanio) || null,
     usuarioId: s(r.usuarioId) || null,
-    usuarioNombre: s(r.usuarioNombre) || null,
+    // listarMovimientosInventario manda usuarioNombre plano (SQL); obtenerKardex lo anida en usuario.nombre.
+    usuarioNombre: s(r.usuarioNombre) || s((r.usuario as Record<string, unknown> | undefined)?.nombre) || null,
   };
 }
 

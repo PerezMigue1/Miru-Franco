@@ -53,8 +53,9 @@ function normalizarEmpleado(x: unknown): EmpleadoApi | null {
   return {
     id: s(r.id),
     usuarioId: s(r.usuarioId ?? r.usuario_id),
-    nombre: s(r.nombre) || null,
-    email: s(r.email) || null,
+    // El backend anida nombre/email en usuario; usarlo como respaldo (mismo patrón que citas.ts).
+    nombre: s(r.nombre ?? (r.usuario as Record<string, unknown>)?.nombre) || null,
+    email: s(r.email ?? (r.usuario as Record<string, unknown>)?.email) || null,
     puesto: s(r.puesto) || null,
     especialidades,
     telefono: s(r.telefono) || null,

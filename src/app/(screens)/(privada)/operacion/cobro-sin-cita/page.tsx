@@ -13,6 +13,7 @@ import { BadgeDollarSign, ShoppingBag } from 'lucide-react';
 import { listarVentas, crearVenta, VentaLocalApi } from '../../../../services/pos';
 import { getServicios, Servicio } from '../../../../services/servicios';
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
+import { etiquetaEstadoVenta, varianteEstadoVenta } from '../../../../utils/estados';
 
 function precioNum(p?: string): number {
   return Number(String(p ?? '').replace(/[^0-9.]/g, '')) || 0;
@@ -157,8 +158,8 @@ export default function CobroSinCitaPage() {
                 <TableCell rowPadding="lg">{v.metodoPago}</TableCell>
                 <TableCell rowPadding="lg">{fmtMoneda(v.total)}</TableCell>
                 <TableCell rowPadding="lg">
-                  <Badge variant={v.estado === 'pagada' ? 'success' : v.estado === 'cancelada' ? 'danger' : 'warning'}>
-                    {v.estado}
+                  <Badge variant={varianteEstadoVenta(v.estado)}>
+                    {etiquetaEstadoVenta(v.estado)}
                   </Badge>
                 </TableCell>
               </TableRow>

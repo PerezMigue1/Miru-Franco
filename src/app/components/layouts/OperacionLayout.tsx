@@ -21,6 +21,7 @@ import {
   Menu,
   Receipt,
   Scissors,
+  Users,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -35,6 +36,7 @@ const BAR_HEIGHT = 56;
 const NAV_ITEMS: { label: string; href: string; icon: LucideIcon }[] = [
   { label: 'Panel de operación', href: '/operacion', icon: LayoutDashboard },
   { label: 'Ejecución de servicios', href: '/operacion/ejecucion-servicios', icon: Scissors },
+  { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
   { label: 'Cobro sin cita', href: '/operacion/cobro-sin-cita', icon: Receipt },
   { label: 'Agenda / Calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
   { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock },

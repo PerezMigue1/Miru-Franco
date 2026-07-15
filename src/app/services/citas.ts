@@ -25,6 +25,7 @@ export interface CitaApi {
   estado: EstadoCita;
   notas?: string | null;
   motivoCancelacion?: string | null;
+  horaCheckIn?: string | null;
   creadoEn?: string;
 }
 
@@ -79,6 +80,7 @@ function normalizarCita(x: unknown): CitaApi | null {
     estado,
     notas: s(r.notas) || null,
     motivoCancelacion: s(r.motivoCancelacion ?? r.motivo_cancelacion) || null,
+    horaCheckIn: s(r.horaCheckIn ?? r.hora_check_in) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
   };
 }

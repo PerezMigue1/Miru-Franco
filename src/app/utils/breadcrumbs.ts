@@ -53,7 +53,6 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'cotizaciones-eventos': { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos' },
       'devoluciones-cambios': { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios' },
       'entregas-envios': { label: 'Entregas y envíos', href: '/admin/entregas-envios' },
-      'cola-atencion': { label: 'Cola de atención', href: '/admin/cola-atencion' },
       'quejas-garantias': { label: 'Quejas y garantías', href: '/admin/quejas-garantias' },
       'base-datos': { label: 'Base de datos', href: '/admin/base-datos' },
     };

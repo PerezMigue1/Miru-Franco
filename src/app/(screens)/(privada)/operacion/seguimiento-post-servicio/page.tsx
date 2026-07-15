@@ -175,7 +175,7 @@ export default function SeguimientoPostServicioPage() {
             <Table headers={['Cliente', 'Fecha contacto', 'Satisfacción', '¿Requiere acción?', 'Notas']} headerSutil>
               {seguimientos.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="font-semibold" rowPadding="lg">{s.clienteNombre ?? s.usuarioId}</TableCell>
+                  <TableCell className="font-semibold" rowPadding="lg">{s.clienteNombre ?? 'Cliente sin nombre'}</TableCell>
                   <TableCell rowPadding="lg">{fmt(s.fechaContacto)}</TableCell>
                   <TableCell rowPadding="lg">{s.satisfaccion != null ? `${s.satisfaccion}/5` : '-'}</TableCell>
                   <TableCell rowPadding="lg">
