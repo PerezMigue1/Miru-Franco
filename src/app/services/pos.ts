@@ -135,7 +135,9 @@ export async function listarVentas(
   sp.set('page', String(params?.page ?? 1));
   sp.set('limit', String(params?.limit ?? 50));
   const endpoint = `/api/pos/ventas?${sp.toString()}`;
-  const res = await apiClient.get<ListadoVentasResp>(endpoint, { customBase: getBackendBaseUrl() });
+  // skip403Redirect: estilista/becario no tienen permiso de POS y deben ver el error en la página,
+  // no ser redirigidos globalmente a /403 (mismo patrón que auth.ts/usuarios.ts).
+  const res = await apiClient.get<ListadoVentasResp>(endpoint, { customBase: getBackendBaseUrl(), skip403Redirect: true });
   const data = Array.isArray(res?.data)
     ? res.data.map(normalizarVenta).filter((v): v is VentaLocalApi => Boolean(v))
     : Array.isArray(res)
@@ -151,7 +153,9 @@ export async function obtenerVenta(id: number): Promise<VentaLocalApi | null> {
 }
 
 export async function crearVenta(payload: CrearVentaPayload): Promise<VentaLocalApi> {
-  const res = await apiClient.post<unknown>('/api/pos/ventas', payload, getBackendBaseUrl());
+  // skip403Redirect: mismo motivo que listarVentas — un rol sin permiso de POS debe ver
+  // el error en el propio formulario, no ser redirigido globalmente a /403.
+  const res = await apiClient.post<unknown>('/api/pos/ventas', payload, { customBase: getBackendBaseUrl(), skip403Redirect: true });
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const venta = normalizarVenta(obj);
   if (!venta) throw new Error('No se pudo crear la venta');
@@ -221,7 +225,9 @@ export async function resumenVentas(desde?: string, hasta?: string): Promise<Res
   if (desde) sp.set('desde', desde);
   if (hasta) sp.set('hasta', hasta);
   const endpoint = `/api/pos/resumen?${sp.toString()}`;
-  const res = await apiClient.get<unknown>(endpoint, { customBase: getBackendBaseUrl() });
+  // skip403Redirect: estilista/becario no tienen permiso de POS; el dashboard de operación
+  // ya maneja este rechazo con Promise.allSettled y muestra "No disponible para tu rol".
+  const res = await apiClient.get<unknown>(endpoint, { customBase: getBackendBaseUrl(), skip403Redirect: true });
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const r = (obj && typeof obj === 'object' ? obj : {}) as Record<string, unknown>;
   const metodo = (r.porMetodo && typeof r.porMetodo === 'object' ? r.porMetodo : {}) as Record<string, unknown>;

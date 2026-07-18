@@ -85,7 +85,7 @@ export default function SeguimientoPostServicioPage() {
   const bienEvaluados = seguimientos.filter((s) => (s.satisfaccion ?? 0) >= 4).length;
 
   return (
-    <OperacionLayout>
+    <OperacionLayout permisoRequerido="seguimientos:lectura">
       <div className="w-full max-w-none space-y-8">
 
         {/* Encabezado */}

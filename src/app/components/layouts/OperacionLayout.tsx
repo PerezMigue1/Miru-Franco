@@ -9,6 +9,7 @@ import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmace
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
 import { STAFF_ROLES, getRolFromUser } from '../../utils/adminAuth';
+import { usePermisos, getPermisosFromUser, evaluarPermiso } from '../../utils/permisos';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 import {
   CalendarClock,
@@ -28,19 +29,30 @@ import {
 
 interface OperacionLayoutProps {
   children: ReactNode;
+  /**
+   * Clave de `permisos_rol` que exige esta página (defensa en profundidad: bloquea el
+   * acceso directo por URL además de que el enlace ya esté oculto en el sidebar).
+   * Sin esta prop, el layout se comporta exactamente igual que antes de esta fase.
+   */
+  permisoRequerido?: string;
 }
 
 const BAR_HEIGHT = 56;
 
-/** Navegación del panel de operación — misma lista de destinos del hub. */
-const NAV_ITEMS: { label: string; href: string; icon: LucideIcon }[] = [
+/**
+ * Navegación del panel de operación — misma lista de destinos del hub.
+ * `permiso` es la clave que exige la página protegida; sin `permiso` = enlace neutral
+ * (citas/agenda no tienen clave propia en esta fase — todo el staff con acceso a
+ * operación ya puede operar citas), siempre visible.
+ */
+const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: string }[] = [
   { label: 'Panel de operación', href: '/operacion', icon: LayoutDashboard },
   { label: 'Ejecución de servicios', href: '/operacion/ejecucion-servicios', icon: Scissors },
   { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
-  { label: 'Cobro sin cita', href: '/operacion/cobro-sin-cita', icon: Receipt },
+  { label: 'Cobro sin cita', href: '/operacion/cobro-sin-cita', icon: Receipt, permiso: 'ventas:escritura' },
   { label: 'Agenda / Calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
   { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock },
-  { label: 'Seguimiento', href: '/operacion/seguimiento-post-servicio', icon: ClipboardCheck },
+  { label: 'Seguimiento', href: '/operacion/seguimiento-post-servicio', icon: ClipboardCheck, permiso: 'seguimientos:lectura' },
   { label: 'Subir imágenes', href: '/operacion/subir-imagenes', icon: ImagePlus },
 ];
 
@@ -55,13 +67,14 @@ function isRolOperacion(rol: string | undefined): boolean {
   return STAFF_ROLES.includes(rol.toLowerCase().trim());
 }
 
-export default function OperacionLayout({ children }: OperacionLayoutProps) {
+export default function OperacionLayout({ children, permisoRequerido }: OperacionLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [verificando, setVerificando] = useState(true);
   const [accesoPermitido, setAccesoPermitido] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [colapsado, setColapsado] = useState(false);
+  const { tienePermiso } = usePermisos();
 
   useEffect(() => {
     const token = getToken();
@@ -71,13 +84,12 @@ export default function OperacionLayout({ children }: OperacionLayoutProps) {
       return;
     }
 
-    const checkRolAndAllow = (rol: string | undefined) => {
-      if (isRolOperacion(rol)) {
-        setAccesoPermitido(true);
-        setVerificando(false);
-        return true;
-      }
-      return false;
+    // Rol válido para operación Y (si la página lo exige) permiso concedido. Sin
+    // `permisoRequerido`, es exactamente el chequeo de rol de siempre.
+    const rolYPermisoOk = (rol: string | undefined, permisos: string[]): boolean => {
+      if (!isRolOperacion(rol)) return false;
+      if (permisoRequerido && !evaluarPermiso(permisos, permisoRequerido)) return false;
+      return true;
     };
 
     const userJson = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
@@ -85,7 +97,14 @@ export default function OperacionLayout({ children }: OperacionLayoutProps) {
       try {
         const user = JSON.parse(userJson) as Record<string, unknown>;
         const rolStorage = getRolFromUser(user);
-        if (checkRolAndAllow(rolStorage)) return;
+        if (rolYPermisoOk(rolStorage, getPermisosFromUser(user))) {
+          setAccesoPermitido(true);
+          setVerificando(false);
+          return;
+        }
+        // Rol o permiso insuficiente según la caché: puede estar desactualizada
+        // (ej. `permisos` no existía antes de esta fase) — no bloquear todavía,
+        // confirmar contra el backend antes de decidir.
       } catch {
         // seguir a backend
       }
@@ -98,8 +117,10 @@ export default function OperacionLayout({ children }: OperacionLayoutProps) {
           router.replace('/403');
           return;
         }
-        const rolBackend = res.data?.rol ?? getRolFromUser(res.data as unknown as Record<string, unknown>);
-        if (checkRolAndAllow(rolBackend)) {
+        const dataRecord = res.data as unknown as Record<string, unknown> | undefined;
+        const rolBackend = res.data?.rol ?? getRolFromUser(dataRecord);
+        const permisosBackend = getPermisosFromUser(dataRecord);
+        if (rolYPermisoOk(rolBackend, permisosBackend)) {
           if (res.data && typeof window !== 'undefined' && userJson) {
             const current = JSON.parse(userJson) as Record<string, unknown>;
             localStorage.setItem(
@@ -115,6 +136,8 @@ export default function OperacionLayout({ children }: OperacionLayoutProps) {
             );
             emitMiruUserStorageUpdated();
           }
+          setAccesoPermitido(true);
+          setVerificando(false);
           return;
         }
         router.replace('/403');
@@ -122,7 +145,7 @@ export default function OperacionLayout({ children }: OperacionLayoutProps) {
       .catch(() => {
         router.replace(`/login?returnUrl=${encodeURIComponent(pathname || '/operacion')}`);
       });
-  }, [pathname, router]);
+  }, [pathname, router, permisoRequerido]);
 
   // Cierra sidebar al navegar
   useEffect(() => {
@@ -262,7 +285,7 @@ export default function OperacionLayout({ children }: OperacionLayoutProps) {
           </div>
 
           <nav className="p-3 flex-1 overflow-y-auto scrollbar-hide">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => tienePermiso(item.permiso)).map((item) => {
               const isActive = esActivo(pathname, item.href);
               return (
                 <Link key={item.href} href={item.href} title={colapsado ? item.label : undefined}>

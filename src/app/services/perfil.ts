@@ -50,6 +50,8 @@ export interface PerfilUsuarioCompleto {
   telefono?: string | null;
   fechaNacimiento?: string | null;
   rol?: string;
+  /** Claves de `permisos_rol` para el rol del usuario (ANY match; `'*'` = admin, pasa todo). */
+  permisos?: string[];
   foto?: string | null;
   tipoCabello?: TipoCabelloValor | null;
   colorNatural?: string | null;
@@ -158,6 +160,7 @@ export function normalizarPerfilUsuario(raw: Record<string, unknown>): PerfilUsu
     telefono: raw.telefono != null ? String(raw.telefono) : null,
     fechaNacimiento,
     rol: pickStr(raw, 'rol', 'role'),
+    permisos: Array.isArray(raw.permisos) ? raw.permisos.map(String) : undefined,
     foto: (() => {
       const r = pickStr(
         raw,

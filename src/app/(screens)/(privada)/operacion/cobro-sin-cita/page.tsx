@@ -93,7 +93,7 @@ export default function CobroSinCitaPage() {
   const totalCobrado = ventas.reduce((s, v) => s + (Number(v.total) || 0), 0);
 
   return (
-    <OperacionLayout>
+    <OperacionLayout permisoRequerido="ventas:escritura">
       <div className="w-full max-w-none space-y-8">
 
         {/* Encabezado */}

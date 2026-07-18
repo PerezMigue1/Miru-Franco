@@ -14,7 +14,7 @@ const ETIQUETAS_ESTADO_CITA: Record<string, string> = {
   reprogramada: 'Reprogramada',
   no_asistio: 'No asistió',
 };
-
+                                                                                                                    
 const VARIANTE_ESTADO_CITA: Record<string, BadgeVariant> = {
   pendiente: 'warning',
   confirmada: 'success',

@@ -9,6 +9,7 @@ import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmace
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
 import { isAdminRol, getRolFromUser, rutaPorRol } from '../../utils/adminAuth';
+import { usePermisos } from '../../utils/permisos';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 import ThemeToggle from '../ui/ThemeToggle';
 import {
@@ -55,20 +56,21 @@ function iniciales(nombre: string): string {
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
-const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; icon: LucideIcon }[] }[] = [
+/** `permiso` es la clave que exige la página protegida; sin `permiso` = enlace neutral, siempre visible. */
+const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; icon: LucideIcon; permiso?: string }[] }[] = [
   {
     titulo: 'Ventas e inventario',
     items: [
-      { label: 'Inventario', href: '/admin/inventario', icon: Package },
+      { label: 'Inventario', href: '/admin/inventario', icon: Package, permiso: 'inventario:lectura' },
       { label: 'Venta local', href: '/admin/venta-local', icon: Store },
       { label: 'Venta online', href: '/admin/venta-online', icon: ShoppingCart },
-      { label: 'Servicios', href: '/admin/servicios', icon: Scissors },
+      { label: 'Servicios', href: '/admin/servicios', icon: Scissors, permiso: 'servicios:lectura' },
     ],
   },
   {
     titulo: 'Clientes',
     items: [
-      { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: Users },
+      { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: Users, permiso: 'clientes:lectura' },
     ],
   },
   {
@@ -99,7 +101,7 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     titulo: 'Marketing y personal',
     items: [
       { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
-      { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: User },
+      { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: User, permiso: 'empleados:lectura' },
     ],
   },
   {
@@ -122,6 +124,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [colapsado, setColapsado] = useState(false);
   const [perfilUsuario, setPerfilUsuario] = useState<PerfilBasico | null>(null);
   const [fotoRota, setFotoRota] = useState(false);
+  const { tienePermiso } = usePermisos();
 
   useEffect(() => {
     const token = getToken();
@@ -351,7 +354,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           <nav className="p-3 flex-1 overflow-y-auto scrollbar-hide">
-            {GRUPOS_MODULOS.map((grupo, gi) => (
+            {GRUPOS_MODULOS.map((grupo, gi) => {
+              const itemsVisibles = grupo.items.filter((item) => tienePermiso(item.permiso));
+              if (itemsVisibles.length === 0) return null;
+              return (
               <div key={grupo.titulo} className={gi > 0 ? 'mt-4 pt-4 border-t' : ''} style={{ borderColor: 'var(--fondos-suaves)' }}>
                 <p
                   className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-1.5 ${colapsado ? 'lg:hidden' : ''}`}
@@ -359,7 +365,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   {grupo.titulo}
                 </p>
-                {grupo.items.map((item) => {
+                {itemsVisibles.map((item) => {
                   const isActive = pathname?.startsWith(item.href);
                   return (
                     <Link key={item.href} href={item.href} title={colapsado ? item.label : undefined}>
@@ -388,7 +394,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
           </nav>
 
           {/* Cuenta del admin logueado: fija al fondo, fuera del scroll del menú */}

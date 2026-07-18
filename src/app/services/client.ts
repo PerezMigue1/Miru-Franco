@@ -432,21 +432,23 @@ class ApiClient {
   /** GET con base opcional. Puedes pasar `{ customBase, skipAuth: true }` para rutas públicas. */
   async get<T>(
     endpoint: string,
-    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean; skip500Redirect?: boolean }
+    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean; skip500Redirect?: boolean; skip403Redirect?: boolean }
   ): Promise<T> {
     let customBase: string | undefined;
     let skipAuth = false;
     let skip500Redirect = false;
+    let skip403Redirect = false;
     if (typeof customBaseOrOptions === 'string') {
       customBase = customBaseOrOptions;
     } else if (customBaseOrOptions && typeof customBaseOrOptions === 'object') {
       customBase = customBaseOrOptions.customBase;
       skipAuth = Boolean(customBaseOrOptions.skipAuth);
       skip500Redirect = Boolean(customBaseOrOptions.skip500Redirect);
+      skip403Redirect = Boolean(customBaseOrOptions.skip403Redirect);
     }
     const url = customBase ? `${customBase}${endpoint}` : undefined;
     console.log(`[API Client] GET - endpoint: ${endpoint}, customBase: ${customBase}, constructed url: ${url}`);
-    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect });
+    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect, skip403Redirect });
   }
 
   private resolveCustomBaseOpts(opts?: ApiClientCustomBase): { url?: string; skip500Redirect: boolean; skip403Redirect: boolean; skip401Redirect: boolean } {
