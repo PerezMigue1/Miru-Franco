@@ -3,7 +3,7 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 
-export type EstadoVentaLocal = 'abierta' | 'pagada' | 'cancelada';
+export type EstadoVentaLocal = 'pendiente' | 'pagada' | 'cancelada';
 
 export interface VentaLocalItemApi {
   presentacionId?: number | null;
@@ -82,10 +82,12 @@ function normalizarVenta(x: unknown): VentaLocalApi | null {
   if (!x || typeof x !== 'object') return null;
   const r = x as Record<string, unknown>;
   const estadoRaw = s(r.estado).toLowerCase();
-  const estadosValidos: EstadoVentaLocal[] = ['abierta', 'pagada', 'cancelada'];
+  // 'pendiente' es el default real del backend (schema.prisma: EstadoVentaLocal @default(pendiente)),
+  // nunca se inventa un estado que el backend no pueda enviar.
+  const estadosValidos: EstadoVentaLocal[] = ['pendiente', 'pagada', 'cancelada'];
   const estado: EstadoVentaLocal = estadosValidos.includes(estadoRaw as EstadoVentaLocal)
     ? (estadoRaw as EstadoVentaLocal)
-    : 'abierta';
+    : 'pendiente';
   const items = Array.isArray(r.items) ? (r.items as unknown[]).map(normalizarItem) : [];
   return {
     id: Number(n(r.id, 0) ?? 0),

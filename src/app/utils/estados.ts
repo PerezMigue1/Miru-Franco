@@ -28,20 +28,15 @@ const VARIANTE_ESTADO_CITA: Record<string, BadgeVariant> = {
 /**
  * Etiquetas en español para `EstadoVentaLocal` (backend, prisma/schema.prisma):
  * pendiente | pagada | cancelada.
- * 'abierta' se incluye también: el normalizador de `services/pos.ts` la usa como valor
- * por defecto (bug de contrato preexistente, no corregido aquí), así que puede llegar
- * a la UI aunque no exista en el enum real del backend.
  */
 const ETIQUETAS_ESTADO_VENTA: Record<string, string> = {
   pendiente: 'Pendiente',
-  abierta: 'Abierta',
   pagada: 'Pagada',
   cancelada: 'Cancelada',
 };
 
 const VARIANTE_ESTADO_VENTA: Record<string, BadgeVariant> = {
   pendiente: 'warning',
-  abierta: 'warning',
   pagada: 'success',
   cancelada: 'danger',
 };
