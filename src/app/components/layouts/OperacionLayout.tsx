@@ -67,6 +67,25 @@ function isRolOperacion(rol: string | undefined): boolean {
   return STAFF_ROLES.includes(rol.toLowerCase().trim());
 }
 
+/**
+ * Repuebla `localStorage.user` con `permisos` (y el resto del perfil) sin bloquear el
+ * render — el acceso ya se concedió con el rol/permiso cacheado. Una vez guardado,
+ * emite el evento que `usePermisos()` escucha para que el sidebar se re-filtre solo.
+ */
+function refrescarPermisosEnSegundoPlano(userJsonActual: string | null) {
+  api.getProfile().then((res) => {
+    if (!res.success || !res.data || typeof window === 'undefined') return;
+    const current = userJsonActual ? (JSON.parse(userJsonActual) as Record<string, unknown>) : {};
+    localStorage.setItem(
+      'user',
+      JSON.stringify(normalizarUsuarioAlmacenado({ ...current, ...res.data }))
+    );
+    emitMiruUserStorageUpdated();
+  }).catch(() => {
+    // Sin conexión o backend caído: el sidebar se queda con lo que había, sin bloquear nada.
+  });
+}
+
 export default function OperacionLayout({ children, permisoRequerido }: OperacionLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -100,6 +119,12 @@ export default function OperacionLayout({ children, permisoRequerido }: Operacio
         if (rolYPermisoOk(rolStorage, getPermisosFromUser(user))) {
           setAccesoPermitido(true);
           setVerificando(false);
+          // Sesión cacheada sin `permisos` (previa a esta fase): refresca en segundo
+          // plano para que el sidebar filtrado por permiso no esconda enlaces con
+          // datos obsoletos, sin bloquear el acceso ya concedido por rol.
+          if (!Array.isArray(user.permisos)) {
+            refrescarPermisosEnSegundoPlano(userJson);
+          }
           return;
         }
         // Rol o permiso insuficiente según la caché: puede estar desactualizada

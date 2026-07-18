@@ -1,30 +1,120 @@
 'use client';
 
+import { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
-import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { BadgeDollarSign, Clock3, ShoppingCart } from 'lucide-react';
+import Modal from '../../../components/ui/Modal';
+import { BadgeDollarSign, ShoppingCart, Trash2 } from 'lucide-react';
+import { listarProveedores, ProveedorApi } from '../../../services/proveedores';
+import { getProductosSinRedirigir } from '../../../services/productos';
+import { listarCompras, crearCompra, CompraApi, CrearCompraItemPayload } from '../../../services/compras';
+
+interface PresentacionOpcion {
+  id: number;
+  label: string;
+}
+
+interface LineaCompra extends CrearCompraItemPayload {
+  label: string;
+}
+
+function fmtFecha(iso?: string): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-MX');
+}
+
+function fmtMoneda(v: number): string {
+  return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function ComprasProveedoresPage() {
-  const proveedores = [
-    { id: 1, nombre: 'Floractiv', contacto: '555-1001', productos: 'Nanoplastía', ultimaCompra: '2024-01-10' },
-    { id: 2, nombre: 'Avina', contacto: '555-1002', productos: 'Cabello y Tratamientos', ultimaCompra: '2024-01-08' },
-    { id: 3, nombre: 'Tech Italy', contacto: '555-1003', productos: 'Productos Profesionales', ultimaCompra: '2024-01-12' },
-    { id: 4, nombre: 'Alfaparf', contacto: '555-1004', productos: 'Productos Profesionales', ultimaCompra: '2024-01-05' },
-  ];
+  const [proveedores, setProveedores] = useState<ProveedorApi[]>([]);
+  const [compras, setCompras] = useState<CompraApi[]>([]);
+  const [presentaciones, setPresentaciones] = useState<PresentacionOpcion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const compras = [
-    { id: 1, proveedor: 'Avina', fecha: '2024-01-08', productos: 12, total: '$8,500', estado: 'recibida' },
-    { id: 2, proveedor: 'Tech Italy', fecha: '2024-01-12', productos: 8, total: '$6,200', estado: 'pendiente' },
-    { id: 3, proveedor: 'Floractiv', fecha: '2024-01-10', productos: 5, total: '$4,800', estado: 'recibida' },
-  ];
+  const [formProveedorId, setFormProveedorId] = useState('');
+  const [formPresentacionId, setFormPresentacionId] = useState('');
+  const [formCantidad, setFormCantidad] = useState('1');
+  const [formCosto, setFormCosto] = useState('');
+  const [lineas, setLineas] = useState<LineaCompra[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const pendientes = compras.filter((c) => c.estado === 'pendiente').length;
-  const montoTotal = compras.reduce((acc, c) => acc + (parseFloat(c.total.replace(/[^0-9.]/g, '')) || 0), 0);
+  const [detalleCompra, setDetalleCompra] = useState<CompraApi | null>(null);
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    Promise.allSettled([listarProveedores(), listarCompras(), getProductosSinRedirigir()])
+      .then(([provRes, comprasRes, prodRes]) => {
+        if (provRes.status === 'fulfilled') setProveedores(provRes.value.data);
+        else setError((prev) => prev ?? 'No se pudieron cargar los proveedores');
+
+        if (comprasRes.status === 'fulfilled') setCompras(comprasRes.value.data);
+        else setError((prev) => prev ?? 'No se pudieron cargar las compras');
+
+        if (prodRes.status === 'fulfilled') {
+          const opts: PresentacionOpcion[] = [];
+          prodRes.value.data.forEach((p) => (p.presentaciones ?? []).forEach((pr) => {
+            const id = Number(pr.id);
+            if (!isNaN(id)) opts.push({ id, label: `${p.nombre} — ${pr.tamaño ?? pr.id}` });
+          }));
+          setPresentaciones(opts);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const agregarLinea = () => {
+    setFormError(null);
+    const cantidad = Number(formCantidad);
+    const costo = Number(formCosto);
+    if (!formPresentacionId) { setFormError('Selecciona una presentación'); return; }
+    if (!cantidad || cantidad < 1) { setFormError('Cantidad inválida'); return; }
+    if (!formCosto || costo < 0) { setFormError('Costo unitario inválido'); return; }
+    const opcion = presentaciones.find((p) => String(p.id) === formPresentacionId);
+    setLineas((prev) => [...prev, { presentacionId: Number(formPresentacionId), cantidad, costoUnitario: costo, label: opcion?.label ?? `Presentación ${formPresentacionId}` }]);
+    setFormPresentacionId('');
+    setFormCantidad('1');
+    setFormCosto('');
+  };
+
+  const quitarLinea = (idx: number) => {
+    setLineas((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const totalOrden = lineas.reduce((acc, l) => acc + l.cantidad * l.costoUnitario, 0);
+
+  const handleRegistrarCompra = async () => {
+    setFormError(null);
+    if (!formProveedorId) { setFormError('Selecciona un proveedor'); return; }
+    if (lineas.length === 0) { setFormError('Agrega al menos una línea de producto'); return; }
+    setSaving(true);
+    try {
+      await crearCompra({
+        proveedorId: Number(formProveedorId),
+        items: lineas.map(({ presentacionId, cantidad, costoUnitario }) => ({ presentacionId, cantidad, costoUnitario })),
+      });
+      setFormProveedorId('');
+      setLineas([]);
+      cargar();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'No se pudo registrar la compra');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const montoTotal = compras.reduce((acc, c) => acc + c.total, 0);
 
   return (
     <AdminLayout>
@@ -40,11 +130,16 @@ export default function ComprasProveedoresPage() {
               {compras.length} compra{compras.length === 1 ? '' : 's'} registradas
             </p>
           </div>
-          <Button>+ Nueva Orden de Compra</Button>
         </div>
 
+        {error && (
+          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
@@ -52,19 +147,7 @@ export default function ComprasProveedoresPage() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total compras</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{compras.length}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes de recibir</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{pendientes}</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : compras.length}</p>
               </div>
             </div>
           </Card>
@@ -76,7 +159,7 @@ export default function ComprasProveedoresPage() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Monto total</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${montoTotal.toLocaleString('es-MX')}</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : fmtMoneda(montoTotal)}</p>
               </div>
             </div>
           </Card>
@@ -87,6 +170,11 @@ export default function ComprasProveedoresPage() {
           <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Proveedores
           </h2>
+          {loading ? (
+            <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
+          ) : proveedores.length === 0 ? (
+            <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>No hay proveedores registrados.</p>
+          ) : (
           <div className="space-y-3">
             {proveedores.map((proveedor) => (
               <div
@@ -99,32 +187,64 @@ export default function ComprasProveedoresPage() {
                     {proveedor.nombre}
                   </p>
                   <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {proveedor.productos} • Tel: {proveedor.contacto}
+                    {proveedor.productos || 'Sin descripción'} {proveedor.contacto ? `• Tel: ${proveedor.contacto}` : ''}
                   </p>
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Última compra: {proveedor.ultimaCompra}
+                    Última compra: {fmtFecha(proveedor.ultimaCompra ?? undefined)}
                   </p>
                 </div>
-                <Button size="sm">Comprar</Button>
+                <Button size="sm" onClick={() => setFormProveedorId(String(proveedor.id))}>Comprar</Button>
               </div>
             ))}
           </div>
+          )}
         </Card>
 
         <Card variant="elevated" padding="lg">
           <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Nueva Orden de Compra
           </h2>
+          {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
           <div className="space-y-4">
             <Select
               label="Proveedor"
-              options={proveedores.map(p => ({ value: p.id.toString(), label: p.nombre }))}
+              value={formProveedorId}
+              onChange={(e) => setFormProveedorId(e.target.value)}
+              options={[{ value: '', label: 'Selecciona un proveedor…' }, ...proveedores.map((p) => ({ value: String(p.id), label: p.nombre }))]}
               fullWidth
             />
-            <Input label="Fecha de Pedido" type="date" fullWidth />
-            <Input label="Productos" placeholder="Lista de productos..." fullWidth />
-            <Input label="Total Estimado" placeholder="$0.00" fullWidth />
-            <Button fullWidth>Crear Orden</Button>
+            <Select
+              label="Presentación"
+              value={formPresentacionId}
+              onChange={(e) => setFormPresentacionId(e.target.value)}
+              options={[{ value: '', label: 'Selecciona un producto…' }, ...presentaciones.map((p) => ({ value: String(p.id), label: p.label }))]}
+              fullWidth
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Cantidad" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
+              <Input label="Costo Unitario" type="number" min={0} step="0.01" value={formCosto} onChange={(e) => setFormCosto(e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+            <Button variant="outline" fullWidth onClick={agregarLinea}>+ Agregar línea</Button>
+
+            {lineas.length > 0 && (
+              <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                {lineas.map((linea, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm p-2 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <span style={{ color: 'var(--menu-texto-principal)' }}>{linea.label} — {linea.cantidad} × {fmtMoneda(linea.costoUnitario)}</span>
+                    <button type="button" onClick={() => quitarLinea(idx)} aria-label="Quitar línea">
+                      <Trash2 size={15} style={{ color: 'var(--danger-texto)' }} />
+                    </button>
+                  </div>
+                ))}
+                <p className="text-right text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Total: {fmtMoneda(totalOrden)}
+                </p>
+              </div>
+            )}
+
+            <Button fullWidth onClick={handleRegistrarCompra} disabled={saving}>
+              {saving ? 'Registrando...' : 'Registrar Compra'}
+            </Button>
           </div>
         </Card>
       </div>
@@ -133,32 +253,53 @@ export default function ComprasProveedoresPage() {
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Historial de Compras
         </h2>
-        <Table headers={['Proveedor', 'Fecha', 'Productos', 'Total', 'Estado', 'Acciones']} headerSutil>
+        {loading ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
+        ) : compras.length === 0 ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>No hay compras registradas.</p>
+        ) : (
+        <Table headers={['Proveedor', 'Fecha', 'Productos', 'Total', 'Acciones']} headerSutil>
           {compras.map((compra) => (
             <TableRow key={compra.id}>
-              <TableCell className="font-semibold" rowPadding="lg">{compra.proveedor}</TableCell>
-              <TableCell rowPadding="lg">{compra.fecha}</TableCell>
-              <TableCell rowPadding="lg">{compra.productos} productos</TableCell>
-              <TableCell className="font-semibold" rowPadding="lg">{compra.total}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{compra.proveedorNombre ?? 'Proveedor'}</TableCell>
+              <TableCell rowPadding="lg">{fmtFecha(compra.fecha)}</TableCell>
+              <TableCell rowPadding="lg">{compra.items.length} producto{compra.items.length === 1 ? '' : 's'}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{fmtMoneda(compra.total)}</TableCell>
               <TableCell rowPadding="lg">
-                <Badge variant={compra.estado === 'recibida' ? 'success' : 'warning'}>
-                  {compra.estado}
-                </Badge>
-              </TableCell>
-              <TableCell rowPadding="lg">
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">Ver Detalles</Button>
-                  {compra.estado === 'pendiente' && (
-                    <Button size="sm">Recibir</Button>
-                  )}
-                </div>
+                <Button size="sm" variant="outline" onClick={() => setDetalleCompra(compra)}>Ver Detalles</Button>
               </TableCell>
             </TableRow>
           ))}
         </Table>
+        )}
       </Card>
       </div>
+
+      <Modal
+        isOpen={detalleCompra !== null}
+        onClose={() => setDetalleCompra(null)}
+        title={`Compra a ${detalleCompra?.proveedorNombre ?? 'proveedor'}`}
+        size="md"
+        footer={<Button variant="outline" onClick={() => setDetalleCompra(null)}>Cerrar</Button>}
+      >
+        {detalleCompra && (
+          <div className="space-y-3">
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              Fecha: {fmtFecha(detalleCompra.fecha)} {detalleCompra.usuarioNombre ? `· Registrada por ${detalleCompra.usuarioNombre}` : ''}
+            </p>
+            {detalleCompra.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <div>
+                  <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{item.productoNombre ?? 'Producto'} — {item.presentacionTamanio ?? ''}</p>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{item.cantidad} × {fmtMoneda(item.costoUnitario)}</p>
+                </div>
+                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(item.subtotal)}</p>
+              </div>
+            ))}
+            <p className="text-right font-bold" style={{ color: 'var(--menu-texto-principal)' }}>Total: {fmtMoneda(detalleCompra.total)}</p>
+          </div>
+        )}
+      </Modal>
     </AdminLayout>
   );
 }
-

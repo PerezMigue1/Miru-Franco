@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
@@ -8,37 +8,47 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
 import { BadgeDollarSign, Package, Truck } from 'lucide-react';
+import {
+  listarProveedores,
+  crearProveedor,
+  actualizarProveedor,
+  eliminarProveedor,
+  ProveedorApi,
+} from '../../../services/proveedores';
 
-export interface ProveedorItem {
-  id: number;
-  nombre: string;
-  contacto: string;
-  productos: string;
-  direccion: string;
-  compras: number;
-  ultimaCompra: string;
+function fmtFecha(iso?: string | null): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-MX');
 }
 
-const PROVEEDORES_INICIALES: ProveedorItem[] = [
-  { id: 1, nombre: 'Floractiv', contacto: '555-1001', productos: 'Nanoplastía', direccion: '', compras: 12, ultimaCompra: '2024-01-10' },
-  { id: 2, nombre: 'Avina', contacto: '555-1002', productos: 'Cabello y Tratamientos', direccion: '', compras: 18, ultimaCompra: '2024-01-08' },
-  { id: 3, nombre: 'Tech Italy', contacto: '555-1003', productos: 'Productos Profesionales', direccion: '', compras: 15, ultimaCompra: '2024-01-12' },
-  { id: 4, nombre: 'Alfaparf', contacto: '555-1004', productos: 'Productos Profesionales', direccion: '', compras: 10, ultimaCompra: '2024-01-05' },
-];
-
 export default function ProveedoresPage() {
-  const [proveedores, setProveedores] = useState<ProveedorItem[]>(PROVEEDORES_INICIALES);
+  const [proveedores, setProveedores] = useState<ProveedorApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [proveedorToDelete, setProveedorToDelete] = useState<ProveedorItem | null>(null);
+  const [proveedorToDelete, setProveedorToDelete] = useState<ProveedorApi | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [formNombre, setFormNombre] = useState('');
   const [formContacto, setFormContacto] = useState('');
   const [formProductos, setFormProductos] = useState('');
   const [formDireccion, setFormDireccion] = useState('');
 
-  const nextId = Math.max(0, ...proveedores.map((p) => p.id)) + 1;
+  const cargar = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    listarProveedores()
+      .then(({ data }) => setProveedores(data))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar los proveedores'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
 
   const openNuevo = () => {
     setEditingId(null);
@@ -46,56 +56,58 @@ export default function ProveedoresPage() {
     setFormContacto('');
     setFormProductos('');
     setFormDireccion('');
+    setFormError(null);
     setShowForm(true);
   };
 
-  const openEditar = (p: ProveedorItem) => {
+  const openEditar = (p: ProveedorApi) => {
     setEditingId(p.id);
     setFormNombre(p.nombre);
-    setFormContacto(p.contacto);
-    setFormProductos(p.productos);
-    setFormDireccion(p.direccion);
+    setFormContacto(p.contacto ?? '');
+    setFormProductos(p.productos ?? '');
+    setFormDireccion(p.direccion ?? '');
+    setFormError(null);
     setShowForm(true);
   };
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (!formNombre.trim()) return;
-    if (editingId !== null) {
-      setProveedores((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                nombre: formNombre.trim(),
-                contacto: formContacto.trim(),
-                productos: formProductos.trim(),
-                direccion: formDireccion.trim(),
-              }
-            : p
-        )
-      );
-    } else {
-      setProveedores((prev) => [
-        ...prev,
-        {
-          id: nextId,
-          nombre: formNombre.trim(),
-          contacto: formContacto.trim(),
-          productos: formProductos.trim(),
-          direccion: formDireccion.trim(),
-          compras: 0,
-          ultimaCompra: '-',
-        },
-      ]);
+    setSaving(true);
+    setFormError(null);
+    try {
+      const payload = {
+        nombre: formNombre.trim(),
+        contacto: formContacto.trim() || undefined,
+        productos: formProductos.trim() || undefined,
+        direccion: formDireccion.trim() || undefined,
+      };
+      if (editingId !== null) {
+        await actualizarProveedor(editingId, payload);
+      } else {
+        await crearProveedor(payload);
+      }
+      setShowForm(false);
+      cargar();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'No se pudo guardar el proveedor');
+    } finally {
+      setSaving(false);
     }
-    setShowForm(false);
   };
 
-  const handleEliminar = () => {
-    if (proveedorToDelete) {
-      setProveedores((prev) => prev.filter((p) => p.id !== proveedorToDelete.id));
+  const handleEliminar = async () => {
+    if (!proveedorToDelete) return;
+    setSaving(true);
+    try {
+      await eliminarProveedor(proveedorToDelete.id);
       setShowDeleteModal(false);
       setProveedorToDelete(null);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar el proveedor');
+      setShowDeleteModal(false);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -119,6 +131,12 @@ export default function ProveedoresPage() {
           <Button onClick={openNuevo}>+ Nuevo Proveedor</Button>
         </div>
 
+        {error && (
+          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card variant="elevated" padding="lg">
@@ -128,7 +146,7 @@ export default function ProveedoresPage() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total proveedores</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{proveedores.length}</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : proveedores.length}</p>
               </div>
             </div>
           </Card>
@@ -140,7 +158,7 @@ export default function ProveedoresPage() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Compras totales</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalCompras}</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : totalCompras}</p>
               </div>
             </div>
           </Card>
@@ -152,7 +170,7 @@ export default function ProveedoresPage() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Compras promedio</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{promedioCompras}</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : promedioCompras}</p>
               </div>
             </div>
           </Card>
@@ -160,14 +178,19 @@ export default function ProveedoresPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        {loading ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando proveedores…</p>
+        ) : proveedores.length === 0 ? (
+          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>No hay proveedores registrados.</p>
+        ) : (
         <Table headers={['Proveedor', 'Contacto', 'Productos', 'Compras', 'Última Compra', 'Acciones']} headerSutil>
           {proveedores.map((proveedor) => (
             <TableRow key={proveedor.id}>
               <TableCell className="font-semibold" rowPadding="lg">{proveedor.nombre}</TableCell>
-              <TableCell rowPadding="lg">{proveedor.contacto}</TableCell>
-              <TableCell rowPadding="lg">{proveedor.productos}</TableCell>
+              <TableCell rowPadding="lg">{proveedor.contacto || '-'}</TableCell>
+              <TableCell rowPadding="lg">{proveedor.productos || '-'}</TableCell>
               <TableCell rowPadding="lg">{proveedor.compras}</TableCell>
-              <TableCell rowPadding="lg">{proveedor.ultimaCompra}</TableCell>
+              <TableCell rowPadding="lg">{fmtFecha(proveedor.ultimaCompra)}</TableCell>
               <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => openEditar(proveedor)}>
@@ -188,23 +211,25 @@ export default function ProveedoresPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
       </div>
 
       <Modal
         isOpen={showForm}
-        onClose={() => setShowForm(false)}
+        onClose={() => { if (!saving) setShowForm(false); }}
         title={editingId !== null ? 'Editar Proveedor' : 'Nuevo Proveedor'}
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowForm(false)}>
+            <Button variant="outline" onClick={() => setShowForm(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button onClick={handleGuardar}>Guardar</Button>
+            <Button onClick={handleGuardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
           </>
         }
       >
+        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
         <div className="grid grid-cols-1 gap-4">
           <Input
             label="Nombre del Proveedor *"
@@ -239,16 +264,16 @@ export default function ProveedoresPage() {
 
       <Modal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => { if (!saving) setShowDeleteModal(false); }}
         title="Eliminar proveedor"
         size="sm"
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button variant="danger" onClick={handleEliminar}>
-              Eliminar
+            <Button variant="danger" onClick={handleEliminar} disabled={saving}>
+              {saving ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </>
         }

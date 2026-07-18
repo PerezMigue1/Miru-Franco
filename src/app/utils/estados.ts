@@ -41,6 +41,22 @@ const VARIANTE_ESTADO_VENTA: Record<string, BadgeVariant> = {
   cancelada: 'danger',
 };
 
+/**
+ * Etiquetas en español para `EstadoCotizacion` (backend, prisma/schema.prisma):
+ * pendiente | confirmada | cancelada.
+ */
+const ETIQUETAS_ESTADO_COTIZACION: Record<string, string> = {
+  pendiente: 'Pendiente',
+  confirmada: 'Confirmada',
+  cancelada: 'Cancelada',
+};
+
+const VARIANTE_ESTADO_COTIZACION: Record<string, BadgeVariant> = {
+  pendiente: 'warning',
+  confirmada: 'success',
+  cancelada: 'danger',
+};
+
 /** Fallback para valores de enum no contemplados (p. ej. si el enum se amplía a futuro): 'no_asistio' → 'No asistio'. Nunca snake_case crudo. */
 function fallbackLegible(valor: string): string {
   return valor
@@ -68,4 +84,14 @@ export function etiquetaEstadoVenta(estado: string | undefined | null): string {
 export function varianteEstadoVenta(estado: string | undefined | null): BadgeVariant {
   if (!estado) return 'default';
   return VARIANTE_ESTADO_VENTA[estado] ?? 'default';
+}
+
+export function etiquetaEstadoCotizacion(estado: string | undefined | null): string {
+  if (!estado) return '—';
+  return ETIQUETAS_ESTADO_COTIZACION[estado] ?? fallbackLegible(estado);
+}
+
+export function varianteEstadoCotizacion(estado: string | undefined | null): BadgeVariant {
+  if (!estado) return 'default';
+  return VARIANTE_ESTADO_COTIZACION[estado] ?? 'default';
 }

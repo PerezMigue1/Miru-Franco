@@ -115,6 +115,25 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
   },
 ];
 
+/**
+ * Repuebla `localStorage.user` con `permisos` (y el resto del perfil) sin bloquear el
+ * render — el acceso al panel ya se concedió con el rol cacheado. Una vez guardado,
+ * emite el evento que `usePermisos()` escucha para que el sidebar se re-filtre solo.
+ */
+function refrescarPermisosEnSegundoPlano(userJsonActual: string | null) {
+  api.getProfile().then((res) => {
+    if (!res.success || !res.data || typeof window === 'undefined') return;
+    const current = userJsonActual ? (JSON.parse(userJsonActual) as Record<string, unknown>) : {};
+    localStorage.setItem(
+      'user',
+      JSON.stringify(normalizarUsuarioAlmacenado({ ...current, ...res.data }))
+    );
+    emitMiruUserStorageUpdated();
+  }).catch(() => {
+    // Sin conexión o backend caído: el sidebar se queda con lo que había, sin bloquear nada.
+  });
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -155,6 +174,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             email: String(user.email ?? ''),
             foto: user.foto ? String(user.foto) : null,
           });
+          // Sesión cacheada de antes de que /auth/me devolviera `permisos` (o cualquier
+          // otra sesión sin ese campo): refresca en segundo plano para que el sidebar
+          // filtrado por permiso deje de esconder módulos usando datos obsoletos.
+          if (!Array.isArray(user.permisos)) {
+            refrescarPermisosEnSegundoPlano(userJson);
+          }
           return;
         }
       } catch {
