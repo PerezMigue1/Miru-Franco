@@ -40,6 +40,7 @@ function mapearEnvio(e: EnvioApi, pedido: PedidoApi): EntregaFila {
 export default function EntregasEnviosPage() {
   const [entregas, setEntregas] = useState<EntregaFila[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
 
   // Modal ver/editar envío
@@ -71,7 +72,7 @@ export default function EntregasEnviosPage() {
       setEntregas(rows);
       setEnviosRaw(rawEnvios);
     } catch {
-      // mantener tabla vacía en error
+      setError('Error al cargar entregas');
     } finally {
       setLoading(false);
     }
@@ -145,6 +146,12 @@ export default function EntregasEnviosPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card variant="elevated" padding="lg">
@@ -186,6 +193,11 @@ export default function EntregasEnviosPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        {loading ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando entregas…</p>
+        ) : entregas.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay entregas en curso.</p>
+        ) : (
         <Table headers={['Cliente', 'Dirección', 'Tipo', 'Zona', 'Estado', 'Mensajero', 'Acciones']} headerSutil>
           {entregas.map((entrega) => (
             <TableRow key={entrega.id}>
@@ -227,6 +239,7 @@ export default function EntregasEnviosPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
 
         <Card variant="elevated" padding="lg">

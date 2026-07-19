@@ -37,6 +37,7 @@ export default function GestionPersonalPage() {
   const [empleados, setEmpleados] = useState<EmpleadoFila[]>([]);
   const [empleadosRaw, setEmpleadosRaw] = useState<EmpleadoApi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modales y formularios
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
@@ -63,7 +64,7 @@ export default function GestionPersonalPage() {
       setEmpleadosRaw(data);
       setEmpleados(data.map(mapearEmpleado));
     } catch {
-      // mantener lista vacía
+      setError('Error al cargar empleados');
     } finally {
       setLoading(false);
     }
@@ -200,6 +201,12 @@ export default function GestionPersonalPage() {
           <Button onClick={openCrear}>+ Agregar Empleado</Button>
         </div>
 
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card variant="elevated" padding="lg">
@@ -239,6 +246,11 @@ export default function GestionPersonalPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        {loading ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando empleados…</p>
+        ) : empleados.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay empleados registrados.</p>
+        ) : (
         <Table headers={['Nombre', 'Rol', 'Horario', 'Servicios del Mes', 'Comisiones', 'Acciones']} headerSutil>
           {empleados.map((empleado) => (
             <TableRow key={empleado.id}>
@@ -266,6 +278,7 @@ export default function GestionPersonalPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

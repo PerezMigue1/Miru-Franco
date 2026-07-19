@@ -47,6 +47,7 @@ export default function QuejasGarantiasPage() {
   const [casos, setCasos] = useState<CasoFila[]>([]);
   const [quejasRaw, setQuejasRaw] = useState<QuejaApi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal editar estado
   const [isModalEditarOpen, setIsModalEditarOpen] = useState(false);
@@ -64,9 +65,10 @@ export default function QuejasGarantiasPage() {
 
   const cargar = () => {
     setLoading(true);
+    setError(null);
     listarQuejas()
       .then(({ data }) => { setQuejasRaw(data); setCasos(data.map(mapearQueja)); })
-      .catch(() => {})
+      .catch(() => setError('Error al cargar casos'))
       .finally(() => setLoading(false));
   };
 
@@ -137,6 +139,12 @@ export default function QuejasGarantiasPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card
@@ -186,6 +194,11 @@ export default function QuejasGarantiasPage() {
             <ClipboardList size={18} style={{ color: 'var(--hover)' }} />
             <h2 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Casos</h2>
           </div>
+        {loading ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando casos…</p>
+        ) : casos.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay casos registrados.</p>
+        ) : (
         <Table headers={['Cliente', 'Servicio', 'Fecha', 'Tipo', 'Descripción', 'Estado', 'Acciones']} headerSutil>
           {casos.map((caso) => (
             <TableRow key={caso.id}>
@@ -214,6 +227,7 @@ export default function QuejasGarantiasPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
 
         <Card variant="elevated" padding="lg">

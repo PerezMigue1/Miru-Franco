@@ -37,9 +37,12 @@ function mapearFactura(f: FacturaApi, pedido: PedidoApi): FacturaFila {
 
 export default function FacturacionPage() {
   const [facturas, setFacturas] = useState<FacturaFila[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const cargar = async () => {
+      setLoading(true);
       try {
         const pedidos = await listarPedidos();
         const rows: FacturaFila[] = [];
@@ -51,7 +54,9 @@ export default function FacturacionPage() {
         );
         setFacturas(rows);
       } catch {
-        // mantener tabla vacía
+        setError('Error al cargar facturas');
+      } finally {
+        setLoading(false);
       }
     };
     cargar();
@@ -76,6 +81,12 @@ export default function FacturacionPage() {
           </div>
           <Button>+ Nueva Nota/Factura</Button>
         </div>
+
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -118,6 +129,11 @@ export default function FacturacionPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        {loading ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando facturas…</p>
+        ) : facturas.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay facturas registradas.</p>
+        ) : (
         <Table headers={['Cliente', 'Concepto', 'Monto', 'Fecha', 'Tipo', 'Estado', 'Acciones']} headerSutil>
           {facturas.map((factura) => (
             <TableRow key={factura.id}>
@@ -144,6 +160,7 @@ export default function FacturacionPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
 
         <Card variant="elevated" padding="lg">

@@ -38,6 +38,7 @@ function mapearCaducidad(c: CaducidadApi, idx: number): ProductoCaducidad {
 export default function ControlCaducidadPage() {
   const [productos, setProductos] = useState<ProductoCaducidad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [caducidadesRaw, setCaducidadesRaw] = useState<CaducidadApi[]>([]);
 
   // Modal descartar
@@ -50,9 +51,10 @@ export default function ControlCaducidadPage() {
 
   const cargar = () => {
     setLoading(true);
+    setError(null);
     obtenerCaducidades(30)
       .then((data) => { setCaducidadesRaw(data); setProductos(data.map(mapearCaducidad)); })
-      .catch(() => {})
+      .catch(() => setError('Error al cargar productos'))
       .finally(() => setLoading(false));
   };
 
@@ -101,6 +103,12 @@ export default function ControlCaducidadPage() {
             {productos.length} producto{productos.length === 1 ? '' : 's'} monitoreados
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -151,6 +159,11 @@ export default function ControlCaducidadPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+          {loading ? (
+            <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando productos…</p>
+          ) : productos.length === 0 ? (
+            <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay productos en control de caducidad.</p>
+          ) : (
           <Table headers={['Producto', 'Fecha de Apertura', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']} headerSutil>
             {productos.map((producto) => (
               <TableRow key={producto.id}>
@@ -175,6 +188,7 @@ export default function ControlCaducidadPage() {
               </TableRow>
             ))}
           </Table>
+          )}
         </Card>
       </div>
       {/* Modal: Confirmar Descartar */}

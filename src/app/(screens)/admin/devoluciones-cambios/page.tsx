@@ -39,6 +39,7 @@ export default function DevolucionesCambiosPage() {
   const [solicitudes, setSolicitudes] = useState<DevolucionFila[]>([]);
   const [solicitudesRaw, setSolicitudesRaw] = useState<DevolucionApi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal procesar cambio
   const [isModalProcesarOpen, setIsModalProcesarOpen] = useState(false);
@@ -65,7 +66,7 @@ export default function DevolucionesCambiosPage() {
       setSolicitudes(rows);
       setSolicitudesRaw(raws);
     } catch {
-      // mantener tabla vacía
+      setError('Error al cargar solicitudes');
     } finally {
       setLoading(false);
     }
@@ -116,6 +117,12 @@ export default function DevolucionesCambiosPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card variant="elevated" padding="lg">
@@ -161,6 +168,11 @@ export default function DevolucionesCambiosPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        {loading ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando solicitudes…</p>
+        ) : solicitudes.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay solicitudes de devolución o cambio.</p>
+        ) : (
         <Table headers={['Cliente', 'Producto', 'Motivo', 'Fecha', 'Estado', 'Acciones']} headerSutil>
           {solicitudes.map((solicitud) => (
             <TableRow key={solicitud.id}>
@@ -184,6 +196,7 @@ export default function DevolucionesCambiosPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
 
         <Card variant="elevated" padding="lg">

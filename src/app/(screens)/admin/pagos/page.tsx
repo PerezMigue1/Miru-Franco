@@ -38,6 +38,7 @@ function mapearPago(p: PagoApi, pedido: PedidoApi): PagoFila {
 export default function PagosPage() {
   const [pagos, setPagos] = useState<PagoFila[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -53,7 +54,7 @@ export default function PagosPage() {
         );
         setPagos(rows);
       } catch {
-        // mantener tabla vacía
+        setError('Error al cargar pagos');
       } finally {
         setLoading(false);
       }
@@ -79,6 +80,12 @@ export default function PagosPage() {
           </div>
           <Button>+ Registrar Pago</Button>
         </div>
+
+        {error && (
+          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+            {error}
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -130,6 +137,11 @@ export default function PagosPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        {loading ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando pagos…</p>
+        ) : pagos.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay pagos registrados.</p>
+        ) : (
         <Table headers={['Cliente', 'Concepto', 'Monto', 'Método', 'Fecha', 'Tipo', 'Acciones']} headerSutil>
           {pagos.map((pago) => (
             <TableRow key={pago.id}>
@@ -153,6 +165,7 @@ export default function PagosPage() {
             </TableRow>
           ))}
         </Table>
+        )}
         </Card>
 
         <Card variant="elevated" padding="lg">
