@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarVentas, crearVenta, cancelarVenta, abrirCorte, VentaLocalApi } from '../../../services/pos';
+import { listarVentas, crearVenta, cancelarVenta, abrirCorte, VentaLocalApi, EstadoVentaLocal } from '../../../services/pos';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
 import { listarClientes, type ClienteApi } from '../../../services/clientes';
 import Modal from '../../../components/ui/Modal';
@@ -18,23 +18,43 @@ import { BadgeDollarSign, Receipt, ShoppingCart } from 'lucide-react';
 
 interface VentaFila {
   id: number;
-  cliente: string;
+  clienteId: string | null;
   productos: string;
   total: string;
   metodo: string;
   fecha: string;
+  /** Objeto original completo — la fila mapeada resume para la tabla, pero el detalle
+   *  (items, descuento, estado) necesita los datos crudos que aquí no se pierden. */
+  raw: VentaLocalApi;
 }
 
 function mapearVenta(v: VentaLocalApi): VentaFila {
   const itemsDesc = v.items.length > 0 ? `${v.items.length} ítem(s)` : '-';
   return {
     id: v.id,
-    cliente: v.clienteId ?? 'Cliente general',
+    clienteId: v.clienteId ?? null,
     productos: itemsDesc,
     total: v.total != null ? `$${v.total.toFixed(2)}` : '-',
     metodo: v.metodoPago || '-',
     fecha: v.creadoEn ? new Date(v.creadoEn).toLocaleString('es-MX') : '-',
+    raw: v,
   };
+}
+
+function fmtMoneda(v: number): string {
+  return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+const ETIQUETA_ESTADO_VENTA: Record<EstadoVentaLocal, string> = {
+  pendiente: 'Pendiente',
+  pagada: 'Pagada',
+  cancelada: 'Cancelada',
+};
+
+function varianteBadgeEstadoVenta(estado: EstadoVentaLocal): 'success' | 'warning' | 'danger' {
+  if (estado === 'pagada') return 'success';
+  if (estado === 'cancelada') return 'danger';
+  return 'warning';
 }
 
 export default function VentaLocalPage() {
@@ -66,6 +86,9 @@ export default function VentaLocalPage() {
   const [ventaIdCancelando, setVentaIdCancelando] = useState<number | null>(null);
   const [cancelMotivoVenta, setCancelMotivoVenta] = useState('');
   const [savingCancelVenta, setSavingCancelVenta] = useState(false);
+
+  // Modal Ver Detalles (solo lectura)
+  const [ventaDetalle, setVentaDetalle] = useState<VentaFila | null>(null);
 
   const cargar = () => {
     const hoy = new Date().toISOString().slice(0, 10);
@@ -123,6 +146,20 @@ export default function VentaLocalPage() {
       setIsModalCancelarOpen(false); setVentaIdCancelando(null); cargar();
     } catch { /* silencioso */ }
     finally { setSavingCancelVenta(false); }
+  };
+
+  const nombreCliente = (clienteId: string | null | undefined): string => {
+    if (!clienteId) return 'Cliente general';
+    const c = catClientes.find((cl) => cl.id === clienteId);
+    return c?.nombre || c?.email || 'Cliente general';
+  };
+
+  const nombreProductoPorPresentacion = (presentacionId: number | null | undefined): string => {
+    if (presentacionId == null) return 'Servicio';
+    for (const p of catProductos) {
+      if (p.presentaciones?.some((pr) => pr.id === presentacionId)) return p.nombre;
+    }
+    return `Presentación #${presentacionId}`;
   };
 
   const totalDia = ventasHoy.reduce((acc, v) => acc + (parseFloat(v.total.replace(/[^0-9.]/g, '')) || 0), 0);
@@ -252,7 +289,7 @@ export default function VentaLocalPage() {
         <Table headers={['Cliente', 'Productos', 'Total', 'Método de Pago', 'Fecha', 'Acciones']} headerSutil>
           {ventasHoy.map((venta) => (
             <TableRow key={venta.id}>
-              <TableCell rowPadding="lg">{venta.cliente}</TableCell>
+              <TableCell rowPadding="lg">{nombreCliente(venta.clienteId)}</TableCell>
               <TableCell rowPadding="lg">{venta.productos}</TableCell>
               <TableCell className="font-semibold" rowPadding="lg">{venta.total}</TableCell>
               <TableCell rowPadding="lg">
@@ -263,7 +300,7 @@ export default function VentaLocalPage() {
               <TableCell rowPadding="lg">{venta.fecha}</TableCell>
               <TableCell rowPadding="lg">
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline">Ver Detalles</Button>
+                  <Button size="sm" variant="outline" onClick={() => setVentaDetalle(venta)}>Ver Detalles</Button>
                   <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
                 </div>
               </TableCell>
@@ -306,6 +343,53 @@ export default function VentaLocalPage() {
         }
       >
         <Textarea label="Motivo de cancelación" value={cancelMotivoVenta} onChange={(e) => setCancelMotivoVenta(e.target.value)} placeholder="Describe el motivo (opcional)..." rows={3} fullWidth />
+      </Modal>
+
+      {/* Modal: Ver Detalles (solo lectura) */}
+      <Modal
+        isOpen={ventaDetalle !== null}
+        onClose={() => setVentaDetalle(null)}
+        title={`Venta #${ventaDetalle?.id ?? ''}`}
+        size="sm"
+        footer={<Button variant="outline" onClick={() => setVentaDetalle(null)}>Cerrar</Button>}
+      >
+        {ventaDetalle && (
+          <div className="space-y-3 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+            <p><span className="font-semibold">Cliente:</span> {nombreCliente(ventaDetalle.clienteId)}</p>
+            <p><span className="font-semibold">Fecha:</span> {ventaDetalle.fecha}</p>
+            <p><span className="font-semibold">Método de pago:</span> {ventaDetalle.raw.metodoPago || '-'}</p>
+            <p>
+              <span className="font-semibold">Estado:</span>{' '}
+              <Badge variant={varianteBadgeEstadoVenta(ventaDetalle.raw.estado)}>
+                {ETIQUETA_ESTADO_VENTA[ventaDetalle.raw.estado]}
+              </Badge>
+            </p>
+
+            {ventaDetalle.raw.items.length > 0 && (
+              <div>
+                <p className="font-semibold mb-2">Items</p>
+                <Table headers={['Producto', 'Cant.', 'P. unitario', 'Subtotal']} headerSutil>
+                  {ventaDetalle.raw.items.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{nombreProductoPorPresentacion(item.presentacionId)}</TableCell>
+                      <TableCell>{item.cantidad}</TableCell>
+                      <TableCell>{fmtMoneda(item.precioUnitario)}</TableCell>
+                      <TableCell>{fmtMoneda(item.subtotal ?? item.cantidad * item.precioUnitario)}</TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              </div>
+            )}
+
+            {ventaDetalle.raw.descuento != null && ventaDetalle.raw.descuento > 0 && (
+              <p><span className="font-semibold">Descuento:</span> {fmtMoneda(ventaDetalle.raw.descuento)}</p>
+            )}
+            <p className="text-base"><span className="font-semibold">Total:</span> {ventaDetalle.total}</p>
+            {ventaDetalle.raw.notas && (
+              <p><span className="font-semibold">Notas:</span> {ventaDetalle.raw.notas}</p>
+            )}
+          </div>
+        )}
       </Modal>
     </AdminLayout>
   );

@@ -7,9 +7,9 @@ import * as XLSX from 'xlsx';
  * acceso al DOM ni a modo claro/oscuro, así que se usan los mismos hex estables definidos
  * en globals.css (--danger vino / --logo-branding oro) como constantes aquí.
  */
-const COLOR_VINO: [number, number, number] = [113, 0, 20]; // #710014
-const COLOR_ORO: [number, number, number] = [159, 109, 31]; // #9f6d1f
-const COLOR_TEXTO_CLARO: [number, number, number] = [255, 255, 255];
+export const COLOR_VINO: [number, number, number] = [113, 0, 20]; // #710014
+export const COLOR_ORO: [number, number, number] = [159, 109, 31]; // #9f6d1f
+export const COLOR_TEXTO_CLARO: [number, number, number] = [255, 255, 255];
 
 export interface ReporteParaExportar {
   titulo: string;

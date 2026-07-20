@@ -384,6 +384,9 @@ export interface PagoApi {
   proveedor?: string | null;
   estado: string;
   referenciaExterna?: string | null;
+  errorMensaje?: string | null;
+  pagadoEn?: string | null;
+  creadoEn?: string;
   pedidoId: number;
 }
 
@@ -397,6 +400,9 @@ function normalizarPago(raw: Record<string, unknown>): PagoApi {
     proveedor: raw.proveedor != null ? str(raw.proveedor) : null,
     estado: str(raw.estado) || 'pendiente',
     referenciaExterna: raw.referenciaExterna != null ? str(raw.referenciaExterna) : raw.referencia_externa != null ? str(raw.referencia_externa) : null,
+    errorMensaje: raw.errorMensaje != null ? str(raw.errorMensaje) : raw.error_mensaje != null ? str(raw.error_mensaje) : null,
+    pagadoEn: raw.pagadoEn != null ? str(raw.pagadoEn) : raw.pagado_en != null ? str(raw.pagado_en) : null,
+    creadoEn: raw.creadoEn != null ? str(raw.creadoEn) : raw.creado_en != null ? str(raw.creado_en) : undefined,
     pedidoId: num(raw.pedidoId ?? raw.pedido_id),
   };
 }
@@ -534,30 +540,53 @@ export async function eliminarEnvio(id: number): Promise<void> {
 
 // --- Facturas ---
 
+export type TipoDocumentoFactura = 'nota' | 'cfdi';
+
 export interface FacturaApi {
   id: number;
+  tipo: TipoDocumentoFactura;
   uuidFiscal?: string | null;
   folio?: string | null;
   serie?: string | null;
+  rfc?: string | null;
+  razonSocial?: string | null;
   xmlUrl?: string | null;
   pdfUrl?: string | null;
   estado?: string | null;
-  pedidoId: number;
+  clienteNombre?: string | null;
+  concepto?: string | null;
+  monto?: number | null;
+  pedidoId?: number | null;
+  creadoPorId?: string | null;
   creadoEn?: string;
 }
 
 function normalizarFactura(r: Record<string, unknown>): FacturaApi {
+  const tipoRaw = str(r.tipo).toLowerCase();
   return {
     id: num(r.id),
+    tipo: tipoRaw === 'nota' ? 'nota' : 'cfdi',
     uuidFiscal: str(r.uuidFiscal ?? r.uuid_fiscal) || null,
     folio: r.folio != null ? str(r.folio) : null,
     serie: r.serie != null ? str(r.serie) : null,
+    rfc: r.rfc != null ? str(r.rfc) : null,
+    razonSocial: str(r.razonSocial ?? r.razon_social) || null,
     xmlUrl: str(r.xmlUrl ?? r.xml_url) || null,
     pdfUrl: str(r.pdfUrl ?? r.pdf_url) || null,
     estado: r.estado != null ? str(r.estado) : null,
-    pedidoId: num(r.pedidoId ?? r.pedido_id),
+    clienteNombre: str(r.clienteNombre ?? r.cliente_nombre) || null,
+    concepto: r.concepto != null ? str(r.concepto) : null,
+    monto: r.monto != null ? num(r.monto) : null,
+    pedidoId: (r.pedidoId ?? r.pedido_id) != null ? num(r.pedidoId ?? r.pedido_id) : null,
+    creadoPorId: str(r.creadoPorId ?? r.creado_por_id) || null,
     creadoEn: str(r.creadoEn ?? r.creado_en),
   };
+}
+
+/** Todas las facturas/notas (con o sin pedido) — para el panel de administración. */
+export async function listarFacturas(): Promise<FacturaApi[]> {
+  const res = await apiClient.get<unknown>('/api/facturas', BASE());
+  return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarFactura(r));
 }
 
 export async function listarFacturasPorPedido(pedidoId: number): Promise<FacturaApi[]> {
@@ -572,10 +601,18 @@ export async function obtenerFactura(id: number): Promise<FacturaApi | null> {
 }
 
 export interface CrearFacturaPayload {
-  pedidoId: number;
+  tipo: TipoDocumentoFactura;
+  pedidoId?: number;
+  // nota
+  clienteNombre?: string;
+  concepto?: string;
+  monto?: number;
+  // cfdi
   uuidFiscal?: string;
   folio?: string;
   serie?: string;
+  rfc?: string;
+  razonSocial?: string;
   xmlUrl?: string;
   pdfUrl?: string;
   estado?: string;

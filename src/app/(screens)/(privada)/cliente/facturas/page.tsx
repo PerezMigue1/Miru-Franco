@@ -68,6 +68,7 @@ export default function FacturasPage() {
     setEnviando(true);
     try {
       await crearFactura({
+        tipo: 'cfdi',
         pedidoId: pid,
         folio: folioSolicitud.trim() || undefined,
         estado: 'solicitada',

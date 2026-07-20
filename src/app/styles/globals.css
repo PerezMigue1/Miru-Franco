@@ -224,7 +224,18 @@ textarea::placeholder {
   opacity: 0.85;
 }
 
-/* Scrollbar personalizado para el menú horizontal */
+/* Scrollbars ocultos en toda la app: el contenido sigue siendo desplazable,
+   solo se oculta la barra visual (Firefox, IE/Edge legacy y WebKit/Chromium). */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Alias explícito, se mantiene por compatibilidad con usos existentes de la clase. */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

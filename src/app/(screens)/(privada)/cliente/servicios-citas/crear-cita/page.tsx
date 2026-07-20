@@ -11,6 +11,7 @@ import Select from '../../../../../components/ui/Select';
 import Textarea from '../../../../../components/ui/Textarea';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
+import RecomendacionesWidget from '../../../../../components/recomendaciones/RecomendacionesWidget';
 
 function CrearCitaContent() {
   const router = useRouter();
@@ -213,6 +214,12 @@ function CrearCitaContent() {
                   </div>
                 )}
               </Card>
+
+              {servicio?.nombre && (
+                <div className="mt-6">
+                  <RecomendacionesWidget items={[servicio.nombre]} />
+                </div>
+              )}
             </div>
           </div>
         </form>
