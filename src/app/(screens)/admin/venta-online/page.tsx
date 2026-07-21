@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
@@ -8,7 +9,7 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { CheckCircle2, Clock3, Package, Truck } from 'lucide-react';
+import { CheckCircle2, Clock3, CreditCard, Package, RotateCcw, Truck } from 'lucide-react';
 import {
   listarPedidos,
   actualizarPedido,
@@ -88,6 +89,7 @@ function formatearFecha(fecha?: string | null) {
 }
 
 export default function VentaOnlinePage() {
+  const router = useRouter();
   const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -371,13 +373,29 @@ export default function VentaOnlinePage() {
       <div className="w-full max-w-none space-y-8">
 
         {/* Encabezado */}
-        <div>
-          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-            Venta Online
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            {pedidos.length} pedido{pedidos.length === 1 ? '' : 's'} · conectado a pedidos, pagos y envíos
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
+              Venta Online
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+              {pedidos.length} pedido{pedidos.length === 1 ? '' : 's'} · conectado a pedidos, pagos y envíos
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/pagos')}>
+              <CreditCard size={14} />
+              Pagos
+            </Button>
+            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/devoluciones-cambios')}>
+              <RotateCcw size={14} />
+              Devoluciones
+            </Button>
+            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/entregas-envios')}>
+              <Truck size={14} />
+              Envíos
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
