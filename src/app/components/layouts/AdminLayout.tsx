@@ -15,13 +15,10 @@ import ThemeToggle from '../ui/ThemeToggle';
 import {
   BarChart3,
   Bell,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   Database,
   FileText,
-  Megaphone,
   Menu,
   Package,
   Receipt,
@@ -59,57 +56,56 @@ function iniciales(nombre: string): string {
 /** `permiso` es la clave que exige la página protegida; sin `permiso` = enlace neutral, siempre visible. */
 const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; icon: LucideIcon; permiso?: string }[] }[] = [
   {
-    titulo: 'Ventas e inventario',
+    titulo: 'Catálogo',
+    items: [
+      { label: 'Servicios', href: '/admin/servicios', icon: Scissors, permiso: 'servicios:lectura' },
+      { label: 'Paquetes', href: '/admin/paquetes', icon: Package, permiso: 'servicios:lectura' },
+    ],
+  },
+  {
+    titulo: 'Inventario y abasto',
     items: [
       { label: 'Inventario', href: '/admin/inventario', icon: Package, permiso: 'inventario:lectura' },
+      { label: 'Proveedores', href: '/admin/proveedores', icon: Truck },
+      // Control de caducidad → acceso desde Inventario
+      // Compras a proveedores → acceso desde Proveedores
+    ],
+  },
+  {
+    titulo: 'Ventas',
+    items: [
       { label: 'Venta local', href: '/admin/venta-local', icon: Store },
       { label: 'Venta online', href: '/admin/venta-online', icon: ShoppingCart },
-      { label: 'Servicios', href: '/admin/servicios', icon: Scissors, permiso: 'servicios:lectura' },
+      { label: 'Facturación', href: '/admin/facturacion', icon: Receipt },
+      // Pagos, Devoluciones, Entregas y envíos → acceso desde Venta online
     ],
   },
   {
     titulo: 'Clientes',
     items: [
       { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: Users, permiso: 'clientes:lectura' },
-    ],
-  },
-  {
-    titulo: 'Compras y logística',
-    items: [
-      { label: 'Compras a proveedores', href: '/admin/compras-proveedores', icon: ShoppingCart },
-      { label: 'Control de caducidad', href: '/admin/control-caducidad', icon: CalendarDays },
-      { label: 'Entregas y envíos', href: '/admin/entregas-envios', icon: Package },
-    ],
-  },
-  {
-    titulo: 'Atención al cliente',
-    items: [
+      { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos', icon: FileText },
       { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios', icon: RotateCcw },
       { label: 'Quejas y garantías', href: '/admin/quejas-garantias', icon: ShieldCheck },
-      { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos', icon: FileText },
+      { label: 'Notificaciones', href: '/admin/notificaciones', icon: Bell },
     ],
   },
   {
-    titulo: 'Finanzas y reportes',
+    titulo: 'Finanzas',
     items: [
       { label: 'Reportes', href: '/admin/reportes', icon: BarChart3 },
-      { label: 'Facturación', href: '/admin/facturacion', icon: Receipt },
-      { label: 'Pagos', href: '/admin/pagos', icon: CreditCard },
     ],
   },
   {
-    titulo: 'Marketing y personal',
+    titulo: 'Personal y accesos',
     items: [
-      { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
+      { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: ShieldCheck },
       { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: User, permiso: 'empleados:lectura' },
     ],
   },
   {
-    titulo: 'Configuración',
+    titulo: 'Sistema',
     items: [
-      { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: ShieldCheck },
-      { label: 'Proveedores', href: '/admin/proveedores', icon: Truck },
-      { label: 'Notificaciones', href: '/admin/notificaciones', icon: Bell },
       { label: 'Base de datos', href: '/admin/base-datos', icon: Database },
     ],
   },
