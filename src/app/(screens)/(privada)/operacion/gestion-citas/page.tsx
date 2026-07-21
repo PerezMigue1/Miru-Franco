@@ -194,7 +194,7 @@ export default function GestionCitasPage() {
   const canceladas = citas.filter((c) => c.estado === 'cancelada').length;
 
   return (
-    <OperacionLayout>
+    <OperacionLayout permisoRequerido="citas:escritura">
       <div className="w-full max-w-none space-y-8">
 
         {/* Encabezado */}

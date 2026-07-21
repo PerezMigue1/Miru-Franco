@@ -80,7 +80,10 @@ export async function listarEmpleados(
   sp.set('page', String(params?.page ?? 1));
   sp.set('limit', String(params?.limit ?? 50));
   const endpoint = `/api/empleados?${sp.toString()}`;
-  const res = await apiClient.get<ListadoEmpleadosResp>(endpoint, { customBase: getBackendBaseUrl() });
+  // skip403Redirect: un rol de staff sin empleados:lectura (ej. becario) debe degradar a lista
+  // vacía en pantallas que solo usan esto para un selector secundario (Agenda, Gestión de citas),
+  // no perder toda la página por un redirect global a /403.
+  const res = await apiClient.get<ListadoEmpleadosResp>(endpoint, { customBase: getBackendBaseUrl(), skip403Redirect: true });
   const data = Array.isArray(res?.data)
     ? res.data.map(normalizarEmpleado).filter((e): e is EmpleadoApi => Boolean(e))
     : Array.isArray(res)

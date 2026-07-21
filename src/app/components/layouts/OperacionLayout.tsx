@@ -41,9 +41,17 @@ const BAR_HEIGHT = 56;
 
 /**
  * Navegación del panel de operación — misma lista de destinos del hub.
- * `permiso` es la clave que exige la página protegida; sin `permiso` = enlace neutral
- * (citas/agenda no tienen clave propia en esta fase — todo el staff con acceso a
- * operación ya puede operar citas), siempre visible.
+ * `permiso` es la clave que exige la página protegida; sin `permiso` = enlace neutral,
+ * siempre visible a todo el staff con acceso a operación.
+ *
+ * Agenda/Calendario se deja sin `permiso`: su función principal (ver citas) la cubre
+ * cualquier rol de staff (`citas:escritura` o `citas:asignadas`); el selector de
+ * especialistas ahí dentro degrada a vacío si el rol no tiene `empleados:lectura`
+ * (ver `listarEmpleados` en services/empleados.ts), no rompe la página.
+ * Gestión de citas sí exige `citas:escritura`: su función principal es crear/reprogramar/
+ * cancelar citas, algo que becario no puede hacer (solo check-in/out vía citas:asignadas,
+ * ya cubierto por Ejecución de servicios y Cola de atención) — mostrarle el enlace solo
+ * para toparse con un módulo sin nada que hacer no aporta.
  */
 const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: string }[] = [
   { label: 'Panel de operación', href: '/operacion', icon: LayoutDashboard },
@@ -51,7 +59,7 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
   { label: 'Cobro sin cita', href: '/operacion/cobro-sin-cita', icon: Receipt, permiso: 'ventas:escritura' },
   { label: 'Agenda / Calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
-  { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock },
+  { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock, permiso: 'citas:escritura' },
   { label: 'Seguimiento', href: '/operacion/seguimiento-post-servicio', icon: ClipboardCheck, permiso: 'seguimientos:lectura' },
   { label: 'Subir imágenes', href: '/operacion/subir-imagenes', icon: ImagePlus },
 ];
