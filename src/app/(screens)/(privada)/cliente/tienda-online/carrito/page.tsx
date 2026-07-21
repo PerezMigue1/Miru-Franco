@@ -12,7 +12,6 @@ import Modal from '../../../../../components/ui/Modal';
 import { useCart, type CartItem } from '../../../../../context/CartContext';
 import { hasValidToken } from '../../../../../utils/security';
 import { calcularResumenCarritoVistaPrevia } from '../../../../../utils/ventaDesdeCarrito';
-import RecomendacionesWidget from '../../../../../components/recomendaciones/RecomendacionesWidget';
 
 export default function CarritoComprasPage() {
   const router = useRouter();
@@ -248,12 +247,6 @@ export default function CarritoComprasPage() {
             </Card>
           </div>
         </div>
-
-        {items.length > 0 && (
-          <div className="mt-6">
-            <RecomendacionesWidget items={items.map((i) => i.nombre)} />
-          </div>
-        )}
       </div>
 
       <Modal
