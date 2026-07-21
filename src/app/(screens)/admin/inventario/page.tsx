@@ -16,6 +16,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   BadgeDollarSign,
+  CalendarDays,
   CircleX,
   Package,
   Percent,
@@ -326,6 +327,9 @@ export default function InventarioPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => router.push('/admin/control-caducidad')}>
+              <span className="inline-flex items-center gap-1.5"><CalendarDays size={15} aria-hidden /> Control de caducidad</span>
+            </Button>
             <Button variant="outline" onClick={() => router.push('/admin/inventario/prediccion')}>
               Predicción de inventario
             </Button>
