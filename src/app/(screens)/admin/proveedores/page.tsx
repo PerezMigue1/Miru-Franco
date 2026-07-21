@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
-import { BadgeDollarSign, Package, Truck } from 'lucide-react';
+import { BadgeDollarSign, Package, ShoppingCart, Truck } from 'lucide-react';
 import {
   listarProveedores,
   crearProveedor,
@@ -23,6 +24,7 @@ function fmtFecha(iso?: string | null): string {
 }
 
 export default function ProveedoresPage() {
+  const router = useRouter();
   const [proveedores, setProveedores] = useState<ProveedorApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +130,12 @@ export default function ProveedoresPage() {
               {proveedores.length} proveedor{proveedores.length === 1 ? '' : 'es'} registrados
             </p>
           </div>
-          <Button onClick={openNuevo}>+ Nuevo Proveedor</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => router.push('/admin/compras-proveedores')}>
+              <span className="inline-flex items-center gap-1.5"><ShoppingCart size={15} aria-hidden /> Compras a proveedores</span>
+            </Button>
+            <Button onClick={openNuevo}>+ Nuevo Proveedor</Button>
+          </div>
         </div>
 
         {error && (
