@@ -38,6 +38,25 @@ export interface CrearCitaPayload {
   notas?: string;
 }
 
+export type NivelRiesgoCancelacion = 'bajo' | 'medio' | 'alto';
+
+export interface RiesgoCancelacionApi {
+  citaId: number;
+  probabilidadCancelacion: number;
+  porcentajeCancelacion: number;
+  prediccionCancelada: boolean;
+  prediccion: 'cancelada' | 'no_cancelada';
+  nivelRiesgo: NivelRiesgoCancelacion;
+  accionSugerida: string;
+  calculadoEn: string;
+  modelo?: {
+    nombre: string;
+    algoritmo: string;
+    umbral: number;
+    filasEntrenamiento: number;
+  };
+}
+
 interface ListadoCitasResp {
   success?: boolean;
   count?: number;
@@ -146,6 +165,67 @@ export async function crearCita(payload: CrearCitaPayload): Promise<CitaApi> {
   const cita = normalizarCita(obj);
   if (!cita) throw new Error('No se pudo crear la cita');
   return cita;
+}
+
+/**
+ * Calcula el riesgo en el backend. El frontend solo envía IDs: las 18
+ * variables del modelo se construyen con datos reales de PostgreSQL.
+ */
+export async function predecirRiesgosCancelacion(
+  citaIds: number[]
+): Promise<RiesgoCancelacionApi[]> {
+  if (citaIds.length === 0) return [];
+  const res = await apiClient.post<unknown>(
+    '/api/citas/riesgo-cancelacion',
+    { citaIds },
+    getBackendBaseUrl()
+  );
+  const arr = Array.isArray(res)
+    ? res
+    : Array.isArray((res as Record<string, unknown>)?.data)
+      ? (res as { data: unknown[] }).data
+      : [];
+
+  return arr
+    .map((elemento): RiesgoCancelacionApi | null => {
+      if (!elemento || typeof elemento !== 'object') return null;
+      const r = elemento as Record<string, unknown>;
+      const citaId = Number(r.citaId);
+      const probabilidad = Number(r.probabilidadCancelacion);
+      const porcentaje = Number(r.porcentajeCancelacion);
+      const nivel = s(r.nivelRiesgo).toLowerCase();
+      if (
+        !Number.isInteger(citaId) ||
+        !Number.isFinite(probabilidad) ||
+        !['bajo', 'medio', 'alto'].includes(nivel)
+      ) {
+        return null;
+      }
+      return {
+        citaId,
+        probabilidadCancelacion: probabilidad,
+        porcentajeCancelacion: Number.isFinite(porcentaje)
+          ? porcentaje
+          : Number((probabilidad * 100).toFixed(1)),
+        prediccionCancelada: Boolean(r.prediccionCancelada),
+        prediccion: r.prediccion === 'cancelada' ? 'cancelada' : 'no_cancelada',
+        nivelRiesgo: nivel as NivelRiesgoCancelacion,
+        accionSugerida: s(r.accionSugerida),
+        calculadoEn: s(r.calculadoEn),
+        modelo:
+          r.modelo && typeof r.modelo === 'object'
+            ? {
+                nombre: s((r.modelo as Record<string, unknown>).nombre),
+                algoritmo: s((r.modelo as Record<string, unknown>).algoritmo),
+                umbral: Number((r.modelo as Record<string, unknown>).umbral),
+                filasEntrenamiento: Number(
+                  (r.modelo as Record<string, unknown>).filasEntrenamiento
+                ),
+              }
+            : undefined,
+      };
+    })
+    .filter((riesgo): riesgo is RiesgoCancelacionApi => Boolean(riesgo));
 }
 
 export async function actualizarCita(

@@ -10,7 +10,7 @@ import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
-import { CalendarClock, CheckCircle2, Clock3, XCircle } from 'lucide-react';
+import { BrainCircuit, CheckCircle2, Clock3, XCircle } from 'lucide-react';
 import {
   listarCitas,
   crearCita,
@@ -18,8 +18,11 @@ import {
   checkInCita,
   checkOutCita,
   reprogramarCita,
+  predecirRiesgosCancelacion,
   CitaApi,
   EstadoCita,
+  RiesgoCancelacionApi,
+  NivelRiesgoCancelacion,
 } from '../../../../services/citas';
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
@@ -42,10 +45,23 @@ function fmtHora(iso: string): string {
   return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 }
 
+function varianteRiesgo(nivel: NivelRiesgoCancelacion): 'success' | 'warning' | 'danger' {
+  if (nivel === 'alto') return 'danger';
+  if (nivel === 'medio') return 'warning';
+  return 'success';
+}
+
+function etiquetaRiesgo(nivel: NivelRiesgoCancelacion): string {
+  return nivel.charAt(0).toUpperCase() + nivel.slice(1);
+}
+
 export default function GestionCitasPage() {
   const [citas, setCitas] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [riesgos, setRiesgos] = useState<Record<number, RiesgoCancelacionApi>>({});
+  const [loadingRiesgos, setLoadingRiesgos] = useState(false);
+  const [errorRiesgos, setErrorRiesgos] = useState<string | null>(null);
 
   // Catálogos para selects
   const [clientes, setClientes] = useState<ClienteApi[]>([]);
@@ -79,20 +95,57 @@ export default function GestionCitasPage() {
   const [reprogError, setReprogError] = useState<string | null>(null);
   const [reprogSaving, setReprogSaving] = useState(false);
 
-  const cargar = useCallback(() => {
+  const TAMANO_PAGINA_CITAS = 100;
+  const [pagina, setPagina] = useState(1);
+  const [totalCitas, setTotalCitas] = useState(0);
+
+  const cargar = useCallback(async () => {
     setLoading(true);
     setError(null);
-    listarCitas({
-      limit: 100,
-      especialistaId: filtroEspecialistaId || undefined,
-      desde: filtroDesde || undefined,
-      hasta: filtroHasta || undefined,
-      orden: 'creadoEn',
-    })
-      .then(({ data }) => setCitas(data))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar las citas'))
-      .finally(() => setLoading(false));
-  }, [filtroEspecialistaId, filtroDesde, filtroHasta]);
+    setErrorRiesgos(null);
+    try {
+      const { data, total } = await listarCitas({
+        limit: TAMANO_PAGINA_CITAS,
+        page: pagina,
+        especialistaId: filtroEspecialistaId || undefined,
+        desde: filtroDesde || undefined,
+        hasta: filtroHasta || undefined,
+        orden: 'creadoEn',
+      });
+      setCitas(data);
+      setTotalCitas(total);
+      setLoading(false);
+
+      // Riesgo de cancelación solo para citas activas (no aplica a canceladas/completadas/no_asistio).
+      // La página ya viene acotada a TAMANO_PAGINA_CITAS (100), igual que el máximo que acepta el DTO.
+      const idsActivos = data
+        .filter((cita) => !['cancelada', 'completada', 'no_asistio'].includes(cita.estado))
+        .map((cita) => cita.id);
+      if (idsActivos.length === 0) {
+        setRiesgos({});
+        return;
+      }
+
+      setLoadingRiesgos(true);
+      try {
+        const predicciones = await predecirRiesgosCancelacion(idsActivos);
+        setRiesgos(Object.fromEntries(predicciones.map((riesgo) => [riesgo.citaId, riesgo])));
+      } catch (e) {
+        setRiesgos({});
+        setErrorRiesgos(e instanceof Error ? e.message : 'No se pudo calcular el riesgo de cancelación');
+      } finally {
+        setLoadingRiesgos(false);
+      }
+    } catch (e) {
+      setCitas([]);
+      setRiesgos({});
+      setError(e instanceof Error ? e.message : 'Error al cargar las citas');
+      setLoading(false);
+    }
+  }, [filtroEspecialistaId, filtroDesde, filtroHasta, pagina]);
+
+  // Cambiar filtros reinicia a la página 1 (evita quedar en una página vacía).
+  useEffect(() => { setPagina(1); }, [filtroEspecialistaId, filtroDesde, filtroHasta]);
 
   useEffect(() => {
     cargar();
@@ -101,6 +154,10 @@ export default function GestionCitasPage() {
     listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
     getServicios().then(({ data }) => setServicios(data)).catch(() => {});
   }, [cargar]);
+
+  const totalPaginasCitas = Math.max(1, Math.ceil(totalCitas / TAMANO_PAGINA_CITAS));
+  const desdeCitas = totalCitas === 0 ? 0 : (pagina - 1) * TAMANO_PAGINA_CITAS + 1;
+  const hastaCitas = Math.min((pagina - 1) * TAMANO_PAGINA_CITAS + citas.length, totalCitas);
 
   const resetForm = () => {
     setFClienteId(''); setFEspecialistaId(''); setFServicioId('');
@@ -192,6 +249,7 @@ export default function GestionCitasPage() {
   const pendientes = citas.filter((c) => c.estado === 'pendiente' || c.estado === 'confirmada').length;
   const enCurso = citas.filter((c) => c.estado === 'en_curso').length;
   const canceladas = citas.filter((c) => c.estado === 'cancelada').length;
+  const altoRiesgo = Object.values(riesgos).filter((r) => r.nivelRiesgo === 'alto').length;
 
   return (
     <OperacionLayout permisoRequerido="citas:escritura">
@@ -211,7 +269,7 @@ export default function GestionCitasPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card variant="elevated" padding="lg">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
@@ -242,6 +300,23 @@ export default function GestionCitasPage() {
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Canceladas</p>
                 <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : canceladas}</p>
+              </div>
+            </div>
+          </Card>
+          <Card
+            variant="elevated"
+            padding="lg"
+            style={altoRiesgo > 0 ? { boxShadow: '0 0 0 1.5px var(--danger), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                <BrainCircuit size={21} style={{ color: altoRiesgo > 0 ? 'var(--danger)' : 'var(--encabezados-alterno)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Riesgo alto previsto</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: altoRiesgo > 0 ? 'var(--danger-texto)' : 'var(--menu-texto-principal)' }}>
+                  {loading || loadingRiesgos ? '…' : altoRiesgo}
+                </p>
               </div>
             </div>
           </Card>
@@ -286,6 +361,24 @@ export default function GestionCitasPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+        <div className="mb-4 rounded-lg border px-4 py-3" style={{ borderColor: 'var(--fondos-suaves)', backgroundColor: 'var(--fondo-general)' }}>
+          <div className="flex items-start gap-3">
+            <BrainCircuit size={19} className="mt-0.5 shrink-0" style={{ color: 'var(--encabezados-alterno)' }} />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                Predicción preventiva de cancelación
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                El puntaje ayuda a priorizar recordatorios y confirmaciones; no debe utilizarse para rechazar una cita.
+              </p>
+              {errorRiesgos && (
+                <p className="text-xs mt-1" style={{ color: 'var(--danger-texto)' }}>
+                  Las citas siguen disponibles, pero el modelo no respondió: {errorRiesgos}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
         ) : error ? (
@@ -298,7 +391,7 @@ export default function GestionCitasPage() {
             No hay citas registradas.
           </p>
         ) : (
-          <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Acciones']} headerSutil>
+          <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Riesgo IA', 'Acciones']} headerSutil>
             {citas.map((cita) => (
               <TableRow key={cita.id}>
                 <TableCell rowPadding="lg">{cita.clienteNombre ?? 'Cliente sin nombre'}</TableCell>
@@ -309,6 +402,24 @@ export default function GestionCitasPage() {
                 <TableCell rowPadding="lg">{cita.servicioNombre ?? 'Servicio'}</TableCell>
                 <TableCell rowPadding="lg">
                   <Badge variant={varianteEstadoCita(cita.estado)}>{etiquetaEstadoCita(cita.estado)}</Badge>
+                </TableCell>
+                <TableCell rowPadding="lg">
+                  {esFinal(cita.estado) ? (
+                    <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>No aplica</span>
+                  ) : riesgos[cita.id] ? (
+                    <div className="min-w-36 whitespace-normal" title={riesgos[cita.id].accionSugerida}>
+                      <Badge variant={varianteRiesgo(riesgos[cita.id].nivelRiesgo)} size="sm">
+                        {etiquetaRiesgo(riesgos[cita.id].nivelRiesgo)} · {riesgos[cita.id].porcentajeCancelacion}%
+                      </Badge>
+                      <p className="text-xs mt-1 leading-snug" style={{ color: 'var(--encabezados-alterno)' }}>
+                        {riesgos[cita.id].accionSugerida}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                      {loadingRiesgos ? 'Calculando…' : 'No disponible'}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell rowPadding="lg">
                   <div className="flex gap-2 flex-wrap">
@@ -329,6 +440,34 @@ export default function GestionCitasPage() {
               </TableRow>
             ))}
           </Table>
+        )}
+        {!loading && !error && totalCitas > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+            <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+              Mostrando {desdeCitas}–{hastaCitas} de {totalCitas}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={pagina <= 1}
+              >
+                Anterior
+              </Button>
+              <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                Página {pagina} de {totalPaginasCitas}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPagina((p) => Math.min(totalPaginasCitas, p + 1))}
+                disabled={pagina >= totalPaginasCitas}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
         )}
         </Card>
       </div>

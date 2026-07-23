@@ -12,6 +12,7 @@ import { STAFF_ROLES, getRolFromUser } from '../../utils/adminAuth';
 import { usePermisos, getPermisosFromUser, evaluarPermiso } from '../../utils/permisos';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 import {
+  BrainCircuit,
   CalendarClock,
   CalendarDays,
   ChevronLeft,
@@ -24,6 +25,7 @@ import {
   Menu,
   Receipt,
   Scissors,
+  ShoppingBag,
   UserCog,
   Users,
   X,
@@ -55,14 +57,21 @@ const BAR_HEIGHT = 56;
  * cancelar citas, algo que becario no puede hacer (solo check-in/out vía citas:asignadas,
  * ya cubierto por Ejecución de servicios y Cola de atención) — mostrarle el enlace solo
  * para toparse con un módulo sin nada que hacer no aporta.
+ * Pedidos online exige `caja:escritura` — es la jefa cobrando pedidos al recoger, mismo
+ * permiso que ya tiene y con el que se cerró PagosService/PedidosService (ver esa tarea).
+ * Empleado y becario no lo tienen, así que no ven el enlace.
+ * Segmentación de clientes exige `clientes:lectura` — mismo permiso que ya gatea el
+ * endpoint `/api/clientes/segmentacion` en el backend.
  */
 const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: string }[] = [
   { label: 'Panel de operación', href: '/operacion', icon: LayoutDashboard },
   { label: 'Ejecución de servicios', href: '/operacion/ejecucion-servicios', icon: Scissors },
   { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
   { label: 'Punto de venta', href: '/operacion/punto-de-venta', icon: Receipt, permiso: 'ventas:escritura' },
+  { label: 'Pedidos online', href: '/operacion/pedidos-online', icon: ShoppingBag, permiso: 'caja:escritura' },
   { label: 'Agenda / Calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
   { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock, permiso: 'citas:escritura' },
+  { label: 'Segmentación de clientes', href: '/operacion/segmentacion-clientes', icon: BrainCircuit, permiso: 'clientes:lectura' },
   { label: 'Seguimiento', href: '/operacion/seguimiento-post-servicio', icon: ClipboardCheck, permiso: 'seguimientos:lectura' },
   { label: 'Mis solicitudes', href: '/operacion/mis-solicitudes', icon: ClipboardList },
   { label: 'Mi asistencia', href: '/operacion/mi-asistencia', icon: Clock3 },

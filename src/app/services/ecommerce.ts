@@ -215,10 +215,14 @@ export interface PedidoApi {
   creadoEn?: string;
   actualizadoEn?: string;
   usuarioId?: string;
+  /** Nombre/email del cliente si el backend los incluyó (`Pedido.usuario`). GET /api/usuarios es admin-only, así que operación depende de esto para mostrar a quién pertenece el pedido. */
+  usuarioNombre?: string | null;
+  usuarioEmail?: string | null;
   direccionEnvioId?: string | null;
 }
 
 function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
+  const usuarioObj = (raw.usuario && typeof raw.usuario === 'object' ? raw.usuario : null) as Record<string, unknown> | null;
   return {
     id: num(raw.id),
     estado: (str(raw.estado) || 'borrador') as EstadoPedidoUi,
@@ -236,6 +240,8 @@ function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
     creadoEn: str(raw.creadoEn ?? raw.creado_en),
     actualizadoEn: str(raw.actualizadoEn ?? raw.actualizado_en),
     usuarioId: str(raw.usuarioId ?? raw.usuario_id),
+    usuarioNombre: usuarioObj?.nombre != null ? str(usuarioObj.nombre) : null,
+    usuarioEmail: usuarioObj?.email != null ? str(usuarioObj.email) : null,
     direccionEnvioId: raw.direccionEnvioId != null ? str(raw.direccionEnvioId) : raw.direccion_envio_id != null ? str(raw.direccion_envio_id) : null,
   };
 }
@@ -243,6 +249,47 @@ function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
 export async function listarPedidos(): Promise<PedidoApi[]> {
   const res = await apiClient.get<unknown>('/api/pedidos', BASE());
   return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarPedido(r));
+}
+
+export interface ListarPedidosPaginadoParams {
+  page?: number;
+  limit?: number;
+  estado?: EstadoPedidoUi;
+}
+
+export interface PedidosPaginados {
+  data: PedidoApi[];
+  count: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
+ * Igual que `listarPedidos()`, pero SIN descartar la metadata de paginación que el
+ * backend ya manda (`count`/`page`/`totalPages`) — `listarPedidos()` la tira porque
+ * `unwrapArray()` solo extrae `data`. Función nueva en vez de cambiar la firma de
+ * `listarPedidos()` para no romper los ~11 call sites que ya la usan esperando un
+ * array plano (ver auditoría de paginación — quedan fuera de esta tarea a propósito).
+ */
+export async function listarPedidosPaginado(
+  params?: ListarPedidosPaginadoParams
+): Promise<PedidosPaginados> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.limit) sp.set('limit', String(params.limit));
+  if (params?.estado) sp.set('estado', params.estado);
+  const qs = sp.toString();
+  const res = await apiClient.get<unknown>(`/api/pedidos${qs ? `?${qs}` : ''}`, BASE());
+  const o = (res && typeof res === 'object' ? res : {}) as Record<string, unknown>;
+  const arr = unwrapArray<Record<string, unknown>>(res);
+  return {
+    data: arr.map((r) => normalizarPedido(r)),
+    count: num(o.count, arr.length),
+    page: num(o.page, params?.page ?? 1),
+    limit: num(o.limit, params?.limit ?? 20),
+    totalPages: num(o.totalPages, 1),
+  };
 }
 
 export async function obtenerPedido(id: number): Promise<PedidoApi | null> {
