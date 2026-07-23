@@ -47,11 +47,15 @@ import {
 } from '../../../../../services/paymentsPublic';
 import CheckoutTarjetaAnimada from '../../../../../components/tienda/CheckoutTarjetaAnimada';
 
-/** Dirección del local para retiro en tienda (configurable por entorno). */
+/**
+ * Dirección del local para retiro en tienda (configurable por entorno).
+ * Sin NEXT_PUBLIC_SALON_DIRECCION, nunca se muestra una calle inventada ni un
+ * texto de "falta configurar" a la clienta — solo un aviso neutro y honesto.
+ */
 const DIRECCION_RETIRO_LOCAL =
   typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SALON_DIRECCION
     ? process.env.NEXT_PUBLIC_SALON_DIRECCION
-    : 'Mirú Franco Estética — Av. Ejemplo 123, Col. Centro, Ciudad de México, CDMX CP 01000 (configura NEXT_PUBLIC_SALON_DIRECCION en .env)';
+    : 'Recoge en el salón — te avisaremos cuando esté listo.';
 
 function textoDesdeDireccion(d: DireccionUsuarioDTO): string {
   const line1 = [d.calle, d.numeroInterior].filter(Boolean).join(' ');
@@ -261,7 +265,11 @@ export default function CheckoutPage() {
   const [direcciones, setDirecciones] = useState<DireccionUsuarioDTO[]>([]);
   const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState('');
 
-  const [metodoPago, setMetodoPago] = useState({ tipo: '' });
+  // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
+  // Sin pasarela real, el modelo es "paga en el salón al recoger" — no hay selección de
+  // método online. Se fija un tipo constante (no tarjeta) para que `esTarjeta`/`esTarjetaCredito`
+  // permanezcan en false y el wizard tome exactamente el camino "sin tarjeta" que ya existía.
+  const [metodoPago, setMetodoPago] = useState({ tipo: 'pago_en_salon' });
 
   const [solicitaFactura, setSolicitaFactura] = useState(false);
 
@@ -557,23 +565,22 @@ export default function CheckoutPage() {
     return '';
   };
 
-  const etiquetaMetodoPago = () => {
-    const m = metodosPagoOpciones.find((o) => o.value === metodoPago.tipo);
-    return m?.label ?? metodoPago.tipo;
-  };
+  // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
+  // Sin selección de método online, el "método" que ve la clienta es siempre el pago en salón.
+  const etiquetaMetodoPago = () => 'Pago en el salón al recoger tu pedido';
 
   const textoCuandoLlega = () => {
     if (tipoEntrega === 'retiro') {
       return {
         titulo: 'Retiro en la estética',
         texto:
-          'Tu pedido estará listo para recoger en el local en aproximadamente 24–48 horas hábiles después de confirmar el pago. Te avisaremos cuando puedas pasar.',
+          'Tu pedido estará listo para recoger en el local en aproximadamente 24–48 horas hábiles. Pagas ahí mismo, al recoger. Te avisaremos cuando puedas pasar.',
       };
     }
     return {
       titulo: 'Envío a domicilio',
       texto:
-        'Entrega estimada: 3 a 5 días hábiles después de confirmar el pago. El repartidor podrá contactarte al teléfono de tu cuenta.',
+        'Entrega estimada: 3 a 5 días hábiles. El repartidor podrá contactarte al teléfono de tu cuenta.',
     };
   };
 
@@ -703,16 +710,19 @@ export default function CheckoutPage() {
         }
       }
 
-      if (metodoPago.tipo) {
-        await crearPago({
-          pedidoId: pedido.id,
-          monto: pedido.total,
-          moneda: pedido.moneda || 'MXN',
-          metodo: mapMetodoCheckout(metodoPago.tipo),
-          estado: 'pendiente',
-          intentoNumero: 1,
-        });
-      }
+      // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
+      // POST /api/pagos ahora es solo-staff (caja:escritura) — el cliente ya no crea su propio
+      // Pago aquí. Sin pasarela, el registro de pago lo hace quien cobra en el salón al recoger.
+      // if (metodoPago.tipo) {
+      //   await crearPago({
+      //     pedidoId: pedido.id,
+      //     monto: pedido.total,
+      //     moneda: pedido.moneda || 'MXN',
+      //     metodo: mapMetodoCheckout(metodoPago.tipo),
+      //     estado: 'pendiente',
+      //     intentoNumero: 1,
+      //   });
+      // }
 
       await clearCart();
       clearCheckoutDireccionId();
@@ -862,7 +872,7 @@ export default function CheckoutPage() {
   };
 
   const etiquetasBarra = !esTarjeta
-    ? ['Entrega', 'Cuándo llegará', 'Forma de pago', 'Revisa y confirma']
+    ? ['Entrega', 'Cuándo llegará', 'Pago en el salón', 'Revisa y confirma']
     : esTarjetaCredito
       ? [
           'Entrega',
@@ -1088,7 +1098,8 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-            {paso === 3 && (
+            {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
+            {false && paso === 3 && (
               <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Cómo quieres pagar?
@@ -1188,6 +1199,27 @@ export default function CheckoutPage() {
                     </p>
                   </div>
                 )}
+              </Card>
+            )}
+
+            {/* Pago en el salón — sin pasarela integrada, el pedido se paga al recogerlo. */}
+            {paso === 3 && (
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+                <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  ¿Cómo se paga tu pedido?
+                </h2>
+                <div
+                  className="rounded-lg px-4 py-4"
+                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
+                >
+                  <p className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <strong>Pagas en el salón, al recoger tu pedido.</strong>
+                  </p>
+                  <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                    Todavía no aceptamos pagos en línea. Te avisaremos cuando tu pedido esté listo
+                    para pasar y pagarlo directamente en la estética.
+                  </p>
+                </div>
               </Card>
             )}
 
