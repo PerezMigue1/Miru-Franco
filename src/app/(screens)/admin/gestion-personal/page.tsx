@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { listarEmpleados, crearPerfilEmpleado, actualizarEmpleado, eliminarEmpleado, EmpleadoApi } from '../../../services/empleados';
 import { getUsuarios, type Usuario } from '../../../services/usuarios';
+import { obtenerConfiguracionSalon, actualizarConfiguracionSalon } from '../../../services/configuracion';
+import { isAdminRol, getRolFromUser } from '../../../utils/adminAuth';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
@@ -11,7 +13,10 @@ import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { BadgeDollarSign, ClipboardList, Users } from 'lucide-react';
+import PanelSolicitudes from '../../../components/personal/PanelSolicitudes';
+import PanelAsistencia from '../../../components/personal/PanelAsistencia';
+import PanelHorasExtra from '../../../components/personal/PanelHorasExtra';
+import { BadgeDollarSign, Clock3, ClipboardList, Users } from 'lucide-react';
 
 interface EmpleadoFila {
   id: string;
@@ -57,6 +62,79 @@ export default function GestionPersonalPage() {
   const [formComision, setFormComision] = useState('');
   const [formActivo, setFormActivo] = useState(true);
 
+  // Configuración de horario (por tipo de día) y tarifa de hora extra (fila única, solo admin la edita)
+  const [esAdmin, setEsAdmin] = useState(false);
+  const [loadingConfig, setLoadingConfig] = useState(true);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [configEntradaLV, setConfigEntradaLV] = useState('09:00');
+  const [configSalidaLV, setConfigSalidaLV] = useState('18:00');
+  const [configEntradaSab, setConfigEntradaSab] = useState('09:00');
+  const [configSalidaSab, setConfigSalidaSab] = useState('18:00');
+  const [domingoActivo, setDomingoActivo] = useState(false);
+  const [configEntradaDom, setConfigEntradaDom] = useState('');
+  const [configSalidaDom, setConfigSalidaDom] = useState('');
+  const [configMargen, setConfigMargen] = useState('15');
+  const [configTarifa, setConfigTarifa] = useState('0');
+  const [tarifaConfigurada, setTarifaConfigurada] = useState(false);
+
+  const cargarConfig = async () => {
+    setLoadingConfig(true);
+    setConfigError(null);
+    try {
+      const config = await obtenerConfiguracionSalon();
+      setConfigEntradaLV(config.entradaLunesViernes);
+      setConfigSalidaLV(config.salidaLunesViernes);
+      setConfigEntradaSab(config.entradaSabado);
+      setConfigSalidaSab(config.salidaSabado);
+      setDomingoActivo(Boolean(config.entradaDomingo && config.salidaDomingo));
+      setConfigEntradaDom(config.entradaDomingo ?? '');
+      setConfigSalidaDom(config.salidaDomingo ?? '');
+      setConfigMargen(String(config.margenGraciaMinutos));
+      setConfigTarifa(String(config.tarifaHoraExtra));
+      setTarifaConfigurada(config.tarifaHoraExtra > 0);
+    } catch {
+      setConfigError('Error al cargar la configuración');
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  const handleGuardarConfig = async () => {
+    if (domingoActivo && (!configEntradaDom || !configSalidaDom)) {
+      setConfigError('Si el salón abre domingo, completa entrada y salida de ese día');
+      return;
+    }
+    setSavingConfig(true);
+    setConfigError(null);
+    try {
+      const config = await actualizarConfiguracionSalon({
+        entradaLunesViernes: configEntradaLV,
+        salidaLunesViernes: configSalidaLV,
+        entradaSabado: configEntradaSab,
+        salidaSabado: configSalidaSab,
+        entradaDomingo: domingoActivo ? configEntradaDom : null,
+        salidaDomingo: domingoActivo ? configSalidaDom : null,
+        margenGraciaMinutos: Number(configMargen) || 0,
+        tarifaHoraExtra: Number(configTarifa) || 0,
+      });
+      setConfigEntradaLV(config.entradaLunesViernes);
+      setConfigSalidaLV(config.salidaLunesViernes);
+      setConfigEntradaSab(config.entradaSabado);
+      setConfigSalidaSab(config.salidaSabado);
+      setDomingoActivo(Boolean(config.entradaDomingo && config.salidaDomingo));
+      setConfigEntradaDom(config.entradaDomingo ?? '');
+      setConfigSalidaDom(config.salidaDomingo ?? '');
+      setConfigMargen(String(config.margenGraciaMinutos));
+      setConfigTarifa(String(config.tarifaHoraExtra));
+      setTarifaConfigurada(config.tarifaHoraExtra > 0);
+    } catch (e) {
+      setConfigError(e instanceof Error ? e.message : 'No se pudo guardar la configuración');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
   const cargar = async () => {
     setLoading(true);
     try {
@@ -80,7 +158,16 @@ export default function GestionPersonalPage() {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    cargar();
+    cargarConfig();
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}') as Record<string, unknown>;
+      setEsAdmin(isAdminRol(getRolFromUser(user)));
+    } catch {
+      setEsAdmin(false);
+    }
+  }, []);
 
   const resetForm = () => {
     setFormUsuarioId('');
@@ -281,42 +368,116 @@ export default function GestionPersonalPage() {
         )}
         </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card variant="elevated" padding="lg">
-          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Solicitudes de Permisos
-          </h2>
-          <div className="space-y-3">
-            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-              <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
-                Auxiliar - 2024-01-20
+          <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                <Clock3 size={18} /> Horario y tarifa de hora extra
+              </h2>
+              <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                Igual para todo el personal — se usará para calcular horas extras desde asistencia.
               </p>
-              <p className="text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                Permiso personal
-              </p>
-              <div className="flex gap-2">
-                <Button size="sm">Aprobar</Button>
-                <Button size="sm" variant="outline">Rechazar</Button>
+            </div>
+            {!esAdmin && (
+              <Badge variant="default">Solo lectura</Badge>
+            )}
+          </div>
+
+          {configError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{configError}</p>}
+
+          {loadingConfig ? (
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Cargando configuración…</p>
+          ) : (
+            <div className="space-y-5">
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Lunes a viernes</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Entrada" type="time" value={configEntradaLV} onChange={(e) => setConfigEntradaLV(e.target.value)} disabled={!esAdmin} fullWidth />
+                  <Input label="Salida" type="time" value={configSalidaLV} onChange={(e) => setConfigSalidaLV(e.target.value)} disabled={!esAdmin} fullWidth />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Sábado</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Entrada" type="time" value={configEntradaSab} onChange={(e) => setConfigEntradaSab(e.target.value)} disabled={!esAdmin} fullWidth />
+                  <Input label="Salida" type="time" value={configSalidaSab} onChange={(e) => setConfigSalidaSab(e.target.value)} disabled={!esAdmin} fullWidth />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Domingo</p>
+                  {esAdmin && (
+                    <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                      <input
+                        type="checkbox"
+                        checked={domingoActivo}
+                        onChange={(e) => setDomingoActivo(e.target.checked)}
+                      />
+                      El salón abre domingo
+                    </label>
+                  )}
+                </div>
+                {domingoActivo ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label="Entrada" type="time" value={configEntradaDom} onChange={(e) => setConfigEntradaDom(e.target.value)} disabled={!esAdmin} fullWidth />
+                    <Input label="Salida" type="time" value={configSalidaDom} onChange={(e) => setConfigSalidaDom(e.target.value)} disabled={!esAdmin} fullWidth />
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: 'var(--warning-texto)' }}>
+                    Domingo — sin configurar. El salón se asume cerrado ese día hasta que se defina un horario.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Margen de gracia (minutos)"
+                  type="number"
+                  min={0}
+                  value={configMargen}
+                  onChange={(e) => setConfigMargen(e.target.value)}
+                  disabled={!esAdmin}
+                  fullWidth
+                />
+                <div>
+                  <Input
+                    label="Tarifa de hora extra ($/hora)"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={configTarifa}
+                    onChange={(e) => setConfigTarifa(e.target.value)}
+                    disabled={!esAdmin}
+                    placeholder="Sin configurar"
+                    fullWidth
+                  />
+                  {!tarifaConfigurada && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--warning-texto)' }}>
+                      Tarifa no configurada — el cálculo de horas extras no será real hasta que se defina.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {esAdmin && (
+            <div className="mt-4">
+              <Button size="sm" onClick={handleGuardarConfig} disabled={savingConfig || loadingConfig}>
+                {savingConfig ? 'Guardando...' : 'Guardar configuración'}
+              </Button>
+            </div>
+          )}
         </Card>
 
-        <Card variant="elevated" padding="lg">
-          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Horas Extras del Mes
-          </h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-              <div>
-                <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Auxiliar</p>
-                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>5 horas extras</p>
-              </div>
-              <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>$500</p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <PanelSolicitudes />
+        <PanelHorasExtra />
       </div>
+
+      <PanelAsistencia />
       </div>
       {/* Modal: Crear Empleado */}
       <Modal

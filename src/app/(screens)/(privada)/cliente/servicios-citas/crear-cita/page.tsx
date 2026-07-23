@@ -6,28 +6,32 @@ import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
-import Input from '../../../../../components/ui/Input';
-import Select from '../../../../../components/ui/Select';
 import Textarea from '../../../../../components/ui/Textarea';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
+import { getMiPerfil } from '../../../../../services/auth';
+import { crearCita, obtenerEspecialistas, type EspecialistaApi } from '../../../../../services/citas';
+
+const TZ_MEXICO = 'America/Mexico_City';
 
 function CrearCitaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const servicioId = searchParams.get('servicioId');
-  const fecha = searchParams.get('fecha');
-  const hora = searchParams.get('hora');
+  const especialistaId = searchParams.get('especialistaId');
+  const inicio = searchParams.get('inicio');
+  const fin = searchParams.get('fin');
 
-  const [formData, setFormData] = useState({
-    nombre: '',
-    telefono: '',
-    email: '',
-    especialista: '',
-    notas: '',
-  });
+  const [notas, setNotas] = useState('');
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [loadingServicio, setLoadingServicio] = useState(!!servicioId);
+  const [especialista, setEspecialista] = useState<EspecialistaApi | null>(null);
+  const [loadingEspecialista, setLoadingEspecialista] = useState(!!especialistaId);
+
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const datosIncompletos = !servicioId || !especialistaId || !inicio || !fin;
 
   useEffect(() => {
     if (!servicioId) {
@@ -40,41 +44,40 @@ function CrearCitaContent() {
     });
   }, [servicioId]);
 
-  const especialistasBase = [
-    { value: 'mildred', label: 'Mildred' },
-    { value: 'carmen', label: 'Carmen' },
-    { value: 'laura', label: 'Laura' },
-  ];
+  useEffect(() => {
+    if (!especialistaId) {
+      queueMicrotask(() => setLoadingEspecialista(false));
+      return;
+    }
+    obtenerEspecialistas()
+      .then((lista) => setEspecialista(lista.find((e) => e.id === especialistaId) ?? null))
+      .finally(() => setLoadingEspecialista(false));
+  }, [especialistaId]);
 
-  const especialistas = servicio?.especialistas?.length
-    ? [
-        ...servicio.especialistas.map((e) => ({
-          value: e.usuarioId,
-          label: e.nombre || e.usuarioId,
-        })),
-        { value: 'cualquiera', label: 'Cualquiera disponible' },
-      ]
-    : [
-        ...especialistasBase,
-        { value: 'cualquiera', label: 'Cualquiera disponible' },
-      ];
-
-  const manejarCambio = (campo: string, valor: string) => {
-    setFormData((prev) => ({ ...prev, [campo]: valor }));
-  };
-
-  const manejarEnviar = (e: React.FormEvent) => {
+  const manejarEnviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí iría la lógica para crear la cita en el backend
-    const especialistaOption = especialistas.find(
-      (opt) => opt.value === formData.especialista
-    );
-    const especialistaNombre = especialistaOption?.label ?? '';
-    router.push(
-      `/cliente/servicios-citas/confirmacion?servicioId=${servicioId}&fecha=${fecha}&hora=${hora}&especialista=${encodeURIComponent(
-        especialistaNombre
-      )}`
-    );
+    if (datosIncompletos) {
+      setError('Faltan datos de la cita. Vuelve a seleccionar especialista, fecha y hora.');
+      return;
+    }
+    setEnviando(true);
+    setError(null);
+    try {
+      const perfil = await getMiPerfil();
+      const cita = await crearCita({
+        clienteId: perfil.id,
+        especialistaId: especialistaId!,
+        servicioId: Number(servicioId),
+        fechaHoraInicio: inicio!,
+        fechaHoraFin: fin!,
+        notas: notas || undefined,
+      });
+      router.push(`/cliente/servicios-citas/confirmacion?citaId=${cita.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear la cita. Intenta con otro horario.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -93,51 +96,21 @@ function CrearCitaContent() {
                   className="text-page-title mb-6"
                   style={{ color: 'var(--menu-texto-principal)' }}
                 >
-                  Información de Contacto
-                </h2>
-                <div className="space-y-4">
-                  <Input
-                    label="Nombre Completo"
-                    value={formData.nombre}
-                    onChange={(e) => manejarCambio('nombre', e.target.value)}
-                    fullWidth
-                  />
-                  <Input
-                    label="Teléfono"
-                    type="tel"
-                    value={formData.telefono}
-                    onChange={(e) => manejarCambio('telefono', e.target.value)}
-                    fullWidth
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => manejarCambio('email', e.target.value)}
-                    fullWidth
-                  />
-                </div>
-              </Card>
-
-              <Card style={{ animation: 'fadeUp 350ms ease-out 80ms both' }}>
-                <h2
-                  className="text-page-title mb-6"
-                  style={{ color: 'var(--menu-texto-principal)' }}
-                >
                   Detalles de la Cita
                 </h2>
                 <div className="space-y-4">
-                  <Select
-                    label="Especialista Preferido"
-                    options={especialistas}
-                    value={formData.especialista}
-                    onChange={(e) => manejarCambio('especialista', e.target.value)}
-                    fullWidth
-                  />
+                  <div>
+                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Especialista
+                    </p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>
+                      {loadingEspecialista ? 'Cargando...' : especialista?.nombre ?? 'No seleccionado'}
+                    </p>
+                  </div>
                   <Textarea
                     label="Notas Adicionales (Opcional)"
-                    value={formData.notas}
-                    onChange={(e) => manejarCambio('notas', e.target.value)}
+                    value={notas}
+                    onChange={(e) => setNotas(e.target.value)}
                     rows={4}
                     fullWidth
                     placeholder="Indica cualquier preferencia, alergia o información relevante..."
@@ -169,11 +142,12 @@ function CrearCitaContent() {
                         Fecha
                       </p>
                       <p style={{ color: 'var(--menu-texto-principal)' }}>
-                        {fecha ? new Date(fecha).toLocaleDateString('es-ES', {
+                        {inicio ? new Date(inicio).toLocaleDateString('es-ES', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
+                          timeZone: TZ_MEXICO,
                         }) : 'No seleccionada'}
                       </p>
                     </div>
@@ -181,7 +155,13 @@ function CrearCitaContent() {
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Hora
                       </p>
-                      <p style={{ color: 'var(--menu-texto-principal)' }}>{hora || 'No seleccionada'}</p>
+                      <p style={{ color: 'var(--menu-texto-principal)' }}>
+                        {inicio ? new Date(inicio).toLocaleTimeString('es-MX', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: TZ_MEXICO,
+                        }) : 'No seleccionada'}
+                      </p>
                     </div>
                     {servicio?.duracion && (
                       <div>
@@ -202,13 +182,17 @@ function CrearCitaContent() {
                         {servicio?.precio ?? '—'}
                       </p>
                     </div>
+                    {error && (
+                      <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+                    )}
                     <Button
                       type="submit"
                       fullWidth
                       size="lg"
                       className="mt-4"
+                      disabled={enviando || datosIncompletos}
                     >
-                      Confirmar Cita
+                      {enviando ? 'Confirmando...' : 'Confirmar Cita'}
                     </Button>
                   </div>
                 )}
