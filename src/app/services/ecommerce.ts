@@ -885,17 +885,21 @@ export interface NotificacionApi {
   titulo: string;
   mensaje: string;
   leida: boolean;
+  /** Json libre por tipo de notificación — ej. para tipo 'venta': { ventaId, folio, total }. */
+  metadata?: Record<string, unknown> | null;
   creadoEn?: string;
   usuarioId?: string;
 }
 
 function normalizarNotificacion(r: Record<string, unknown>): NotificacionApi {
+  const metadata = r.metadata;
   return {
     id: str(r.id),
     tipo: str(r.tipo),
     titulo: str(r.titulo),
     mensaje: str(r.mensaje),
     leida: Boolean(r.leida),
+    metadata: metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : null,
     creadoEn: str(r.creadoEn ?? r.creado_en),
     usuarioId: str(r.usuarioId ?? r.usuario_id),
   };

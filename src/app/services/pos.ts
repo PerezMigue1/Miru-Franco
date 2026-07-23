@@ -11,17 +11,28 @@ export interface VentaLocalItemApi {
   cantidad: number;
   precioUnitario: number;
   subtotal?: number;
+  /**
+   * Nombre ya resuelto por el backend (`presentacion.producto.nombre` + tamaño, o
+   * `servicio.nombre` — ver `incluirVentaRelaciones()` en pos.service.ts). Nunca se
+   * resuelve con catálogos aparte: el backend ya lo manda en la misma respuesta.
+   */
+  nombre?: string;
 }
 
 export interface VentaLocalApi {
   id: number;
+  /** Folio real generado por el backend (ej. "VL-2026-000123"), no el id numérico. */
+  folio?: string;
   estado: EstadoVentaLocal;
   items: VentaLocalItemApi[];
   metodoPago: string;
   clienteId?: string | null;
+  clienteNombre?: string | null;
+  cajeroNombre?: string | null;
   descuento?: number | null;
   notas?: string | null;
   total?: number | null;
+  subtotal?: number | null;
   creadoEn?: string;
 }
 
@@ -67,6 +78,24 @@ function n(v: unknown, d: number | null = null): number | null {
   return Number.isFinite(x) ? x : d;
 }
 
+/**
+ * El backend ya manda el nombre resuelto anidado (`presentacion.producto` / `servicio`,
+ * ver `incluirVentaRelaciones()` en pos.service.ts) — nunca se resuelve aparte con catálogos.
+ * Si la relación viniera nula (dato legado), cae a un texto honesto, nunca un ID crudo.
+ */
+function resolverNombreItem(r: Record<string, unknown>): string {
+  const presentacion = (r.presentacion ?? null) as Record<string, unknown> | null;
+  if (presentacion) {
+    const producto = (presentacion.producto ?? null) as Record<string, unknown> | null;
+    const tamano = s(presentacion.tamanio ?? presentacion.tamaño);
+    if (producto?.nombre) return tamano ? `${s(producto.nombre)} — ${tamano}` : s(producto.nombre);
+    return 'Producto';
+  }
+  const servicio = (r.servicio ?? null) as Record<string, unknown> | null;
+  if (servicio?.nombre) return s(servicio.nombre);
+  return (r.servicioId ?? r.servicio_id) != null ? 'Servicio' : 'Producto';
+}
+
 function normalizarItem(x: unknown): VentaLocalItemApi {
   const r = (x || {}) as Record<string, unknown>;
   return {
@@ -75,6 +104,7 @@ function normalizarItem(x: unknown): VentaLocalItemApi {
     cantidad: Number(n(r.cantidad, 1) ?? 1),
     precioUnitario: Number(n(r.precioUnitario ?? r.precio_unitario, 0) ?? 0),
     subtotal: n(r.subtotal) ?? undefined,
+    nombre: resolverNombreItem(r),
   };
 }
 
@@ -89,15 +119,21 @@ function normalizarVenta(x: unknown): VentaLocalApi | null {
     ? (estadoRaw as EstadoVentaLocal)
     : 'pendiente';
   const items = Array.isArray(r.items) ? (r.items as unknown[]).map(normalizarItem) : [];
+  const cajero = (r.cajero ?? null) as Record<string, unknown> | null;
+  const cliente = (r.cliente ?? null) as Record<string, unknown> | null;
   return {
     id: Number(n(r.id, 0) ?? 0),
+    folio: s(r.folio) || undefined,
     estado,
     items,
     metodoPago: s(r.metodoPago ?? r.metodo_pago),
     clienteId: s(r.clienteId ?? r.cliente_id) || null,
+    clienteNombre: cliente?.nombre ? s(cliente.nombre) : null,
+    cajeroNombre: cajero?.nombre ? s(cajero.nombre) : null,
     descuento: n(r.descuento),
     notas: s(r.notas) || null,
     total: n(r.total),
+    subtotal: n(r.subtotal),
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
   };
 }
@@ -152,6 +188,19 @@ export async function obtenerVenta(id: number): Promise<VentaLocalApi | null> {
   return normalizarVenta(obj);
 }
 
+/**
+ * El cliente descarga SU ticket (desde su notificación). El backend verifica que la
+ * venta sea suya — si no, devuelve 403 (`skip403Redirect` para que la pantalla de
+ * notificaciones lo muestre inline, no redirigir globalmente a /403).
+ */
+export async function obtenerMiTicketVenta(id: number): Promise<VentaLocalApi> {
+  const res = await apiClient.get<unknown>(`/api/pos/ventas/${id}/mi-ticket`, { customBase: getBackendBaseUrl(), skip403Redirect: true });
+  const obj = (res as Record<string, unknown>)?.data ?? res;
+  const venta = normalizarVenta(obj);
+  if (!venta) throw new Error('No se pudo obtener el ticket');
+  return venta;
+}
+
 export async function crearVenta(payload: CrearVentaPayload): Promise<VentaLocalApi> {
   // skip403Redirect: mismo motivo que listarVentas — un rol sin permiso de POS debe ver
   // el error en el propio formulario, no ser redirigido globalmente a /403.
@@ -171,16 +220,6 @@ export async function cancelarVenta(
   const venta = normalizarVenta(obj);
   if (!venta) throw new Error('No se pudo cancelar la venta');
   return venta;
-}
-
-export async function obtenerTicket(id: number): Promise<VentaLocalApi | null> {
-  try {
-    const res = await apiClient.get<unknown>(`/api/pos/ventas/${id}/ticket`, { customBase: getBackendBaseUrl() });
-    const obj = (res as Record<string, unknown>)?.data ?? res;
-    return normalizarVenta(obj);
-  } catch {
-    return obtenerVenta(id);
-  }
 }
 
 export interface ListarCortesParams {

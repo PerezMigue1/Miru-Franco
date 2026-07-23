@@ -1,57 +1,126 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Select from '../../../../../../components/ui/Select';
+import {
+  obtenerCita,
+  obtenerDisponibilidad,
+  reprogramarCita,
+  type CitaApi,
+  type SlotDisponible,
+} from '../../../../../../services/citas';
+
+const TZ_MEXICO = 'America/Mexico_City';
+
 export default function ReprogramarCitaPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
+  const [cita, setCita] = useState<CitaApi | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [nuevaFecha, setNuevaFecha] = useState('');
-  const [nuevaHora, setNuevaHora] = useState('');
+  const [slotSeleccionado, setSlotSeleccionado] = useState<SlotDisponible | null>(null);
+  const [disponibilidad, setDisponibilidad] = useState<{ abierto: boolean; motivo: string | null; slots: SlotDisponible[] } | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [errorSlots, setErrorSlots] = useState<string | null>(null);
 
-  const cita = {
-    id: id,
-    servicio: 'Corte de Cabello',
-    fechaActual: '2024-02-15',
-    horaActual: '10:00',
-    especialista: 'Mildred',
-  };
+  const [enviando, setEnviando] = useState(false);
+  const [errorEnviar, setErrorEnviar] = useState<string | null>(null);
 
-  const horasDisponibles = [
-    { value: '09:00', label: '09:00' },
-    { value: '09:30', label: '09:30' },
-    { value: '10:00', label: '10:00' },
-    { value: '10:30', label: '10:30' },
-    { value: '11:00', label: '11:00' },
-    { value: '11:30', label: '11:30' },
-    { value: '12:00', label: '12:00' },
-    { value: '12:30', label: '12:30' },
-    { value: '13:00', label: '13:00' },
-    { value: '13:30', label: '13:30' },
-    { value: '14:00', label: '14:00' },
-    { value: '14:30', label: '14:30' },
-    { value: '15:00', label: '15:00' },
-    { value: '15:30', label: '15:30' },
-    { value: '16:00', label: '16:00' },
-    { value: '16:30', label: '16:30' },
-    { value: '17:00', label: '17:00' },
-    { value: '17:30', label: '17:30' },
-    { value: '18:00', label: '18:00' },
-    { value: '18:30', label: '18:30' },
-    { value: '19:00', label: '19:00' },
-  ];
+  useEffect(() => {
+    if (!id || !Number.isFinite(Number(id))) {
+      queueMicrotask(() => {
+        setError('Cita no encontrada.');
+        setCargando(false);
+      });
+      return;
+    }
+    obtenerCita(Number(id))
+      .then((c) => {
+        if (!c) {
+          setError('Cita no encontrada.');
+          return;
+        }
+        setCita(c);
+      })
+      .catch(() => setError('No se pudo cargar la cita.'))
+      .finally(() => setCargando(false));
+  }, [id]);
 
-  const manejarReprogramar = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!cita || !nuevaFecha) {
+      queueMicrotask(() => {
+        setSlotSeleccionado(null);
+        setDisponibilidad(null);
+      });
+      return;
+    }
+    queueMicrotask(() => {
+      setSlotSeleccionado(null);
+      setLoadingSlots(true);
+      setErrorSlots(null);
+    });
+    obtenerDisponibilidad({
+      especialistaId: cita.especialistaId,
+      fecha: nuevaFecha,
+      servicioId: cita.servicioId,
+    })
+      .then((d) => setDisponibilidad({ abierto: d.abierto, motivo: d.motivo, slots: d.slots }))
+      .catch((e) => setErrorSlots(e instanceof Error ? e.message : 'No se pudo cargar la disponibilidad'))
+      .finally(() => setLoadingSlots(false));
+  }, [cita, nuevaFecha]);
+
+  const manejarReprogramar = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí iría la lógica para reprogramar la cita
-    router.push(`/cliente/servicios-citas/mis-citas/${id}`);
+    if (!slotSeleccionado) return;
+    setEnviando(true);
+    setErrorEnviar(null);
+    try {
+      await reprogramarCita(Number(id), {
+        fechaHoraInicio: slotSeleccionado.inicio,
+        fechaHoraFin: slotSeleccionado.fin,
+      });
+      router.push(`/cliente/servicios-citas/mis-citas/${id}`);
+    } catch (err) {
+      setErrorEnviar(err instanceof Error ? err.message : 'No se pudo reprogramar la cita.');
+      setEnviando(false);
+    }
   };
+
+  if (cargando) {
+    return (
+      <ModuleLayout>
+        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        </div>
+      </ModuleLayout>
+    );
+  }
+
+  if (error || !cita) {
+    return (
+      <ModuleLayout>
+        <div className="max-w-3xl mx-auto">
+          <Card className="text-center py-16">
+            <p style={{ color: 'var(--danger-texto)' }}>{error ?? 'Cita no encontrada.'}</p>
+            <Button className="mt-4" onClick={() => router.push('/cliente/servicios-citas/mis-citas')}>
+              Volver a Mis Citas
+            </Button>
+          </Card>
+        </div>
+      </ModuleLayout>
+    );
+  }
+
+  const opcionesHora = disponibilidad?.slots.map((s) => ({ value: s.inicio, label: s.horaLocal })) ?? [];
 
   return (
     <ModuleLayout>
@@ -76,18 +145,19 @@ export default function ReprogramarCitaPage() {
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Servicio
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.servicio}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.servicioNombre ?? '—'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Fecha Actual
                     </p>
                     <p style={{ color: 'var(--menu-texto-principal)' }}>
-                      {new Date(cita.fechaActual).toLocaleDateString('es-ES', {
+                      {new Date(cita.fechaHoraInicio).toLocaleDateString('es-ES', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
+                        timeZone: TZ_MEXICO,
                       })}
                     </p>
                   </div>
@@ -95,13 +165,19 @@ export default function ReprogramarCitaPage() {
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Hora Actual
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.horaActual}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>
+                      {new Date(cita.fechaHoraInicio).toLocaleTimeString('es-MX', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: TZ_MEXICO,
+                      })}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Especialista
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialista}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialistaNombre ?? '—'}</p>
                   </div>
                 </div>
               </Card>
@@ -135,13 +211,36 @@ export default function ReprogramarCitaPage() {
                       }}
                     />
                   </div>
-                  <Select
-                    label="Nueva Hora"
-                    options={horasDisponibles}
-                    value={nuevaHora}
-                    onChange={(e) => setNuevaHora(e.target.value)}
-                    fullWidth
-                  />
+
+                  {nuevaFecha && loadingSlots && (
+                    <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Buscando horarios…</p>
+                  )}
+                  {nuevaFecha && errorSlots && (
+                    <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{errorSlots}</p>
+                  )}
+                  {nuevaFecha && !loadingSlots && !errorSlots && disponibilidad && !disponibilidad.abierto && (
+                    <p className="text-sm" style={{ color: 'var(--warning-texto)' }}>
+                      {disponibilidad.motivo || 'El salón no abre ese día.'}
+                    </p>
+                  )}
+                  {nuevaFecha && !loadingSlots && !errorSlots && disponibilidad?.abierto && disponibilidad.slots.length === 0 && (
+                    <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                      No hay horarios disponibles ese día para este especialista.
+                    </p>
+                  )}
+                  {nuevaFecha && !loadingSlots && !errorSlots && disponibilidad?.abierto && disponibilidad.slots.length > 0 && (
+                    <Select
+                      label="Nueva Hora"
+                      options={[{ value: '', label: 'Selecciona una hora…' }, ...opcionesHora]}
+                      value={slotSeleccionado?.inicio ?? ''}
+                      onChange={(e) => {
+                        const slot = disponibilidad.slots.find((s) => s.inicio === e.target.value) ?? null;
+                        setSlotSeleccionado(slot);
+                      }}
+                      fullWidth
+                    />
+                  )}
+
                   <div
                     className="p-4 rounded-lg"
                     style={{ backgroundColor: 'var(--fondos-suaves)' }}
@@ -150,6 +249,10 @@ export default function ReprogramarCitaPage() {
                       <strong>Nota:</strong> Al reprogramar tu cita, recibirás una confirmación por correo electrónico con los nuevos detalles.
                     </p>
                   </div>
+
+                  {errorEnviar && (
+                    <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{errorEnviar}</p>
+                  )}
                 </div>
               </Card>
             </div>
@@ -167,8 +270,9 @@ export default function ReprogramarCitaPage() {
             <Button
               type="submit"
               fullWidth
+              disabled={!slotSeleccionado || enviando}
             >
-              Confirmar Reprogramación
+              {enviando ? 'Reprogramando...' : 'Confirmar Reprogramación'}
             </Button>
           </div>
         </form>
@@ -176,4 +280,3 @@ export default function ReprogramarCitaPage() {
     </ModuleLayout>
   );
 }
-

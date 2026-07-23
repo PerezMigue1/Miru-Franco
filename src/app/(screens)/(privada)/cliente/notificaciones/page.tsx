@@ -12,6 +12,8 @@ import {
   eliminarNotificacion,
   type NotificacionApi,
 } from '../../../../services/ecommerce';
+import { obtenerMiTicketVenta } from '../../../../services/pos';
+import { generarTicketVentaPdf } from '../../../../utils/ticketVenta';
 import { hasValidToken } from '../../../../utils/security';
 import { showAlert, showToast } from '../../../../utils/toast';
 import { MIRU_USER_STORAGE_UPDATED } from '../../../../utils/userStorageSync';
@@ -20,6 +22,7 @@ export default function ClienteNotificacionesPage() {
   const [items, setItems] = useState<NotificacionApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [descargandoId, setDescargandoId] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     if (!hasValidToken()) {
@@ -73,6 +76,23 @@ export default function ClienteNotificacionesPage() {
       window.dispatchEvent(new CustomEvent('miru-notificaciones-updated'));
     } catch (e) {
       void showAlert(e instanceof Error ? e.message : 'Error al eliminar');
+    }
+  };
+
+  const descargarTicket = async (n: NotificacionApi) => {
+    const ventaId = Number(n.metadata?.ventaId);
+    if (!Number.isFinite(ventaId)) {
+      void showAlert('Esta notificación no tiene un ticket asociado.');
+      return;
+    }
+    setDescargandoId(n.id);
+    try {
+      const venta = await obtenerMiTicketVenta(ventaId);
+      generarTicketVentaPdf(venta);
+    } catch (e) {
+      void showAlert(e instanceof Error ? e.message : 'No se pudo descargar el ticket');
+    } finally {
+      setDescargandoId(null);
     }
   };
 
@@ -155,6 +175,15 @@ export default function ClienteNotificacionesPage() {
                     {n.mensaje}
                   </p>
                   <div className="flex flex-wrap gap-2">
+                    {n.tipo === 'venta' && (
+                      <Button
+                        size="sm"
+                        onClick={() => void descargarTicket(n)}
+                        disabled={descargandoId === n.id}
+                      >
+                        {descargandoId === n.id ? 'Descargando...' : 'Descargar ticket'}
+                      </Button>
+                    )}
                     {!n.leida && (
                       <Button size="sm" variant="outline" onClick={() => void marcarLeida(n)}>
                         Marcar leída

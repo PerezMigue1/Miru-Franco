@@ -206,3 +206,82 @@ export async function registrarMateriales(
   const body = { materiales: [{ presentacionId: payload.presentacionId, cantidad: payload.cantidad }] };
   await apiClient.post<unknown>(`/api/citas/${citaId}/materiales`, body, getBackendBaseUrl());
 }
+
+// --- Agendamiento público: especialistas + disponibilidad ---
+
+export interface EspecialistaApi {
+  id: string;
+  nombre: string;
+  foto?: string | null;
+  puesto?: string | null;
+  especialidades?: string[];
+}
+
+function normalizarEspecialista(x: unknown): EspecialistaApi | null {
+  if (!x || typeof x !== 'object') return null;
+  const r = x as Record<string, unknown>;
+  const id = s(r.id);
+  if (!id) return null;
+  return {
+    id,
+    nombre: s(r.nombre) || 'Especialista',
+    foto: r.foto != null ? s(r.foto) : null,
+    puesto: r.puesto != null ? s(r.puesto) : null,
+    especialidades: Array.isArray(r.especialidades) ? r.especialidades.map((e) => s(e)) : [],
+  };
+}
+
+/** GET /api/citas/especialistas — para elegir a quién agendar. Nunca trae email/teléfono. */
+export async function obtenerEspecialistas(): Promise<EspecialistaApi[]> {
+  const res = await apiClient.get<unknown>('/api/citas/especialistas', { customBase: getBackendBaseUrl() });
+  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
+  return (arr as unknown[]).map(normalizarEspecialista).filter((e): e is EspecialistaApi => Boolean(e));
+}
+
+export interface SlotDisponible {
+  inicio: string;
+  fin: string;
+  horaLocal: string;
+}
+
+export interface DisponibilidadApi {
+  fecha: string;
+  especialistaId: string;
+  servicioId: number;
+  duracionMinutos: number;
+  abierto: boolean;
+  motivo: string | null;
+  slots: SlotDisponible[];
+}
+
+/**
+ * GET /api/citas/disponibilidad — slots libres reales de un especialista, en una fecha,
+ * para la duración del servicio elegido. `inicio`/`fin` de cada slot ya son ISO completos:
+ * se mandan tal cual a `crearCita`, nunca se reconstruyen en el front (evita bugs de timezone).
+ */
+export async function obtenerDisponibilidad(params: {
+  especialistaId: string;
+  fecha: string;
+  servicioId: number;
+}): Promise<DisponibilidadApi> {
+  const sp = new URLSearchParams({
+    especialistaId: params.especialistaId,
+    fecha: params.fecha,
+    servicioId: String(params.servicioId),
+  });
+  const res = await apiClient.get<unknown>(`/api/citas/disponibilidad?${sp.toString()}`, { customBase: getBackendBaseUrl() });
+  const r = (res ?? {}) as Record<string, unknown>;
+  const slotsRaw = Array.isArray(r.slots) ? r.slots : [];
+  return {
+    fecha: s(r.fecha),
+    especialistaId: s(r.especialistaId),
+    servicioId: Number(n(r.servicioId, 0) ?? 0),
+    duracionMinutos: Number(n(r.duracionMinutos, 0) ?? 0),
+    abierto: Boolean(r.abierto),
+    motivo: r.motivo != null ? s(r.motivo) : null,
+    slots: slotsRaw.map((x) => {
+      const sr = (x ?? {}) as Record<string, unknown>;
+      return { inicio: s(sr.inicio), fin: s(sr.fin), horaLocal: s(sr.horaLocal) };
+    }),
+  };
+}

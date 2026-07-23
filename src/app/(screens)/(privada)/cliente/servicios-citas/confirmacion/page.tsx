@@ -8,37 +8,79 @@ import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
+import { obtenerCita, type CitaApi } from '../../../../../services/citas';
+
+const TZ_MEXICO = 'America/Mexico_City';
 
 function ConfirmacionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const servicioId = searchParams.get('servicioId');
-  const fecha = searchParams.get('fecha');
-  const hora = searchParams.get('hora');
-  const especialistaNombre = searchParams.get('especialista');
+  const citaId = searchParams.get('citaId');
 
+  const [cita, setCita] = useState<CitaApi | null>(null);
   const [servicio, setServicio] = useState<Servicio | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!servicioId) return;
-    getServicioPorId(servicioId).then(setServicio);
-  }, [servicioId]);
+    if (!citaId || !Number.isFinite(Number(citaId))) {
+      queueMicrotask(() => {
+        setError('No se encontró la cita.');
+        setCargando(false);
+      });
+      return;
+    }
+    obtenerCita(Number(citaId))
+      .then((c) => {
+        if (!c) {
+          setError('No se encontró la cita.');
+          return;
+        }
+        setCita(c);
+        return getServicioPorId(String(c.servicioId)).then(setServicio);
+      })
+      .catch(() => setError('No se pudo cargar la cita.'))
+      .finally(() => setCargando(false));
+  }, [citaId]);
 
-  const cita = {
-    id: 'CITA-2024-001',
-    servicio: servicio?.nombre ?? 'Servicio',
-    fecha: fecha ? new Date(fecha).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }) : 'No especificada',
-    hora: hora || 'No especificada',
-    duracion: servicio?.duracion ?? '—',
-    precio: servicio?.precio ?? '—',
-    especialista: especialistaNombre || 'No especificado',
-    estado: 'confirmada',
-  };
+  if (cargando) {
+    return (
+      <ModuleLayout>
+        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        </div>
+      </ModuleLayout>
+    );
+  }
+
+  if (error || !cita) {
+    return (
+      <ModuleLayout>
+        <div className="max-w-3xl mx-auto">
+          <Card className="text-center">
+            <p style={{ color: 'var(--danger-texto)' }}>{error ?? 'No se encontró la cita.'}</p>
+            <Button className="mt-4" onClick={() => router.push('/cliente/servicios-citas/mis-citas')}>
+              Ver Mis Citas
+            </Button>
+          </Card>
+        </div>
+      </ModuleLayout>
+    );
+  }
+
+  const fecha = new Date(cita.fechaHoraInicio).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: TZ_MEXICO,
+  });
+  const hora = new Date(cita.fechaHoraInicio).toLocaleTimeString('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TZ_MEXICO,
+  });
+  const badgeVariant = cita.estado === 'cancelada' ? 'danger' : 'success';
 
   return (
     <ModuleLayout>
@@ -73,37 +115,39 @@ function ConfirmacionContent() {
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Número de Cita:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.id}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>#{cita.id}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Servicio:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.servicio}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.servicioNombre ?? servicio?.nombre ?? 'Servicio'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Fecha:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.fecha}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{fecha}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Hora:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.hora}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{hora}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Duración:
-                </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.duracion}</span>
-              </div>
+              {servicio?.duracion && (
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
+                    Duración:
+                  </span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>{servicio.duracion}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Especialista:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialista}</span>
+                <span style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialistaNombre ?? 'No especificado'}</span>
               </div>
               <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--tarjetas-paneles)' }}>
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -113,11 +157,11 @@ function ConfirmacionContent() {
                   className="text-2xl font-bold"
                   style={{ color: 'var(--menu-texto-principal)' }}
                 >
-                  {cita.precio}
+                  {servicio?.precio ?? '—'}
                 </span>
               </div>
               <div className="flex justify-center pt-4">
-                <Badge variant="success" size="lg">Confirmada</Badge>
+                <Badge variant={badgeVariant} size="lg">{cita.estado}</Badge>
               </div>
             </div>
           </div>
@@ -158,7 +202,7 @@ function ConfirmacionContent() {
               style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                <strong>Importante:</strong> Recibirás un correo electrónico de confirmación con todos los detalles de tu cita. 
+                <strong>Importante:</strong> Recibirás un correo electrónico de confirmación con todos los detalles de tu cita.
                 Te recordaremos 24 horas antes de tu cita.
               </p>
             </div>
@@ -198,12 +242,3 @@ export default function ConfirmacionCitaPage() {
     </Suspense>
   );
 }
-
-
-
-
-
-
-
-
-

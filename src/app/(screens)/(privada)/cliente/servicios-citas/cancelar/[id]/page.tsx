@@ -1,12 +1,16 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Textarea from '../../../../../../components/ui/Textarea';
+import { obtenerCita, cancelarCita, type CitaApi } from '../../../../../../services/citas';
+
+const TZ_MEXICO = 'America/Mexico_City';
+
 export default function CancelarCitaPage() {
   const params = useParams();
   const router = useRouter();
@@ -15,15 +19,32 @@ export default function CancelarCitaPage() {
   const [motivo, setMotivo] = useState('');
   const [comentarios, setComentarios] = useState('');
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [errorCancelar, setErrorCancelar] = useState<string | null>(null);
 
-  const cita = {
-    id: id,
-    servicio: 'Corte de Cabello',
-    fecha: '2024-02-15',
-    hora: '10:00',
-    especialista: 'Mildred',
-    precio: '$350',
-  };
+  const [cita, setCita] = useState<CitaApi | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id || !Number.isFinite(Number(id))) {
+      queueMicrotask(() => {
+        setError('Cita no encontrada.');
+        setCargando(false);
+      });
+      return;
+    }
+    obtenerCita(Number(id))
+      .then((c) => {
+        if (!c) {
+          setError('Cita no encontrada.');
+          return;
+        }
+        setCita(c);
+      })
+      .catch(() => setError('No se pudo cargar la cita.'))
+      .finally(() => setCargando(false));
+  }, [id]);
 
   const motivos = [
     'Cambio de planes',
@@ -38,10 +59,56 @@ export default function CancelarCitaPage() {
     setMostrarConfirmacion(true);
   };
 
-  const confirmarCancelacion = () => {
-    // Aquí iría la lógica para cancelar la cita
-    router.push('/cliente/servicios-citas/mis-citas');
+  const confirmarCancelacion = async () => {
+    setCancelando(true);
+    setErrorCancelar(null);
+    try {
+      const motivoCancelacion = [motivo, comentarios].filter(Boolean).join(' — ') || 'Sin motivo especificado';
+      await cancelarCita(Number(id), { motivoCancelacion });
+      router.push('/cliente/servicios-citas/mis-citas');
+    } catch (err) {
+      setErrorCancelar(err instanceof Error ? err.message : 'No se pudo cancelar la cita.');
+      setCancelando(false);
+    }
   };
+
+  if (cargando) {
+    return (
+      <ModuleLayout>
+        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
+          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        </div>
+      </ModuleLayout>
+    );
+  }
+
+  if (error || !cita) {
+    return (
+      <ModuleLayout>
+        <div className="max-w-3xl mx-auto">
+          <Card className="text-center py-16">
+            <p style={{ color: 'var(--danger-texto)' }}>{error ?? 'Cita no encontrada.'}</p>
+            <Button className="mt-4" onClick={() => router.push('/cliente/servicios-citas/mis-citas')}>
+              Volver a Mis Citas
+            </Button>
+          </Card>
+        </div>
+      </ModuleLayout>
+    );
+  }
+
+  const fecha = new Date(cita.fechaHoraInicio).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: TZ_MEXICO,
+  });
+  const hora = new Date(cita.fechaHoraInicio).toLocaleTimeString('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TZ_MEXICO,
+  });
 
   if (mostrarConfirmacion) {
     return (
@@ -80,31 +147,30 @@ export default function CancelarCitaPage() {
                   Cita a cancelar:
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Servicio:</strong> {cita.servicio}
+                  <strong>Servicio:</strong> {cita.servicioNombre ?? '—'}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Fecha:</strong>{' '}
-                  {new Date(cita.fecha).toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  <strong>Fecha:</strong> {fecha}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Hora:</strong> {cita.hora}
+                  <strong>Hora:</strong> {hora}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Especialista:</strong> {cita.especialista}
+                  <strong>Especialista:</strong> {cita.especialistaNombre ?? '—'}
                 </p>
               </div>
             </div>
+
+            {errorCancelar && (
+              <p className="text-sm mb-4" style={{ color: 'var(--danger-texto)' }}>{errorCancelar}</p>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 variant="outline"
                 fullWidth
                 onClick={() => setMostrarConfirmacion(false)}
+                disabled={cancelando}
               >
                 Volver
               </Button>
@@ -112,8 +178,9 @@ export default function CancelarCitaPage() {
                 variant="danger"
                 fullWidth
                 onClick={confirmarCancelacion}
+                disabled={cancelando}
               >
-                Sí, Cancelar Cita
+                {cancelando ? 'Cancelando...' : 'Sí, Cancelar Cita'}
               </Button>
             </div>
           </Card>
@@ -141,22 +208,16 @@ export default function CancelarCitaPage() {
               </h2>
               <div className="space-y-2">
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Servicio:</strong> {cita.servicio}
+                  <strong>Servicio:</strong> {cita.servicioNombre ?? '—'}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Fecha:</strong>{' '}
-                  {new Date(cita.fecha).toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  <strong>Fecha:</strong> {fecha}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Hora:</strong> {cita.hora}
+                  <strong>Hora:</strong> {hora}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Especialista:</strong> {cita.especialista}
+                  <strong>Especialista:</strong> {cita.especialistaNombre ?? '—'}
                 </p>
               </div>
             </div>
@@ -202,8 +263,8 @@ export default function CancelarCitaPage() {
                 style={{ backgroundColor: 'var(--fondos-suaves)' }}
               >
                 <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Importante:</strong> Si cancelas con menos de 24 horas de anticipación, 
-                  puede aplicarse una política de cancelación. Te recomendamos reprogramar tu cita 
+                  <strong>Importante:</strong> Si cancelas con menos de 24 horas de anticipación,
+                  puede aplicarse una política de cancelación. Te recomendamos reprogramar tu cita
                   en lugar de cancelarla.
                 </p>
               </div>
@@ -232,4 +293,3 @@ export default function CancelarCitaPage() {
     </ModuleLayout>
   );
 }
-
