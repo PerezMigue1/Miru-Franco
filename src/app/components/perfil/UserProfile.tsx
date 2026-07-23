@@ -48,7 +48,7 @@ function roleLabel(role: NormalizedRole): string {
 // Siempre usar variables CSS para respetar light/dark mode
 const LINK_BLUE = 'var(--enlaces-textos-interactivos)';
 
-type SidebarItem = 'perfil' | 'pedidos' | 'tienda' | 'seguridad';
+type SidebarItem = 'perfil' | 'pedidos' | 'citas' | 'tienda' | 'seguridad';
 type ActiveSection = 'informacion-personal' | 'datos-cuenta' | null;
 
 interface ProfileCard {
@@ -221,6 +221,17 @@ export default function UserProfile() {
       section: 'datos-cuenta',
     },
     {
+      id: 'citas',
+      title: 'Mis citas',
+      subtitle: 'Consulta, reprograma o cancela tus citas agendadas.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      href: '/cliente/servicios-citas/mis-citas',
+    },
+    {
       id: 'seguridad',
       title: 'Seguridad',
       subtitle: 'Modifica tu contraseña y mantén tu cuenta segura.',
@@ -309,6 +320,7 @@ export default function UserProfile() {
   const sidebarItems: { id: SidebarItem; label: string; href?: string; icon: React.ReactNode }[] = [
     { id: 'perfil', label: 'Mi perfil', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /> },
     { id: 'pedidos', label: 'Mis pedidos', href: '/cliente/tienda-online/mis-pedidos', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /> },
+    { id: 'citas', label: 'Mis citas', href: '/cliente/servicios-citas/mis-citas', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
     { id: 'tienda', label: 'Tienda', href: '/cliente/tienda-online', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /> },
     { id: 'seguridad', label: 'Seguridad', href: '/forgot-password', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /> },
   ];
