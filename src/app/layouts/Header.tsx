@@ -376,6 +376,16 @@ export default function Header() {
                         <button
                           onClick={() => {
                             setIsUserMenuOpen(false);
+                            router.push('/cliente/servicios-citas/mis-citas');
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
+                          style={{ color: 'var(--texto-fondo-oscuro)' }}
+                        >
+                          Mis citas
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online');
                           }}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
