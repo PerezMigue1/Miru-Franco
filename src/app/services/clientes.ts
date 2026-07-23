@@ -80,3 +80,86 @@ export async function historialCitasCliente(id: string): Promise<unknown[]> {
   const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];
   return arr as unknown[];
 }
+
+export interface VariablesClusteringCliente {
+  frecuencia_total: number;
+  productos_totales: number;
+  servicios_comprados: number;
+  gasto_total: number;
+  ticket_promedio: number;
+  proporcion_online: number;
+  recencia_dias: number;
+}
+
+export interface ModeloClusteringApi {
+  nombre: string;
+  algoritmo: string;
+  filasEntrenamiento: number;
+  fechaCorte: string;
+  silhouette: number;
+}
+
+export interface SegmentacionClienteApi {
+  clienteId: string;
+  clienteNombre: string;
+  clienteEmail: string;
+  clienteActivo: boolean;
+  calculadoEn: string;
+  cluster: number;
+  segmento: string;
+  accionSugerida: string;
+  distanciaCentroide: number;
+  variables: VariablesClusteringCliente;
+  modelo: ModeloClusteringApi;
+  datosOrigen: {
+    comprasOnline: number;
+    comprasLocales: number;
+    productosOnline: number;
+    productosLocales: number;
+    serviciosComprados: number;
+    gastoOnline: number;
+    gastoLocal: number;
+    fechaUltimaCompraOnline: string | null;
+    fechaUltimaCompraLocal: string | null;
+  };
+}
+
+export interface SegmentacionClientesApi {
+  data: SegmentacionClienteApi[];
+  resumen: Record<string, number>;
+  modelo: ModeloClusteringApi | null;
+}
+
+export async function listarSegmentacionClientes(
+  incluirInactivos = true
+): Promise<SegmentacionClientesApi> {
+  const res = await apiClient.get<{
+    data?: SegmentacionClienteApi[];
+    resumen?: Record<string, number>;
+    modelo?: ModeloClusteringApi;
+  }>(
+    `/api/clientes/segmentacion?incluirInactivos=${String(incluirInactivos)}`,
+    { customBase: getBackendBaseUrl() }
+  );
+  const data = Array.isArray(res?.data) ? res.data : [];
+  return {
+    data,
+    resumen: res?.resumen ?? {},
+    modelo: res?.modelo ?? data[0]?.modelo ?? null,
+  };
+}
+
+export async function obtenerSegmentacionCliente(
+  id: string
+): Promise<SegmentacionClienteApi> {
+  const res = await apiClient.get<{
+    data?: SegmentacionClienteApi;
+  }>(
+    `/api/clientes/${encodeURIComponent(id)}/segmentacion`,
+    { customBase: getBackendBaseUrl() }
+  );
+  if (!res?.data) {
+    throw new Error('El backend no devolvió la segmentación del cliente.');
+  }
+  return res.data;
+}

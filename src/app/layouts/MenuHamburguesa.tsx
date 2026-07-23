@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
+import { MOSTRAR_MARCAS, MARCAS_ROTAS } from './marcasRotas';
 
 interface MenuHamburguesaProps {
   onClose: () => void;
@@ -14,15 +15,6 @@ const NAV_LINKS = [
   { label: 'Tienda',         href: '/cliente/tienda-online' },
   { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
   { label: 'Contacto',       href: '/contacto' },
-];
-
-const MARCAS = [
-  { label: "L'Oréal",     href: '/marcas/loreal' },
-  { label: 'Kérastase',   href: '/marcas/kerastase' },
-  { label: 'Revlon',      href: '/marcas/revlon' },
-  { label: 'Schwarzkopf', href: '/marcas/schwarzkopf' },
-  { label: 'Wella',       href: '/marcas/wella' },
-  { label: 'Matrix',      href: '/marcas/matrix' },
 ];
 
 export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
@@ -114,39 +106,41 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
         </div>
       </nav>
 
-      {/* Brands */}
-      <div
-        className="px-6 pb-8 border-t"
-        style={{
-          borderColor: 'rgba(242,241,237,0.07)',
-          opacity: 0,
-          animation: `fadeIn 400ms ease-out ${NAV_LINKS.length * 75 + 140}ms forwards`,
-        }}
-      >
-        <p
-          className="text-xs font-semibold uppercase tracking-[0.2em] mt-6 mb-3"
-          style={{ color: 'var(--iconografia)' }}
+      {/* Enlaces rotos: /marcas/* nunca se construyó. Ocultos, no borrar. */}
+      {MOSTRAR_MARCAS && (
+        <div
+          className="px-6 pb-8 border-t"
+          style={{
+            borderColor: 'rgba(242,241,237,0.07)',
+            opacity: 0,
+            animation: `fadeIn 400ms ease-out ${NAV_LINKS.length * 75 + 140}ms forwards`,
+          }}
         >
-          Marcas
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {MARCAS.map((marca) => (
-            <Link
-              key={marca.href}
-              href={marca.href}
-              onClick={onClose}
-              className="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium transition-opacity hover:opacity-70"
-              style={{
-                backgroundColor: 'rgba(242,241,237,0.07)',
-                color: 'var(--texto-fondo-oscuro-70)',
-                minHeight: '36px',
-              }}
-            >
-              {marca.label}
-            </Link>
-          ))}
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.2em] mt-6 mb-3"
+            style={{ color: 'var(--iconografia)' }}
+          >
+            Marcas
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {MARCAS_ROTAS.map((marca) => (
+              <Link
+                key={marca.href}
+                href={marca.href}
+                onClick={onClose}
+                className="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium transition-opacity hover:opacity-70"
+                style={{
+                  backgroundColor: 'rgba(242,241,237,0.07)',
+                  color: 'var(--texto-fondo-oscuro-70)',
+                  minHeight: '36px',
+                }}
+              >
+                {marca.name}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

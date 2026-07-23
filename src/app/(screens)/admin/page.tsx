@@ -150,6 +150,13 @@ export default function AdminDashboardPage() {
   const [caducidades, setCaducidades] = useState<Seccion<CaducidadApi[]>>(seccionInicial([]));
   const [clientesRecientes, setClientesRecientes] = useState<Seccion<ClienteApi[]>>(seccionInicial([]));
   const [pedidosOnline, setPedidosOnline] = useState<Seccion<PedidoApi[]>>(seccionInicial([]));
+  /**
+   * Conteo real por estado, sobre las 4001 citas completas — NO sobre `citasTodas`
+   * (que sigue truncada a 200 a propósito, solo para los widgets "top 5" de abajo,
+   * que ya estaban así y quedan fuera de esta tarea). 7 llamadas livianas
+   * (`limit: 1`, solo interesa `total`) en vez de traer miles de filas.
+   */
+  const [citasConteoPorEstado, setCitasConteoPorEstado] = useState<Seccion<Record<string, number>>>(seccionInicial({}));
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +178,14 @@ export default function AdminDashboardPage() {
       listarCitas({ limit: 200 })
         .then((res) => { if (!cancelled) setCitasTodas({ loading: false, error: false, data: res.data }); })
         .catch(() => { if (!cancelled) setCitasTodas((p) => ({ ...p, loading: false, error: true })); }),
+
+      Promise.all(
+        Object.keys(ETIQUETAS_ESTADO_CITA).map((estado) =>
+          listarCitas({ estado, limit: 1 }).then((r) => [estado, r.total] as const)
+        )
+      )
+        .then((pares) => { if (!cancelled) setCitasConteoPorEstado({ loading: false, error: false, data: Object.fromEntries(pares) }); })
+        .catch(() => { if (!cancelled) setCitasConteoPorEstado((p) => ({ ...p, loading: false, error: true })); }),
 
       listarVentas({ estado: 'pagada', limit: 100 })
         .then((res) => { if (!cancelled) setVentasPagadas({ loading: false, error: false, data: res.data }); })
@@ -214,14 +229,15 @@ export default function AdminDashboardPage() {
   );
 
   // ── Gráfico 1: citas por estado ─────────────────────────────────────────
+  // Conteo real sobre las 4001 citas (7 llamadas livianas), no sobre citasTodas
+  // (esa sigue truncada a 200 a propósito, la usan los widgets "top 5" de abajo).
   const citasPorEstado = useMemo(() => {
-    const conteo = new Map<string, number>();
-    citasTodas.data.forEach((c) => conteo.set(c.estado, (conteo.get(c.estado) ?? 0) + 1));
-    return Array.from(conteo.entries())
+    return Object.entries(citasConteoPorEstado.data)
+      .filter(([, valor]) => valor > 0)
       .map(([estado, valor]) => ({ estado, nombre: ETIQUETAS_ESTADO_CITA[estado] ?? estado, valor }))
       .sort((a, b) => b.valor - a.valor)
       .map((d, i) => ({ ...d, color: PALETA_GRAFICOS[i % PALETA_GRAFICOS.length] }));
-  }, [citasTodas.data]);
+  }, [citasConteoPorEstado.data]);
 
   // ── Gráfico 2: ventas pagadas por método (conteo, no monto) ─────────────
   const ventasPorMetodo = useMemo(() => {
@@ -375,9 +391,9 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card variant="elevated" padding="lg">
               <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>Citas por estado</h3>
-              {citasTodas.loading ? (
+              {citasConteoPorEstado.loading ? (
                 <SkeletonGrafico />
-              ) : citasTodas.error ? (
+              ) : citasConteoPorEstado.error ? (
                 <MensajeError texto="No se pudieron cargar las citas." />
               ) : citasPorEstado.length > 0 ? (
                 <DonutConLeyenda datos={citasPorEstado} reducedMotion={reducedMotion} />

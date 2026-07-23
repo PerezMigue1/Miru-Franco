@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
@@ -56,6 +56,15 @@ const DIRECCION_RETIRO_LOCAL =
   typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SALON_DIRECCION
     ? process.env.NEXT_PUBLIC_SALON_DIRECCION
     : 'Recoge en el salón — te avisaremos cuando esté listo.';
+
+/**
+ * Oculto hasta integrar pasarela (Mercado Pago). No borrar.
+ * Sin pasarela no hay envíos — solo recoger en el salón. Anotado `: boolean`
+ * a propósito: con el tipo literal `false` (sin anotar), TypeScript trata el
+ * bloque JSX de abajo como código inalcanzable y deja de angostar el tipo de
+ * `direccionSeleccionada` ahí dentro (falso positivo de compilación).
+ */
+const MOSTRAR_ENTREGA_DOMICILIO: boolean = false;
 
 function textoDesdeDireccion(d: DireccionUsuarioDTO): string {
   const line1 = [d.calle, d.numeroInterior].filter(Boolean).join(' ');
@@ -260,7 +269,20 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [tipoEntrega, setTipoEntrega] = useState<'domicilio' | 'retiro'>('domicilio');
+  /**
+   * El guard de "carrito vacío → mandar a /carrito" (más abajo) reacciona a
+   * clearCart() vaciando el carrito DURANTE una compra exitosa, ganándole la
+   * carrera al router.push(confirmacion). Este ref le dice al guard "no me
+   * mandes al carrito, la compra ya terminó bien" — se enciende justo antes
+   * de clearCart() (no antes, para no atrapar al cliente si algo previo falla)
+   * y se apaga en el catch si algo sale mal después de encenderlo.
+   */
+  const compraFinalizadaRef = useRef(false);
+
+  // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
+  // Sin pasarela no hay envíos — solo recoger en el salón. Se fija 'retiro' y
+  // nunca se deja cambiar (el toggle de domicilio queda oculto más abajo).
+  const [tipoEntrega, setTipoEntrega] = useState<'domicilio' | 'retiro'>('retiro');
 
   const [direcciones, setDirecciones] = useState<DireccionUsuarioDTO[]>([]);
   const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState('');
@@ -368,7 +390,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (cartLoading) return;
-    if (items.length === 0) {
+    if (items.length === 0 && !compraFinalizadaRef.current) {
       router.replace('/cliente/tienda-online/carrito');
       return;
     }
@@ -724,6 +746,7 @@ export default function CheckoutPage() {
       //   });
       // }
 
+      compraFinalizadaRef.current = true;
       await clearCart();
       clearCheckoutDireccionId();
       const q =
@@ -732,6 +755,7 @@ export default function CheckoutPage() {
           : `pedidoId=${pedido.id}`;
       router.push(`/cliente/tienda-online/confirmacion?${q}`);
     } catch (e) {
+      compraFinalizadaRef.current = false;
       const msg = mensajeUsuarioDesdeErrorApi(e);
       setSubmitError(msg);
       const st = (e as Error & { status?: number }).status;
@@ -972,7 +996,8 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {paso === 1 && (
+            {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
+            {MOSTRAR_ENTREGA_DOMICILIO && paso === 1 && (
               <div style={{ animation: 'fadeUp 350ms ease-out both' }}>
                 <h2 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
                   Elige la forma de entrega
@@ -1077,6 +1102,26 @@ export default function CheckoutPage() {
                   </label>
                 </div>
               </div>
+            )}
+
+            {/* Sin pasarela no hay envíos — solo recoger en el salón, fijo. */}
+            {paso === 1 && (
+              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+                <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Cómo recoges tu pedido
+                </h2>
+                <div
+                  className="rounded-lg px-4 py-4 mt-4"
+                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
+                >
+                  <p className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <strong>Retiras en la estética.</strong>
+                  </p>
+                  <p className="text-sm mt-2 whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {DIRECCION_RETIRO_LOCAL}
+                  </p>
+                </div>
+              </Card>
             )}
 
             {paso === 2 && (
@@ -1572,12 +1617,15 @@ export default function CheckoutPage() {
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
                   <span style={{ color: 'var(--menu-texto-principal)' }}>${subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>
-                    {tipoEntrega === 'retiro' ? '$0' : `$${envio.toLocaleString()}`}
-                  </span>
-                </div>
+                {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
+                {false && (
+                  <div className="flex justify-between">
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+                    <span style={{ color: 'var(--menu-texto-principal)' }}>
+                      {tipoEntrega === 'retiro' ? '$0' : `$${envio.toLocaleString()}`}
+                    </span>
+                  </div>
+                )}
                 <div className="pt-3 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <div className="flex justify-between">
                     <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
