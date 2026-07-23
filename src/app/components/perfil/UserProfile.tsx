@@ -314,6 +314,9 @@ export default function UserProfile() {
   const visibleCards = cards.filter((c) => {
     if (c.id === 'admin') return normalizedRole === 'admin';
     if (c.id === 'operacion') return ['estilista', 'empleado', 'becario'].includes(normalizedRole);
+    // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
+    // Sin pasarela real, "Tarjetas" no tiene nada verificable que gestionar — se paga en el salón.
+    if (c.id === 'tarjetas') return false;
     return true;
   });
 
