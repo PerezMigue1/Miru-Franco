@@ -528,9 +528,18 @@ function normalizarDireccionRelacionada(raw: Record<string, unknown>): UsuarioDi
   };
 }
 
+/**
+ * Llamada secundaria tolerante a fallos: su resultado alimenta widgets opcionales
+ * de la ficha de cliente, así que un error (403 incluido) nunca debe expulsar al
+ * usuario de la pantalla completa — solo degradar a un arreglo vacío.
+ */
 async function tryGetArray(endpoint: string): Promise<Record<string, unknown>[]> {
   try {
-    const res = await apiClient.get<unknown>(endpoint, { customBase: BASE(), skip500Redirect: true });
+    const res = await apiClient.get<unknown>(endpoint, {
+      customBase: BASE(),
+      skip500Redirect: true,
+      skip403Redirect: true,
+    });
     return toArray(res);
   } catch {
     return [];

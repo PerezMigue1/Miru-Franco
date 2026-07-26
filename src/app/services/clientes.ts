@@ -8,8 +8,20 @@ export interface ClienteApi {
   nombre?: string | null;
   email?: string | null;
   telefono?: string | null;
+  foto?: string | null;
   activo: boolean;
+  confirmado?: boolean;
+  recibePromociones?: boolean;
+  fechaNacimiento?: string | null;
+  tipoCabello?: string | null;
+  colorNatural?: string | null;
+  colorActual?: string | null;
+  productosUsados?: string | null;
+  alergias?: string | null;
   creadoEn?: string;
+  actualizadoEn?: string;
+  ultimaActividad?: string | null;
+  conteo?: { pedidos: number; quejas: number; seguimientos: number };
 }
 
 interface ListadoClientesResp {
@@ -28,13 +40,32 @@ function s(v: unknown): string {
 function normalizarCliente(x: unknown): ClienteApi | null {
   if (!x || typeof x !== 'object') return null;
   const r = x as Record<string, unknown>;
+  const conteo = r._count && typeof r._count === 'object' ? (r._count as Record<string, unknown>) : null;
   return {
     id: s(r.id),
     nombre: s(r.nombre) || null,
     email: s(r.email) || null,
     telefono: s(r.telefono) || null,
+    foto: s(r.foto) || null,
     activo: r.activo !== false,
+    confirmado: r.confirmado !== false,
+    recibePromociones: r.recibePromociones === true,
+    fechaNacimiento: s(r.fechaNacimiento) || null,
+    tipoCabello: s(r.tipoCabello) || null,
+    colorNatural: s(r.colorNatural) || null,
+    colorActual: s(r.colorActual) || null,
+    productosUsados: s(r.productosUsados) || null,
+    alergias: s(r.alergias) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
+    actualizadoEn: s(r.actualizadoEn) || undefined,
+    ultimaActividad: s(r.ultimaActividad) || null,
+    conteo: conteo
+      ? {
+          pedidos: Number(conteo.pedidos ?? 0),
+          quejas: Number(conteo.quejas ?? 0),
+          seguimientos: Number(conteo.seguimientos ?? 0),
+        }
+      : undefined,
   };
 }
 

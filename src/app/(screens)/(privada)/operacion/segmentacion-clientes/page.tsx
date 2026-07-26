@@ -6,7 +6,7 @@ import PanelSegmentacionClientes from '../../../../components/clientes/PanelSegm
 export default function SegmentacionClientesOperacionPage() {
   return (
     <OperacionLayout permisoRequerido="clientes:lectura">
-      <PanelSegmentacionClientes mostrarEnlacePerfil={false} />
+      <PanelSegmentacionClientes rutaBasePerfil="/operacion/clientes-crm" />
     </OperacionLayout>
   );
 }
