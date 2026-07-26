@@ -45,12 +45,16 @@ function moneda(valor: number): string {
 }
 
 interface PanelSegmentacionClientesProps {
-  /** El admin técnico puede navegar al perfil del cliente; operación no tiene esa ruta. */
-  mostrarEnlacePerfil?: boolean;
+  /**
+   * Base de la ruta del botón "Ver" — cada contexto tiene su propia ficha de cliente
+   * (admin/clientes-crm/[id] vs. operacion/clientes-crm/[id]), con acciones distintas
+   * en cada una (editar/eliminar son admin-only).
+   */
+  rutaBasePerfil?: string;
 }
 
 export default function PanelSegmentacionClientes({
-  mostrarEnlacePerfil = true,
+  rutaBasePerfil = '/admin/clientes-crm',
 }: PanelSegmentacionClientesProps) {
   const router = useRouter();
   const [clientes, setClientes] = useState<SegmentacionClienteApi[]>([]);
@@ -312,7 +316,7 @@ export default function PanelSegmentacionClientes({
                 'Gasto',
                 'Recencia',
                 'Acción sugerida',
-                ...(mostrarEnlacePerfil ? ['Perfil'] : []),
+                'Perfil',
               ]}
               headerSutil
             >
@@ -339,24 +343,25 @@ export default function PanelSegmentacionClientes({
                   <TableCell>
                     {cliente.variables.recencia_dias.toLocaleString('es-MX')} días
                   </TableCell>
-                  <TableCell className="min-w-[260px]">
+                  <TableCell
+                    className="min-w-[220px] max-w-[320px]"
+                    style={{ whiteSpace: 'normal' }}
+                  >
                     <span className="text-sm">{cliente.accionSugerida}</span>
                   </TableCell>
-                  {mostrarEnlacePerfil && (
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          router.push(
-                            `/admin/clientes-crm/${cliente.clienteId}`
-                          )
-                        }
-                      >
-                        Ver
-                      </Button>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        router.push(
+                          `${rutaBasePerfil}/${cliente.clienteId}`
+                        )
+                      }
+                    >
+                      Ver
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </Table>
