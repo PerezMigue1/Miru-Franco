@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
@@ -9,6 +9,7 @@ import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
+import { hasValidToken } from '../../../../../../utils/security';
 
 export default function DetalleServicioPage() {
   const params = useParams();
@@ -17,6 +18,13 @@ export default function DetalleServicioPage() {
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  /** false en servidor y en el primer paint hidratado; true después → mismo HTML que SSR y sin mismatch. */
+  const enCliente = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const haySesion = enCliente && hasValidToken();
 
   useEffect(() => {
     if (!id) {
@@ -137,12 +145,27 @@ export default function DetalleServicioPage() {
                     </p>
                   </div>
                 )}
+                {enCliente && !haySesion && (
+                  <p
+                    className="text-sm p-3 rounded-lg"
+                    style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}
+                  >
+                    Para <strong>agendar esta cita</strong> necesitas <strong>iniciar sesión</strong>.
+                  </p>
+                )}
                 <Button
                   fullWidth
                   size="lg"
-                  onClick={() => router.push(`/cliente/servicios-citas/calendario?servicioId=${servicio.id}`)}
+                  onClick={() => {
+                    const destino = `/cliente/servicios-citas/calendario?servicioId=${servicio.id}`;
+                    if (!hasValidToken()) {
+                      router.push(`/login?returnUrl=${encodeURIComponent(destino)}`);
+                      return;
+                    }
+                    router.push(destino);
+                  }}
                 >
-                  Agendar Cita
+                  {!enCliente ? 'Agendar Cita' : haySesion ? 'Agendar Cita' : 'Iniciar sesión y agendar'}
                 </Button>
               </div>
             </Card>
