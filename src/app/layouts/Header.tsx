@@ -20,12 +20,29 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const fixedBarRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('Usuario');
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+
+  // Mide la altura real del header + barra de navegación (fijos) y la expone como variable
+  // CSS global. Evita repetir un número de px adivinado en cada página que necesita dejar
+  // espacio debajo de la barra fija (antes había 5 valores distintos y desincronizados:
+  // 104px en varias páginas, 136px en ModuleLayout — ninguno coincidía con la altura real).
+  useEffect(() => {
+    const el = fixedBarRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const actualizar = () => {
+      document.documentElement.style.setProperty('--mf-header-offset', `${el.offsetHeight}px`);
+    };
+    actualizar();
+    const observer = new ResizeObserver(actualizar);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const syncUserFromStorage = () => {
     const token = getToken();
@@ -170,14 +187,22 @@ export default function Header() {
 
   return (
     <>
-      {/* Barra Superior - Top Header */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg backdrop-blur-sm' : 'shadow-sm'}`}
-        style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
+      {/* Barra fija: header + navegación secundaria en un solo bloque medido, para que
+          las páginas que dejan espacio debajo (`var(--mf-header-offset)`) siempre acierten,
+          sea cual sea la altura real que termine teniendo (cambia con el logo apilado, el
+          tamaño de fuente, o el idioma). */}
+      <div
+        ref={fixedBarRef}
+        className={`fixed top-0 left-0 right-0 z-50 flex flex-col transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
       >
+        {/* Barra Superior - Top Header */}
+        <header
+          className={`transition-all duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
+          style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
+        >
         <div className="layout-page">
-          <div className="flex items-center gap-2 sm:gap-3" style={{ minHeight: '56px', padding: '8px 0' }}>
-            {/* Izquierda: Menu + Logo */}
+          <div className="flex items-center gap-2 sm:gap-3 py-2">
+            {/* Izquierda: Menu + Logo (apilado: imagen arriba, nombre abajo) */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -194,8 +219,8 @@ export default function Header() {
                 </svg>
               </button>
 
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <div className="relative shrink-0 flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16">
+              <div className="flex flex-col items-center shrink-0 min-w-0 overflow-hidden leading-tight">
+                <div className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16">
                   <Image
                     src="/logo-miru.jpg"
                     alt="Mirú Franco Logo"
@@ -205,42 +230,39 @@ export default function Header() {
                     priority
                   />
                 </div>
-                <div className="flex flex-col items-start justify-center min-w-0">
-                  <h1
-                    className="text-logo text-logo-branding whitespace-nowrap"
-                    style={{
-                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                      margin: 0,
-                      padding: 0
-                    }}
-                  >
-                    MIRÚ FRANCO
+                <h1
+                  className="text-logo text-logo-branding truncate max-w-full"
+                  style={{
+                    textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
+                    margin: 0,
+                    padding: 0
+                  }}
+                >
+                  MIRÚ <span className="italic">FRANCO</span>
                 </h1>
-                  <h2
-                    className="text-logo-small text-logo-branding whitespace-nowrap hidden sm:block"
-                    style={{
-                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                      margin: 0,
-                      padding: 0,
-                      marginTop: '2px'
-                    }}
-                  >
-                    BEAUTY SALÓN
-                  </h2>
-                </div>
+                <h2
+                  className="text-logo-small text-logo-branding truncate max-w-full"
+                  style={{
+                    textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
+                    margin: 0,
+                    padding: 0,
+                  }}
+                >
+                  BEAUTY SALÓN
+                </h2>
               </div>
             </div>
 
             {/* Derecha: Tema + Carrito + Notificaciones + Usuario */}
-            <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4 ml-auto shrink-0">
+            <div className="flex items-center gap-1 sm:gap-3 md:gap-4 ml-auto shrink-0">
               <ThemeToggle />
               {/* Carrito */}
               <Link
                 href="/cliente/tienda-online/carrito"
-                className="relative p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                className="relative p-1.5 sm:p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro shrink-0"
                 aria-label="Carrito"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 {totalItems > 0 && (
@@ -253,13 +275,13 @@ export default function Header() {
                 )}
               </Link>
               {/* Notificaciones */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   onClick={() => router.push('/cliente/notificaciones')}
-                  className="p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
+                  className="p-1.5 sm:p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
                   aria-label="Notificaciones"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
                   {notificationsCount > 0 && (
@@ -429,7 +451,7 @@ export default function Header() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 px-2.5 py-2 sm:px-3 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
+                  className="flex items-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro shrink-0"
                   style={{ backgroundColor: 'var(--hover)' }}
                   aria-label="Iniciar sesión"
                 >
@@ -443,7 +465,19 @@ export default function Header() {
             </div>
           </div>
         </div>
-      </header>
+        </header>
+
+        {/* Barra de Navegación Secundaria — ya no necesita posición fija propia ni un
+            offset "top" adivinado: es simplemente el segundo hijo de la barra fija de
+            arriba, así que siempre queda pegada al header sin importar su altura real. */}
+        <nav style={{ backgroundColor: 'var(--botones-principales)' }}>
+          <div className="layout-page">
+            <div className="flex items-center justify-center h-14">
+              <MenuHorizontal />
+            </div>
+          </div>
+        </nav>
+      </div>
 
       {/* Menú móvil — panel lateral */}
       {isMenuOpen && (
@@ -460,15 +494,6 @@ export default function Header() {
           />
         </>
       )}
-
-      {/* Barra de Navegación Secundaria */}
-      <nav className="fixed left-0 right-0 z-30 shadow-md" style={{ top: '72px', backgroundColor: 'var(--botones-principales)' }}>
-        <div className="layout-page">
-          <div className="flex items-center justify-center h-14">
-            <MenuHorizontal />
-          </div>
-        </div>
-      </nav>
     </>
   );
 }

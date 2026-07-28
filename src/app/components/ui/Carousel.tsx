@@ -47,7 +47,7 @@ export default function Carousel() {
   return (
     <div
       className="relative w-full h-screen overflow-hidden"
-      style={{ marginTop: '104px', backgroundColor: 'var(--header-footer)' }}
+      style={{ marginTop: 'var(--mf-header-offset, 104px)', backgroundColor: 'var(--header-footer)' }}
     >
       {/* Fondo animado sin imagen */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/80" />

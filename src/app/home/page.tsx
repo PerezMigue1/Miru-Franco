@@ -30,13 +30,19 @@ export default async function Home() {
         {/* Hero — completamente estático, sin JS */}
         <section
           className="hero-bg-gradient relative flex flex-col items-center justify-center w-full layout-gutter-x overflow-hidden"
-          style={{ marginTop: '104px', height: 'calc(100vh - 104px)' }}
+          style={{
+            marginTop: 'var(--mf-header-offset, 104px)',
+            height: 'calc(100vh - var(--mf-header-offset, 104px))',
+          }}
         >
           <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 lg:gap-6 py-0 md:items-center flex-1 min-h-0 h-full">
             <div className="w-full md:w-1/2 h-full md:flex md:items-center md:justify-center md:pr-2 lg:pr-4 min-h-0 flex-1 flex justify-center" data-reveal style={{ transitionDelay: '0ms' }}>
               <div
                 className="relative flex-shrink-0 aspect-square mx-auto"
-                style={{ width: 'min(90vw, calc(100vh - 130px))', height: 'min(90vw, calc(100vh - 130px))' }}
+                style={{
+                  width: 'min(90vw, calc(100vh - var(--mf-header-offset, 104px) - 26px))',
+                  height: 'min(90vw, calc(100vh - var(--mf-header-offset, 104px) - 26px))',
+                }}
               >
                 <Image src="/logo-miru.jpg" alt="Mirú Franco" fill className="object-contain" sizes="(max-width: 768px) 85vw, 50vw" priority />
               </div>

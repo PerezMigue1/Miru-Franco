@@ -6,6 +6,8 @@ import { MOSTRAR_MARCAS, MARCAS_ROTAS } from './marcasRotas';
 
 interface ItemMenu {
   name: string;
+  /** Etiqueta corta para pantallas angostas (<640px) — el nombre completo no siempre cabe junto a los otros dos ítems. */
+  nombreCorto?: string;
   href: string;
   /** Prefijo contra el que se compara pathname para marcar "activo". Por defecto, `href`. */
   activeMatch?: string;
@@ -31,6 +33,7 @@ const menuPrincipal: ItemMenu[] = [
     // /servicios redirige a /cliente/servicios-citas — el "activo" se marca
     // contra el destino real, no contra la URL de entrada.
     name: 'Servicios y citas',
+    nombreCorto: 'Citas',
     href: '/servicios',
     activeMatch: '/cliente/servicios-citas',
     icon: (
@@ -51,7 +54,7 @@ export default function MenuHorizontal() {
             <li key={item.name} className="relative shrink-0">
               <Link
                 href={item.href}
-                className={`relative flex items-center gap-2 px-5 py-2.5 transition-all duration-300 whitespace-nowrap rounded-full text-texto-fondo-oscuro ${
+                className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 transition-all duration-300 whitespace-nowrap rounded-full text-texto-fondo-oscuro ${
                   isActive ? 'shadow-lg' : 'hover:opacity-90'
                 }`}
                 style={{
@@ -68,10 +71,19 @@ export default function MenuHorizontal() {
                   }
                 }}
               >
-                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {item.icon}
                 </svg>
-                <span className="font-semibold text-sm">{item.name}</span>
+                <span className="font-semibold text-sm">
+                  {item.nombreCorto ? (
+                    <>
+                      <span className="sm:hidden">{item.nombreCorto}</span>
+                      <span className="hidden sm:inline">{item.name}</span>
+                    </>
+                  ) : (
+                    item.name
+                  )}
+                </span>
                 {isActive && (
                   <svg className="w-3.5 h-3.5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
