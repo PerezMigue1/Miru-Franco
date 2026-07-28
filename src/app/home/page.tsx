@@ -29,7 +29,7 @@ export default async function Home() {
       <main className="flex-1">
         {/* Hero — completamente estático, sin JS */}
         <section
-          className="hero-bg-gradient relative flex flex-col items-center justify-center w-full layout-gutter-x overflow-hidden"
+          className="hero-bg-gradient relative flex flex-col items-center justify-center w-full layout-gutter-x overflow-hidden pb-16 sm:pb-14 md:pb-4"
           style={{
             marginTop: 'var(--mf-header-offset, 104px)',
             height: 'calc(100vh - var(--mf-header-offset, 104px))',
