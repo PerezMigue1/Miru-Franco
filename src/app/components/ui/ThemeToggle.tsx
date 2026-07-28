@@ -7,17 +7,17 @@ export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  if (!mounted) return <button className="p-2 rounded-lg w-10 h-10" aria-hidden="true" />;
+  if (!mounted) return <button className="p-1.5 sm:p-2 rounded-lg w-9 h-9 sm:w-10 sm:h-10" aria-hidden="true" />;
 
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+      className="p-1.5 sm:p-2 rounded-lg hover:opacity-80 transition-opacity text-texto-fondo-oscuro shrink-0"
       aria-label={theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'}
     >
       {theme === 'light' ? (
         <svg
-          className="w-6 h-6"
+          className="w-5 h-5 sm:w-6 sm:h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -32,7 +32,7 @@ export default function ThemeToggle() {
         </svg>
       ) : (
         <svg
-          className="w-6 h-6"
+          className="w-5 h-5 sm:w-6 sm:h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

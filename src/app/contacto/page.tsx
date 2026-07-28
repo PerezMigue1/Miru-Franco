@@ -29,7 +29,7 @@ export default function ContactoPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
-      <main className="flex-1" style={{ marginTop: '104px' }}>
+      <main className="flex-1" style={{ marginTop: 'var(--mf-header-offset, 104px)' }}>
 
         {/* Hero */}
         <section className="section-padding text-center" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
