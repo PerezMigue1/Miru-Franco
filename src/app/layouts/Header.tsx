@@ -176,12 +176,12 @@ export default function Header() {
         style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
       >
         <div className="layout-page">
-          <div className="flex items-center gap-3" style={{ minHeight: '56px', padding: '8px 0' }}>
+          <div className="flex items-center gap-2 sm:gap-3" style={{ minHeight: '56px', padding: '8px 0' }}>
             {/* Izquierda: Menu + Logo */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center justify-center hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                className="flex items-center justify-center hover:opacity-80 transition-opacity text-texto-fondo-oscuro shrink-0"
                 aria-label="Menu"
                 style={{ minHeight: '44px', minWidth: '44px' }}
               >
@@ -193,22 +193,22 @@ export default function Header() {
                   )}
                 </svg>
               </button>
-              
-              <div className="flex items-center gap-4">
-                <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: '64px', height: '64px' }}>
+
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="relative shrink-0 flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16">
                   <Image
                     src="/logo-miru.jpg"
                     alt="Mirú Franco Logo"
-                    width={64}
-                    height={64}
+                    fill
+                    sizes="64px"
                     className="object-contain"
                     priority
                   />
                 </div>
-                <div className="flex flex-col items-start justify-center">
-                  <h1 
-                    className="text-logo text-logo-branding"
-                    style={{ 
+                <div className="flex flex-col items-start justify-center min-w-0">
+                  <h1
+                    className="text-logo text-logo-branding whitespace-nowrap"
+                    style={{
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
                       margin: 0,
                       padding: 0
@@ -217,8 +217,8 @@ export default function Header() {
                     MIRÚ FRANCO
                 </h1>
                   <h2
-                    className="text-logo-small text-logo-branding"
-                    style={{ 
+                    className="text-logo-small text-logo-branding whitespace-nowrap hidden sm:block"
+                    style={{
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
                       margin: 0,
                       padding: 0,
@@ -232,7 +232,7 @@ export default function Header() {
             </div>
 
             {/* Derecha: Tema + Carrito + Notificaciones + Usuario */}
-            <div className="flex items-center gap-4 ml-auto">
+            <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4 ml-auto shrink-0">
               <ThemeToggle />
               {/* Carrito */}
               <Link
@@ -300,7 +300,7 @@ export default function Header() {
                         />
                       </svg>
                     )}
-                    <span className="text-base font-medium max-w-[120px] truncate">{userName}</span>
+                    <span className="hidden sm:block text-base font-medium max-w-[120px] truncate">{userName}</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -429,13 +429,14 @@ export default function Header() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
+                  className="flex items-center gap-2 px-2.5 py-2 sm:px-3 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro"
                   style={{ backgroundColor: 'var(--hover)' }}
+                  aria-label="Iniciar sesión"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                   </svg>
-                  Iniciar sesión
+                  <span className="hidden sm:inline whitespace-nowrap">Iniciar sesión</span>
                 </Link>
               )}
 
@@ -448,7 +449,7 @@ export default function Header() {
       {isMenuOpen && (
         <>
           <div
-            className="fixed left-0 top-0 h-full w-80 z-50 shadow-2xl overflow-y-auto scrollbar-hide"
+            className="fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide"
             style={{ backgroundColor: 'var(--header-footer)' }}
           >
             <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
