@@ -219,7 +219,9 @@ export default function Header() {
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center shrink-0 min-w-0 overflow-hidden leading-tight">
+              {/* Apilado (imagen arriba, texto abajo, centrado) solo en móvil; de sm: en
+                  adelante vuelve a ser lado a lado como en escritorio de toda la vida. */}
+              <div className="flex flex-col sm:flex-row items-center gap-0 sm:gap-3 shrink-0 min-w-0 overflow-hidden">
                 <div className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16">
                   <Image
                     src="/logo-miru.jpg"
@@ -230,26 +232,28 @@ export default function Header() {
                     priority
                   />
                 </div>
-                <h1
-                  className="text-logo text-logo-branding truncate max-w-full"
-                  style={{
-                    textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                    margin: 0,
-                    padding: 0
-                  }}
-                >
-                  MIRÚ <span className="italic">FRANCO</span>
-                </h1>
-                <h2
-                  className="text-logo-small text-logo-branding truncate max-w-full"
-                  style={{
-                    textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                    margin: 0,
-                    padding: 0,
-                  }}
-                >
-                  BEAUTY SALÓN
-                </h2>
+                <div className="flex flex-col items-center sm:items-start min-w-0 leading-tight">
+                  <h1
+                    className="text-logo text-logo-branding truncate max-w-full"
+                    style={{
+                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
+                      margin: 0,
+                      padding: 0
+                    }}
+                  >
+                    MIRÚ <span className="italic">FRANCO</span>
+                  </h1>
+                  <h2
+                    className="text-logo-small text-logo-branding truncate max-w-full"
+                    style={{
+                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
+                      margin: 0,
+                      padding: 0,
+                    }}
+                  >
+                    BEAUTY SALÓN
+                  </h2>
+                </div>
               </div>
             </div>
 
