@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ import { useCart } from '../context/CartContext';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
 import { listarNotificaciones } from '../services/ecommerce';
+import { useNotificacionesSSE } from '../hooks/useNotificacionesSSE';
 
 export default function Header() {
   const router = useRouter();
@@ -83,32 +84,46 @@ export default function Header() {
     return () => window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
   }, []);
 
+  // Id incremental para descartar respuestas obsoletas: cargarNotificaciones()
+  // ahora se dispara desde el poll Y desde el SSE, así que puede haber
+  // llamadas en vuelo solapadas — solo aplica el setState de la última que se
+  // pidió (mismo espíritu que el flag `cancelled` que tenía el efecto original,
+  // pero por llamada en vez de por montaje de efecto).
+  const cargarNotificacionesReqId = useRef(0);
+  const cargarNotificaciones = useCallback(async (): Promise<void> => {
+    const reqId = ++cargarNotificacionesReqId.current;
+    if (!getToken()) {
+      if (cargarNotificacionesReqId.current === reqId) setNotificationsCount(0);
+      return;
+    }
+    try {
+      const list = await listarNotificaciones();
+      if (cargarNotificacionesReqId.current !== reqId) return;
+      const noLeidas = list.filter((n) => n.leida !== true).length;
+      setNotificationsCount(noLeidas);
+    } catch {
+      if (cargarNotificacionesReqId.current === reqId) setNotificationsCount(0);
+    }
+  }, []);
+
+  // Poll-on-focus / on-navigation / on-storage-update: se mantiene tal cual
+  // como respaldo si la conexión SSE de abajo se cae (proxy, red, etc.) — no
+  // se quitó nada de este mecanismo, solo se le sumó el push en vivo.
   useEffect(() => {
-    let cancelled = false;
-    const cargarNotificaciones = async () => {
-      if (!getToken()) {
-        if (!cancelled) setNotificationsCount(0);
-        return;
-      }
-      try {
-        const list = await listarNotificaciones();
-        if (cancelled) return;
-        const noLeidas = list.filter((n) => n.leida !== true).length;
-        setNotificationsCount(noLeidas);
-      } catch {
-        if (!cancelled) setNotificationsCount(0);
-      }
-    };
     void cargarNotificaciones();
     const onRefresh = () => void cargarNotificaciones();
     window.addEventListener(MIRU_USER_STORAGE_UPDATED, onRefresh);
     window.addEventListener('focus', onRefresh);
     return () => {
-      cancelled = true;
       window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onRefresh);
       window.removeEventListener('focus', onRefresh);
     };
-  }, [pathname]);
+  }, [pathname, cargarNotificaciones]);
+
+  // Push en vivo: cada notificación real (no keep-alive) recibida por SSE
+  // vuelve a llamar cargarNotificaciones(), la misma función de arriba — no
+  // hay un estado paralelo, el SSE solo dispara el mismo refresh que ya existía.
+  useNotificacionesSSE(cargarNotificaciones);
 
   // Cerrar menú usuario al hacer clic fuera
   useEffect(() => {
