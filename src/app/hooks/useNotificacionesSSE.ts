@@ -9,9 +9,18 @@ import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
 
 /** Distingue "el token que traíamos ya no sirve" de un corte de red transitorio:
- *  solo la primera debe saltarse el backoff automático de la librería y pasar
- *  por el mismo refresh compartido que usa client.ts antes de reintentar. */
+ *  solo la primera debe pasar por el mismo refresh compartido que usa
+ *  client.ts antes de reintentar. */
 class SseAuthError extends Error {}
+
+const BASE_RETRY_MS = 1000;
+const MAX_RETRY_MS = 30_000;
+const MAX_RETRIES = 8;
+/** Cuántas veces se intenta "401 -> refresh -> reconectar" antes de rendirse.
+ *  Si el token sigue sin servir después de refrescarlo, algo más profundo
+ *  falló (sesión revocada, etc.) y useAutoRefreshToken/client.ts ya se
+ *  encargan de cerrar sesión — insistir aquí solo alimentaría un bucle. */
+const MAX_AUTH_RETRIES = 1;
 
 /**
  * Mantiene abierta una conexión SSE a `${getBackendBaseUrl()}/api/notificaciones/stream`
@@ -30,17 +39,23 @@ class SseAuthError extends Error {}
  *   listener de `MIRU_USER_STORAGE_UPDATED` — cualquiera de los dos hace que
  *   se limpie la conexión vieja (cleanup del efecto) y se abra una nueva
  *   leyendo `getToken()` de nuevo.
- * - Token vencido/revocado a media conexión (el caso "zombie" que había que
- *   evitar): `fetchEventSource` reutiliza el MISMO objeto `headers` en todos
- *   sus reintentos automáticos (backoff y el que dispara al volver de una
- *   pestaña oculta) — verificado leyendo su código fuente
- *   (`node_modules/@microsoft/fetch-event-source/lib/cjs/fetch.js`), no hay
- *   forma de que la librería SOLA recalcule el header en un reintento interno.
- *   Por eso, si `onopen` ve un 401, se lanza `SseAuthError` para que la
- *   librería NO reintente con el mismo token: el `catch` de este hook llama a
- *   `runSharedAccessTokenRefresh()` (el mismo refresh compartido que usa
- *   `client.ts`) y, si da un token válido, abre una conexión NUEVA con
- *   `headers` construidos en ese momento a partir de `getToken()`.
+ * - `onerror` SIEMPRE relanza el error (nunca retorna un intervalo): esto
+ *   evita que `fetchEventSource` reintente POR SU CUENTA reutilizando el
+ *   MISMO objeto `headers` interno — verificado leyendo su código fuente
+ *   (`node_modules/@microsoft/fetch-event-source/lib/cjs/fetch.js`), ese
+ *   reintento interno es el que arrastra un `Last-Event-ID` ya capturado
+ *   entre reconexiones sin que este hook se entere. Todo reintento pasa por
+ *   el `catch` de abajo, con headers frescos desde `getToken()`.
+ * - Token vencido/revocado a media conexión: si `onopen` ve un 401, se lanza
+ *   `SseAuthError`; el `catch` llama a `runSharedAccessTokenRefresh()` (el
+ *   mismo refresh compartido que usa `client.ts`) y, si da un token válido,
+ *   abre una conexión nueva. Si el 401 persiste tras `MAX_AUTH_RETRIES`
+ *   refrescos, se deja de reconectar (queda el poll-on-focus de Header.tsx).
+ * - Errores de red/servidor: backoff exponencial propio (`BASE_RETRY_MS`,
+ *   doblando hasta `MAX_RETRY_MS`), con tope de `MAX_RETRIES` intentos. Al
+ *   agotarlos se deja de reconectar — nunca queda una pestaña reintentando en
+ *   bucle indefinido; el poll-on-focus existente en Header.tsx sigue vivo
+ *   como red de respaldo.
  */
 export function useNotificacionesSSE(onNotificacion: () => void): void {
   const onNotificacionRef = useRef(onNotificacion);
@@ -66,18 +81,28 @@ export function useNotificacionesSSE(onNotificacion: () => void): void {
 
     let detenido = false;
     let controller = new AbortController();
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryCount = 0;
+    let authRetryCount = 0;
 
     const conectar = async () => {
       const token = getToken();
       if (!token || detenido) return;
 
+      const headers = { Authorization: `Bearer ${token}` };
+
       controller = new AbortController();
       try {
         await fetchEventSource(`${getBackendBaseUrl()}/api/notificaciones/stream`, {
           signal: controller.signal,
-          headers: { Authorization: `Bearer ${token}` },
+          headers,
           async onopen(response) {
             if (response.ok && response.headers.get('content-type')?.startsWith('text/event-stream')) {
+              // Conexión sana: se reinician los contadores para que una falla
+              // futura (horas después) vuelva a tener su propio presupuesto
+              // de reintentos, en vez de heredar el de una falla ya resuelta.
+              retryCount = 0;
+              authRetryCount = 0;
               return;
             }
             if (response.status === 401) throw new SseAuthError('SSE respondió 401');
@@ -88,13 +113,18 @@ export function useNotificacionesSSE(onNotificacion: () => void): void {
             onNotificacionRef.current();
           },
           onerror(err) {
-            if (err instanceof SseAuthError) throw err; // no reintentar con el mismo token vencido
-            // errores de red/servidor transitorios: dejar que fetchEventSource reintente con su backoff
+            // Siempre relanzar: nunca dejar que fetchEventSource reintente
+            // internamente (ver docstring de arriba). El backoff y el tope de
+            // reintentos los controla este hook en el catch de abajo.
+            throw err;
           },
         });
       } catch (err) {
         if (detenido || controller.signal.aborted) return;
+
         if (err instanceof SseAuthError) {
+          authRetryCount += 1;
+          if (authRetryCount > MAX_AUTH_RETRIES) return; // 401 persiste tras refresh: no insistir más
           const resultado = await runSharedAccessTokenRefresh();
           if (!detenido && resultado.kind === 'ok') {
             void conectar();
@@ -102,7 +132,16 @@ export function useNotificacionesSSE(onNotificacion: () => void): void {
           // Si el refresh falla, no insistimos aquí: useAutoRefreshToken y el
           // interceptor de client.ts ya se encargan de limpiar la sesión y
           // redirigir a /login cuando el token realmente ya no sirve.
+          return;
         }
+
+        retryCount += 1;
+        if (retryCount > MAX_RETRIES) return; // se agotaron los reintentos: cae al poll-on-focus de Header.tsx
+
+        const delay = Math.min(BASE_RETRY_MS * 2 ** (retryCount - 1), MAX_RETRY_MS);
+        retryTimer = setTimeout(() => {
+          if (!detenido) void conectar();
+        }, delay);
       }
     };
 
@@ -110,6 +149,7 @@ export function useNotificacionesSSE(onNotificacion: () => void): void {
 
     return () => {
       detenido = true;
+      clearTimeout(retryTimer);
       controller.abort();
     };
   }, [pathname, sesionVersion]);
