@@ -212,7 +212,7 @@ export default function Header() {
       >
         {/* Barra Superior - Top Header */}
         <header
-          className={`transition-all duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
+          className={`relative z-20 transition-all duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
           style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
         >
         <div className="layout-page">
@@ -348,7 +348,7 @@ export default function Header() {
                   </button>
                   {isUserMenuOpen && (
                     <div
-                      className="absolute right-0 mt-2 rounded-lg shadow-xl border min-w-[240px] overflow-hidden"
+                      className="absolute right-0 mt-2 z-50 rounded-lg shadow-xl border min-w-[240px] overflow-hidden"
                       style={{ borderColor: 'var(--borde-visible)', backgroundColor: 'var(--tarjetas-paneles)' }}
                     >
                       {/* Cabecera: usuario y perfil */}
