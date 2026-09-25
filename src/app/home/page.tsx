@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../layouts/Header';
@@ -16,12 +17,21 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export default async function Home() {
+/** Carga productos/servicios en streaming: el hero no espera al backend (mejora TTFB/FCP/LCP). */
+async function HomeDataSections() {
   const [{ data: productos }, { data: servicios }] = await Promise.all([
     getProductosSinRedirigir(),
     getServicios(),
   ]);
+  return (
+    <HomeLandingClient
+      initialProductos={shuffle(productos).slice(0, 10)}
+      initialServicios={shuffle(servicios)}
+    />
+  );
+}
 
+export default function Home() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
@@ -40,17 +50,17 @@ export default async function Home() {
               abajo (que en móvil ya no es `absolute`) en vez de reclamarla toda como si nada
               más existiera debajo. */}
           <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 lg:gap-6 py-0 md:items-center flex-1 min-h-0 md:h-full">
-            <div className="w-full md:w-1/2 items-center md:h-full md:flex md:items-center md:justify-center md:pr-2 lg:pr-4 min-h-0 md:flex-1 flex justify-center" data-reveal style={{ transitionDelay: '0ms' }}>
+            <div className="w-full md:w-1/2 items-center md:h-full md:flex md:items-center md:justify-center md:pr-2 lg:pr-4 min-h-0 md:flex-1 flex justify-center">
               {/* En móvil la imagen comparte columna (apilada) con título + descripción + botones +
                   "Descubre" debajo — no puede pedir casi toda la altura de pantalla como si fuera
                   lo único ahí, o no queda aire para el resto y se recorta. De md: en adelante el
                   layout es lado a lado (imagen a la izquierda, texto a la derecha) exactamente
                   como en el diseño original de escritorio, sin ningún cambio. */}
               <div className="hero-logo-circle relative flex-shrink-0 aspect-square mx-auto">
-                <Image src="/logo-miru.jpg" alt="Mirú Franco" fill className="object-contain" sizes="(max-width: 768px) 85vw, 50vw" priority />
+                <Image src="/logo-miru.jpg" alt="Mirú Franco" fill className="object-contain" sizes="(max-width: 640px) 60vw, (max-width: 768px) 50vw, 50vw" priority fetchPriority="high" quality={70} />
               </div>
             </div>
-            <div className="w-full md:w-1/2 md:flex md:flex-col md:justify-center md:items-start md:pl-4 lg:pl-6 md:-mt-26 flex flex-col items-center md:items-start text-center md:text-left min-h-0 flex-1 overflow-hidden" data-reveal style={{ transitionDelay: '200ms' }}>
+            <div className="w-full md:w-1/2 md:flex md:flex-col md:justify-center md:items-start md:pl-4 lg:pl-6 md:-mt-26 flex flex-col items-center md:items-start text-center md:text-left min-h-0 flex-1 overflow-hidden">
               <div className="flex items-center justify-center md:justify-start gap-3 mb-2 md:mb-3">
                 <span className="hero-flourish" />
                 <span className="hero-ornament" />
@@ -68,7 +78,7 @@ export default async function Home() {
               <p className="mt-3 md:mt-6 max-w-md text-sm md:text-base leading-relaxed" style={{ color: 'var(--hero-tagline-color)', opacity: 0.95 }}>
                 Realza tu belleza natural con productos y servicios profesionales. Agenda tu cita, explora nuestra tienda y descubre la experiencia Mirú Franco.
               </p>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4 md:mt-7" data-reveal style={{ transitionDelay: '400ms' }}>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4 md:mt-7">
                 <Link
                   href="/cliente/servicios-citas/crear-cita"
                   className="inline-flex items-center justify-center px-6 py-2.5 sm:px-7 sm:py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider bg-[var(--botones-principales)] hover:bg-[var(--hover)] hover:shadow-lg transition-all duration-200"
@@ -106,10 +116,9 @@ export default async function Home() {
           </div>
         </section>
 
-        <HomeLandingClient
-          initialProductos={shuffle(productos)}
-          initialServicios={shuffle(servicios)}
-        />
+        <Suspense fallback={<div aria-hidden style={{ minHeight: '100vh' }} />}>
+          <HomeDataSections />
+        </Suspense>
       </main>
 
       <Footer />

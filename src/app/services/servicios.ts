@@ -239,7 +239,7 @@ export type ServiciosResult = { data: Servicio[]; error: null } | { data: Servic
 export async function getServicios(): Promise<ServiciosResult> {
   try {
     const base = getBackendBaseUrl();
-    const res = await fetch(`${base}/api/servicios`, { credentials: 'include' });
+    const res = await fetch(`${base}/api/servicios`, { credentials: 'include', next: { revalidate: 60 } });
     if (!res.ok) {
       const text = await res.text();
       let msg = `Error ${res.status}`;
