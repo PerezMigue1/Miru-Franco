@@ -5,6 +5,17 @@ import { useEffect, useState } from 'react';
 
 const INTERVAL_MS = 4500;
 
+/** Hosts permitidos en next.config `images.remotePatterns`: se pueden optimizar (WebP/AVIF + tamaño correcto). */
+const HOSTS_OPTIMIZABLES = new Set(['res.cloudinary.com', 'images.unsplash.com']);
+
+function puedeOptimizar(src: string): boolean {
+  try {
+    return HOSTS_OPTIMIZABLES.has(new URL(src).hostname);
+  } catch {
+    return false;
+  }
+}
+
 type Props = {
   urls: string[];
   alt: string;
@@ -20,6 +31,12 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
   const n = safe.length;
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [maxVisto, setMaxVisto] = useState(0);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMaxVisto((m) => Math.max(m, i));
+  }, [i]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -47,6 +64,8 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
       onMouseLeave={() => setPaused(false)}
     >
       {safe.map((src, idx) => (
+        // Solo se montan la imagen visible, la siguiente y las ya vistas (evita descargar toda la galería).
+        idx > maxVisto + 1 ? null : (
         <div
           key={`${src}-${idx}`}
           className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
@@ -59,10 +78,13 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
             alt={n > 1 ? `${alt} (${idx + 1} de ${n})` : alt}
             fill
             className={imageClassName}
-            sizes="(max-width: 768px) 100vw, 33vw"
-            unoptimized
+            sizes="288px"
+            unoptimized={!puedeOptimizar(src)}
+            quality={70}
+            loading="lazy"
           />
         </div>
+        )
       ))}
       {n > 1 && (
         <div

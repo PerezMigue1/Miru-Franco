@@ -56,6 +56,17 @@ export interface Producto {
   resultado?: string;
 }
 
+/** Descarta URLs de relleno tipo "https://url.jpg/" (host = nombre de archivo): fallan en la CSP y generan errores en consola. */
+function esUrlImagenValida(u: string): boolean {
+  if (u.startsWith('/') || u.startsWith('data:')) return true;
+  try {
+    const { protocol, hostname } = new URL(u);
+    return (protocol === 'https:' || protocol === 'http:') && !/\.(jpe?g|png|webp|gif|svg|avif)$/i.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * URLs únicas para galería en catálogo: imágenes del producto + todas las presentaciones.
  */
@@ -64,7 +75,7 @@ export function urlsGaleriaProductoCatalogo(p: Producto): string[] {
   const out: string[] = [];
   const push = (u: string | undefined) => {
     const s = String(u ?? '').trim();
-    if (s && !seen.has(s)) {
+    if (s && !seen.has(s) && esUrlImagenValida(s)) {
       seen.add(s);
       out.push(s);
     }
@@ -293,7 +304,7 @@ export async function getProductosSinRedirigir(opts?: GetProductosSinRedirigirOp
   try {
     const base = getBackendBaseUrl();
     const query = opts?.incluirNoDisponibles ? '?incluirNoDisponibles=1' : '';
-    const res = await fetch(`${base}/api/productos${query}`, { credentials: 'include' });
+    const res = await fetch(`${base}/api/productos${query}`, { credentials: 'include', ...(opts?.incluirNoDisponibles ? {} : { next: { revalidate: 60 } }) });
     if (!res.ok) {
       const text = await res.text();
       let msg = `Error ${res.status}`;
