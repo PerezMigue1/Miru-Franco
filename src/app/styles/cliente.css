@@ -14,6 +14,11 @@
   --mf-sombra-2: 0 2px 4px rgba(58, 28, 10, 0.1), 0 22px 40px -16px rgba(58, 28, 10, 0.42);
   --mf-linea: rgba(113, 0, 20, 0.14);
   --mf-radio: 14px;
+  /* next/font define --font-playfair-display y --font-great-vibes en <body>; declaradas en
+     :root, --font-family-serif/-script quedaban inválidas y los títulos caían a Geist. Aquí,
+     dentro de <body>, sí resuelven: la voz Playfair de la marca vuelve a verse. */
+  --font-family-serif: var(--font-playfair-display), 'Times New Roman', serif;
+  --font-family-script: var(--font-great-vibes), cursive;
   caret-color: var(--botones-principales);
 }
 
