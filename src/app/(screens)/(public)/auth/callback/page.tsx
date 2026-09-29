@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '../../../../services/client';
 import { getBackendBaseUrl } from '../../../../services/config';
-import { saveToken } from '../../../../utils/security';
+import { markSessionStart } from '../../../../utils/security';
 import { normalizarUsuarioAlmacenado } from '../../../../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../../../../utils/userStorageSync';
 import { api } from '../../../../services/auth';
@@ -78,10 +78,10 @@ function AuthCallbackContent() {
             error?: string;
           }>('/api/auth/exchange-code', { code }, BACKEND_BASE);
           
-          if (data.success && data.token) {
-            // Guardar token usando utilidad de seguridad
-            saveToken(data.token);
-            
+          // El backend entrega la sesión como cookie httpOnly (sin token en el cuerpo).
+          if (data.success) {
+            markSessionStart();
+
             // Opcional: Guardar información del usuario si viene en la respuesta (user o usuario)
             const userData = (data as { user?: unknown; usuario?: unknown }).user ?? (data as { user?: unknown; usuario?: unknown }).usuario;
             if (userData) {

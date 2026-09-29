@@ -235,18 +235,9 @@ export default function Login({
         }
       }
       } else {
-        // Login exitoso
-        console.log('Login exitoso, token guardado:', result.token ? 'Sí' : 'No');
+        // Login exitoso: la sesión quedó en la cookie httpOnly que emite el backend
         setShowActivation(false); // Asegurar que no se muestre la pantalla de activación
-        
-        // Verificar que el token se guardó
-        const tokenGuardado = localStorage.getItem('token') || localStorage.getItem('authToken');
-        if (!tokenGuardado && result.token) {
-          console.warn('Token no se guardó correctamente, guardando manualmente...');
-          localStorage.setItem('token', result.token);
-          localStorage.setItem('authToken', result.token);
-        }
-        
+
         // Llamar callback y redirigir
         if (onLoginSuccess) {
           onLoginSuccess();

@@ -1,6 +1,6 @@
 /**
  * Métodos de pago guardados (perfil + checkout).
- * GET/PATCH/DELETE requieren Authorization: Bearer (apiClient).
+ * GET/PATCH/DELETE requieren sesión (cookie httpOnly que envía apiClient).
  * POST: tras tokenizar en la pasarela (nunca PAN/CVV completos).
  *
  * Base: `${getRestApiBaseUrl()}/payments/metodos-pago`

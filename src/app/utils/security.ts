@@ -281,70 +281,93 @@ export const handleSecurityError = (error: unknown, response?: Response): {
   };
 };
 
-/**
- * Obtiene headers de autenticación
+/*
+ * Sesión: el JWT vive en una cookie httpOnly que emite el backend (ver backend-miru
+ * src/auth/auth-cookie.ts) y que JavaScript no puede leer; viaja sola en cada fetch con
+ * `credentials: 'include'`. En localStorage solo queda `user` sin datos sensibles
+ * (ver normalizarUsuarioAlmacenado), que la UI usa como indicador de "hay sesión".
  */
-export const getAuthHeaders = (): HeadersInit => {
-  const token = typeof window !== 'undefined' ? getToken() : null;
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-};
 
-/**
- * Solo persiste access token (p. ej. refresh). No actualiza `lastLoginTime` para no interferir
- * con la ventana de “login reciente” ni con detección de inactividad en el apiClient.
- */
-export const persistAccessTokenOnly = (token: string): void => {
+/** Claves donde versiones anteriores guardaban el JWT en claro. */
+const LEGACY_TOKEN_KEYS = ['token', 'authToken'] as const;
+
+/** Momento del último token emitido (login o refresh); sustituye a leer `lastActivity` del JWT. */
+const SESSION_REFRESHED_AT_KEY = 'sessionRefreshedAt';
+
+/** Registra que el backend acaba de emitir un token nuevo (cookie rotada). */
+export const markSessionRefreshed = (): void => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
-    localStorage.setItem('authToken', token);
+    localStorage.setItem(SESSION_REFRESHED_AT_KEY, String(Date.now()));
   }
 };
 
+/** Milisegundos desde el último token emitido (Infinity si no hay registro). */
+export const msSinceSessionRefresh = (): number => {
+  if (typeof window === 'undefined') return Infinity;
+  const t = Number(localStorage.getItem(SESSION_REFRESHED_AT_KEY));
+  return Number.isFinite(t) && t > 0 ? Date.now() - t : Infinity;
+};
+
 /**
- * Guarda token de forma segura (login / registro: marca momento de sesión)
+ * Marca el inicio de sesión (login / OAuth): el apiClient usa `lastLoginTime` para no tratar
+ * como "sesión expirada" un 401 que llega justo después de entrar.
  */
-export const saveToken = (token: string): void => {
+export const markSessionStart = (): void => {
   if (typeof window !== 'undefined') {
-    persistAccessTokenOnly(token);
     localStorage.setItem('lastLoginTime', String(Date.now()));
+    markSessionRefreshed();
   }
 };
 
 /**
- * Elimina token de forma segura
+ * Elimina tokens heredados de localStorage (la sesión ya no depende de ellos).
  */
 export const removeToken = (): void => {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('authToken');
+    LEGACY_TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
   }
 };
 
 /**
- * Limpia todos los datos de autenticación (token y usuario)
+ * Limpia todos los datos de sesión del navegador (usuario y marcas).
+ * La cookie httpOnly la borra el backend en /api/auth/logout.
  * Según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
  */
 export const clearAuthData = (): void => {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('authToken');
+    removeToken();
     localStorage.removeItem('user');
     localStorage.removeItem('lastLoginTime');
+    localStorage.removeItem(SESSION_REFRESHED_AT_KEY);
   }
 };
 
 /**
- * Obtiene token actual
+ * true si la UI tiene una sesión iniciada (usuario guardado tras login/OAuth). Es un
+ * indicador para decidir qué pedir y qué mostrar; quien valida la sesión es el backend
+ * con la cookie.
  */
-export const getToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token') || localStorage.getItem('authToken');
+export const hasSession = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return false;
+    const user = JSON.parse(raw) as { id?: unknown } | null;
+    return Boolean(user && user.id);
+  } catch {
+    return false;
   }
-  return null;
 };
+
+// Sesiones de versiones anteriores (JWT en localStorage): ese token ya no se envía y no hay
+// cookie, así que se descartan completas para que la UI no aparente una sesión inválida.
+if (typeof window !== 'undefined') {
+  try {
+    if (LEGACY_TOKEN_KEYS.some((k) => localStorage.getItem(k))) clearAuthData();
+  } catch {
+    /* localStorage no disponible */
+  }
+}
 
 /**
  * Fetch con retry y backoff exponencial para rate limiting
@@ -384,10 +407,7 @@ export const fetchWithRetry = async (
 };
 
 /**
- * Valida si un token existe y no está vacío
+ * Compatibilidad con las páginas que preguntan si hay sesión antes de pedir datos del usuario.
  */
-export const hasValidToken = (): boolean => {
-  const token = getToken();
-  return token !== null && token.trim().length > 0;
-};
+export const hasValidToken = (): boolean => hasSession();
 
