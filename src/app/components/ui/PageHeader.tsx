@@ -8,21 +8,16 @@ interface PageHeaderProps {
   actions?: ReactNode;
 }
 
+/** Encabezado de pantalla de cliente (solo lo usan pantallas de cliente): voz Playfair de la marca. */
 export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h1
-          className="text-section-title mb-2"
-          style={{ color: 'var(--menu-texto-principal)' }}
-        >
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 mb-8 md:mb-10 mf-entrada">
+      <div className="max-w-2xl">
+        <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>
           {title}
         </h1>
         {subtitle && (
-          <p
-            className="text-lead"
-            style={{ color: 'var(--encabezados-alterno)' }}
-          >
+          <p className="mt-2 text-base md:text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
             {subtitle}
           </p>
         )}

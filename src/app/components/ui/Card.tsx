@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import { useSuperficie } from '../cliente/SuperficieCliente';
 
 interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'style'> {
   children: ReactNode;
@@ -43,14 +44,21 @@ export default function Card({
   };
 
   const variantStyle = variants[variant];
+  // Pantallas de cliente: radio y sombra tintada de DESIGN.md, elevación al hover si es clicable.
+  // En /admin y /operacion (superficie 'panel') la salida es exactamente la de siempre.
+  const cliente = useSuperficie() === 'cliente';
+  const forma = cliente
+    ? `mf-card${props.onClick ? ' mf-card--interactiva' : ''}`
+    : 'rounded-lg';
+  const sombra = cliente && variant !== 'outlined' ? 'var(--mf-sombra-1)' : variantStyle.shadow;
 
   return (
     <div
-      className={`rounded-lg ${paddingStyles[padding]} ${className}`}
+      className={`${forma} ${paddingStyles[padding]} ${className}`}
       style={{
         backgroundColor: variantStyle.bg,
         border: variantStyle.border,
-        boxShadow: variantStyle.shadow,
+        boxShadow: sombra,
         ...style,
       }}
       {...props}
