@@ -84,7 +84,7 @@ function buildCsp(scriptSrc: string): string {
 }
 
 /**
- * CSP en producción: nonce + strict-dynamic para scripts de Next sin 'unsafe-inline' en script-src.
+ * CSP en producción: 'self' + nonce para scripts de Next sin 'unsafe-inline' en script-src.
  * img-src sin esquema comodín (https:) ni *.host (reduce alertas ZAP "CSP: Wildcard").
  * style-src mantiene 'unsafe-inline' por uso de style={{}} en la app (ZAP puede seguir avisando ahí).
  */
@@ -105,7 +105,11 @@ export function middleware(request: NextRequest) {
   }
 
   const nonce = randomNonceBase64();
-  const csp = buildCsp(`script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://vercel.live`);
+  // Sin 'strict-dynamic': con él el navegador ignora 'self' y exige nonce a todo <script src>.
+  // Next 16 emite los chunks de loading/error/not-found (create-component-styles-and-scripts)
+  // sin atributo nonce, y quedaban bloqueados. 'self' solo cubre /_next/static (el origen no
+  // sirve JS subido por usuarios ni JSONP); los scripts inline siguen exigiendo el nonce.
+  const csp = buildCsp(`script-src 'self' 'nonce-${nonce}' https://vercel.live`);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
