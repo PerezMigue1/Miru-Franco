@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import AuthContainer from '../../../components/auth/AuthContainer';
 import { showAlert } from '../../../utils/toast';
+import { hasSession } from '../../../utils/security';
 
 /** Rutas permitidas para redirigir después del login (evita open redirect). */
 const REDIRECT_ALLOWED_PREFIXES = ['/admin', '/perfil', '/cliente'];
@@ -30,8 +31,7 @@ function LoginContent() {
   const returnUrl = safeReturnUrl(searchParams.get('returnUrl'));
 
   const handleAuthSuccess = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-    if (token) {
+    if (hasSession()) {
       if (returnUrl) {
         router.push(returnUrl);
       } else {

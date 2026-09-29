@@ -253,7 +253,6 @@ export function mergePerfilEnLocalStorage(updated: PerfilUsuarioCompleto, fotoFa
       id: updated.id,
       nombre: (updated.nombre && String(updated.nombre).trim()) || resolverNombreParaMostrar(cur) || '',
       email: updated.email || String(cur.email ?? ''),
-      telefono: updated.telefono ?? cur.telefono ?? '',
       foto: fotoMerged,
       picture: cur.picture,
       rol: updated.rol ?? cur.rol ?? cur.role,

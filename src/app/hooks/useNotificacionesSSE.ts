@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { getToken } from '../utils/security';
+import { hasSession } from '../utils/security';
 import { getBackendBaseUrl } from '../services/config';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
@@ -38,17 +38,17 @@ const MAX_AUTH_RETRIES = 1;
  *   que ya usa el `useEffect` de notificaciones de Header.tsx) y de un
  *   listener de `MIRU_USER_STORAGE_UPDATED` — cualquiera de los dos hace que
  *   se limpie la conexión vieja (cleanup del efecto) y se abra una nueva
- *   leyendo `getToken()` de nuevo.
+ *   comprobando `hasSession()` de nuevo.
  * - `onerror` SIEMPRE relanza el error (nunca retorna un intervalo): esto
  *   evita que `fetchEventSource` reintente POR SU CUENTA reutilizando el
  *   MISMO objeto `headers` interno — verificado leyendo su código fuente
  *   (`node_modules/@microsoft/fetch-event-source/lib/cjs/fetch.js`), ese
  *   reintento interno es el que arrastra un `Last-Event-ID` ya capturado
  *   entre reconexiones sin que este hook se entere. Todo reintento pasa por
- *   el `catch` de abajo, con headers frescos desde `getToken()`.
+ *   el `catch` de abajo. La sesión viaja en la cookie httpOnly (`credentials: 'include'`).
  * - Token vencido/revocado a media conexión: si `onopen` ve un 401, se lanza
  *   `SseAuthError`; el `catch` llama a `runSharedAccessTokenRefresh()` (el
- *   mismo refresh compartido que usa `client.ts`) y, si da un token válido,
+ *   mismo refresh compartido que usa `client.ts`) y, si rota la cookie,
  *   abre una conexión nueva. Si el 401 persiste tras `MAX_AUTH_RETRIES`
  *   refrescos, se deja de reconectar (queda el poll-on-focus de Header.tsx).
  * - Errores de red/servidor: backoff exponencial propio (`BASE_RETRY_MS`,
@@ -77,7 +77,7 @@ export function useNotificacionesSSE(onNotificacion: () => void): void {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!getToken()) return;
+    if (!hasSession()) return;
 
     let detenido = false;
     let controller = new AbortController();
@@ -86,16 +86,13 @@ export function useNotificacionesSSE(onNotificacion: () => void): void {
     let authRetryCount = 0;
 
     const conectar = async () => {
-      const token = getToken();
-      if (!token || detenido) return;
-
-      const headers = { Authorization: `Bearer ${token}` };
+      if (!hasSession() || detenido) return;
 
       controller = new AbortController();
       try {
         await fetchEventSource(`${getBackendBaseUrl()}/api/notificaciones/stream`, {
           signal: controller.signal,
-          headers,
+          credentials: 'include',
           async onopen(response) {
             if (response.ok && response.headers.get('content-type')?.startsWith('text/event-stream')) {
               // Conexión sana: se reinician los contadores para que una falla

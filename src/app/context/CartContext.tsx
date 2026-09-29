@@ -9,7 +9,7 @@ import {
   ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
-import { getToken } from '../utils/security';
+import { hasSession } from '../utils/security';
 import {
   listarCarrito,
   crearCarritoItem,
@@ -148,8 +148,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const refreshCart = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    const token = getToken();
-    if (token) {
+    const conSesion = hasSession();
+    if (conSesion) {
       setLoading(true);
       try {
         const localGuest = loadFromStorage().filter((i) => String(i.id).startsWith('local-'));
@@ -195,7 +195,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onFocus = () => {
-      if (getToken()) void refreshCart();
+      if (hasSession()) void refreshCart();
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
@@ -203,15 +203,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!getToken()) saveToStorage(items);
+    if (!hasSession()) saveToStorage(items);
   }, [items, mounted]);
 
   const addItem = useCallback(
     async (item: AddCartItemInput) => {
       const cantidad = item.cantidad ?? 1;
-      const token = getToken();
+      const conSesion = hasSession();
 
-      if (token) {
+      if (conSesion) {
         setLoading(true);
         try {
           await crearCarritoItem({
@@ -255,8 +255,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const removeItem = useCallback(async (id: string) => {
-    const token = getToken();
-    if (token && id.startsWith('srv-')) {
+    const conSesion = hasSession();
+    if (conSesion && id.startsWith('srv-')) {
       const cid = Number(id.replace(/^srv-/, ''));
       if (Number.isFinite(cid)) {
         setLoading(true);
@@ -275,8 +275,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = useCallback(async (id: string, cantidad: number) => {
     if (cantidad < 1) return;
-    const token = getToken();
-    if (token && id.startsWith('srv-')) {
+    const conSesion = hasSession();
+    if (conSesion && id.startsWith('srv-')) {
       const cid = Number(id.replace(/^srv-/, ''));
       if (Number.isFinite(cid)) {
         setLoading(true);
@@ -296,8 +296,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearCart = useCallback(async () => {
-    const token = getToken();
-    if (token) {
+    const conSesion = hasSession();
+    if (conSesion) {
       setLoading(true);
       try {
         const rows = await listarCarrito();
@@ -320,7 +320,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         items,
         totalItems,
         loading,
-        isServerCart: Boolean(typeof window !== 'undefined' && getToken()),
+        isServerCart: Boolean(typeof window !== 'undefined' && hasSession()),
         addItem,
         removeItem,
         updateQuantity,

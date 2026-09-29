@@ -33,7 +33,8 @@ function OauthAlexaContent() {
 
     try {
       const loginResult = await api.login(email, password);
-      if (!loginResult.success || !loginResult.token) {
+      // La sesión queda en la cookie httpOnly: /api/oauth/code la usa para emitir el código.
+      if (!loginResult.success) {
         setError(loginResult.error || 'Credenciales inválidas.');
         return;
       }

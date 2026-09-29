@@ -207,8 +207,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           setEmailForActivation(values.email);
           setShowActivation(true);
         } else {
+          // El JWT nunca se guarda en localStorage (la sesión viaja en cookie httpOnly).
           if (response.token) {
-            localStorage.setItem('token', response.token);
             setRegisterSuccess(true);
             setTimeout(() => {
               if (typeof window !== 'undefined') window.location.href = '/home';

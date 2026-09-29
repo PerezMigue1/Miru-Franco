@@ -12,17 +12,27 @@ export function resolverNombreParaMostrar(u: Record<string, unknown>): string {
 }
 
 /**
+ * Único subconjunto del usuario que se guarda en `localStorage.user`: lo que la UI necesita
+ * para el header, los guards y el sidebar. Cualquier script de la página puede leer
+ * localStorage, así que teléfono, fecha de nacimiento, alergias y demás datos del perfil no se
+ * persisten: las vistas que los muestran los piden a `/api/auth/me`.
+ */
+const CAMPOS_PERMITIDOS = ['id', 'nombre', 'email', 'rol', 'role', 'foto', 'permisos'] as const;
+
+/**
  * Unifica avatar para `localStorage.user` y la UI:
  * - Si ya hay **foto propia** (`foto`, `avatarUrl`, `avatar`) → se normaliza y se guarda en `foto`.
  * - Si no, usa la de proveedores OAuth (**Google envía `picture`**).
  *
  * Así el header y `/perfil` leen siempre `foto`; la de Google es respaldo hasta que el usuario suba una en Cloudinary.
+ * Devuelve solo CAMPOS_PERMITIDOS.
  */
 export function normalizarUsuarioAlmacenado(user: unknown): Record<string, unknown> {
   if (!user || typeof user !== 'object' || Array.isArray(user)) {
     return {};
   }
   const u = { ...(user as Record<string, unknown>) };
+  if (u.id == null && u._id != null) u.id = u._id;
 
   const fotoPropia = normalizarUrlImagenExterna(
     String(u.foto ?? u.avatarUrl ?? u.avatar ?? '')
@@ -42,5 +52,9 @@ export function normalizarUsuarioAlmacenado(user: unknown): Record<string, unkno
   const nom = resolverNombreParaMostrar(u);
   if (nom) u.nombre = nom;
 
-  return u;
+  const seguro: Record<string, unknown> = {};
+  for (const campo of CAMPOS_PERMITIDOS) {
+    if (u[campo] !== undefined) seguro[campo] = u[campo];
+  }
+  return seguro;
 }
