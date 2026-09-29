@@ -7,6 +7,24 @@ import { ChevronDown } from 'lucide-react';
 import { getProductosSinRedirigir } from '../services/productos';
 import { getServicios } from '../services/servicios';
 import HomeLandingClient from '../components/home/HomeLandingClient';
+import { metadataPublica } from '../utils/seo';
+
+export const metadata = metadataPublica({
+  title: 'Mirú Franco — Beauty Salón en Huejutla de Reyes',
+  description:
+    'Salón de belleza profesional en Huejutla de Reyes: cortes, coloración, tratamientos capilares, alaciado y nanoplastía. Agenda tu cita en línea y compra productos profesionales.',
+  path: '/home',
+  absoluteTitle: true,
+});
+
+/**
+ * Página pública y no personalizada: se prerenderiza y se regenera por ISR (los fetch de
+ * productos/servicios ya usan `revalidate: 60`), para que el CDN pueda cachear el HTML.
+ * `force-static` hace que el `headers()` del layout raíz devuelva vacío aquí (sin nonce):
+ * esta ruta figura en RUTAS_PUBLICAS_ESTATICAS (utils/rutasPublicasEstaticas.ts), que le aplica una CSP sin nonce.
+ */
+export const dynamic = 'force-static';
+export const revalidate = 300;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
