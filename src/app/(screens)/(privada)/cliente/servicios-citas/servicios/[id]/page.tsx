@@ -7,6 +7,9 @@ import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import ServicioImagen from '../../../../../../components/servicios/ServicioImagen';
+import PasosFlujo, { PASOS_RESERVA } from '../../../../../../components/cliente/PasosFlujo';
+import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
+import { CalendarDays, Clock3, Info } from 'lucide-react';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
 import { hasValidToken } from '../../../../../../utils/security';
@@ -44,8 +47,13 @@ export default function DetalleServicioPage() {
   if (loading) {
     return (
       <ModuleLayout>
-        <div className="max-w-5xl mx-auto flex justify-center py-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current" style={{ color: 'var(--menu-texto-principal)' }} />
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12" aria-busy="true" aria-label="Cargando servicio">
+          <div className="mf-skeleton h-80 lg:h-[460px]" style={{ borderRadius: 'var(--mf-radio)' }} />
+          <div className="space-y-4 pt-2">
+            <div className="mf-skeleton h-4 w-1/4" />
+            <div className="mf-skeleton h-10 w-3/4" />
+            <div className="mf-skeleton h-28 w-full mt-6" style={{ borderRadius: 'var(--mf-radio)' }} />
+          </div>
         </div>
       </ModuleLayout>
     );
@@ -66,12 +74,13 @@ export default function DetalleServicioPage() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div>
+      <div className="max-w-6xl mx-auto">
+        <PasosFlujo pasos={PASOS_RESERVA} actual={0} etiqueta="Pasos para reservar" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-10">
+          <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start mf-entrada">
             <div
-              className="w-full h-96 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden"
-              style={{ backgroundColor: 'var(--fondos-suaves)' }}
+              className="w-full h-80 lg:h-[460px] flex items-center justify-center relative overflow-hidden"
+              style={{ backgroundColor: 'var(--fondos-suaves)', borderRadius: 'var(--mf-radio)', boxShadow: 'var(--mf-sombra-1)' }}
             >
               <ServicioImagen
                 src={servicio.imagen ?? servicio.imagenes?.[0]}
@@ -81,59 +90,47 @@ export default function DetalleServicioPage() {
             </div>
           </div>
 
-          <div>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1
-                  className="text-hero mb-2"
-                  style={{ color: 'var(--menu-texto-principal)' }}
-                >
-                  {servicio.nombre}
-                </h1>
-                {servicio.categoria && <Badge variant="info" size="lg">{servicio.categoria}</Badge>}
-              </div>
-            </div>
+          <div className="mf-entrada" style={{ ['--i' as string]: 1 }}>
+            {servicio.categoria && <Badge variant="info" size="sm">{servicio.categoria}</Badge>}
+            <h1 className="mf-titulo-pagina mt-3" style={{ color: 'var(--menu-texto-principal)' }}>
+              {servicio.nombre}
+            </h1>
+            {servicio.descripcion && (
+              <p className="mt-3 text-lg max-w-[55ch]" style={{ color: 'var(--encabezados-alterno)' }}>
+                {servicio.descripcion}
+              </p>
+            )}
 
-            <Card className="mb-6">
-              <div className="space-y-4">
-                {servicio.precio && (
-                  <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Precio
-                    </p>
-                    <p
-                      className="text-3xl font-bold"
-                      style={{ color: 'var(--menu-texto-principal)' }}
-                    >
-                      {servicio.precio}
-                    </p>
-                  </div>
-                )}
-                {servicio.duracion && (
-                  <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Duración
-                    </p>
-                    <p
-                      className="text-xl"
-                      style={{ color: 'var(--menu-texto-principal)' }}
-                    >
-                      {servicio.duracion}
-                    </p>
-                  </div>
-                )}
+            <Card className="mt-8 mb-6" padding="lg">
+              <div className="space-y-5">
+                <dl className="mf-cifras flex flex-wrap items-end gap-x-10 gap-y-4">
+                  {servicio.precio && (
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
+                        Precio
+                      </dt>
+                      <dd className="mt-1 text-4xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formatearPrecioMXN(servicio.precio)}
+                      </dd>
+                    </div>
+                  )}
+                  {servicio.duracion && (
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
+                        Duración
+                      </dt>
+                      <dd className="mt-1 flex items-center gap-1.5 text-xl font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                        <Clock3 size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+                        {servicio.duracion}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
                 {servicio.requiereEvaluacion && (
-                  <div>
-                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Evaluación previa
-                    </p>
-                    <p
-                      className="text-sm"
-                      style={{ color: 'var(--menu-texto-principal)' }}
-                    >
-                      Este servicio requiere una evaluación previa con el especialista antes de agendar.
-                    </p>
-                  </div>
+                  <p className="flex items-start gap-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <Info size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
+                    Este servicio requiere una evaluación previa con el especialista antes de agendar.
+                  </p>
                 )}
                 {enCliente && !haySesion && (
                   <p
@@ -146,6 +143,7 @@ export default function DetalleServicioPage() {
                 <Button
                   fullWidth
                   size="lg"
+                  className="inline-flex items-center justify-center gap-2"
                   onClick={() => {
                     const destino = `/cliente/servicios-citas/calendario?servicioId=${servicio.id}`;
                     if (!hasValidToken()) {
@@ -155,32 +153,25 @@ export default function DetalleServicioPage() {
                     router.push(destino);
                   }}
                 >
-                  {!enCliente ? 'Agendar Cita' : haySesion ? 'Agendar Cita' : 'Iniciar sesión y agendar'}
+                  <CalendarDays size={18} aria-hidden />
+                  {!enCliente ? 'Elegir fecha y hora' : haySesion ? 'Elegir fecha y hora' : 'Iniciar sesión y agendar'}
                 </Button>
               </div>
             </Card>
           </div>
         </div>
 
-        {(servicio.descripcion || servicio.descripcionLarga) && (
-          <Card className="mb-6">
+        {servicio.descripcionLarga && (
+          <Card className="mb-6 mf-revelar" padding="lg">
             <h2
-              className="text-page-title mb-4"
-              style={{ color: 'var(--menu-texto-principal)' }}
+              className="text-elegant-title mb-4"
+              style={{ color: 'var(--menu-texto-principal)', letterSpacing: '-0.02em' }}
             >
               Descripción
             </h2>
-            {servicio.descripcion && (
-              <p
-                className="text-lead mb-4"
-                style={{ color: 'var(--encabezados-alterno)' }}
-              >
-                {servicio.descripcion}
-              </p>
-            )}
             {servicio.descripcionLarga && (
               <p
-                className="text-lead"
+                className="text-base md:text-lg leading-relaxed max-w-[65ch]"
                 style={{ color: 'var(--encabezados-alterno)' }}
               >
                 {servicio.descripcionLarga}
