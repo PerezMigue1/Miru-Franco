@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Variante de las pantallas de cliente, bajo .superficie-cliente (ver DESIGN.md) */
+@import "./cliente.css";
 
 /* Modo oscuro controlado por clase .dark en <html> */
 @custom-variant dark (&:where(.dark, .dark *));
