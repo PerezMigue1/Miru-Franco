@@ -9,7 +9,7 @@ import Badge from '../../../../../../components/ui/Badge';
 import ServicioImagen from '../../../../../../components/servicios/ServicioImagen';
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../../components/cliente/PasosFlujo';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
-import { CalendarDays, Clock3, Info } from 'lucide-react';
+import { CalendarDays, Check, Clock3, Info } from 'lucide-react';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
 import { hasValidToken } from '../../../../../../utils/security';
@@ -193,7 +193,7 @@ export default function DetalleServicioPage() {
                 <ul className="space-y-2">
                   {servicio.incluye.map((item, index) => (
                     <li key={index} className="flex items-start">
-                      <span className="mr-2" style={{ color: 'var(--success)' }}>✓</span>
+                      <Check size={18} aria-hidden className="mr-2 mt-0.5 shrink-0" style={{ color: 'var(--success)' }} />
                       <span style={{ color: 'var(--encabezados-alterno)' }}>{item}</span>
                     </li>
                   ))}

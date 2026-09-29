@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { ServicioImagenPlaceholder } from '../../../../components/servicios/ServicioImagen';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
 import { getCategoryColor } from '../../../../utils/categoryColors';
@@ -24,28 +26,22 @@ export default function GaleriaPage() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
-        <div className="text-center mb-12">
-          <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Galería de Trabajos
-          </h1>
-          <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
-            Conoce algunos de nuestros trabajos realizados. Todos son trabajos reales de clientas satisfechas.
-          </p>
-        </div>
+        <PageHeader
+          title="Galería de Trabajos"
+          subtitle="Conoce algunos de nuestros trabajos realizados. Todos son trabajos reales de clientas satisfechas."
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {trabajos.map((trabajo) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {trabajos.map((trabajo, index) => (
             <Card 
               key={trabajo.id} 
               variant="elevated" 
-              className="overflow-hidden cursor-pointer transition-transform hover:scale-105"
+              className="overflow-hidden mf-entrada"
+              style={{ ['--i' as string]: index }}
               onClick={() => setTrabajoSeleccionado(trabajo.id)}
             >
-              <div
-                className="aspect-square flex items-center justify-center"
-                style={{ backgroundColor: 'var(--fondos-suaves)' }}
-              >
-                <p className="text-4xl">📸</p>
+              <div className="relative aspect-square">
+                <ServicioImagenPlaceholder />
               </div>
               <div className="p-4">
                 <div className="mb-2">
@@ -68,11 +64,8 @@ export default function GaleriaPage() {
             title={trabajos.find(t => t.id === trabajoSeleccionado)?.categoria || 'Trabajo'}
           >
             <div className="text-center">
-              <div
-                className="aspect-square flex items-center justify-center mb-4 rounded-lg"
-                style={{ backgroundColor: 'var(--fondos-suaves)' }}
-              >
-                <p className="text-9xl">📸</p>
+              <div className="relative aspect-square mb-4 overflow-hidden rounded-[12px]">
+                <ServicioImagenPlaceholder />
               </div>
               <p className="text-lg mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                 {trabajos.find(t => t.id === trabajoSeleccionado)?.categoria}

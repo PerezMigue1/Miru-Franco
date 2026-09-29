@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
@@ -121,10 +122,11 @@ export default function TarjetasGuardadasPage() {
       <div className="mb-4">
         <Link
           href="/perfil"
-          className="text-sm font-medium underline"
+          className="text-sm font-medium inline-flex items-center gap-1.5 hover:underline underline-offset-4"
           style={{ color: 'var(--enlaces-textos-interactivos)' }}
         >
-          ← Volver al perfil
+          <ArrowLeft size={16} aria-hidden />
+          Volver al perfil
         </Link>
       </div>
 
