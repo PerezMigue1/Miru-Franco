@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
-import { Camera } from 'lucide-react';
+import { useEffect, useState, useMemo, useRef, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ServicioImagen from '../../../../components/servicios/ServicioImagen';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
@@ -32,6 +32,73 @@ function duracionEnMinutos(servicio: Servicio): number {
     }
   }
   return 0;
+}
+
+/**
+ * Fila horizontal de chips con señal de overflow: degradado + flecha en el borde que aún tiene
+ * contenido, para que en móvil se note que la fila se puede deslizar (y se pueda avanzar con un toque).
+ */
+function FilaChipsDesplazable({ children }: { children: ReactNode }) {
+  const filaRef = useRef<HTMLDivElement>(null);
+  const [masALaIzquierda, setMasALaIzquierda] = useState(false);
+  const [masALaDerecha, setMasALaDerecha] = useState(false);
+
+  useEffect(() => {
+    const fila = filaRef.current;
+    if (!fila) return;
+    const actualizar = () => {
+      setMasALaIzquierda(fila.scrollLeft > 4);
+      setMasALaDerecha(fila.scrollLeft + fila.clientWidth < fila.scrollWidth - 4);
+    };
+    // ResizeObserver notifica al observar, así que también cubre el cálculo inicial.
+    const observer = new ResizeObserver(actualizar);
+    observer.observe(fila);
+    fila.addEventListener('scroll', actualizar, { passive: true });
+    return () => {
+      observer.disconnect();
+      fila.removeEventListener('scroll', actualizar);
+    };
+  }, []);
+
+  const desplazar = (sentido: 1 | -1) => {
+    const fila = filaRef.current;
+    fila?.scrollBy({ left: sentido * fila.clientWidth * 0.7, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={filaRef}
+        role="group"
+        aria-label="Filtrar por categoría"
+        className="flex gap-2 overflow-x-auto scrollbar-hide"
+      >
+        {children}
+      </div>
+      {masALaIzquierda && (
+        <button
+          type="button"
+          onClick={() => desplazar(-1)}
+          aria-label="Ver categorías anteriores"
+          className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-start"
+          style={{ background: 'linear-gradient(to right, var(--fondo-general) 45%, transparent)' }}
+        >
+          <ChevronLeft size={20} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+        </button>
+      )}
+      {masALaDerecha && (
+        <button
+          type="button"
+          onClick={() => desplazar(1)}
+          aria-label="Ver más categorías"
+          className="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-end"
+          style={{ background: 'linear-gradient(to left, var(--fondo-general) 45%, transparent)' }}
+        >
+          <ChevronRight size={20} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function ListaServiciosPage() {
@@ -153,7 +220,7 @@ export default function ListaServiciosPage() {
           onChange={(e) => setBusqueda(e.target.value)}
         />
         {categorias.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <FilaChipsDesplazable>
             {categorias.map((cat) => {
               const isActive = categoriaSeleccionada === cat;
               return (
@@ -161,13 +228,14 @@ export default function ListaServiciosPage() {
                   key={cat}
                   size="sm"
                   variant={isActive ? 'chip' : 'outline'}
+                  className="shrink-0 whitespace-nowrap"
                   onClick={() => setCategoriaSeleccionada(cat)}
                 >
                   {cat}
                 </Button>
               );
             })}
-          </div>
+          </FilaChipsDesplazable>
         )}
         {especialistasDisponibles.length > 0 && (
           <div className="w-full max-w-xs">
@@ -315,23 +383,11 @@ export default function ListaServiciosPage() {
                       className="w-full h-48 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden"
                       style={{ backgroundColor: 'var(--fondos-suaves)' }}
                     >
-                      {(() => {
-                        const imgSrc = servicio.imagen ?? servicio.imagenes?.[0];
-                        const isValidSrc =
-                          typeof imgSrc === 'string' &&
-                          (imgSrc.startsWith('http') || imgSrc.startsWith('/'));
-                        return isValidSrc ? (
-                          <Image
-                            src={imgSrc}
-                            alt={servicio.nombre}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                          />
-                        ) : (
-                          <Camera size={36} aria-hidden style={{ color: 'var(--encabezados-alterno)' }} />
-                        );
-                      })()}
+                      <ServicioImagen
+                        src={servicio.imagen ?? servicio.imagenes?.[0]}
+                        alt={servicio.nombre}
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
                     </div>
                     <div className="flex items-start justify-between mb-2">
                       <h3
