@@ -1,5 +1,7 @@
 'use client';
 
+import { Check } from 'lucide-react';
+
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
@@ -532,7 +534,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Tipo de cabello */}
       <div>
-        <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">Tipo de cabello</label>
+        <label className="block text-sm font-medium mb-3" style={{ color: '#F2F1ED' }}>Tipo de cabello</label>
         <Controller
           name="hairType"
           control={control}
@@ -582,7 +584,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Alergias */}
       <div>
-        <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">¿Tienes alergias a productos?</label>
+        <label className="block text-sm font-medium mb-3" style={{ color: '#F2F1ED' }}>¿Tienes alergias a productos?</label>
         <div className="space-y-3">
           <Controller
             name="hasAllergies"
@@ -633,7 +635,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Tratamientos químicos */}
       <div>
-        <label className="block text-sm font-medium mb-3 text-zinc-700 dark:text-zinc-300">¿Tratamientos químicos previos?</label>
+        <label className="block text-sm font-medium mb-3" style={{ color: '#F2F1ED' }}>¿Tratamientos químicos previos?</label>
         <div className="space-y-3">
           <Controller
             name="hasChemicalTreatments"
@@ -702,7 +704,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           />
           <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>
             Acepto los{' '}
-            <a href="/terminos" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: '#243B5A' }} onClick={(e) => e.stopPropagation()}>
+            <a href="/terminos" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--iconografia)' }} onClick={(e) => e.stopPropagation()}>
               Términos y Condiciones
             </a>
           </span>
@@ -739,23 +741,40 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
         <div className="mb-6">
-          <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>Crear Cuenta</h2>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            {[1, 2].map((step) => (
-              <div key={step} className="flex items-center">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
-                  style={{
-                    backgroundColor: step <= currentStep ? '#710014' : 'rgba(255,255,255,0.2)',
-                    color: step <= currentStep ? '#F2F1ED' : 'rgba(255,255,255,0.5)',
-                  }}
-                >
-                  {step < currentStep ? '✓' : step}
-                </div>
-                {step < 2 && <div className="w-12 h-1" style={{ backgroundColor: step < currentStep ? '#710014' : 'rgba(255,255,255,0.2)' }} />}
-              </div>
-            ))}
-          </div>
+          <h1 className="mf-titulo-pagina text-center mb-2" style={{ color: '#F2F1ED' }}>Crear Cuenta</h1>
+          {/* Pasos con nombre: la persona sabe qué falta antes de empezar (UX: progreso visible) */}
+          <ol className="flex items-start justify-center gap-3 mt-4 mb-2">
+            {[
+              { n: 1, etiqueta: 'Tu cuenta' },
+              { n: 2, etiqueta: 'Tu cabello' },
+            ].map(({ n, etiqueta }) => {
+              const hecho = n < currentStep;
+              const activo = n === currentStep;
+              return (
+                <li key={n} className="flex items-center gap-3" aria-current={activo ? 'step' : undefined}>
+                  <div className="flex flex-col items-center gap-1.5 w-20">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                      style={{
+                        backgroundColor: n <= currentStep ? '#710014' : 'rgba(255,255,255,0.12)',
+                        color: n <= currentStep ? '#F2F1ED' : 'rgba(255,255,255,0.6)',
+                        boxShadow: activo ? '0 0 0 3px rgba(159, 109, 31, 0.55)' : 'none',
+                        transition: 'background-color 240ms ease, box-shadow 240ms ease',
+                      }}
+                    >
+                      {hecho ? <Check size={16} aria-hidden /> : n}
+                    </div>
+                    <span className="text-xs" style={{ color: activo ? '#F2F1ED' : 'rgba(242, 241, 237, 0.65)' }}>
+                      {etiqueta}
+                    </span>
+                  </div>
+                  {n < 2 && (
+                    <div className="w-10 h-px mt-4" style={{ backgroundColor: hecho ? '#710014' : 'rgba(255,255,255,0.2)' }} aria-hidden />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         </div>
 
         <form
@@ -778,7 +797,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               <button
                 type="button"
                 onClick={() => setCurrentStep((p) => p - 1)}
-                className="flex-1 py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors"
+                className="mf-btn flex-1 py-3 px-4 rounded-lg border font-medium hover:bg-white/5"
                 style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
                 disabled={isSubmitting}
               >
@@ -788,7 +807,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mf-btn flex-1 py-3 px-4 rounded-lg text-white font-medium hover:bg-[var(--hover)] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#710014' }}
             >
               {currentStep === 1 ? 'Continuar' : isSubmitting ? 'Registrando...' : 'Finalizar registro'}
@@ -802,7 +821,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             <button
               onClick={handleSwitchToLogin}
               className="font-medium hover:underline"
-              style={{ color: '#243B5A' }}
+              style={{ color: 'var(--iconografia)' }}
               disabled={isSubmitting}
             >
               Inicia Sesión

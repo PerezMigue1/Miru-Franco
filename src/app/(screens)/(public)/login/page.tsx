@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { Suspense } from 'react';
 import AuthContainer from '../../../components/auth/AuthContainer';
 import { showAlert } from '../../../utils/toast';
@@ -54,18 +53,10 @@ function LoginContent() {
   };
 
   return (
-    <div className="relative min-h-screen">
-      <Link
-        href="/home"
-        className="absolute top-4 left-4 z-10 text-sm text-menu-texto-principal hover:underline"
-      >
-        ← Volver al inicio
-      </Link>
-      <AuthContainer
-        initialView="login"
-        onAuthSuccess={handleAuthSuccess}
-      />
-    </div>
+    <AuthContainer
+      initialView="login"
+      onAuthSuccess={handleAuthSuccess}
+    />
   );
 }
 
