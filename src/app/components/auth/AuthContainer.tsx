@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import SuperficieCliente from '../cliente/SuperficieCliente';
 import Login from './Login';
 import Register from './Register';
 import ForgotPassword from './ForgotPassword';
@@ -96,7 +100,53 @@ export default function AuthContainer({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-fondo-general">
+    <SuperficieCliente
+      className="min-h-screen lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+      style={{ backgroundColor: 'var(--fondo-general)' }}
+    >
+      {/* Panel de marca (escritorio): el mismo mundo del hero de /home, estático y ligero */}
+      <aside
+        className="hidden lg:flex relative overflow-hidden flex-col justify-between p-12 xl:p-16"
+        style={{ backgroundColor: 'var(--mf-banda)' }}
+      >
+        <Link
+          href="/home"
+          className="group inline-flex items-center gap-2 text-sm font-medium self-start"
+          style={{ color: 'var(--texto-fondo-oscuro-80)', minHeight: 44 }}
+        >
+          <ArrowLeft size={16} aria-hidden className="transition-transform duration-200 group-hover:-translate-x-1" style={{ color: 'var(--logo-branding)' }} />
+          Volver al inicio
+        </Link>
+        <div className="mf-entrada flex flex-col items-center text-center">
+          <div className="relative w-64 xl:w-72 aspect-square">
+            <div className="absolute -inset-6 rounded-full border" style={{ borderColor: 'rgba(159, 109, 31, 0.28)' }} aria-hidden />
+            <div className="absolute inset-4 rounded-full border border-dashed" style={{ borderColor: 'rgba(159, 109, 31, 0.3)' }} aria-hidden />
+            <Image src="/logo-miru.jpg" alt="Mirú Franco" fill className="object-contain p-12" sizes="18rem" priority />
+          </div>
+          <p className="mt-10 text-brand-tagline tracking-[0.2em]" style={{ color: 'var(--logo-branding)' }}>
+            Beauty Salón
+          </p>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+          Huejutla de Reyes, Hidalgo
+        </p>
+      </aside>
+
+      <div className="min-h-screen flex flex-col items-center justify-center py-10 px-4 sm:px-6 lg:px-10">
+        <div className="lg:hidden w-full max-w-md mb-6 flex items-center justify-between">
+          <Link
+            href="/home"
+            className="group inline-flex items-center gap-2 text-sm font-medium"
+            style={{ color: 'var(--menu-texto-principal)', minHeight: 44 }}
+          >
+            <ArrowLeft size={16} aria-hidden className="transition-transform duration-200 group-hover:-translate-x-1" />
+            Volver al inicio
+          </Link>
+          <div className="relative w-10 h-10">
+            <Image src="/logo-miru.jpg" alt="" fill className="object-contain" sizes="40px" />
+          </div>
+        </div>
+        <div className="w-full mf-entrada" style={{ ['--i' as string]: 1 }}>
       {currentView === 'login' && (
         <Login
           onSwitchToRegister={handleSwitchToRegister}
@@ -165,7 +215,9 @@ export default function AuthContainer({
           onSwitchToLogin={handleSwitchToLogin}
         />
       )}
-    </div>
+        </div>
+      </div>
+    </SuperficieCliente>
   );
 }
 
