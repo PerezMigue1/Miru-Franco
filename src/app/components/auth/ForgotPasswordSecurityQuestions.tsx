@@ -91,12 +91,9 @@ export default function ForgotPasswordSecurityQuestions({
       const { api } = await import('../../services');
       // ✅ Usar el nuevo método según GUIA_FRONTEND_RECUPERACION_PASSWORD.md
       const result = await api.getUserSecurityQuestion(email);
-      
-      console.log('Resultado de getUserSecurityQuestion:', result);
-      
+
       if (result.success && result.pregunta) {
-        // ✅ Usuario tiene pregunta de seguridad
-        console.log('Pregunta de seguridad obtenida:', result.pregunta);
+        // ✅ Usuario tiene pregunta de seguridad (no se registra en consola: es un factor de recuperación)
         const selectedQuestion = [{
           id: 'q1',
           question: result.pregunta,
