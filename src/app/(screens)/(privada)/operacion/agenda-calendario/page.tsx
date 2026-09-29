@@ -8,6 +8,7 @@ import Badge from '../../../../components/ui/Badge';
 import Select from '../../../../components/ui/Select';
 import { listarCalendario, CitaApi } from '../../../../services/citas';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
+import { usePermisos } from '../../../../utils/permisos';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react';
 
@@ -108,9 +109,14 @@ export default function AgendaCalendarioPage() {
     setDiaSeleccionado(null);
   }, [mesActual, filtroEspecialistaId, cargar]);
 
+  // El selector de especialistas solo se llena si el rol tiene empleados:lectura; sin él, el
+  // backend responde 403 y la petición no aporta nada (el selector queda vacío igual).
+  const { tienePermiso } = usePermisos();
+  const puedeListarEmpleados = tienePermiso('empleados:lectura');
   useEffect(() => {
+    if (!puedeListarEmpleados) return;
     listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
-  }, []);
+  }, [puedeListarEmpleados]);
 
   const diasConCitas = useMemo(() => {
     const set = new Set<string>();
