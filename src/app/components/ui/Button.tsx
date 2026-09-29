@@ -9,6 +9,7 @@ import {
   ReactElement,
   ReactNode,
 } from 'react';
+import { useSuperficie } from '../cliente/SuperficieCliente';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'outline' | 'chip';
@@ -29,7 +30,12 @@ export default function Button({
   type = 'button',
   ...props
 }: ButtonProps) {
-  const baseStyles = 'font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
+  // Pantallas de cliente: presión táctil y transiciones por propiedad (DESIGN.md). En /admin y
+  // /operacion (superficie 'panel') la clase es exactamente la de siempre.
+  const cliente = useSuperficie() === 'cliente';
+  const baseStyles = cliente
+    ? 'mf-btn font-semibold rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed'
+    : 'font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
     primary: {
