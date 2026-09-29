@@ -244,8 +244,10 @@ export default function CrearCitaPage() {
   return (
     <Suspense fallback={
       <ModuleLayout>
-        <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        <div className="max-w-4xl mx-auto space-y-4 py-4" aria-busy="true" aria-label="Cargando">
+          <div className="mf-skeleton h-9 w-2/5" />
+          <div className="mf-skeleton h-4 w-3/5" />
+          <div className="mf-skeleton h-56 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     }>

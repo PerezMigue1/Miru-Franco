@@ -1,13 +1,14 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../../../components/ui/Table';
+import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
 import {
   obtenerPedido,
   listarPedidoItems,
@@ -123,7 +124,8 @@ export default function DetallePedidoPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <Button variant="outline" size="sm" className="mb-2" onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}>
-              ← Mis pedidos
+              <ArrowLeft size={16} aria-hidden className="mr-1.5" />
+              Mis pedidos
             </Button>
             <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               Detalle del pedido
@@ -151,26 +153,26 @@ export default function DetallePedidoPage() {
                       {producto.tamanio ? ` — ${producto.tamanio}` : ''}
                     </TableCell>
                     <TableCell>{producto.cantidad}</TableCell>
-                    <TableCell>${producto.precioUnitario.toLocaleString()}</TableCell>
-                    <TableCell className="font-semibold">${producto.subtotal.toLocaleString()}</TableCell>
+                    <TableCell>{formatearPrecioMXN(producto.precioUnitario)}</TableCell>
+                    <TableCell className="font-semibold">{formatearPrecioMXN(producto.subtotal)}</TableCell>
                   </TableRow>
                 ))}
               </Table>
               <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                 <div className="flex justify-between mb-2">
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>${pedido.subtotal.toLocaleString()}</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(pedido.subtotal)}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>${pedido.costoEnvio.toLocaleString()}</span>
+                  <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(pedido.costoEnvio)}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                     Total:
                   </span>
                   <span className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
-                    ${pedido.total.toLocaleString()} {pedido.moneda}
+                    {formatearPrecioMXN(pedido.total)} {pedido.moneda}
                   </span>
                 </div>
               </div>
@@ -227,12 +229,15 @@ export default function DetallePedidoPage() {
                 <ul className="space-y-2 text-sm">
                   {historial.map((h) => (
                     <li key={h.id} style={{ color: 'var(--encabezados-alterno)' }}>
+                      {h.estadoAnterior && (
+                        <span className="inline-flex items-center gap-1">
+                          {etiquetaEstadoPedido(h.estadoAnterior)}
+                          <ArrowRight size={14} aria-label="cambió a" className="mx-1" />
+                        </span>
+                      )}
                       <span className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
                         {etiquetaEstadoPedido(h.estadoNuevo)}
                       </span>
-                      {h.estadoAnterior && (
-                        <span> ← {etiquetaEstadoPedido(h.estadoAnterior)}</span>
-                      )}
                       {h.creadoEn && (
                         <span className="block text-xs mt-0.5">
                           {new Date(h.creadoEn).toLocaleString('es-MX')}
@@ -331,7 +336,7 @@ export default function DetallePedidoPage() {
                       {d.motivo ?? '—'}
                       {d.monto != null && (
                         <span className="ml-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                          (${d.monto.toLocaleString()})
+                          ({formatearPrecioMXN(d.monto)})
                         </span>
                       )}
                     </li>
@@ -371,7 +376,7 @@ export default function DetallePedidoPage() {
                     <ul className="text-sm space-y-1">
                       {pagos.map((pg) => (
                         <li key={pg.id} style={{ color: 'var(--menu-texto-principal)' }}>
-                          {pg.metodo} — ${pg.monto.toLocaleString()} ({pg.estado})
+                          {pg.metodo} — {formatearPrecioMXN(pg.monto)} ({pg.estado})
                         </li>
                       ))}
                     </ul>
