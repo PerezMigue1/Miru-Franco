@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
 
 const INTERVAL_MS = 4500;
 
@@ -44,17 +45,15 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
   }, [safe.join('|')]);
 
   useEffect(() => {
-    if (n <= 1 || paused) return;
+    // Con movimiento reducido no hay rotación automática (se ve la primera foto; los puntos siguen indicando cuántas hay).
+    if (n <= 1 || paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const t = setInterval(() => setI((j) => (j + 1) % n), INTERVAL_MS);
     return () => clearInterval(t);
   }, [n, paused, safe.join('|')]);
 
   if (!n) {
-    return (
-      <span className="flex h-full w-full items-center justify-center text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-        Sin imagen
-      </span>
-    );
+    // Placeholder de marca en vez de "Sin imagen" en gris.
+    return <ServicioImagenPlaceholder />;
   }
 
   return (
