@@ -133,11 +133,10 @@ export default function Login({
       const emailInput = emailRef.current?.value || email;
       const passwordInput = passwordRef.current?.value || password;
       const emailLimpio = emailInput.trim().toLowerCase();
-      console.log('[Login] Intentando login con email:', emailLimpio);
-      console.log('[Login] Longitud de contraseña:', passwordInput.length);
+      // Sin console.log del correo ni de la contraseña: el diagnóstico seguro (solo en
+      // desarrollo, sin valores) ya lo hace api.login en services/auth.ts.
       const result = await api.login(emailLimpio, passwordInput);
-      console.log('[Login] Resultado del login:', { success: result.success, error: result.error, requiereVerificacion: result.requiereVerificacion });
-      
+
       if (!result.success) {
         const errorMessage = result.error || 'Error al iniciar sesión';
         console.error('[Login] Error en login:', errorMessage);

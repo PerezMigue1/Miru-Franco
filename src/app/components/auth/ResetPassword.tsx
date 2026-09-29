@@ -168,14 +168,8 @@ export default function ResetPassword({
       
       const token = tokenFromUrl || tokenFromStorage || tokenFromLocalStorage;
       const email = emailFromProps || identifier || emailFromLocalStorage;
-      
-      console.log('[ResetPassword] Datos para cambio:', {
-        token: token ? `${token.substring(0, 10)}...` : null,
-        email: email,
-        tieneToken: !!token,
-        tieneEmail: !!email
-      });
-      
+      // Nunca registrar el token de recuperación (ni parcial) ni el correo en consola.
+
       // Verificar si el token expiró
       if (expiresFromLocalStorage && Date.now() > parseInt(expiresFromLocalStorage)) {
         localStorage.removeItem('resetPasswordToken');
@@ -197,9 +191,7 @@ export default function ResetPassword({
       }
       
       console.log('✅ Contraseña cambiada exitosamente');
-      console.log('[ResetPassword] Email usado para cambio:', email);
-      console.log('[ResetPassword] Resultado del cambio:', result);
-      
+
       // ✅ Limpiar TODOS los tokens después de cambiar la contraseña
       // Esto incluye tokens de autenticación y tokens temporales de recuperación
       removeToken(); // Limpia token y authToken
