@@ -2,11 +2,11 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import Image from 'next/image';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
+import ServicioImagen from '../../../../../../components/servicios/ServicioImagen';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
 import { hasValidToken } from '../../../../../../utils/security';
@@ -73,21 +73,11 @@ export default function DetalleServicioPage() {
               className="w-full h-96 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden"
               style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
-              {(() => {
-                const imgSrc = servicio.imagen ?? servicio.imagenes?.[0];
-                const isValidSrc = typeof imgSrc === 'string' && (imgSrc.startsWith('http') || imgSrc.startsWith('/'));
-                return isValidSrc ? (
-                  <Image
-                    src={imgSrc}
-                    alt={servicio.nombre}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                  />
-                ) : (
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>Imagen del Servicio</span>
-                );
-              })()}
+              <ServicioImagen
+                src={servicio.imagen ?? servicio.imagenes?.[0]}
+                alt={servicio.nombre}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
             </div>
           </div>
 

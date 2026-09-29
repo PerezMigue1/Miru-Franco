@@ -19,6 +19,7 @@ import {
   Camera,
 } from 'lucide-react';
 import GalleryModal from '../ui/GalleryModal';
+import ServicioImagen from '../servicios/ServicioImagen';
 
 const CARD_WIDTH_PX = 288;
 const SCROLL_STEP = CARD_WIDTH_PX + 24;
@@ -188,8 +189,6 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
               const isFallback = 'icono' in s;
               const IconComp = isFallback ? (s as FallbackServicio).icono : null;
               const apiS = !isFallback ? (s as Servicio) : null;
-              const imgSrc = apiS?.imagen ?? apiS?.imagenes?.[0];
-              const isValidSrc = typeof imgSrc === 'string' && (imgSrc.startsWith('http') || imgSrc.startsWith('/'));
 
               return (
                 <div
@@ -199,13 +198,12 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
                   style={{ borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)' }}
                   onClick={() => router.push('/servicios')}
                 >
-                  {isValidSrc ? (
+                  {apiS ? (
                     <div className="aspect-[4/3] relative w-full">
-                      <Image
-                        src={imgSrc!}
+                      {/* Sin foto o si no carga: placeholder de marca en vez de un bloque vacío */}
+                      <ServicioImagen
+                        src={apiS.imagen ?? apiS.imagenes?.[0]}
                         alt={s.nombre}
-                        fill
-                        className="object-cover"
                         sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
                       />
                     </div>
