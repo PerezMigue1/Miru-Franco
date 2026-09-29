@@ -13,7 +13,7 @@ export function ServicioImagenPlaceholder() {
     <div
       role="img"
       aria-label="Mirú Franco Beauty Salón — imagen no disponible"
-      className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center"
+      className="@container absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center"
       style={{ backgroundColor: 'var(--header-footer)' }}
     >
       <div className="relative h-[45%] max-h-28 min-h-14 aspect-[881/1024]">
@@ -27,7 +27,7 @@ export function ServicioImagenPlaceholder() {
         />
       </div>
       <span
-        className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.3em]"
+        className="hidden @min-[10rem]:block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.3em]"
         style={{ color: 'var(--logo-branding)' }}
       >
         Mirú Franco

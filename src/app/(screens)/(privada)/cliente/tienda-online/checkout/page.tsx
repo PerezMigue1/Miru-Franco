@@ -6,6 +6,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
+import PasosFlujo from '../../../../../components/cliente/PasosFlujo';
+import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Input from '../../../../../components/ui/Input';
@@ -954,48 +956,14 @@ export default function CheckoutPage() {
           </Card>
         )}
 
-        <div className="mb-6">
-          <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
-            {Array.from({ length: totalPasosBarra }, (_, i) => i + 1).map((num) => (
-              <div key={num} className="flex items-center">
-                <div
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                    pasoEnBarra >= num ? 'ring-2 ring-offset-2 ring-[var(--botones-principales)]' : ''
-                  }`}
-                  style={{
-                    backgroundColor:
-                      pasoEnBarra >= num ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
-                    color:
-                      pasoEnBarra >= num ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
-                  }}
-                >
-                  {num}
-                </div>
-                {num < totalPasosBarra && (
-                  <div
-                    className={`w-6 sm:w-12 h-1 transition-all duration-300 ${pasoEnBarra > num ? '' : 'opacity-50'}`}
-                    style={{
-                      backgroundColor:
-                        pasoEnBarra > num ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
-                    }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <p
-            className="text-center text-sm mt-3 font-medium"
-            style={{ color: 'var(--menu-texto-principal)' }}
-          >
-            {etiquetasBarra[pasoEnBarra - 1] ?? ''}{' '}
-            <span style={{ color: 'var(--encabezados-alterno)' }}>
-              ({pasoEnBarra} de {totalPasosBarra})
-            </span>
-          </p>
-        </div>
+        {/* Pasos con nombre (antes solo números); en móvil el texto de abajo dice cuál es y cuántos faltan */}
+        <PasosFlujo pasos={etiquetasBarra.slice(0, totalPasosBarra)} actual={pasoEnBarra - 1} etiqueta="Pasos de la compra" />
+        <p className="-mt-5 mb-6 text-sm sm:hidden" style={{ color: 'var(--encabezados-alterno)' }}>
+          Paso <span className="mf-cifras">{pasoEnBarra} de {totalPasosBarra}</span>
+        </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 lg:gap-10">
+          <div>
             {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
             {MOSTRAR_ENTREGA_DOMICILIO && paso === 1 && (
               <div style={{ animation: 'fadeUp 350ms ease-out both' }}>
@@ -1563,7 +1531,7 @@ export default function CheckoutPage() {
                       </strong>
                     </p>
                     <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Total estimado en checkout. El total final lo confirma el backend al crear el pedido.
+                      Total estimado: el total final se confirma al crear tu pedido.
                     </p>
                   </section>
                 </div>
@@ -1577,18 +1545,20 @@ export default function CheckoutPage() {
                 </Button>
               )}
               <Button fullWidth onClick={() => void manejarSiguiente()} disabled={submitting || savingMetodoPago}>
-                {(submitting || savingMetodoPago)
-                  ? 'Procesando…'
-                  : paso === pasoRevision
-                    ? 'Finalizar compra'
-                    : 'Continuar'}
+                <span className="mf-feedback-contenido w-full" data-cambiando={submitting || savingMetodoPago ? 'true' : 'false'}>
+                  {(submitting || savingMetodoPago)
+                    ? 'Procesando…'
+                    : paso === pasoRevision
+                      ? 'Finalizar compra'
+                      : 'Continuar'}
+                </span>
               </Button>
             </div>
           </div>
 
-          <div>
-            <Card>
-              <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
+            <Card padding="lg">
+              <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
                 Resumen del pedido
               </h3>
               {items.length > 0 && (
@@ -1605,8 +1575,8 @@ export default function CheckoutPage() {
                         )}
                         <span style={{ color: 'var(--encabezados-alterno)' }}> × {item.cantidad}</span>
                       </span>
-                      <span style={{ color: 'var(--menu-texto-principal)' }}>
-                        ${(item.precio * item.cantidad).toLocaleString()}
+                      <span className="mf-cifras shrink-0 pl-3" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {formatearPrecioMXN(item.precio * item.cantidad)}
                       </span>
                     </div>
                   ))}
@@ -1615,7 +1585,7 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>${subtotal.toLocaleString()}</span>
+                  <span className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(subtotal)}</span>
                 </div>
                 {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
                 {false && (
@@ -1631,12 +1601,12 @@ export default function CheckoutPage() {
                     <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                       Total:
                     </span>
-                    <span className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
-                      ${total.toLocaleString()}
+                    <span className="mf-cifras text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                      {formatearPrecioMXN(total)}
                     </span>
                   </div>
                   <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Monto estimado. El pedido creado por API devuelve los importes definitivos.
+                    Monto estimado: el total final se confirma al crear tu pedido.
                   </p>
                 </div>
               </div>
