@@ -446,9 +446,9 @@ export default function Login({
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
-        <h2 className="text-page-title text-center mb-6 text-texto-fondo-oscuro">
+        <h1 className="mf-titulo-pagina text-center mb-6" style={{ color: 'var(--texto-fondo-oscuro)' }}>
           Iniciar Sesión
-        </h2>
+        </h1>
         
         {/* Mensaje de éxito si se cambió la contraseña */}
         {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('passwordChanged') === 'true' && (
@@ -678,10 +678,8 @@ export default function Login({
             ¿No tienes una cuenta?{' '}
             <button
               onClick={handleSwitchToRegister}
-              className="font-medium hover:underline text-enlaces-textos-interactivos"
-              style={{ color: 'var(--enlaces-textos-interactivos)' }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'}
+              className="font-medium underline-offset-4 hover:underline"
+              style={{ color: 'var(--iconografia)' }}
               disabled={isLoading}
             >
               Regístrate

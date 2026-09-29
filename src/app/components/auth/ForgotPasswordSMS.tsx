@@ -155,7 +155,7 @@ export default function ForgotPasswordSMS({
           <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
             Código de Verificación
           </h2>
-          <p className="text-center text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
+          <p className="text-center text-[color:var(--texto-fondo-oscuro-70)] mb-6 text-sm">
             Hemos enviado un código de 6 dígitos a <strong>{phone}</strong>
           </p>
           
@@ -342,7 +342,7 @@ export default function ForgotPasswordSMS({
 
         {(onSwitchToEmail || onSwitchToSecurityQuestions) && (
           <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-center text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-center text-sm text-[color:var(--texto-fondo-oscuro-70)] mb-4">
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2">
