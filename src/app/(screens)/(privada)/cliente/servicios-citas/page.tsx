@@ -1,15 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo, useRef, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import ServicioImagen from '../../../../components/servicios/ServicioImagen';
+import { useEffect, useState, useMemo } from 'react';
+import { SearchX, SlidersHorizontal } from 'lucide-react';
+import TarjetaServicio from '../../../../components/servicios/TarjetaServicio';
+import FilaChipsDesplazable from '../../../../components/cliente/FilaChipsDesplazable';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
-import Badge from '../../../../components/ui/Badge';
 import Select from '../../../../components/ui/Select';
 import { getServicios } from '../../../../services/servicios';
 import type { Servicio } from '../../../../services/servicios';
@@ -34,75 +33,7 @@ function duracionEnMinutos(servicio: Servicio): number {
   return 0;
 }
 
-/**
- * Fila horizontal de chips con señal de overflow: degradado + flecha en el borde que aún tiene
- * contenido, para que en móvil se note que la fila se puede deslizar (y se pueda avanzar con un toque).
- */
-function FilaChipsDesplazable({ children }: { children: ReactNode }) {
-  const filaRef = useRef<HTMLDivElement>(null);
-  const [masALaIzquierda, setMasALaIzquierda] = useState(false);
-  const [masALaDerecha, setMasALaDerecha] = useState(false);
-
-  useEffect(() => {
-    const fila = filaRef.current;
-    if (!fila) return;
-    const actualizar = () => {
-      setMasALaIzquierda(fila.scrollLeft > 4);
-      setMasALaDerecha(fila.scrollLeft + fila.clientWidth < fila.scrollWidth - 4);
-    };
-    // ResizeObserver notifica al observar, así que también cubre el cálculo inicial.
-    const observer = new ResizeObserver(actualizar);
-    observer.observe(fila);
-    fila.addEventListener('scroll', actualizar, { passive: true });
-    return () => {
-      observer.disconnect();
-      fila.removeEventListener('scroll', actualizar);
-    };
-  }, []);
-
-  const desplazar = (sentido: 1 | -1) => {
-    const fila = filaRef.current;
-    fila?.scrollBy({ left: sentido * fila.clientWidth * 0.7, behavior: 'smooth' });
-  };
-
-  return (
-    <div className="relative">
-      <div
-        ref={filaRef}
-        role="group"
-        aria-label="Filtrar por categoría"
-        className="flex gap-2 overflow-x-auto scrollbar-hide"
-      >
-        {children}
-      </div>
-      {masALaIzquierda && (
-        <button
-          type="button"
-          onClick={() => desplazar(-1)}
-          aria-label="Ver categorías anteriores"
-          className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-start"
-          style={{ background: 'linear-gradient(to right, var(--fondo-general) 45%, transparent)' }}
-        >
-          <ChevronLeft size={20} aria-hidden style={{ color: 'var(--logo-branding)' }} />
-        </button>
-      )}
-      {masALaDerecha && (
-        <button
-          type="button"
-          onClick={() => desplazar(1)}
-          aria-label="Ver más categorías"
-          className="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-end"
-          style={{ background: 'linear-gradient(to left, var(--fondo-general) 45%, transparent)' }}
-        >
-          <ChevronRight size={20} aria-hidden style={{ color: 'var(--logo-branding)' }} />
-        </button>
-      )}
-    </div>
-  );
-}
-
 export default function ListaServiciosPage() {
-  const router = useRouter();
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +45,8 @@ export default function ListaServiciosPage() {
   const [duracionMax, setDuracionMax] = useState<string>('');
   const [soloRequiereEvaluacion, setSoloRequiereEvaluacion] = useState<boolean>(false);
   const [especialistaSeleccionado, setEspecialistaSeleccionado] = useState<string>('');
+  // Móvil: filtros plegados para que los servicios queden a la vista (en escritorio siempre visibles).
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   useEffect(() => {
     getServicios().then(({ data, error: err }) => {
@@ -254,22 +187,49 @@ export default function ListaServiciosPage() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current" style={{ color: 'var(--menu-texto-principal)' }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" aria-busy="true" aria-label="Cargando servicios">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="overflow-hidden" style={{ borderRadius: 'var(--mf-radio)', backgroundColor: 'var(--tarjetas-paneles)' }}>
+              <div className="mf-skeleton aspect-[4/3]" style={{ borderRadius: 0 }} />
+              <div className="p-5 space-y-3">
+                <div className="mf-skeleton h-3 w-1/3" />
+                <div className="mf-skeleton h-5 w-2/3" />
+                <div className="mf-skeleton h-4 w-1/4" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
       {error && !loading && (
-        <p className="text-center py-6" style={{ color: 'var(--danger)' }}>{error}</p>
+        <p className="text-center py-6" style={{ color: 'var(--danger-texto)' }}>{error}</p>
       )}
       {!loading && !error && filtrados.length === 0 && (
-        <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
-          {busqueda.trim() ? 'No hay servicios que coincidan con la búsqueda.' : 'No hay servicios disponibles.'}
-        </p>
+        <Card className="text-center py-14 px-6">
+          <SearchX size={36} strokeWidth={1.5} className="mx-auto mb-4" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+          <p className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+            {busqueda.trim() ? 'No hay servicios que coincidan con la búsqueda.' : 'No hay servicios disponibles.'}
+          </p>
+        </Card>
       )}
       {!loading && !error && filtrados.length > 0 && (
         <div className="flex flex-col lg:flex-row gap-6">
-          <aside className="lg:w-72 flex-shrink-0">
-            <Card className="p-4 space-y-4 rounded-xl" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
+          <aside className="lg:w-72 flex-shrink-0 lg:self-start lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)]">
+            <Button
+              variant="outline"
+              fullWidth
+              className="lg:hidden inline-flex items-center justify-center gap-2"
+              aria-expanded={filtrosAbiertos}
+              aria-controls="panel-filtros-servicios"
+              onClick={() => setFiltrosAbiertos((v) => !v)}
+            >
+              <SlidersHorizontal size={16} aria-hidden />
+              {filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </Button>
+            <Card
+              id="panel-filtros-servicios"
+              className={`p-5 space-y-4 mt-3 lg:mt-0 ${filtrosAbiertos ? '' : 'hidden'} lg:block`}
+              style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
+            >
               <h3
                 className="text-subtitle font-semibold"
                 style={{ color: 'var(--menu-texto-principal)' }}
@@ -368,75 +328,10 @@ export default function ListaServiciosPage() {
           </aside>
 
           <div className="flex-1 min-w-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtrados.map((servicio, index) => {
-                const delay = index * 60;
-                return (
-                <Card
-                  key={servicio.id}
-                  className="cursor-pointer text-left transition-all duration-200 hover:scale-[1.02]"
-                  onClick={() => router.push(`/cliente/servicios-citas/servicios/${servicio.id}`)}
-                  style={{ animation: 'fadeUp 500ms ease-out ' + delay + 'ms both' }}
-                >
-                  <div className="mb-4">
-                    <div
-                      className="w-full h-48 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden"
-                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                    >
-                      <ServicioImagen
-                        src={servicio.imagen ?? servicio.imagenes?.[0]}
-                        alt={servicio.nombre}
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
-                    </div>
-                    <div className="flex items-start justify-between mb-2">
-                      <h3
-                        className="text-subtitle"
-                        style={{ color: 'var(--menu-texto-principal)' }}
-                      >
-                        {servicio.nombre}
-                      </h3>
-                      {servicio.categoria && <Badge variant="info">{servicio.categoria}</Badge>}
-                    </div>
-                    {servicio.descripcion && (
-                      <p
-                        className="text-sm mb-3 line-clamp-2"
-                        style={{ color: 'var(--encabezados-alterno)' }}
-                      >
-                        {servicio.descripcion}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {servicio.duracion && (
-                          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Duración:{' '}
-                            <span className="font-semibold">{servicio.duracion}</span>
-                          </p>
-                        )}
-                        {servicio.precio && (
-                          <p
-                            className="text-lg font-bold mt-1"
-                            style={{ color: 'var(--menu-texto-principal)' }}
-                          >
-                            {servicio.precio}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/cliente/servicios-citas/servicios/${servicio.id}`);
-                        }}
-                      >
-                        Ver Detalles
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-                );
-              })}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filtrados.map((servicio, index) => (
+                <TarjetaServicio key={servicio.id} servicio={servicio} indice={index} />
+              ))}
             </div>
           </div>
         </div>
