@@ -43,16 +43,7 @@ class ApiClient {
     } else {
       url = `${apiBase}${endpoint}`;
     }
-    
-    // Log detallado para debugging en producción
-    console.log(`[API Client] ${fetchOptions.method || 'GET'} ${url}`);
-    console.log(`[API Client] Endpoint: ${endpoint}`);
-    if (customEndpoint) {
-      console.log(`[API Client] Using customEndpoint: ${customEndpoint}`);
-    } else {
-      console.log(`[API Client] Using API_BASE (runtime): ${apiBase}`);
-    }
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(fetchOptions.headers as Record<string, string> || {}),
@@ -447,7 +438,6 @@ class ApiClient {
       skip403Redirect = Boolean(customBaseOrOptions.skip403Redirect);
     }
     const url = customBase ? `${customBase}${endpoint}` : undefined;
-    console.log(`[API Client] GET - endpoint: ${endpoint}, customBase: ${customBase}, constructed url: ${url}`);
     return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect, skip403Redirect });
   }
 
