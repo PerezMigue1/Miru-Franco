@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
-import { FileText, Sparkles, FlaskConical, ClipboardList, ShoppingCart, Zap, Check, Star } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, FlaskConical, ClipboardList, ShoppingCart, Zap, Check, Star, Minus, Plus, ArrowRight } from 'lucide-react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
@@ -32,6 +33,27 @@ interface Props {
   id: string;
 }
 
+/** Número de un precio mostrado ("$1,200" / "1200"). */
+function aNumero(precio?: string | null): number {
+  const n = Number(String(precio ?? '').replace(/[$,\s]/g, ''));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/**
+ * Algunos campos llegan como literal de array de Postgres ('{"Aplicar según…"}') y se pintaban
+ * con las llaves y comillas. Solo presentación: se muestran como texto, un elemento por línea.
+ */
+function textoLegible(valor?: string | null): string {
+  const t = String(valor ?? '').trim();
+  const m = t.match(/^\{([\s\S]*)\}$/);
+  if (!m) return t;
+  return m[1]
+    .split('","')
+    .map((x) => x.replace(/^"|"$/g, '').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
 export default function DetalleProductoClient({ id }: Props) {
   const router = useRouter();
   const [producto, setProducto] = useState<Producto | null>(null);
@@ -40,6 +62,7 @@ export default function DetalleProductoClient({ id }: Props) {
   const [cantidad, setCantidad] = useState(1);
   const [presentacionSeleccionada, setPresentacionSeleccionada] = useState('');
   const [mensajeAñadido, setMensajeAñadido] = useState(false);
+  const [agregando, setAgregando] = useState(false);
   const [valoraciones, setValoraciones] = useState<ValoracionApi[]>([]);
   const [pedidosParaValorar, setPedidosParaValorar] = useState<PedidoApi[]>([]);
   const [pedidoValoracion, setPedidoValoracion] = useState('');
@@ -130,11 +153,13 @@ export default function DetalleProductoClient({ id }: Props) {
       presentacionId = presActual.id;
     } else { void showAlert('Este producto no tiene presentaciones.'); return; }
     const precioNum = typeof presActual?.precio === 'string' ? parseFloat(String(presActual.precio).replace(/[^0-9.]/g, '')) || 0 : 0;
+    setAgregando(true);
     try {
       await addItem({ nombre: producto.nombre, precio: precioNum, cantidad, imagen: urlsGaleria[0] ?? producto.imagenes?.[0] ?? producto.imagen, presentacion: presentacionSeleccionada, productoId: productoIdNum, presentacionId });
       setMensajeAñadido(true);
       setTimeout(() => setMensajeAñadido(false), 3000);
     } catch (e) { void showAlert(e instanceof Error ? e.message : 'No se pudo añadir al carrito'); }
+    finally { setAgregando(false); }
   };
 
   const manejarComprarAhora = async () => {
@@ -171,8 +196,14 @@ export default function DetalleProductoClient({ id }: Props) {
   if (loading) {
     return (
       <ModuleLayout>
-        <div className="max-w-4xl mx-auto py-12 text-center">
-          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>Cargando producto...</p>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 lg:gap-12" aria-busy="true" aria-label="Cargando producto">
+          <div className="mf-skeleton h-72 sm:h-96 lg:h-[520px]" style={{ borderRadius: 'var(--mf-radio)' }} />
+          <div className="space-y-4 pt-2">
+            <div className="mf-skeleton h-4 w-1/4" />
+            <div className="mf-skeleton h-10 w-3/4" />
+            <div className="mf-skeleton h-12 w-1/3 mt-6" />
+            <div className="mf-skeleton h-12 w-full mt-10" />
+          </div>
         </div>
       </ModuleLayout>
     );
@@ -195,162 +226,183 @@ export default function DetalleProductoClient({ id }: Props) {
   const disponiblePresentacion = producto.presentaciones ? (presActual?.disponible ?? false) : true;
   const disponible = disponibleProducto && disponiblePresentacion;
   const maxCantidad = disponible ? (producto.presentaciones ? (presActual?.stock ?? 0) : (producto.stockCantidad ?? 99)) : 0;
+  const precioActual = producto.presentaciones?.length ? (presActual?.precio ?? producto.precio) : producto.precio;
+  const precioOriginal = producto.presentaciones?.length ? presActual?.precioOriginal : producto.precioOriginal;
+  // Tachado solo con rebaja real (antes salía "$350 $350").
+  const hayRebaja = aNumero(precioOriginal) > aNumero(precioActual);
+  const descuentoValido = (producto.descuento ?? 0) > 0 && (producto.descuento ?? 0) < 100;
 
   return (
     <ModuleLayout>
-      <div className="w-full max-w-full mx-auto px-2 sm:px-3 lg:px-4 relative" style={{ animation: 'fadeUp 400ms ease-out both' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <div className="space-y-3 sm:space-y-4">
-            <div className="relative flex h-64 w-full items-center justify-center overflow-hidden rounded-lg p-4 sm:h-80 sm:p-6 lg:h-96 xl:h-[500px]" style={{ backgroundColor: 'var(--texto-fondo-oscuro)', border: '2px solid var(--tarjetas-paneles)' }}>
+      <div className="mf-entrada">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 lg:gap-12 mb-14">
+          {/* Galería fija en escritorio mientras se decide la compra */}
+          <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
+            <div
+              className="relative flex h-72 w-full items-center justify-center overflow-hidden p-4 sm:h-96 sm:p-6 lg:h-[520px]"
+              style={{ backgroundColor: 'var(--superficie-elevada)', borderRadius: 'var(--mf-radio)', boxShadow: 'var(--mf-sombra-1)' }}
+            >
               <ProductoGaleriaDetalle urls={urlsGaleria} nombreProducto={producto.nombre} />
             </div>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
-            <div>
-              <div className="flex flex-wrap gap-2 mb-2 sm:mb-3">
-                <Badge variant="info" size="sm">{producto.categoria || 'Producto'}</Badge>
-                {producto.nuevo && <Badge variant="success" size="sm">Nuevo</Badge>}
-                {(producto.descuento ?? 0) > 0 && <Badge variant="warning" size="sm">-{producto.descuento}%</Badge>}
-                {producto.crueltyFree && <Badge variant="success" size="sm">Cruelty-Free</Badge>}
-              </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3" style={{ color: 'var(--menu-texto-principal)' }}>{producto.nombre}</h1>
-              {producto.marca && (
-                <p className="text-base sm:text-lg mb-1 sm:mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                  <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{producto.marca}</span>
-                </p>
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="info" size="sm">{producto.categoria || 'Producto'}</Badge>
+              {producto.nuevo && <Badge variant="success" size="sm">Nuevo</Badge>}
+              {/* Un porcentaje fuera de 1–99 es un dato mal cargado ("-350%"): no se muestra */}
+              {descuentoValido && <Badge variant="warning" size="sm">-{producto.descuento}%</Badge>}
+              {producto.crueltyFree && <Badge variant="success" size="sm">Cruelty-Free</Badge>}
+            </div>
+            {producto.marca && (
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--encabezados-alterno)' }}>
+                {producto.marca}
+              </p>
+            )}
+            <h1 className="mf-titulo-pagina mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{producto.nombre}</h1>
+
+            <div className="mf-cifras mt-6 flex items-baseline gap-3 flex-wrap">
+              <p className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{precioActual}</p>
+              {hayRebaja && <p className="text-xl line-through" style={{ color: 'var(--encabezados-alterno)' }}>{precioOriginal}</p>}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              {disponible ? (
+                <><Check size={16} aria-hidden style={{ color: 'var(--success-texto)' }} /><p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Stock disponible: <span className="font-semibold mf-cifras">{maxCantidad} unidades</span></p></>
+              ) : (
+                <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{!disponibleProducto ? 'Producto no disponible en este momento' : 'Agotado'}</p>
               )}
+            </div>
+
+            <div className="mt-8 pt-8 border-t space-y-7" style={{ borderColor: 'var(--mf-linea)' }}>
               {producto.presentaciones && producto.presentaciones.length > 0 && (
-                <div className="mb-4">
-                  <label className="block mb-2 text-sm sm:text-base font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Presentación:</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {producto.presentaciones.map((pres) => (
-                      <button
-                        key={pres.id ?? pres.tamaño}
-                        onClick={() => setPresentacionSeleccionada(pres.tamaño)}
-                        disabled={!pres.disponible}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${presentacionSeleccionada === pres.tamaño ? 'ring-2 ring-offset-2 ring-[var(--botones-principales)]' : ''} ${pres.disponible ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-50'}`}
-                        style={{ backgroundColor: presentacionSeleccionada === pres.tamaño ? 'var(--botones-principales)' : pres.disponible ? 'var(--tarjetas-paneles)' : 'var(--fondos-suaves)', color: presentacionSeleccionada === pres.tamaño ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}
-                      >
-                        {pres.tamaño}{!pres.disponible && ' (Agotado)'}
-                      </button>
-                    ))}
+                <div>
+                  <p className="mb-3 text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Presentación</p>
+                  <div className="flex gap-2 flex-wrap" role="radiogroup" aria-label="Presentación">
+                    {producto.presentaciones.map((pres) => {
+                      const elegida = presentacionSeleccionada === pres.tamaño;
+                      return (
+                        <button
+                          key={pres.id ?? pres.tamaño}
+                          type="button"
+                          role="radio"
+                          aria-checked={elegida}
+                          onClick={() => setPresentacionSeleccionada(pres.tamaño)}
+                          disabled={!pres.disponible}
+                          className={`mf-btn min-h-11 px-4 rounded-full text-sm font-semibold ${pres.disponible ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                          style={{
+                            backgroundColor: elegida ? 'var(--botones-principales)' : 'transparent',
+                            color: elegida ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
+                            boxShadow: elegida ? 'none' : 'inset 0 0 0 1.5px var(--mf-linea), inset 0 0 0 1.5px color-mix(in srgb, var(--menu-texto-principal) 45%, transparent)',
+                          }}
+                        >
+                          {pres.tamaño}{!pres.disponible && ' (Agotado)'}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
-            </div>
 
-            <Card className="p-4 sm:p-6">
-              <div className="space-y-4 sm:space-y-5">
-                <div className="pb-4 border-b" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                  <div className="flex items-baseline gap-3 mb-3 flex-wrap">
-                    {producto.presentaciones?.length ? (
-                      <>
-                        {presActual?.precioOriginal && <p className="text-xl sm:text-2xl line-through" style={{ color: 'var(--encabezados-alterno)' }}>{presActual.precioOriginal}</p>}
-                        <p className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{presActual?.precio ?? producto.precio}</p>
-                      </>
-                    ) : (
-                      <>
-                        {producto.precioOriginal && <p className="text-xl sm:text-2xl line-through" style={{ color: 'var(--encabezados-alterno)' }}>{producto.precioOriginal}</p>}
-                        <p className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{producto.precio}</p>
-                      </>
-                    )}
-                  </div>
+              {disponible && (
+                <div>
+                  <p className="mb-3 text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Cantidad</p>
                   <div className="flex items-center gap-2">
-                    {disponible ? (
-                      <><Check size={16} aria-hidden style={{ color: 'var(--success)' }} /><p className="text-sm sm:text-base" style={{ color: 'var(--encabezados-alterno)' }}>Stock disponible: <span className="font-semibold">{maxCantidad} unidades</span></p></>
+                    <Button size="md" variant="outline" onClick={() => setCantidad(Math.max(1, cantidad - 1))} className="w-12 h-12 !p-0 inline-flex items-center justify-center" aria-label="Quitar uno" disabled={cantidad <= 1}>
+                      <Minus size={18} aria-hidden />
+                    </Button>
+                    <Input type="number" aria-label="Cantidad" value={cantidad} onChange={(e) => setCantidad(Math.max(1, Math.min(maxCantidad, parseInt(e.target.value) || 1)))} className="mf-cifras w-20 text-center text-lg font-semibold" min={1} max={maxCantidad} />
+                    <Button size="md" variant="outline" onClick={() => setCantidad(Math.min(maxCantidad, cantidad + 1))} className="w-12 h-12 !p-0 inline-flex items-center justify-center" aria-label="Agregar uno" disabled={cantidad >= maxCantidad}>
+                      <Plus size={18} aria-hidden />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {/* El botón se transforma en confirmación (crossfade con blur) en vez de insertar un
+                    mensaje encima que empujaba el layout. */}
+                <Button fullWidth size="lg" className="py-3.5" onClick={() => void manejarAgregarCarrito()} disabled={!disponible || agregando}>
+                  <span className="mf-feedback-contenido w-full" data-cambiando={agregando ? 'true' : 'false'}>
+                    {!disponible ? 'No disponible' : mensajeAñadido ? (
+                      <><Check size={18} aria-hidden /> Agregado al carrito</>
                     ) : (
-                      <p className="text-sm sm:text-base font-medium" style={{ color: 'var(--danger)' }}>{!disponibleProducto ? 'Producto no disponible en este momento' : 'Agotado'}</p>
+                      <><ShoppingCart size={18} aria-hidden /> Agregar al carrito</>
                     )}
-                  </div>
-                </div>
-                {disponible && (
-                  <div>
-                    <label className="block mb-3 text-base sm:text-lg font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Cantidad</label>
-                    <div className="flex items-center gap-3">
-                      <Button size="md" variant="outline" onClick={() => setCantidad(Math.max(1, cantidad - 1))} className="w-12 h-12 text-xl">−</Button>
-                      <Input type="number" value={cantidad} onChange={(e) => setCantidad(Math.max(1, Math.min(maxCantidad, parseInt(e.target.value) || 1)))} className="w-24 sm:w-28 text-center text-xl font-semibold" min={1} max={maxCantidad} />
-                      <Button size="md" variant="outline" onClick={() => setCantidad(Math.min(maxCantidad, cantidad + 1))} className="w-12 h-12 text-xl">+</Button>
-                    </div>
-                  </div>
-                )}
-                <div className="pt-2 space-y-2">
+                  </span>
+                </Button>
+                <Button fullWidth size="lg" variant="outline" className="py-3.5 inline-flex items-center justify-center gap-2" onClick={() => void manejarComprarAhora()} disabled={!disponible}>
+                  {disponible ? <><Zap size={18} aria-hidden /> Comprar ahora</> : 'No disponible'}
+                </Button>
+                <p className="h-6 text-center text-sm transition-opacity duration-200" style={{ opacity: mensajeAñadido ? 1 : 0 }} aria-live="polite">
                   {mensajeAñadido && (
-                    <p className="text-sm text-center font-medium py-2 rounded-lg flex items-center justify-center gap-1.5" style={{ backgroundColor: 'color-mix(in srgb, var(--success) 20%, transparent)', color: 'var(--success)' }}>
-                      <Check size={14} aria-hidden /> Añadido al carrito
-                    </p>
+                    <Link href="/cliente/tienda-online/carrito" className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Ver carrito <ArrowRight size={14} aria-hidden />
+                    </Link>
                   )}
-                  <Button fullWidth size="lg" className="text-base sm:text-lg py-3 flex items-center justify-center gap-2" onClick={() => void manejarAgregarCarrito()} disabled={!disponible}>
-                    {disponible ? <><ShoppingCart size={18} aria-hidden /> Agregar al Carrito</> : 'No disponible'}
-                  </Button>
-                  <Button fullWidth size="lg" variant="outline" className="text-base sm:text-lg py-3 flex items-center justify-center gap-2" onClick={() => void manejarComprarAhora()} disabled={!disponible}>
-                    {disponible ? <><Zap size={18} aria-hidden /> Comprar ahora</> : 'No disponible'}
-                  </Button>
-                </div>
+                </p>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <Card className="p-4 sm:p-6 lg:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
-              <FileText size={20} aria-hidden /> Descripción
-            </h2>
-            <div className="space-y-3 sm:space-y-4">
-              <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{producto.descripcion}</p>
-              {producto.descripcionLarga && <p className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{producto.descripcionLarga}</p>}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-10 lg:gap-12">
+          <section className="mf-revelar">
+            <h2 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)', letterSpacing: '-0.02em' }}>Descripción</h2>
+            <p className="mt-4 text-lg font-medium max-w-[62ch]" style={{ color: 'var(--menu-texto-principal)' }}>{producto.descripcion}</p>
+            {producto.descripcionLarga && (
+              <p className="mt-4 text-base leading-relaxed max-w-[65ch]" style={{ color: 'var(--encabezados-alterno)' }}>{producto.descripcionLarga}</p>
+            )}
+          </section>
+
+          <Card className="mf-revelar p-6 sm:p-8">
+            <h2 className="sr-only">Detalles del producto</h2>
+            <div className="space-y-6">
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <Sparkles size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} /> Características
+                </h3>
+                {producto.caracteristicas && producto.caracteristicas.length > 0 ? (
+                  <ul className="mt-3 space-y-2">
+                    {producto.caracteristicas.map((c, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <Check size={16} className="flex-shrink-0 mt-1" style={{ color: 'var(--success-texto)' }} aria-hidden />
+                        <span className="text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Sin características adicionales.</p>}
+              </div>
+              {producto.ingredientes && (
+                <div className="pt-6 border-t" style={{ borderColor: 'var(--mf-linea)' }}>
+                  <h3 className="flex items-center gap-2 text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <FlaskConical size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} /> Ingredientes
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--encabezados-alterno)' }}>{textoLegible(producto.ingredientes)}</p>
+                </div>
+              )}
+              {producto.modoUso && (
+                <div className="pt-6 border-t" style={{ borderColor: 'var(--mf-linea)' }}>
+                  <h3 className="flex items-center gap-2 text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <ClipboardList size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} /> Modo de uso
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--encabezados-alterno)' }}>{textoLegible(producto.modoUso)}</p>
+                </div>
+              )}
+              {producto.resultado && (
+                <div className="pt-6 border-t" style={{ borderColor: 'var(--mf-linea)' }}>
+                  <h3 className="flex items-center gap-2 text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <Star size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} /> Resultado
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--encabezados-alterno)' }}>{textoLegible(producto.resultado)}</p>
+                </div>
+              )}
             </div>
           </Card>
-          <Card className="p-4 sm:p-6 lg:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
-              <Sparkles size={20} aria-hidden /> Características
-            </h2>
-            {producto.caracteristicas && producto.caracteristicas.length > 0 ? (
-              <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                {producto.caracteristicas.map((c, i) => (
-                  <li key={i} className="flex items-start gap-2 sm:gap-3">
-                    <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--success)' }} aria-hidden />
-                    <span className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{c}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Sin características adicionales.</p>}
-            {producto.ingredientes && (
-              <div className="pt-3 sm:pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  <FlaskConical size={18} aria-hidden /> Ingredientes
-                </h3>
-                <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>{producto.ingredientes}</p>
-              </div>
-            )}
-          </Card>
         </div>
 
-        {(producto.modoUso || producto.resultado) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-            {producto.modoUso && (
-              <Card className="p-4 sm:p-6 lg:p-8">
-                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
-                  <ClipboardList size={20} aria-hidden /> Modo de uso
-                </h2>
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{producto.modoUso}</p>
-              </Card>
-            )}
-            {producto.resultado && (
-              <Card className="p-4 sm:p-6 lg:p-8">
-                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
-                  <Sparkles size={20} aria-hidden /> Resultado
-                </h2>
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{producto.resultado}</p>
-              </Card>
-            )}
-          </div>
-        )}
-
-        <Card className="p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6">
-          <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 pb-2 sm:pb-3 border-b flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)', borderColor: 'var(--fondos-suaves)' }}>
-            <Star size={20} aria-hidden /> Opiniones
+        <Card className="mf-revelar p-6 sm:p-8 mt-10">
+          <h2 className="text-elegant-title mb-4" style={{ color: 'var(--menu-texto-principal)', letterSpacing: '-0.02em' }}>
+            Opiniones
           </h2>
           {valoraciones.length === 0 ? (
             <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Sé el primero en opinar (o aún no hay reseñas públicas).</p>
