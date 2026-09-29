@@ -1,6 +1,8 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
 import { showAlert } from '../../../utils/toast';
+import SuperficieCliente from '../../../components/cliente/SuperficieCliente';
 
 export default function TerminosPage() {
   const handleClose = () => {
@@ -25,47 +27,69 @@ export default function TerminosPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--fondo-general)' }}>
+    <SuperficieCliente className="min-h-screen" style={{ backgroundColor: 'var(--fondo-general)' }}>
       {/* Botón para regresar - completamente a la izquierda */}
-      <div className="mb-6 pl-4 pt-4">
+      <div className="layout-gutter-x pt-6 pb-2">
         <button
+          type="button"
           onClick={handleClose}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: 'var(--botones-principales)' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
+          className="mf-btn inline-flex items-center gap-2 px-5 rounded-full text-sm font-semibold bg-[var(--botones-principales)] hover:bg-[var(--hover)]"
+          style={{ color: 'var(--texto-fondo-oscuro)', minHeight: 44 }}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft size={16} aria-hidden />
           <span>Regresar al registro</span>
         </button>
       </div>
       
-      <main className="mx-auto w-full max-w-4xl py-8 layout-gutter-x">
+      <main className="mx-auto w-full max-w-6xl pt-6 pb-20 layout-gutter-x lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-16">
+        {/* Índice fijo en escritorio: 15 secciones legales se navegan, no se desplazan a ciegas */}
+        <nav aria-label="Índice" className="hidden lg:block">
+          <div className="sticky top-6">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
+              En esta página
+            </p>
+            <ol className="mf-indice space-y-0.5">
+              <li><a href="#seccion-1">1. Aceptación de los términos</a></li>
+              <li><a href="#seccion-2">2. Objeto</a></li>
+              <li><a href="#seccion-3">3. Identificación del responsable</a></li>
+              <li><a href="#seccion-4">4. Condiciones de uso del sitio y aplicación</a></li>
+              <li><a href="#seccion-5">5. Servicios y reservas</a></li>
+              <li><a href="#seccion-6">6. Compras y pagos</a></li>
+              <li><a href="#seccion-7">7. Envíos y entregas</a></li>
+              <li><a href="#seccion-8">8. Cambios y devoluciones</a></li>
+              <li><a href="#seccion-9">9. Facturación</a></li>
+              <li><a href="#seccion-10">10. Propiedad intelectual</a></li>
+              <li><a href="#seccion-11">11. Limitación de responsabilidad</a></li>
+              <li><a href="#seccion-12">12. Política de privacidad (INAI / LFPDPPP)</a></li>
+              <li><a href="#seccion-13">13. Modificaciones</a></li>
+              <li><a href="#seccion-14">14. Legislación aplicable y jurisdicción</a></li>
+              <li><a href="#seccion-15">15. Contacto</a></li>
+            </ol>
+          </div>
+        </nav>
 
-        <div className="bg-header-footer rounded-lg shadow-lg p-8 md:p-12" style={{ backgroundColor: 'var(--header-footer)' }}>
-          <h1 className="text-page-title text-center mb-8 text-texto-fondo-oscuro">
-            TÉRMINOS Y CONDICIONES DE USO Y POLÍTICA DE PRIVACIDAD
+        <article className="mf-legal mf-entrada">
+          <h1 className="mf-titulo-pagina mb-8" style={{ color: 'var(--menu-texto-principal)' }}>
+            Términos y condiciones de uso y política de privacidad
           </h1>
           
-          <div className="mb-8 p-6 rounded-lg" style={{ backgroundColor: 'var(--texto-fondo-oscuro-10)', border: '1px solid var(--borde-sutil)' }}>
-            <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+          <div className="mb-12 p-6 rounded-[14px]" style={{ backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-1)' }}>
+            <h2>
               Miru Franco Salón Beauty
             </h2>
-            <div className="space-y-2 text-sm" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
+            <div className="space-y-2 text-sm">
               <p><strong>Titular:</strong> Mildred Rubí Franco Martínez</p>
               <p><strong>RFC:</strong> FAMM940924CKA</p>
               <p><strong>Domicilio:</strong> Segunda Cerrada de Allende No. 15, Colonia Juárez, Huejutla de Reyes, Hidalgo, C.P. 43000</p>
-              <p><strong>Correo de contacto:</strong> <a href="mailto:mildredfranco24@gmail.com" className="hover:underline" style={{ color: 'var(--enlaces-textos-interactivos)' }}>mildredfranco24@gmail.com</a></p>
+              <p><strong>Correo de contacto:</strong> <a href="mailto:mildredfranco24@gmail.com">mildredfranco24@gmail.com</a></p>
               <p><strong>Teléfonos:</strong> 7711 867645 / 7712 681432</p>
             </div>
           </div>
 
-          <div className="space-y-8 text-sm leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
+          <div className="space-y-10">
             
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>1. ACEPTACIÓN DE LOS TÉRMINOS</h2>
+              <h2 id="seccion-1">1. ACEPTACIÓN DE LOS TÉRMINOS</h2>
               <p className="mb-4">
                 El acceso y uso del sitio web y aplicación móvil de Miru Franco Salón Beauty (en adelante &quot;la Plataforma&quot;) implica la aceptación plena y sin reservas de los presentes Términos y Condiciones, los cuales regulan el acceso, navegación, uso, compra de productos, reserva de servicios y cualquier transacción realizada a través de la Plataforma.
               </p>
@@ -75,7 +99,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>2. OBJETO</h2>
+              <h2 id="seccion-2">2. OBJETO</h2>
               <p className="mb-4">
                 La Plataforma tiene como finalidad ofrecer información, venta en línea de productos de belleza, agendamiento de citas para servicios estéticos, y comunicación entre el usuario y el establecimiento físico Miru Franco Salón Beauty.
               </p>
@@ -85,14 +109,14 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>3. IDENTIFICACIÓN DEL RESPONSABLE</h2>
+              <h2 id="seccion-3">3. IDENTIFICACIÓN DEL RESPONSABLE</h2>
               <p>
                 El responsable de la operación del sitio y del tratamiento de los datos personales es Mildred Rubí Franco Martínez, titular del establecimiento comercial &quot;Miru Franco Salón Beauty&quot;, con domicilio y contacto indicados al inicio del presente documento.
               </p>
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>4. CONDICIONES DE USO DEL SITIO Y APLICACIÓN</h2>
+              <h2 id="seccion-4">4. CONDICIONES DE USO DEL SITIO Y APLICACIÓN</h2>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>El usuario se compromete a utilizar la Plataforma de manera lícita, sin infringir la legislación vigente, la moral o el orden público.</li>
                 <li>Queda prohibido alterar, reproducir, distribuir o modificar el contenido del sitio sin autorización expresa por escrito del titular.</li>
@@ -102,7 +126,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>5. SERVICIOS Y RESERVAS</h2>
+              <h2 id="seccion-5">5. SERVICIOS Y RESERVAS</h2>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>El usuario podrá agendar citas para servicios de belleza a través de la Plataforma.</li>
                 <li>Las reservas se considerarán confirmadas una vez que el usuario reciba notificación electrónica o vía WhatsApp.</li>
@@ -113,7 +137,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>6. COMPRAS Y PAGOS</h2>
+              <h2 id="seccion-6">6. COMPRAS Y PAGOS</h2>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Las compras podrán realizarse en línea mediante transferencias bancarias, pagos electrónicos (tarjeta de crédito/débito) o en efectivo en el punto de entrega.</li>
                 <li>Todos los precios incluyen impuestos, salvo que se indique lo contrario.</li>
@@ -123,7 +147,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>7. ENVÍOS Y ENTREGAS</h2>
+              <h2 id="seccion-7">7. ENVÍOS Y ENTREGAS</h2>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Los envíos se realizarán dentro de la zona de Huejutla de Reyes, Hidalgo.</li>
                 <li>La entrega sin costo aplica únicamente en las zonas: Colonia Juárez, Centro, Reloj y Mercado.</li>
@@ -133,7 +157,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>8. CAMBIOS Y DEVOLUCIONES</h2>
+              <h2 id="seccion-8">8. CAMBIOS Y DEVOLUCIONES</h2>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Solo se aceptarán devoluciones si el producto se encuentra sellado, en perfectas condiciones y con comprobante de compra.</li>
                 <li>No se realizan devoluciones en efectivo; podrá efectuarse un cambio por otro producto de igual o mayor valor.</li>
@@ -143,7 +167,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>9. FACTURACIÓN</h2>
+              <h2 id="seccion-9">9. FACTURACIÓN</h2>
               <p className="mb-4">
                 Si el cliente requiere factura, deberá solicitarla dentro del mismo mes de la compra enviando su RFC, razón social, domicilio fiscal y uso de CFDI.
               </p>
@@ -153,7 +177,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>10. PROPIEDAD INTELECTUAL</h2>
+              <h2 id="seccion-10">10. PROPIEDAD INTELECTUAL</h2>
               <p className="mb-4">
                 Todo el contenido del sitio (logotipo, imágenes, textos, fotografías, diseño, videos y software) es propiedad exclusiva de Miru Franco Salón Beauty o de sus legítimos titulares, y se encuentra protegido por la Ley Federal del Derecho de Autor.
               </p>
@@ -163,7 +187,7 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>11. LIMITACIÓN DE RESPONSABILIDAD</h2>
+              <h2 id="seccion-11">11. LIMITACIÓN DE RESPONSABILIDAD</h2>
               <p className="mb-2">Miru Franco Salón Beauty no será responsable por:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Fallos técnicos del sitio o de terceros proveedores de internet o pagos.</li>
@@ -173,14 +197,14 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>12. POLÍTICA DE PRIVACIDAD (INAI / LFPDPPP)</h2>
+              <h2 id="seccion-12">12. POLÍTICA DE PRIVACIDAD (INAI / LFPDPPP)</h2>
               <p className="mb-4">
                 Conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, Mildred Rubí Franco Martínez, con domicilio en Huejutla de Reyes, Hidalgo, es responsable del tratamiento de los datos personales recabados a través de la Plataforma.
               </p>
               
               <div className="ml-4 space-y-4">
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>Finalidades del tratamiento:</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Finalidades del tratamiento:</h3>
                   <ul className="list-disc list-inside space-y-1 ml-4">
                     <li>Gestionar citas, pagos y servicios contratados.</li>
                     <li>Emitir comprobantes fiscales.</li>
@@ -189,14 +213,14 @@ export default function TerminosPage() {
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>Datos que se recaban:</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Datos que se recaban:</h3>
                   <p>Nombre, teléfono, correo electrónico, información de pago y, en caso de facturación, RFC y domicilio fiscal.</p>
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>Derechos ARCO (Acceso, Rectificación, Cancelación y Oposición):</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Derechos ARCO (Acceso, Rectificación, Cancelación y Oposición):</h3>
                   <p className="mb-2">
-                    El titular de los datos puede ejercer sus derechos enviando solicitud al correo <a href="mailto:mildredfranco24@gmail.com" className="hover:underline" style={{ color: 'var(--enlaces-textos-interactivos)' }}>mildredfranco24@gmail.com</a>.
+                    El titular de los datos puede ejercer sus derechos enviando solicitud al correo <a href="mailto:mildredfranco24@gmail.com">mildredfranco24@gmail.com</a>.
                   </p>
                   <p>
                     El negocio se compromete a responder en un plazo no mayor a 20 días hábiles.
@@ -204,7 +228,7 @@ export default function TerminosPage() {
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>Transferencia de datos:</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Transferencia de datos:</h3>
                   <p>
                     No se compartirán datos personales con terceros sin consentimiento, salvo requerimiento legal.
                   </p>
@@ -213,14 +237,14 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>13. MODIFICACIONES</h2>
+              <h2 id="seccion-13">13. MODIFICACIONES</h2>
               <p>
                 Los presentes Términos y Condiciones podrán modificarse en cualquier momento. Las versiones actualizadas se publicarán en la Plataforma, surtiendo efectos desde su publicación.
               </p>
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>14. LEGISLACIÓN APLICABLE Y JURISDICCIÓN</h2>
+              <h2 id="seccion-14">14. LEGISLACIÓN APLICABLE Y JURISDICCIÓN</h2>
               <p className="mb-4">
                 Este documento se rige por las leyes de los Estados Unidos Mexicanos.
               </p>
@@ -230,21 +254,21 @@ export default function TerminosPage() {
             </section>
 
             <section>
-              <h2 className="text-subtitle mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>15. CONTACTO</h2>
+              <h2 id="seccion-15">15. CONTACTO</h2>
               <p>
-                Para cualquier aclaración o duda relacionada con estos Términos y Condiciones o con la Política de Privacidad, el usuario podrá comunicarse al correo electrónico <a href="mailto:mildredfranco24@gmail.com" className="hover:underline" style={{ color: 'var(--enlaces-textos-interactivos)' }}>mildredfranco24@gmail.com</a> o mediante mensaje directo en las redes oficiales de Miru Franco Salón Beauty.
+                Para cualquier aclaración o duda relacionada con estos Términos y Condiciones o con la Política de Privacidad, el usuario podrá comunicarse al correo electrónico <a href="mailto:mildredfranco24@gmail.com">mildredfranco24@gmail.com</a> o mediante mensaje directo en las redes oficiales de Miru Franco Salón Beauty.
               </p>
             </section>
 
           </div>
 
-          <div className="mt-12 pt-8 border-t text-center" style={{ borderColor: 'var(--borde-sutil)' }}>
-            <p className="text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+          <div className="mt-14 pt-8 border-t" style={{ borderColor: 'var(--mf-linea)' }}>
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
               Última actualización: {new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
-        </div>
+        </article>
       </main>
-    </div>
+    </SuperficieCliente>
   );
 }

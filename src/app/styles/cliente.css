@@ -357,3 +357,43 @@ html:has(.superficie-cliente) {
     animation-duration: 300ms;
   }
 }
+
+/* ==========================================================================
+   Lectura larga (términos y políticas): medida, ritmo y títulos de marca
+   ========================================================================== */
+.mf-legal {
+  max-width: 68ch;
+  color: var(--encabezados-alterno);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+.mf-legal h2 {
+  font-family: var(--font-family-serif);
+  font-size: 1.125rem;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+  color: var(--menu-texto-principal);
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 1.5rem;
+}
+.mf-legal a {
+  color: var(--menu-texto-principal);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+.mf-legal a:hover {
+  text-decoration-color: currentColor;
+}
+.mf-indice a {
+  display: block;
+  padding: 0.3rem 0 0.3rem 0.75rem;
+  border-left: 1px solid var(--mf-linea);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--encabezados-alterno);
+  transition: color var(--mf-dur-hover) ease, border-color var(--mf-dur-hover) ease;
+}
+.mf-indice a:hover {
+  color: var(--menu-texto-principal);
+  border-left-color: var(--logo-branding);
+}
