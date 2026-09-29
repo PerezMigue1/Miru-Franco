@@ -8,6 +8,9 @@ import PageHeader from '../../../../../components/ui/PageHeader';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Select from '../../../../../components/ui/Select';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
 import {
   obtenerEspecialistas,
   obtenerDisponibilidad,
@@ -97,6 +100,8 @@ function CalendarioContent() {
   };
 
   const dias = obtenerDiasDelMes();
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
   const nombresMeses = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -123,10 +128,25 @@ function CalendarioContent() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-none">
+        <PasosFlujo pasos={PASOS_RESERVA} actual={1} etiqueta="Pasos para reservar" />
         <PageHeader
           title="Calendario de Disponibilidad"
           subtitle="Selecciona especialista, día y hora para tu cita"
         />
+
+        {!servicioId && (
+          <Card className="mb-6">
+            <p className="flex items-start gap-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+              <Info size={18} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
+              <span>
+                Para ver horarios primero elige el servicio que quieres reservar.{' '}
+                <Link href="/cliente/servicios-citas" className="font-semibold underline underline-offset-4">
+                  Ver servicios
+                </Link>
+              </span>
+            </p>
+          </Card>
+        )}
 
         <Card className="mb-6">
           <Select
@@ -146,30 +166,29 @@ function CalendarioContent() {
             <Card>
               <div className="flex items-center justify-between mb-6">
                 <button
+                  type="button"
                   onClick={() => cambiarMes(-1)}
-                  className="px-4 py-2 rounded-lg transition-colors"
-                  style={{
-                    backgroundColor: 'var(--tarjetas-paneles)',
-                    color: 'var(--texto-fondo-oscuro)',
-                  }}
+                  aria-label="Mes anterior"
+                  className="mf-btn w-11 h-11 inline-flex items-center justify-center rounded-full hover:bg-[var(--fondos-suaves)]"
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
-                  ← Anterior
+                  <ChevronLeft size={20} aria-hidden />
                 </button>
                 <h2
-                  className="text-page-title"
-                  style={{ color: 'var(--menu-texto-principal)' }}
+                  className="text-2xl font-bold"
+                  style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
+                  aria-live="polite"
                 >
                   {nombresMeses[mesActual.getMonth()]} {mesActual.getFullYear()}
                 </h2>
                 <button
+                  type="button"
                   onClick={() => cambiarMes(1)}
-                  className="px-4 py-2 rounded-lg transition-colors"
-                  style={{
-                    backgroundColor: 'var(--tarjetas-paneles)',
-                    color: 'var(--texto-fondo-oscuro)',
-                  }}
+                  aria-label="Mes siguiente"
+                  className="mf-btn w-11 h-11 inline-flex items-center justify-center rounded-full hover:bg-[var(--fondos-suaves)]"
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
-                  Siguiente →
+                  <ChevronRight size={20} aria-hidden />
                 </button>
               </div>
 
@@ -193,24 +212,24 @@ function CalendarioContent() {
 
                   const seleccionado = diaSeleccionado?.toDateString() === dia.toDateString();
                   const esHoy = dia.toDateString() === new Date().toDateString();
+                  // Un día que ya pasó no puede tener horarios: no se ofrece.
+                  const esPasado = dia < hoy;
 
                   return (
                     <button
                       key={dia.toISOString()}
+                      type="button"
                       onClick={() => setDiaSeleccionado(dia)}
-                      disabled={!especialistaId}
-                      className={`
-                        h-12 rounded-lg transition-all cursor-pointer hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed
-                        ${seleccionado ? 'ring-2 ring-offset-2' : ''}
-                      `}
+                      disabled={!especialistaId || esPasado}
+                      aria-pressed={seleccionado}
+                      aria-label={dia.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      className={`mf-btn mf-cifras h-12 rounded-full text-sm font-semibold disabled:opacity-35 disabled:cursor-not-allowed ${
+                        seleccionado ? '' : 'enabled:hover:bg-[var(--fondos-suaves)]'
+                      }`}
                       style={{
-                        backgroundColor: seleccionado
-                          ? 'var(--botones-principales)'
-                          : 'var(--tarjetas-paneles)',
-                        color: seleccionado
-                          ? 'var(--texto-fondo-oscuro)'
-                          : 'var(--menu-texto-principal)',
-                        border: esHoy ? '2px solid var(--warning)' : 'none',
+                        backgroundColor: seleccionado ? 'var(--botones-principales)' : 'transparent',
+                        color: seleccionado ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
+                        boxShadow: esHoy && !seleccionado ? 'inset 0 0 0 1.5px var(--logo-branding)' : 'none',
                       }}
                     >
                       {dia.getDate()}
@@ -239,7 +258,9 @@ function CalendarioContent() {
                   Selecciona un día para ver los horarios disponibles
                 </p>
               ) : loadingSlots ? (
-                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Buscando horarios…</p>
+                <div className="grid grid-cols-2 gap-2" aria-busy="true" aria-label="Buscando horarios">
+                  {Array.from({ length: 6 }, (_, i) => <div key={i} className="mf-skeleton h-11" style={{ borderRadius: 999 }} />)}
+                </div>
               ) : errorSlots ? (
                 <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{errorSlots}</p>
               ) : (
@@ -268,14 +289,14 @@ function CalendarioContent() {
                         return (
                           <button
                             key={slot.inicio}
+                            type="button"
                             onClick={() => setSlotSeleccionado(slot)}
-                            className={`
-                              py-2 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer hover:scale-105
-                              ${seleccionado ? 'ring-2 ring-offset-2' : ''}
-                            `}
+                            aria-pressed={seleccionado}
+                            className={`mf-btn mf-cifras min-h-11 px-3 rounded-full text-sm font-semibold ${seleccionado ? '' : 'hover:bg-[var(--fondos-suaves)]'}`}
                             style={{
-                              backgroundColor: seleccionado ? 'var(--botones-principales)' : 'var(--tarjetas-paneles)',
+                              backgroundColor: seleccionado ? 'var(--botones-principales)' : 'transparent',
                               color: seleccionado ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
+                              boxShadow: seleccionado ? 'none' : 'inset 0 0 0 1.5px color-mix(in srgb, var(--menu-texto-principal) 35%, transparent)',
                             }}
                           >
                             {slot.horaLocal}
@@ -287,11 +308,11 @@ function CalendarioContent() {
 
                   <Button
                     fullWidth
-                    className="mt-4"
+                    className="mt-5"
                     onClick={manejarContinuar}
                     disabled={!slotSeleccionado}
                   >
-                    Continuar
+                    {slotSeleccionado ? `Continuar con las ${slotSeleccionado.horaLocal}` : 'Elige un horario'}
                   </Button>
                 </>
               )}
