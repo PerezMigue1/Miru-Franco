@@ -7,7 +7,7 @@ import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
 import ThemeToggle from '../components/ui/ThemeToggle';
-import { clearAuthData, getToken } from '../utils/security';
+import { clearAuthData, hasSession } from '../utils/security';
 import { useCart } from '../context/CartContext';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
@@ -46,8 +46,7 @@ export default function Header() {
   }, []);
 
   const syncUserFromStorage = () => {
-    const token = getToken();
-    const logged = !!(token && token.trim());
+    const logged = hasSession();
     setIsLoggedIn(logged);
     if (typeof window === 'undefined' || !logged) {
       setUserName('Usuario');
@@ -92,7 +91,7 @@ export default function Header() {
   const cargarNotificacionesReqId = useRef(0);
   const cargarNotificaciones = useCallback(async (): Promise<void> => {
     const reqId = ++cargarNotificacionesReqId.current;
-    if (!getToken()) {
+    if (!hasSession()) {
       if (cargarNotificacionesReqId.current === reqId) setNotificationsCount(0);
       return;
     }

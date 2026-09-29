@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { getToken } from '../../utils/security';
+import { hasSession } from '../../utils/security';
 import { api } from '../../services/auth';
 import { isAdminRol, getRolFromUser, rutaPorRol } from '../../utils/adminAuth';
 
@@ -23,8 +23,7 @@ export default function AdminAccessGuard({ children }: { children: ReactNode }) 
   const [permitido, setPermitido] = useState(false);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token || token.trim() === '') {
+    if (!hasSession()) {
       router.replace(`/login?returnUrl=${encodeURIComponent(pathname || '/admin')}`);
       return;
     }

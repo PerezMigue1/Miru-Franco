@@ -71,9 +71,9 @@ export default function ActivateAccount({
       const result = await api.verifyOTP(email, codigoOTP);
       
       if (result.success) {
-        // ✅ Si el backend devuelve un token, guardarlo y redirigir
+        // ✅ Si el backend ya dejó la sesión iniciada, redirigir (el JWT viaja en cookie httpOnly;
+        // nunca se guarda en localStorage)
         if (result.token) {
-          localStorage.setItem('token', result.token);
           setMensaje('✅ Cuenta activada correctamente. Redirigiendo...');
           setError('');
           setTimeout(() => {

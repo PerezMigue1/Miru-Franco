@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { getToken } from '../../utils/security';
+import { hasSession } from '../../utils/security';
 import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
@@ -119,8 +119,7 @@ export default function OperacionLayout({ children, permisoRequerido }: Operacio
   const { tienePermiso } = usePermisos();
 
   useEffect(() => {
-    const token = getToken();
-    if (!token || token.trim() === '') {
+    if (!hasSession()) {
       const returnUrl = encodeURIComponent(pathname || '/operacion');
       router.replace(`/login?returnUrl=${returnUrl}`);
       return;
