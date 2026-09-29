@@ -397,3 +397,56 @@ html:has(.superficie-cliente) {
   color: var(--menu-texto-principal);
   border-left-color: var(--logo-branding);
 }
+
+/* ==========================================================================
+   Sello de confirmación (cita confirmada, pedido realizado): el único momento de
+   celebración del flujo. Anillo dorado que se traza y check que aparece con un leve rebote.
+   ========================================================================== */
+.mf-sello {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  display: inline-grid;
+  place-items: center;
+}
+.mf-sello svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.mf-sello circle {
+  fill: none;
+  stroke: var(--logo-branding);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 264;
+  stroke-dashoffset: 0;
+  animation: mf-trazo 800ms var(--mf-ease-out) both;
+}
+.mf-sello__icono {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--botones-principales);
+  color: var(--texto-fondo-oscuro);
+  animation: mf-sello-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 420ms both;
+}
+@keyframes mf-trazo {
+  from {
+    stroke-dashoffset: 264;
+  }
+}
+@keyframes mf-sello-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-sello circle,
+  .mf-sello__icono {
+    animation: none;
+  }
+}

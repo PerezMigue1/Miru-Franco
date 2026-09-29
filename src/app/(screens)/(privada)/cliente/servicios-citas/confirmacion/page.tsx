@@ -9,6 +9,9 @@ import Badge from '../../../../../components/ui/Badge';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
 import { obtenerCita, type CitaApi } from '../../../../../services/citas';
+import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
+import SelloConfirmacion from '../../../../../components/cliente/SelloConfirmacion';
+import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -46,8 +49,10 @@ function ConfirmacionContent() {
   if (cargando) {
     return (
       <ModuleLayout>
-        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        <div className="max-w-2xl mx-auto space-y-4 py-8" aria-busy="true" aria-label="Cargando cita">
+          <div className="mf-skeleton h-20 w-20 rounded-full mx-auto" style={{ borderRadius: 999 }} />
+          <div className="mf-skeleton h-8 w-1/2 mx-auto" />
+          <div className="mf-skeleton h-56 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     );
@@ -84,38 +89,28 @@ function ConfirmacionContent() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-3xl mx-auto">
-        <Card className="text-center">
-          <div className="mb-6">
-            <div
-              className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: 'var(--success)' }}
-            >
-              <span className="text-4xl" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                ✓
-              </span>
+      <div className="max-w-2xl mx-auto">
+        <PasosFlujo pasos={PASOS_RESERVA} actual={PASOS_RESERVA.length} etiqueta="Pasos para reservar" />
+        <Card className="text-center mf-entrada" padding="lg">
+          <div className="mb-8">
+            <div className="mb-5 flex justify-center">
+              <SelloConfirmacion />
             </div>
-            <h1
-              className="text-hero mb-2"
-              style={{ color: 'var(--menu-texto-principal)' }}
-            >
+            <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               ¡Cita Confirmada!
             </h1>
-            <p
-              className="text-lead"
-              style={{ color: 'var(--encabezados-alterno)' }}
-            >
+            <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
               Tu cita ha sido agendada exitosamente
             </p>
           </div>
 
-          <div className="bg-white rounded-lg p-6 mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+          <div className="rounded-[12px] p-6 mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
             <div className="space-y-4 text-left">
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Número de Cita:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>#{cita.id}</span>
+                <span className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>#{cita.id}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -127,13 +122,13 @@ function ConfirmacionContent() {
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Fecha:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{fecha}</span>
+                <span className="text-right first-letter:uppercase" style={{ color: 'var(--menu-texto-principal)' }}>{fecha}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
                   Hora:
                 </span>
-                <span style={{ color: 'var(--menu-texto-principal)' }}>{hora}</span>
+                <span className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>{hora}</span>
               </div>
               {servicio?.duracion && (
                 <div className="flex items-center justify-between">
@@ -154,10 +149,10 @@ function ConfirmacionContent() {
                   Total:
                 </span>
                 <span
-                  className="text-2xl font-bold"
+                  className="mf-cifras text-2xl font-bold"
                   style={{ color: 'var(--menu-texto-principal)' }}
                 >
-                  {servicio?.precio ?? '—'}
+                  {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '—'}
                 </span>
               </div>
               <div className="flex justify-center pt-4">
@@ -167,7 +162,7 @@ function ConfirmacionContent() {
           </div>
 
           {servicio?.productosAsociados && servicio.productosAsociados.length > 0 && (
-            <div className="bg-white rounded-lg p-6 mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+            <div className="rounded-[12px] p-6 mb-6 text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
               <h3
                 className="text-subtitle mb-3"
                 style={{ color: 'var(--menu-texto-principal)' }}
@@ -233,8 +228,10 @@ export default function ConfirmacionCitaPage() {
   return (
     <Suspense fallback={
       <ModuleLayout>
-        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        <div className="max-w-2xl mx-auto space-y-4 py-8" aria-busy="true" aria-label="Cargando cita">
+          <div className="mf-skeleton h-20 w-20 rounded-full mx-auto" style={{ borderRadius: 999 }} />
+          <div className="mf-skeleton h-8 w-1/2 mx-auto" />
+          <div className="mf-skeleton h-56 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     }>
