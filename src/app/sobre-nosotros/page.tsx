@@ -1,11 +1,17 @@
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import Image from 'next/image';
+import { metadataPublica } from '../utils/seo';
 
-export const metadata = {
-  title: 'Sobre Nosotros — Mirú Franco Beauty Salón',
-  description: 'Conoce la historia y el equipo detrás de Mirú Franco Beauty Salón.',
-};
+export const metadata = metadataPublica({
+  title: 'Sobre nosotros',
+  description:
+    'Conoce la historia, los valores y el equipo detrás de Mirú Franco Beauty Salón, tu salón de belleza profesional en Huejutla de Reyes.',
+  path: '/sobre-nosotros',
+});
+
+/** Contenido público y no personalizado: HTML prerenderizado y cacheable en CDN (ver RUTAS_PUBLICAS_ESTATICAS en utils/rutasPublicasEstaticas.ts). */
+export const dynamic = 'force-static';
 
 const STATS = [
   { num: '5+', label: 'Años de experiencia' },

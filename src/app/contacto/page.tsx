@@ -1,6 +1,7 @@
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { MapPin, Mail, Phone, Clock } from 'lucide-react';
+import { metadataPublica } from '../utils/seo';
 
 function IconInstagram({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
@@ -17,10 +18,15 @@ function IconFacebook({ className }: { className?: string }) {
   );
 }
 
-export const metadata = {
-  title: 'Contacto — Mirú Franco Beauty Salón',
-  description: 'Contáctanos para agendar una cita o resolver tus dudas.',
-};
+export const metadata = metadataPublica({
+  title: 'Contacto',
+  description:
+    'Contacta a Mirú Franco Beauty Salón en Huejutla de Reyes: dirección, teléfono, correo y horarios para agendar tu cita o resolver tus dudas.',
+  path: '/contacto',
+});
+
+/** Contenido público y no personalizado: HTML prerenderizado y cacheable en CDN (ver RUTAS_PUBLICAS_ESTATICAS en utils/rutasPublicasEstaticas.ts). */
+export const dynamic = 'force-static';
 
 export default function ContactoPage() {
   const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
