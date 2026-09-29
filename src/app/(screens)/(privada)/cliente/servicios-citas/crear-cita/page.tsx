@@ -11,6 +11,10 @@ import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
 import { getMiPerfil } from '../../../../../services/auth';
 import { crearCita, obtenerEspecialistas, type EspecialistaApi } from '../../../../../services/citas';
+import Link from 'next/link';
+import { CalendarDays, CalendarCheck2, Clock3, UserRound } from 'lucide-react';
+import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
+import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -82,19 +86,40 @@ function CrearCitaContent() {
 
   return (
     <ModuleLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
+        <PasosFlujo pasos={PASOS_RESERVA} actual={datosIncompletos ? 0 : 2} etiqueta="Pasos para reservar" />
         <PageHeader
           title="Crear Cita"
-          subtitle="Completa la información para confirmar tu cita"
+          subtitle={datosIncompletos ? 'Primero elige el servicio y el horario' : 'Revisa los detalles y confirma tu cita'}
         />
 
+        {datosIncompletos ? (
+          /* Sin servicio/especialista/horario la cita no se puede crear: en vez de un formulario con
+             "No seleccionado" en rojo y el botón apagado, se explica qué falta y cómo seguir. */
+          <Card className="mf-entrada max-w-xl text-center py-12 px-6">
+            <CalendarDays size={36} strokeWidth={1.5} className="mx-auto mb-4" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+            <p className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+              Aún no has elegido un servicio y horario
+            </p>
+            <p className="mt-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              Elige el servicio que quieres, luego el especialista, el día y la hora. Después vuelves aquí para confirmar.
+            </p>
+            <Link
+              href="/cliente/servicios-citas"
+              className="mf-btn mt-6 inline-flex items-center justify-center px-6 min-h-11 rounded-[10px] font-semibold bg-[var(--botones-principales)] hover:bg-[var(--hover)]"
+              style={{ color: 'var(--texto-fondo-oscuro)' }}
+            >
+              Elegir servicio
+            </Link>
+          </Card>
+        ) : (
         <form onSubmit={manejarEnviar}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card className="mf-entrada" padding="lg">
                 <h2
-                  className="text-page-title mb-6"
-                  style={{ color: 'var(--menu-texto-principal)' }}
+                  className="text-2xl font-bold mb-6"
+                  style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
                 >
                   Detalles de la Cita
                 </h2>
@@ -103,8 +128,9 @@ function CrearCitaContent() {
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Especialista
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>
-                      {loadingEspecialista ? 'Cargando...' : especialista?.nombre ?? 'No seleccionado'}
+                    <p className="flex items-center gap-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                      <UserRound size={16} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+                      {loadingEspecialista ? <span className="mf-skeleton inline-block h-4 w-32" /> : especialista?.nombre ?? 'No seleccionado'}
                     </p>
                   </div>
                   <Textarea
@@ -119,29 +145,34 @@ function CrearCitaContent() {
               </Card>
             </div>
 
-            <div>
-              <Card style={{ animation: 'fadeUp 350ms ease-out 160ms both' }}>
+            <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
+              <Card className="mf-entrada" style={{ ['--i' as string]: 1 }} padding="lg">
                 <h3
-                  className="text-subtitle mb-4"
-                  style={{ color: 'var(--menu-texto-principal)' }}
+                  className="text-xl font-bold mb-5"
+                  style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
                 >
                   Resumen de la Cita
                 </h3>
                 {loadingServicio ? (
-                  <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando servicio...</p>
+                  <div className="space-y-3" aria-busy="true" aria-label="Cargando servicio">
+                    <div className="mf-skeleton h-4 w-2/3" />
+                    <div className="mf-skeleton h-4 w-1/2" />
+                    <div className="mf-skeleton h-4 w-1/3" />
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <div>
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Servicio
                       </p>
-                      <p style={{ color: 'var(--menu-texto-principal)' }}>{servicio?.nombre ?? 'No seleccionado'}</p>
+                      <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{servicio?.nombre ?? 'No seleccionado'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Fecha
                       </p>
-                      <p style={{ color: 'var(--menu-texto-principal)' }}>
+                      <p className="flex items-center gap-2 first-letter:uppercase" style={{ color: 'var(--menu-texto-principal)' }}>
+                        <CalendarCheck2 size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                         {inicio ? new Date(inicio).toLocaleDateString('es-ES', {
                           weekday: 'long',
                           year: 'numeric',
@@ -155,7 +186,8 @@ function CrearCitaContent() {
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Hora
                       </p>
-                      <p style={{ color: 'var(--menu-texto-principal)' }}>
+                      <p className="mf-cifras flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                        <Clock3 size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                         {inicio ? new Date(inicio).toLocaleTimeString('es-MX', {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -171,19 +203,19 @@ function CrearCitaContent() {
                         <p style={{ color: 'var(--menu-texto-principal)' }}>{servicio.duracion}</p>
                       </div>
                     )}
-                    <div className="pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                    <div className="pt-4 border-t" style={{ borderColor: 'var(--mf-linea)' }}>
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Total
                       </p>
                       <p
-                        className="text-2xl font-bold"
+                        className="mf-cifras text-3xl font-bold"
                         style={{ color: 'var(--menu-texto-principal)' }}
                       >
-                        {servicio?.precio ?? '—'}
+                        {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '—'}
                       </p>
                     </div>
                     {error && (
-                      <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+                      <p className="text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>{error}</p>
                     )}
                     <Button
                       type="submit"
@@ -192,7 +224,9 @@ function CrearCitaContent() {
                       className="mt-4"
                       disabled={enviando || datosIncompletos}
                     >
-                      {enviando ? 'Confirmando...' : 'Confirmar Cita'}
+                      <span className="mf-feedback-contenido w-full" data-cambiando={enviando ? 'true' : 'false'}>
+                        {enviando ? 'Confirmando…' : 'Confirmar Cita'}
+                      </span>
                     </Button>
                   </div>
                 )}
@@ -200,6 +234,7 @@ function CrearCitaContent() {
             </div>
           </div>
         </form>
+        )}
       </div>
     </ModuleLayout>
   );
