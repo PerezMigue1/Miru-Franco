@@ -22,7 +22,9 @@ export default function PerfilPage() {
         className="min-h-screen flex flex-col items-center justify-center"
         style={{ backgroundColor: 'var(--fondo-general)' }}
       >
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-menu-texto-principal" />
+        <p role="status" className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+          Redirigiendo a inicio de sesión…
+        </p>
       </div>
     );
   }
