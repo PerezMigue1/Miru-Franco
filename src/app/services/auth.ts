@@ -389,9 +389,7 @@ export const api = {
         { email },
         BACKEND_BASE
       );
-      
-      console.log('Respuesta del backend para pregunta de seguridad:', data);
-      
+
       // Manejar diferentes formatos de respuesta del backend
       const pregunta = data.pregunta || data.question;
       const success = data.success !== false && !!pregunta;
