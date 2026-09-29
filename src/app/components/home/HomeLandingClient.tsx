@@ -1,30 +1,29 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import Card from '../ui/Card';
 import ScrollArrows, { SCROLL_ARROW_PADDING_X } from '../ui/ScrollArrows';
 import { ProductoImagenCarruselTarjeta } from '../tienda/ProductoImagenCarruselTarjeta';
 import { urlsGaleriaProductoCatalogo, type Producto } from '../../services/productos';
 import type { Servicio } from '../../services/servicios';
-import { useReveal } from '../../hooks/useReveal';
-import {
-  Scissors,
-  Sparkles,
-  Droplets,
-  Wind,
-  Star,
-  Calendar,
-  Camera,
-} from 'lucide-react';
-import GalleryModal from '../ui/GalleryModal';
-import ServicioImagen from '../servicios/ServicioImagen';
+import { ArrowRight, Calendar, Clock3, Droplets, Scissors, Sparkles, Star, Wind } from 'lucide-react';
+import ServicioImagen, { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
+import { useInclinacion3D } from '../../hooks/useInclinacion3D';
+import { formatearPrecioMXN } from '../../utils/formatoPrecio';
 
 const CARD_WIDTH_PX = 288;
 const SCROLL_STEP = CARD_WIDTH_PX + 24;
 
-const SERVICIOS_FALLBACK = [
+type FallbackServicio = {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  icono: ComponentType<{ className?: string; strokeWidth?: number; style?: CSSProperties }>;
+};
+
+/** Se muestran solo si el backend no devolvió servicios (misma lista de siempre). */
+const SERVICIOS_FALLBACK: FallbackServicio[] = [
   { id: 1, nombre: 'Corte y Estilo', descripcion: 'Cortes modernos y clásicos adaptados a tu rostro y personalidad.', icono: Scissors },
   { id: 2, nombre: 'Coloración', descripcion: 'Coloración profesional con productos de alta calidad.', icono: Sparkles },
   { id: 3, nombre: 'Tratamientos', descripcion: 'Tratamientos reparadores y nutritivos para cabello dañado.', icono: Droplets },
@@ -33,421 +32,328 @@ const SERVICIOS_FALLBACK = [
   { id: 6, nombre: 'Peinados de Evento', descripcion: 'Peinados especiales para bodas, quinceañeras y eventos.', icono: Calendar },
 ];
 
-const GALERIA_ITEMS = [
-  { id: 1, categoria: 'Corte', descripcion: 'Corte moderno y elegante' },
-  { id: 2, categoria: 'Coloración', descripcion: 'Coloración profesional' },
-  { id: 3, categoria: 'Alaciado', descripcion: 'Alaciado perfecto' },
-  { id: 4, categoria: 'Nanoplastía', descripcion: 'Tratamiento de nanoplastía' },
-  { id: 5, categoria: 'Peinado', descripcion: 'Peinado para evento especial' },
-  { id: 6, categoria: 'Tratamiento', descripcion: 'Tratamiento reparador' },
-  { id: 7, categoria: 'Corte', descripcion: 'Corte clásico' },
-  { id: 8, categoria: 'Mechas', descripcion: 'Mechas profesionales' },
-];
-
 interface Props {
   initialProductos: Producto[];
   initialServicios: Servicio[];
 }
 
-function SectionHeader({ eyebrow, title, light = false }: { eyebrow: string; title: string; light?: boolean }) {
+/** Encabezado de sección alineado a la izquierda con su acción a la derecha (sin eyebrow). */
+function EncabezadoSeccion({
+  titulo,
+  descripcion,
+  accion,
+  sobreOscuro = false,
+}: {
+  titulo: string;
+  descripcion?: string;
+  accion?: { href: string; label: string };
+  sobreOscuro?: boolean;
+}) {
+  const colorTitulo = sobreOscuro ? 'var(--texto-fondo-oscuro)' : 'var(--encabezados-alterno)';
+  const colorTexto = sobreOscuro ? 'var(--texto-fondo-oscuro-70)' : 'var(--encabezados-alterno)';
   return (
-    <div className="text-center mb-12 md:mb-16" data-reveal>
-      <p
-        className="text-xs font-semibold uppercase tracking-[0.25em] mb-3"
-        style={{ color: light ? 'var(--iconografia)' : 'var(--logo-branding)' }}
-      >
-        {eyebrow}
-      </p>
-      <h2
-        className="text-elegant-title hyphens-none"
-        style={{ color: light ? 'var(--texto-fondo-oscuro)' : 'var(--encabezados-alterno)' }}
-      >
-        {title}
-      </h2>
-      <div className="flex items-center justify-center gap-3 mt-4">
-        <span className="h-px w-12 opacity-40" style={{ backgroundColor: light ? 'var(--iconografia)' : 'var(--logo-branding)' }} />
-        <span className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: light ? 'var(--iconografia)' : 'var(--logo-branding)' }} />
-        <span className="h-px w-12 opacity-40" style={{ backgroundColor: light ? 'var(--iconografia)' : 'var(--logo-branding)' }} />
+    <div className="mf-revelar flex flex-wrap items-end justify-between gap-x-10 gap-y-4 mb-10 md:mb-14">
+      <div className="max-w-xl">
+        <h2 className="text-elegant-title hyphens-none" style={{ color: colorTitulo, letterSpacing: '-0.02em' }}>
+          {titulo}
+        </h2>
+        {descripcion && (
+          <p className="mt-3 text-base md:text-lg" style={{ color: colorTexto, opacity: sobreOscuro ? 1 : 0.85 }}>
+            {descripcion}
+          </p>
+        )}
       </div>
+      {accion && (
+        <Link
+          href={accion.href}
+          className="group inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider underline-offset-4 hover:underline"
+          style={{ color: sobreOscuro ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)', minHeight: 44 }}
+        >
+          {accion.label}
+          <ArrowRight
+            size={16}
+            aria-hidden
+            className="transition-transform duration-200 group-hover:translate-x-1"
+            style={{ color: 'var(--logo-branding)' }}
+          />
+        </Link>
+      )}
     </div>
   );
 }
 
-type FallbackServicio = {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  icono: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>;
-};
+function TarjetaProducto({ producto }: { producto: Producto }) {
+  const ref = useInclinacion3D<HTMLAnchorElement>(5);
+  const galeria = urlsGaleriaProductoCatalogo(producto);
+  return (
+    <Link
+      ref={ref}
+      href={`/cliente/tienda-online/productos/${encodeURIComponent(String(producto.id))}`}
+      className="mf-inclinable group block flex-shrink-0 w-72 overflow-hidden text-left"
+      style={{
+        backgroundColor: 'var(--tarjetas-paneles)',
+        borderRadius: 'var(--mf-radio)',
+        boxShadow: 'var(--mf-sombra-1)',
+      }}
+    >
+      <div className="aspect-square relative w-full overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+        {galeria.length > 0 ? (
+          <ProductoImagenCarruselTarjeta
+            urls={galeria}
+            alt={producto.nombre}
+            imageClassName="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          />
+        ) : (
+          <ServicioImagenPlaceholder />
+        )}
+      </div>
+      <div className="mf-capa-frontal p-5">
+        <h3 className="font-semibold text-base line-clamp-1" style={{ color: 'var(--menu-texto-principal)' }}>
+          {producto.nombre}
+        </h3>
+        {producto.marca && (
+          <p className="text-xs uppercase tracking-wider mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+            {producto.marca}
+          </p>
+        )}
+        <p className="mf-cifras mt-3 text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+          {formatearPrecioMXN(producto.precio)}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+function TarjetaServicio({ servicio, destacada }: { servicio: Servicio; destacada: boolean }) {
+  const ref = useInclinacion3D<HTMLAnchorElement>(destacada ? 3 : 5);
+  const meta = [servicio.duracion ?? (servicio.duracionMinutos ? `${servicio.duracionMinutos} min` : ''), formatearPrecioMXN(servicio.precio)]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <Link
+      ref={ref}
+      href={`/cliente/servicios-citas/servicios/${encodeURIComponent(String(servicio.id))}`}
+      className={`mf-inclinable mf-revelar group flex flex-col overflow-hidden ${destacada ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+      style={{ borderRadius: 'var(--mf-radio)', backgroundColor: 'rgba(255, 255, 255, 0.04)', boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.07)' }}
+    >
+      <div className={`relative w-full overflow-hidden ${destacada ? 'aspect-[4/3] lg:aspect-auto lg:flex-1 lg:min-h-[22rem]' : 'aspect-[4/3]'}`}>
+        <ServicioImagen
+          src={servicio.imagen ?? servicio.imagenes?.[0]}
+          alt={servicio.nombre}
+          sizes={destacada ? '(max-width:1024px) 100vw, 50vw' : '(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw'}
+        />
+      </div>
+      <div className="mf-capa-frontal p-5">
+        <h3
+          className={destacada ? 'text-2xl font-semibold' : 'text-base font-semibold'}
+          style={{ color: 'var(--texto-fondo-oscuro)', fontFamily: destacada ? 'var(--font-family-serif)' : undefined }}
+        >
+          {servicio.nombre}
+        </h3>
+        {destacada && servicio.descripcion && (
+          <p className="mt-2 text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            {servicio.descripcion}
+          </p>
+        )}
+        {meta && (
+          <p className="mf-cifras mt-2 flex items-center gap-1.5 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            <Clock3 size={14} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+            {meta}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function BotonPrimario({ href, children, claro = false }: { href: string; children: ReactNode; claro?: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`mf-btn inline-flex items-center justify-center gap-2 px-7 rounded-full font-semibold text-sm uppercase tracking-wider ${
+        claro ? 'bg-[var(--texto-fondo-oscuro)] hover:brightness-[0.92]' : 'bg-[var(--botones-principales)] hover:bg-[var(--hover)]'
+      }`}
+      style={{ color: claro ? 'var(--botones-principales)' : 'var(--texto-fondo-oscuro)', minHeight: 48 }}
+    >
+      {children}
+      <ArrowRight size={16} aria-hidden />
+    </Link>
+  );
+}
 
 export default function HomeLandingClient({ initialProductos, initialServicios }: Props) {
-  useReveal();
-  const router = useRouter();
   const productosScrollRef = useRef<HTMLDivElement>(null);
-  const [galleryIdx, setGalleryIdx] = useState<number | null>(null);
 
-  const scroll = (ref: React.RefObject<HTMLDivElement | null>, dir: 'left' | 'right') => {
-    ref.current?.scrollBy({ left: dir === 'left' ? -SCROLL_STEP : SCROLL_STEP, behavior: 'smooth' });
+  const scroll = (dir: 'left' | 'right') => {
+    productosScrollRef.current?.scrollBy({ left: dir === 'left' ? -SCROLL_STEP : SCROLL_STEP, behavior: 'smooth' });
   };
 
-  const serviciosParaMostrar: (Servicio | FallbackServicio)[] =
-    initialServicios.length > 0 ? initialServicios.slice(0, 6) : SERVICIOS_FALLBACK;
+  const servicios = initialServicios.slice(0, 5);
+  const fotoSalon = initialServicios.map((s) => s.imagen ?? s.imagenes?.[0]).find((u) => u?.startsWith('http'));
 
   return (
     <>
       {/* ── Productos ── */}
-      <section className="section-padding" style={{ backgroundColor: 'var(--fondo-general)' }}>
+      <section className="py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
         <div className="container-max">
-          <SectionHeader eyebrow="Tienda en línea" title="Nuestros Productos" />
+          <EncabezadoSeccion
+            titulo="Nuestros Productos"
+            descripcion="Lo que usamos en el salón, para que lo sigas en casa."
+            accion={{ href: '/cliente/tienda-online', label: 'Ver tienda completa' }}
+          />
 
           {initialProductos.length === 0 ? (
-            <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
+            <p className="py-8" style={{ color: 'var(--encabezados-alterno)' }}>
               No hay productos disponibles por el momento.
             </p>
           ) : (
-            <div className="relative" data-reveal>
+            <div className="relative mf-revelar">
               <ScrollArrows
-                onPrev={() => scroll(productosScrollRef, 'left')}
-                onNext={() => scroll(productosScrollRef, 'right')}
+                onPrev={() => scroll('left')}
+                onNext={() => scroll('right')}
                 prevAriaLabel="Ver productos anteriores"
                 nextAriaLabel="Ver más productos"
               />
               <div
                 ref={productosScrollRef}
-                className={`w-full overflow-x-auto overflow-y-hidden pb-4 scroll-smooth scrollbar-hide ${SCROLL_ARROW_PADDING_X}`}
+                className={`w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth scrollbar-hide ${SCROLL_ARROW_PADDING_X}`}
               >
                 <div className="flex gap-6 min-w-max">
-                  {initialProductos.map((producto) => {
-                    const galeria = urlsGaleriaProductoCatalogo(producto);
-                    return (
-                      <Card
-                        key={producto.id}
-                        variant="elevated"
-                        className="flex-shrink-0 w-72 min-w-[288px] max-w-[288px] p-0 overflow-hidden cursor-pointer text-left group"
-                        onClick={() => router.push('/cliente/tienda-online')}
-                      >
-                        <div className="aspect-square relative w-full overflow-hidden">
-                          {galeria.length > 0 ? (
-                            <ProductoImagenCarruselTarjeta
-                              urls={galeria}
-                              alt={producto.nombre}
-                              imageClassName="object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div
-                              className="flex h-full w-full items-center justify-center text-5xl"
-                              style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                            >
-                              🧴
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-base line-clamp-1 mb-1" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                            {producto.nombre}
-                          </h3>
-                          <p className="text-sm line-clamp-2 opacity-75" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                            {producto.descripcion || producto.precio}
-                          </p>
-                        </div>
-                      </Card>
-                    );
-                  })}
+                  {initialProductos.map((producto) => (
+                    <div key={producto.id}>
+                      <TarjetaProducto producto={producto} />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           )}
-
-          <div className="text-center mt-10" data-reveal>
-            <button
-              type="button"
-              onClick={() => router.push('/cliente/tienda-online')}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider transition-all duration-200 hover:shadow-lg"
-              style={{
-                backgroundColor: 'var(--botones-principales)',
-                color: 'var(--texto-fondo-oscuro)',
-                boxShadow: '0 4px 24px -4px rgba(113,0,20,0.25)',
-                minHeight: '44px',
-                transition: 'background-color 200ms ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
-            >
-              Ver tienda completa →
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* ── Servicios ── */}
-      <section className="section-padding" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
+      {/* ── Servicios: banda carbón, composición asimétrica (uno destacado + cuatro) ── */}
+      <section className="py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--mf-banda)' }}>
         <div className="container-max">
-          <SectionHeader eyebrow="Lo que ofrecemos" title="Nuestros Servicios" light />
+          <EncabezadoSeccion
+            titulo="Nuestros Servicios"
+            descripcion="Elige un servicio para ver qué incluye y reservar tu horario."
+            accion={{ href: '/cliente/servicios-citas', label: 'Todos los servicios' }}
+            sobreOscuro
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {serviciosParaMostrar.map((s) => {
-              const isFallback = 'icono' in s;
-              const IconComp = isFallback ? (s as FallbackServicio).icono : null;
-              const apiS = !isFallback ? (s as Servicio) : null;
-
-              return (
-                <div
-                  key={s.id}
-                  data-reveal
-                  className="rounded-2xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                  style={{ borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)' }}
-                  onClick={() => router.push('/servicios')}
-                >
-                  {apiS ? (
-                    <div className="aspect-[4/3] relative w-full">
-                      {/* Sin foto o si no carga: placeholder de marca en vez de un bloque vacío */}
-                      <ServicioImagen
-                        src={apiS.imagen ?? apiS.imagenes?.[0]}
-                        alt={s.nombre}
-                        sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="aspect-[4/3] flex items-center justify-center"
-                      style={{ backgroundColor: 'rgba(159,109,31,0.1)' }}
-                    >
-                      {IconComp ? (
-                        <IconComp className="w-14 h-14 opacity-70" style={{ color: 'var(--iconografia)' }} strokeWidth={1.25} />
-                      ) : (
-                        <Scissors className="w-14 h-14 opacity-70" style={{ color: 'var(--iconografia)' }} strokeWidth={1.25} />
-                      )}
-                    </div>
-                  )}
-                  <div className="p-5">
-                    <h3 className="font-semibold text-base mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                      {s.nombre}
-                    </h3>
-                    <p className="text-sm leading-relaxed opacity-70" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                      {isFallback
-                        ? (s as FallbackServicio).descripcion
-                        : (apiS?.descripcion ?? apiS?.duracion ?? '')}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="text-center mt-10" data-reveal>
-            <button
-              type="button"
-              onClick={() => router.push('/cliente/servicios-citas')}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider border transition-all duration-200"
-              style={{ borderColor: 'var(--logo-branding)', color: 'var(--logo-branding)', minHeight: '44px', transition: 'background-color 200ms ease, border-color 200ms ease, color 200ms ease' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--hover)';
-                e.currentTarget.style.borderColor = 'var(--hover)';
-                e.currentTarget.style.color = 'var(--texto-fondo-oscuro)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = 'var(--logo-branding)';
-                e.currentTarget.style.color = 'var(--logo-branding)';
-              }}
-            >
-              Agendar cita →
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Galería ── */}
-      <section className="section-padding" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-        <div className="container-max">
-          <SectionHeader eyebrow="Nuestro trabajo" title="Galería" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {GALERIA_ITEMS.slice(0, 6).map((item, idx) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setGalleryIdx(idx)}
-                className="group relative overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 w-full"
-                aria-label={`Ver ${item.categoria}`}
-                data-reveal
-              >
-                <div
-                  className="aspect-[4/5] w-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105"
-                  style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
-                >
-                  <Camera size={40} aria-hidden style={{ color: 'var(--iconografia)', opacity: 0.5 }} />
-                </div>
-                <div
-                  className="absolute inset-0 flex flex-col items-center justify-end pb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ backgroundColor: 'rgba(113,0,20,0.6)' }}
-                >
-                  <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                    {item.categoria}
-                  </p>
-                  <p className="text-xs opacity-80 mt-1" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                    {item.descripcion}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-          <div className="text-center mt-10" data-reveal>
-            <button
-              type="button"
-              onClick={() => router.push('/cliente/galeria')}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm uppercase tracking-wider"
-              style={{
-                backgroundColor: 'var(--botones-principales)',
-                color: 'var(--texto-fondo-oscuro)',
-                minHeight: '44px',
-                transition: 'background-color 200ms ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
-            >
-              Ver galería completa →
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Sobre Nosotros ── */}
-      <section className="section-padding" style={{ backgroundColor: 'var(--fondo-general)' }}>
-        <div className="container-max">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <div>
-              <p
-                className="text-xs font-semibold uppercase tracking-[0.25em] mb-3"
-                style={{ color: 'var(--logo-branding)' }}
-                data-reveal
-              >
-                Quiénes somos
-              </p>
-              <h2 className="text-elegant-title mb-6 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }} data-reveal>
-                Sobre Nosotros
-              </h2>
-              <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--encabezados-alterno)' }} data-reveal>
-                En Mirú Franco, nos dedicamos a realzar tu belleza natural con productos y servicios de la más alta calidad. Nuestro equipo de profesionales está comprometido a brindarte una experiencia excepcional en cada visita.
-              </p>
-              <p
-                className="text-base leading-relaxed mb-10"
-                style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}
-                data-reveal
-              >
-                Con años de experiencia en el cuidado capilar, combinamos técnicas tradicionales con innovaciones modernas para ofrecerte resultados que superen tus expectativas.
-              </p>
-              <div className="grid grid-cols-3 gap-6" data-reveal>
-                {[
-                  { num: '5+', label: 'Años de experiencia' },
-                  { num: '500+', label: 'Clientes satisfechos' },
-                  { num: '15+', label: 'Servicios disponibles' },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <p
-                      className="text-4xl font-bold leading-none mb-1"
-                      style={{ color: 'var(--botones-principales)', fontFamily: 'var(--font-family-serif)' }}
-                    >
-                      {stat.num}
-                    </p>
-                    <p className="text-xs leading-snug" style={{ color: 'var(--encabezados-alterno)', opacity: 0.65 }}>
-                      {stat.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
+          {servicios.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:auto-rows-fr gap-5">
+              {servicios.map((s, i) => (
+                <TarjetaServicio key={s.id} servicio={s} destacada={i === 0} />
+              ))}
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {SERVICIOS_FALLBACK.map((s) => {
+                const Icono = s.icono;
+                return (
+                  <div
+                    key={s.id}
+                    className="mf-revelar rounded-[14px] p-6"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.07)' }}
+                  >
+                    <Icono className="w-8 h-8 mb-4" strokeWidth={1.25} style={{ color: 'var(--logo-branding)' }} />
+                    <h3 className="font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>{s.nombre}</h3>
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>{s.descripcion}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
 
-            <div className="flex justify-center" data-reveal>
+      {/* ── Sobre nosotros: foto real del salón en arco (eco del monograma) ── */}
+      <section className="py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
+        <div className="container-max grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-20 items-center">
+          <div className="mf-revelar flex justify-center lg:justify-start order-last lg:order-first">
+            <div className="relative w-64 sm:w-80 aspect-[4/5]">
               <div
-                className="relative w-72 h-72 sm:w-96 sm:h-96 rounded-full overflow-hidden shadow-2xl"
-                style={{ outline: '3px solid var(--logo-branding)', outlineOffset: '6px' }}
-              >
-                <Image
-                  src="/logo-miru.jpg"
-                  alt="Mirú Franco"
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 640px) 288px, 384px"
-                />
+                className="absolute -inset-3 rounded-t-full border"
+                style={{ borderColor: 'rgba(159, 109, 31, 0.55)' }}
+                aria-hidden
+              />
+              <div className="relative h-full w-full overflow-hidden rounded-t-full" style={{ boxShadow: 'var(--mf-sombra-2)' }}>
+                {fotoSalon ? (
+                  <Image src={fotoSalon} alt="Trabajo realizado en Mirú Franco" fill className="object-cover" sizes="(max-width: 640px) 256px, 320px" />
+                ) : (
+                  <ServicioImagenPlaceholder />
+                )}
               </div>
             </div>
+          </div>
+
+          <div>
+            <h2 className="mf-revelar text-elegant-title mb-6 hyphens-none" style={{ color: 'var(--encabezados-alterno)', letterSpacing: '-0.02em' }}>
+              Sobre Nosotros
+            </h2>
+            <p className="mf-revelar text-base md:text-lg leading-relaxed mb-4 max-w-[62ch]" style={{ color: 'var(--encabezados-alterno)' }}>
+              En Mirú Franco, nos dedicamos a realzar tu belleza natural con productos y servicios de la más alta calidad. Nuestro equipo de profesionales está comprometido a brindarte una experiencia excepcional en cada visita.
+            </p>
+            <p className="mf-revelar text-base leading-relaxed mb-10 max-w-[62ch]" style={{ color: 'var(--encabezados-alterno)', opacity: 0.8 }}>
+              Con años de experiencia en el cuidado capilar, combinamos técnicas tradicionales con innovaciones modernas para ofrecerte resultados que superen tus expectativas.
+            </p>
+            <dl className="mf-revelar grid grid-cols-3 border-t pt-6" style={{ borderColor: 'var(--mf-linea)' }}>
+              {[
+                { num: '5+', label: 'Años de experiencia' },
+                { num: '500+', label: 'Clientes satisfechos' },
+                { num: '15+', label: 'Servicios disponibles' },
+              ].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={`px-3 sm:px-6 first:pl-0 ${i < 2 ? 'border-r' : ''}`}
+                  style={{ borderColor: 'var(--mf-linea)' }}
+                >
+                  <dt className="sr-only">{stat.label}</dt>
+                  <dd
+                    className="mf-cifras text-3xl md:text-4xl font-bold leading-none"
+                    style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
+                  >
+                    {stat.num}
+                  </dd>
+                  <dd className="mt-2 text-xs sm:text-sm" style={{ color: 'var(--encabezados-alterno)' }} aria-hidden>
+                    {stat.label}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
       </section>
 
-      {/* ── CTA Final ── */}
-      <section className="section-padding" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
-        <div className="container-max">
-          <div
-            className="max-w-3xl mx-auto text-center rounded-3xl p-10 sm:p-14 border"
-            style={{ backgroundColor: 'rgba(159,109,31,0.08)', borderColor: 'rgba(159,109,31,0.2)' }}
-          >
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.25em] mb-3"
-              style={{ color: 'var(--iconografia)' }}
-              data-reveal
+      {/* ── Cierre: banda vino con una sola acción primaria ── */}
+      <section className="layout-gutter-x py-20 md:py-24" style={{ backgroundColor: 'var(--botones-principales)' }}>
+        <div className="mf-revelar container-max flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+          <div className="max-w-xl">
+            <h2
+              className="text-elegant-title hyphens-none"
+              style={{ color: 'var(--texto-fondo-oscuro)', letterSpacing: '-0.02em' }}
             >
-              Da el siguiente paso
-            </p>
-            <h2 className="text-hero-light mb-4 hyphens-none" style={{ color: 'var(--texto-fondo-oscuro)' }} data-reveal>
               ¿Lista para tu cambio de look?
             </h2>
-            <p
-              className="text-base mb-10 leading-relaxed"
-              style={{ color: 'var(--texto-fondo-oscuro-70)' }}
-              data-reveal
-            >
+            <p className="mt-3 text-base md:text-lg" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
               Agenda una cita con nosotros y descubre la diferencia que hace la calidad profesional.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center" data-reveal>
-              <button
-                type="button"
-                onClick={() => router.push('/cliente/servicios-citas/crear-cita')}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider hover:shadow-lg"
-                style={{
-                  backgroundColor: 'var(--botones-principales)',
-                  color: 'var(--texto-fondo-oscuro)',
-                  minHeight: '44px',
-                  transition: 'background-color 200ms ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
-              >
-                Agendar Cita
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push('/servicios')}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm uppercase tracking-wider border"
-                style={{
-                  borderColor: 'rgba(159,109,31,0.5)',
-                  color: 'var(--logo-branding)',
-                  minHeight: '44px',
-                  transition: 'background-color 200ms ease, border-color 200ms ease, color 200ms ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--hover)';
-                  e.currentTarget.style.borderColor = 'var(--hover)';
-                  e.currentTarget.style.color = 'var(--texto-fondo-oscuro)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'rgba(159,109,31,0.5)';
-                  e.currentTarget.style.color = 'var(--logo-branding)';
-                }}
-              >
-                Ver Servicios
-              </button>
-            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
+            <BotonPrimario href="/cliente/servicios-citas" claro>
+              Agendar cita
+            </BotonPrimario>
+            <Link
+              href="/contacto"
+              className="text-sm font-semibold uppercase tracking-wider underline-offset-4 hover:underline"
+              style={{ color: 'var(--texto-fondo-oscuro)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
+            >
+              Contactar
+            </Link>
           </div>
         </div>
       </section>
-      <GalleryModal
-        items={GALERIA_ITEMS}
-        currentIndex={galleryIdx}
-        onClose={() => setGalleryIdx(null)}
-        onNavigate={setGalleryIdx}
-      />
     </>
   );
 }
