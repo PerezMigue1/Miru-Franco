@@ -7,6 +7,7 @@ import { TokenChecker } from "./components/TokenChecker";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
+import { OG_IMAGE_DEFAULT, SITE_NAME, SITE_URL } from "./utils/seo";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -30,14 +31,26 @@ const greatVibes = Great_Vibes({
   weight: ["400"],
 });
 
+// Sin `alternates.canonical` aquí a propósito: se heredaría a todas las rutas hijas que no
+// definan el suyo y todas apuntarían al mismo canonical. Cada ruta pública declara el propio.
 export const metadata: Metadata = {
-  title: "Mirú Franco — Beauty Salón",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Mirú Franco — Beauty Salón",
+    template: `%s | ${SITE_NAME}`,
+  },
   description: "Salón de belleza profesional en Huejutla de Reyes. Cortes, coloración, tratamientos capilares, alaciado y nanoplastía. Agenda tu cita en línea.",
   openGraph: {
     title: "Mirú Franco — Beauty Salón",
     description: "Salón de belleza profesional. Cortes, coloración, tratamientos y más.",
+    siteName: SITE_NAME,
     locale: "es_MX",
     type: "website",
+    images: [OG_IMAGE_DEFAULT],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [OG_IMAGE_DEFAULT.url],
   },
 };
 

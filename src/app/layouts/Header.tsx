@@ -248,7 +248,9 @@ export default function Header() {
                   />
                 </div>
                 <div className="flex flex-col items-center sm:items-start min-w-0 leading-tight">
-                  <h1
+                  {/* Logo textual, no encabezado: el Header se repite en todas las páginas y cada
+                      página ya tiene su propio <h1> (la home tenía dos: "MIRÚ FRANCO" y "MIRÚ"). */}
+                  <p
                     className="text-logo text-logo-branding truncate max-w-full"
                     style={{
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
@@ -257,8 +259,8 @@ export default function Header() {
                     }}
                   >
                     MIRÚ <span className="italic">FRANCO</span>
-                  </h1>
-                  <h2
+                  </p>
+                  <p
                     className="text-logo-small text-logo-branding truncate max-w-full"
                     style={{
                       textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
@@ -267,7 +269,7 @@ export default function Header() {
                     }}
                   >
                     BEAUTY SALÓN
-                  </h2>
+                  </p>
                 </div>
               </div>
             </div>
