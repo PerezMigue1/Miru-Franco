@@ -26,6 +26,7 @@ import {
 } from '../../../../services/citas';
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
+import { usePermisos } from '../../../../utils/permisos';
 import { getServicios, Servicio } from '../../../../services/servicios';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
 
@@ -147,13 +148,27 @@ export default function GestionCitasPage() {
   // Cambiar filtros reinicia a la página 1 (evita quedar en una página vacía).
   useEffect(() => { setPagina(1); }, [filtroEspecialistaId, filtroDesde, filtroHasta]);
 
+  // Catálogos protegidos: solo se piden si el rol tiene el permiso que exige el backend
+  // (p. ej. empleado tiene citas:escritura pero no clientes:lectura ni empleados:lectura).
+  const { tienePermiso } = usePermisos();
+  const puedeListarClientes = tienePermiso('clientes:lectura');
+  const puedeListarEmpleados = tienePermiso('empleados:lectura');
+
   useEffect(() => {
     cargar();
     // Catálogos (no bloquean la tabla; si fallan, los selects quedan vacíos)
-    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
-    listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
     getServicios().then(({ data }) => setServicios(data)).catch(() => {});
   }, [cargar]);
+
+  useEffect(() => {
+    if (!puedeListarClientes) return;
+    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
+  }, [puedeListarClientes]);
+
+  useEffect(() => {
+    if (!puedeListarEmpleados) return;
+    listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
+  }, [puedeListarEmpleados]);
 
   const totalPaginasCitas = Math.max(1, Math.ceil(totalCitas / TAMANO_PAGINA_CITAS));
   const desdeCitas = totalCitas === 0 ? 0 : (pagina - 1) * TAMANO_PAGINA_CITAS + 1;
