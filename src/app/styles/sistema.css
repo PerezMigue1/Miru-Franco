@@ -29,6 +29,9 @@
   /* Banda oscura de contraste */
   --mf-banda: #161616;
 
+  /* Oro para texto pequeño sobre carbón (cromo del sitio): 4.9:1; el oro de marca da 4.0:1 */
+  --oro-sobre-carbon: #b07a28;
+
   /* Foco: vino sobre superficies cálidas claras (7.5:1 sobre lino, 4:1 sobre terracota) */
   --mf-foco: #710014;
 
@@ -517,7 +520,7 @@ table td {
     transform: none;
     visibility: visible;
     flex-shrink: 0;
-    transition: width var(--mf-dur-panel) var(--mf-ease-out);
+    /* Colapsar es instantáneo: animar el ancho reacomoda todo el contenido (layout) */
   }
   .mf-panel-lateral[data-colapsado='true'] {
     width: var(--panel-lateral-colapsado);

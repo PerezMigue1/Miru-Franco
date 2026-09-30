@@ -321,7 +321,7 @@ export default function AuthContainer({ initialView = 'login', onAuthSuccess }: 
                 <div className="absolute inset-3 rounded-full border border-dashed" style={{ borderColor: 'rgba(159, 109, 31, 0.32)' }} aria-hidden />
                 <Image src="/logo-miru.jpg" alt="" fill className="object-contain p-10" sizes="15rem" priority />
               </div>
-              <p className="mt-8 text-brand-tagline tracking-[0.2em]" style={{ color: 'var(--logo-branding)' }}>
+              <p className="mt-8 text-brand-tagline tracking-[0.2em]" style={{ color: 'var(--oro-sobre-carbon)' }}>
                 Beauty Salón
               </p>
 
