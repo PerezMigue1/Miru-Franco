@@ -75,7 +75,7 @@ export default function HeroEscena() {
             sizes="(max-width: 768px) 70vw, 34rem"
             priority
             fetchPriority="high"
-            quality={70}
+            quality={75}
           />
         </div>
         {[
