@@ -10,11 +10,8 @@ export default function BaseDatosInsertarPage() {
     <AdminLayout>
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
-          <p className="text-sm font-medium uppercase tracking-wider opacity-80 mb-1">
-            Módulo de base de datos · Insertar
-          </p>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Insertar datos</h1>
-          <p className="text-base opacity-80">
+          <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Insertar datos</h1>
+          <p className="text-base" style={{ color: 'var(--encabezados-alterno)' }}>
             Pantalla pensada como hub de accesos rápidos para crear productos, usuarios, servicios y clientes.
           </p>
         </header>

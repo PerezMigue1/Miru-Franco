@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { hasSession } from '../../utils/security';
 import { api } from '../../services/auth';
 import { isAdminRol, getRolFromUser, rutaPorRol } from '../../utils/adminAuth';
+import PanelVerificando from '../../components/layouts/PanelVerificando';
 
 /**
  * Guard de acceso para TODO /admin/*. NO renderiza UI (ni sidebar ni ningún
@@ -70,19 +71,7 @@ export default function AdminAccessGuard({ children }: { children: ReactNode }) 
 
   if (verificando || !permitido) {
     // Loader mínimo mientras verifica el acceso (o mientras se ejecuta la redirección).
-    return (
-      <div
-        style={{
-          display: 'flex',
-          minHeight: '100vh',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--encabezados-alterno)',
-        }}
-      >
-        Verificando acceso…
-      </div>
-    );
+    return <PanelVerificando detalle="Comprobando sesión y permisos de administrador" />;
   }
 
   return <>{children}</>;

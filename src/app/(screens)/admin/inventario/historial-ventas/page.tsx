@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AdminLayout from "../../../../components/layouts/AdminLayout";
 import Button from "../../../../components/ui/Button";
 import Card from "../../../../components/ui/Card";
+import TarjetaKpi from "../../../../components/ui/TarjetaKpi";
 import Input from "../../../../components/ui/Input";
 import Table, { TableCell, TableRow } from "../../../../components/ui/Table";
 import {
@@ -141,40 +142,10 @@ export default function InventarioHistorialVentasPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--fondos-suaves)" }}>
-                <ListOrdered size={20} style={{ color: "var(--encabezados-alterno)" }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>Pedidos analizados</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--menu-texto-principal)" }}>{loading ? "…" : pedidosAnalizados}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--fondos-suaves)" }}>
-                <Receipt size={20} style={{ color: "var(--encabezados-alterno)" }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>Líneas de venta</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--menu-texto-principal)" }}>{loading ? "…" : lineas.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--fondos-suaves)" }}>
-                <DollarSign size={20} style={{ color: "var(--encabezados-alterno)" }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>Ingresos totales</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--oro-texto)" }}>{loading ? "…" : fmtMoneda.format(totalIngresos)}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <TarjetaKpi icono={ListOrdered} etiqueta="Pedidos analizados" cargando={loading} valor={pedidosAnalizados} />
+          <TarjetaKpi icono={Receipt} etiqueta="Líneas de venta" cargando={loading} valor={lineas.length} />
+          <TarjetaKpi icono={DollarSign} etiqueta="Ingresos totales" cargando={loading} valor={fmtMoneda.format(totalIngresos)} tono="oro" />
         </div>
 
         <Card variant="elevated" padding="lg" className="rounded-2xl border-0 space-y-4">

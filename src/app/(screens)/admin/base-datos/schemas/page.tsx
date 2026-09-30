@@ -84,7 +84,7 @@ export default function BaseDatosSchemasPage() {
             <Button type="button" variant="outline" onClick={cargarTablas} disabled={loadingTablas}>
               {loadingTablas ? 'Cargando tablas…' : 'Cargar tablas de la BD'}
             </Button>
-            <div className="flex-1 min-w-[220px]">
+            <div className="flex-1 min-w-0 sm:min-w-[220px]">
               <label className="block mb-1 text-xs font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                 Tabla
               </label>
@@ -103,8 +103,8 @@ export default function BaseDatosSchemasPage() {
 
           {tablaSeleccionada && (
             <p className="text-sm mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-              Mostrando columnas de la tabla <code className="text-xs bg-black/10 px-1 rounded">{tablaSeleccionada}</code>
-              {' '}del schema <code className="text-xs bg-black/10 px-1 rounded">public</code>.
+              Mostrando columnas de la tabla <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">{tablaSeleccionada}</code>
+              {' '}del schema <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">public</code>.
             </p>
           )}
 

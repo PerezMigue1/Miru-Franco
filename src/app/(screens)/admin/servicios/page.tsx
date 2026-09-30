@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -189,71 +190,30 @@ export default function ServiciosPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Package size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total servicios</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalServicios}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={Package} etiqueta="Total servicios" valor={totalServicios} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Activos</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{activos}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={CheckCircle2} etiqueta="Activos" valor={activos} />
 
-          <Card
-            variant="elevated"
-            padding="lg"
-            style={inactivos > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
-          >
-            <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: inactivos > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}
-              >
-                <PowerOff size={20} style={{ color: inactivos > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Inactivos</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: inactivos > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{inactivos}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi
+            icono={PowerOff}
+            etiqueta="Inactivos"
+            valor={inactivos}
+            tono={inactivos > 0 ? 'aviso' : 'normal'}
+            alerta={inactivos > 0}
+          />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Tag size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Categorías</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{categoriasUnicas}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={Tag} etiqueta="Categorías" valor={categoriasUnicas} />
         </div>
 
         {success && (
-          <div className="bg-green-600 border border-green-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+          <div role="status" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--boton-acento-bg)', color: 'var(--texto-sobre-acento)', boxShadow: 'var(--mf-sombra-1)' }}>
             <CheckCircle2 size={14} className="inline-block mr-1" /> {success}
           </div>
         )}
 
         {error && (
-          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+          <div role="alert" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--danger)', color: '#F2F1ED', boxShadow: 'var(--mf-sombra-1)' }}>
             {error}
           </div>
         )}

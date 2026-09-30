@@ -330,9 +330,11 @@ export default function BackupPage() {
       <div className="relative space-y-6 overflow-hidden">
         <button
           type="button"
-          aria-label="Mostrar menu"
+          aria-label="Mostrar menú de secciones"
+          aria-expanded={!menuLateralOculto}
+          onClick={() => setMenuLateralOculto((v) => !v)}
           onMouseEnter={() => setMenuLateralOculto(false)}
-          className="absolute left-0 top-6 z-40 h-10 w-8 rounded-r-lg border border-l-0 text-sm"
+          className="absolute left-0 top-6 z-40 h-11 w-9 rounded-r-lg border border-l-0 text-sm"
           style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
         >
           <Menu size={16} className="mx-auto" />
@@ -341,7 +343,7 @@ export default function BackupPage() {
 
         {!menuLateralOculto && (
           <aside
-            className="absolute top-0 left-0 h-full w-[280px] z-50 p-4 overflow-y-auto"
+            className="absolute top-0 left-0 h-full w-[min(280px,85%)] z-50 p-4 overflow-y-auto"
             style={{ backgroundColor: 'var(--fondo-general)', borderRight: '1px solid var(--encabezados-alterno)' }}
             onMouseEnter={() => setMenuLateralOculto(false)}
             onMouseLeave={() => setMenuLateralOculto(true)}
@@ -455,7 +457,7 @@ export default function BackupPage() {
           <button
             onClick={() => void realizarBackup('manual')}
             disabled={realizandoBackup}
-            className="flex flex-col items-center justify-center p-4 rounded-xl border transition-all hover:bg-white"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
             <Database size={24} className={realizandoBackup ? 'animate-spin' : ''} />
             <span className="text-[10px] font-bold mt-2">{realizandoBackup ? 'Generando backup...' : 'Generar backup'}</span>

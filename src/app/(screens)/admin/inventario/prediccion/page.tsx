@@ -10,6 +10,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminLayout from "../../../../components/layouts/AdminLayout";
 import Card from "../../../../components/ui/Card";
+import TarjetaKpi from "../../../../components/ui/TarjetaKpi";
 import Button from "../../../../components/ui/Button";
 import Select from "../../../../components/ui/Select";
 import Input from "../../../../components/ui/Input";
@@ -1077,84 +1078,48 @@ export default function PrediccionInventarioPage() {
             background: fondoHeroPrediccion,
           }}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
-            <Card variant="elevated" padding="lg">
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "var(--fondos-suaves)" }}
-                >
-                  <Package className="h-5 w-5" style={{ color: "var(--logo-branding)" }} aria-hidden />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>
-                    Unidades vendidas
-                  </p>
-                  <p className="text-2xl font-bold mt-0.5 tabular-nums" style={{ color: "var(--menu-texto-principal)" }}>
-                    {loading ? "…" : contextoPedidos.unidades}
-                  </p>
-                  <p className="text-xs mt-1 leading-snug" style={{ color: "var(--encabezados-alterno)" }}>
-                    {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
-                      ? hayFiltrosCatalogo
-                        ? "Vista · rango de fechas"
-                        : "Global · rango de fechas"
-                      : hayFiltrosCatalogo
-                        ? `Vista · últimos ${contextoPedidos.dias} d`
-                        : `Global · últimos ${contextoPedidos.dias} d`}
-                  </p>
-                </div>
-              </div>
-            </Card>
-            <Card variant="elevated" padding="lg">
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "var(--fondos-suaves)" }}
-                >
-                  <ShoppingBag className="h-5 w-5" style={{ color: "var(--enlaces-textos-interactivos)" }} aria-hidden />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>
-                    Pedidos analizados
-                  </p>
-                  <p className="text-2xl font-bold mt-0.5 tabular-nums" style={{ color: "var(--menu-texto-principal)" }}>
-                    {loading ? "…" : contextoPedidos.pedidos}
-                  </p>
-                  <p className="text-xs mt-1 leading-snug" style={{ color: "var(--encabezados-alterno)" }}>
-                    {ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
-                      ? hayFiltrosCatalogo
-                        ? "Pedidos con líneas en vista (rango)"
-                        : "Pedidos con líneas en rango (origen de datos)"
-                      : hayFiltrosCatalogo
-                        ? `Pedidos con líneas en vista · ${contextoPedidos.dias} d`
-                        : `Pedidos contables (API). Unidades: últimos ${contextoPedidos.dias} d`}
-                  </p>
-                </div>
-              </div>
-            </Card>
-            <Card variant="elevated" padding="lg">
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "var(--fondos-suaves)" }}
-                >
-                  <Activity className="h-5 w-5" style={{ color: "var(--success)" }} aria-hidden />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium" style={{ color: "var(--encabezados-alterno)" }}>
-                    Promedio diario
-                  </p>
-                  <p className="text-2xl font-bold mt-0.5 tabular-nums" style={{ color: "var(--menu-texto-principal)" }}>
-                    {loading ? "…" : promedioDiarioVentasGlobal.toFixed(1)}
-                  </p>
-                  <p className="text-xs mt-1 leading-snug" style={{ color: "var(--encabezados-alterno)" }}>
-                    {hayFiltrosCatalogo
-                      ? "Media diaria (vista)"
-                      : "Media diaria (ventana)"}
-                  </p>
-                </div>
-              </div>
-            </Card>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <TarjetaKpi
+              icono={Package}
+              etiqueta="Unidades vendidas"
+              cargando={loading}
+              valor={contextoPedidos.unidades}
+              detalle={
+                ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                  ? hayFiltrosCatalogo
+                    ? "Vista · rango de fechas"
+                    : "Global · rango de fechas"
+                  : hayFiltrosCatalogo
+                    ? `Vista · últimos ${contextoPedidos.dias} d`
+                    : `Global · últimos ${contextoPedidos.dias} d`
+              }
+            />
+            <TarjetaKpi
+              icono={ShoppingBag}
+              etiqueta="Pedidos analizados"
+              cargando={loading}
+              valor={contextoPedidos.pedidos}
+              detalle={
+                ventanaOrigenPedidos.modo === "rango" && rangoFechasParseado
+                  ? hayFiltrosCatalogo
+                    ? "Pedidos con líneas en vista (rango)"
+                    : "Pedidos con líneas en rango (origen de datos)"
+                  : hayFiltrosCatalogo
+                    ? `Pedidos con líneas en vista · ${contextoPedidos.dias} d`
+                    : `Pedidos contables (API). Unidades: últimos ${contextoPedidos.dias} d`
+              }
+            />
+            <TarjetaKpi
+              icono={Activity}
+              etiqueta="Promedio diario"
+              cargando={loading}
+              valor={promedioDiarioVentasGlobal.toFixed(1)}
+              detalle={
+                hayFiltrosCatalogo
+                  ? "Media diaria (vista)"
+                  : "Media diaria (ventana)"
+              }
+            />
           </div>
           {!loading &&
             !errorVentas &&
@@ -1211,12 +1176,14 @@ export default function PrediccionInventarioPage() {
 
         {error && (
           <Card
-            className="mb-6 border-l-4"
+            className="mb-6"
             padding="md"
+            role="alert"
             style={{
-              borderLeftColor: "var(--danger)",
               backgroundColor:
-                "color-mix(in srgb, var(--danger) 6%, var(--superficie-elevada))",
+                "color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))",
+              boxShadow:
+                "inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)",
             }}
           >
             <p
@@ -1229,10 +1196,11 @@ export default function PrediccionInventarioPage() {
         )}
         {errorVentas && (
           <Card
-            className="mb-6 border-l-4"
+            className="mb-6"
             padding="md"
+            role="alert"
             style={{
-              borderLeftColor: "var(--warning)",
+              boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--warning-texto) 35%, transparent)",
               backgroundColor:
                 "color-mix(in srgb, var(--warning) 8%, var(--superficie-elevada))",
             }}
