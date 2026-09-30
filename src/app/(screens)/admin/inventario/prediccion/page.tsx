@@ -1870,7 +1870,7 @@ export default function PrediccionInventarioPage() {
                       {restockGlobal.nombre ? (
                         <p
                           className="text-sm leading-snug"
-                          style={{ color: "var(--encabezados-alterno)" }}
+                          style={{ color: "var(--texto-cuerpo)" }}
                         >
                           <span
                             className="font-medium text-[0.95em]"
