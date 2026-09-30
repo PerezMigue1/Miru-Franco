@@ -207,11 +207,11 @@ export default function Header() {
           tamaño de fuente, o el idioma). */}
       <div
         ref={fixedBarRef}
-        className={`fixed top-0 left-0 right-0 z-50 flex flex-col transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex flex-col transition-shadow duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
       >
         {/* Barra Superior - Top Header */}
         <header
-          className={`relative z-20 transition-all duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
+          className={`relative z-20 transition-[backdrop-filter] duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
           style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
         >
         <div className="layout-page">

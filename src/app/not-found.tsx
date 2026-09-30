@@ -6,7 +6,7 @@ export default function NotFound() {
       codigo={404}
       titulo="Página no encontrada"
       mensaje="La página que buscas no existe o fue movida. Usa los enlaces para volver."
-      icono="🔍"
+      icono="buscar"
     />
   );
 }
