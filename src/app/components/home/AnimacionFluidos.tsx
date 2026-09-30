@@ -50,8 +50,8 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
           // (el CSS los deja en opacidad 0 mientras llega este chunk)
           gsap.fromTo(
             stickers,
-            { opacity: 0, scale: 0.7, y: 10 },
-            { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(1.6)', stagger: 0.08, delay: introActiva ? 1.15 : 0.1 }
+            { opacity: 0, scale: 0.9, y: 8 },
+            { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: 'back.out(1.2)', stagger: 0.06, delay: introActiva ? 1.15 : 0.1 }
           );
 
           // ── Parallax al puntero (fino) o al giroscopio (Android; iOS pide permiso y se omite)
@@ -83,19 +83,30 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
           const pidePermiso =
             typeof DeviceOrientationEvent !== 'undefined' &&
             typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function';
-          if (fino) window.addEventListener('pointermove', alPuntero, { passive: true });
-          else if (!pidePermiso) window.addEventListener('deviceorientation', alOrientar, { passive: true });
+          const escucharParallax = (si: boolean) => {
+            if (si) {
+              if (fino) window.addEventListener('pointermove', alPuntero, { passive: true });
+              else if (!pidePermiso) window.addEventListener('deviceorientation', alOrientar, { passive: true });
+            } else {
+              window.removeEventListener('pointermove', alPuntero);
+              window.removeEventListener('deviceorientation', alOrientar);
+            }
+          };
 
           // ── Secuencia de giro: 24 cuadros en escritorio, 12 en móvil; precarga tras el primer pintado
           const total = grande ? 24 : 12;
           const cuadros: HTMLImageElement[] = [];
           let listos = 0;
+          let cuadroPintado = -1;
           const pintar = (p: number) => {
+            const indice = Math.min(total - 1, Math.round(p * (total - 1)));
+            if (indice === cuadroPintado) return;
             const c = lienzo.getContext('2d');
-            const img = cuadros[Math.min(total - 1, Math.round(p * (total - 1)))];
+            const img = cuadros[indice];
             if (!c || !img || !img.complete) return;
             c.clearRect(0, 0, lienzo.width, lienzo.height);
             c.drawImage(img, 0, 0, lienzo.width, lienzo.height);
+            cuadroPintado = indice;
           };
           const precargar = window.setTimeout(() => {
             for (let i = 0; i < total; i++) {
@@ -122,6 +133,7 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
             lienzo.style.height = `${alto}px`;
             lienzo.width = Math.round(ancho * dpr);
             lienzo.height = Math.round(alto * dpr);
+            cuadroPintado = -1;
             pintar(0);
           };
           medirLienzo();
@@ -163,14 +175,19 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
           // ── Progreso del scroll (0 = hero en reposo, 1 = Goji sobre la tipografía gigante), suavizado
           // como un scrub de 0.6 s. Solo se escucha el scroll mientras el hero está a la vista.
           const estado = { p: 0 };
+          let viajandoPrevio: boolean | null = null;
           const aplicar = () => {
             const p = estado.p;
             tl.progress(p);
             const viajando = p > 0.002 && listos > 0;
-            enReposo = p < 0.002;
-            if (!enReposo) movedores.forEach((m) => (m.x(0), m.y(0), m.r(0)));
-            lienzo.style.opacity = viajando ? '1' : '0';
-            gojiImg.style.opacity = viajando ? '0' : '1';
+            const reposo = p < 0.002;
+            if (enReposo && !reposo) movedores.forEach((m) => (m.x(0), m.y(0), m.r(0)));
+            enReposo = reposo;
+            if (viajando !== viajandoPrevio) {
+              viajandoPrevio = viajando;
+              lienzo.style.opacity = viajando ? '1' : '0';
+              gojiImg.style.opacity = viajando ? '0' : '1';
+            }
             pintar(p);
           };
           const irA = gsap.quickTo(estado, 'p', { duration: 0.6, ease: 'power3', onUpdate: aplicar });
@@ -192,9 +209,11 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
             if (entrada?.isIntersecting) {
               cabecera = desplazamientoCabecera();
               window.addEventListener('scroll', alScroll, { passive: true });
+              escucharParallax(true);
               leer();
             } else {
               window.removeEventListener('scroll', alScroll);
+              escucharParallax(false);
             }
           });
           vigia.observe(raiz);
@@ -222,8 +241,7 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
             cancelAnimationFrame(cuadroPendiente);
             window.clearTimeout(reajuste);
             window.clearTimeout(precargar);
-            window.removeEventListener('pointermove', alPuntero);
-            window.removeEventListener('deviceorientation', alOrientar);
+            escucharParallax(false);
             gojiImg.style.opacity = '';
           };
         }
