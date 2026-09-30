@@ -1806,7 +1806,7 @@ export default function BaseDatosPage() {
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo prom. respuesta</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {sinMuestras ? '—' : `${(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms`}
+                              {realtimeSeries.length === 0 ? '—' : <span className="whitespace-nowrap">{(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms</span>}
                             </p>
                             <DonutKpi value={latestRealtime?.avgResponseMs ?? 0} max={Math.max(1, maxRespMs)} color="var(--danger)" />
                           </div>
