@@ -1,6 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ArrowLeft, Timer } from 'lucide-react';
+
+const PRIMARIO = {
+  ['--btn-bg' as string]: 'var(--botones-principales)',
+  ['--btn-bg-hover' as string]: 'var(--hover)',
+  ['--btn-texto' as string]: '#F2F1ED',
+} as React.CSSProperties;
+
+const SECUNDARIO = {
+  ['--btn-bg' as string]: 'transparent',
+  ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+  ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+  ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+  ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
+} as React.CSSProperties;
 
 interface ForgotPasswordSecurityQuestionsProps {
   onSwitchToLogin?: () => void;
@@ -192,21 +207,21 @@ export default function ForgotPasswordSecurityQuestions({
   if (questionsLoaded) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-          <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
+        <div>
+          <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Preguntas de Seguridad
           </h2>
-          <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+          <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
             Por favor responde las siguientes preguntas de seguridad
           </p>
-          
+
           <form onSubmit={handleSubmitAnswers} className="space-y-5">
             {questions.map((question) => (
               <div key={question.id}>
-                <label 
+                <label
                   htmlFor={question.id}
                   className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   {question.question}
                 </label>
@@ -215,12 +230,8 @@ export default function ForgotPasswordSecurityQuestions({
                   id={question.id}
                   value={userAnswers[question.id] || ''}
                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors"
-                  style={{ 
-                    backgroundColor: '#f2f1ed', 
-                    color: '#161616',
-                    borderColor: 'rgba(255,255,255,0.2)'
-                  }}
+                  className="mf-campo w-full px-4 py-3"
+                  aria-invalid={Boolean(errors.answers)}
                   placeholder="Tu respuesta..."
                   disabled={isLoading}
                 />
@@ -228,7 +239,7 @@ export default function ForgotPasswordSecurityQuestions({
             ))}
 
             {errors.answers && (
-              <p className="text-sm text-red-600 dark:text-red-400">
+              <p className="text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {errors.answers}
               </p>
             )}
@@ -236,10 +247,8 @@ export default function ForgotPasswordSecurityQuestions({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+              className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              style={PRIMARIO}
             >
               {isLoading ? 'Verificando...' : 'Verificar Respuestas'}
             </button>
@@ -252,11 +261,12 @@ export default function ForgotPasswordSecurityQuestions({
                 setQuestions([]);
                 setUserAnswers({});
               }}
-              className="text-sm transition-colors"
-              style={{ color: '#F2F1ED' }}
+              className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
-              ← Cambiar email
+              <ArrowLeft size={16} aria-hidden />
+              Cambiar email
             </button>
           </div>
         </div>
@@ -266,20 +276,20 @@ export default function ForgotPasswordSecurityQuestions({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+      <div>
+        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Recuperar por Preguntas de Seguridad
         </h2>
-        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+        <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           Ingresa tu correo electrónico para cargar tus preguntas de seguridad
         </p>
-        
+
         <form onSubmit={handleLoadQuestions} className="space-y-5">
           <div>
-            <label 
-              htmlFor="email" 
+            <label
+              htmlFor="email"
               className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Correo Electrónico
             </label>
@@ -297,22 +307,14 @@ export default function ForgotPasswordSecurityQuestions({
                   });
                 }
               }}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.email 
-                  ? 'border-red-500 dark:border-red-600' 
-                  : 'border-zinc-300 dark:border-zinc-700'
-              } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.email ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+              className="mf-campo w-full px-4 py-3"
+              aria-invalid={Boolean(errors.email)}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
             {errors.email && (
               <div className="mt-1">
-                <p className="text-sm text-red-600 dark:text-red-400">
+                <p className="text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                   {errors.email}
                 </p>
                 {errors.email.toLowerCase().includes('google') && (
@@ -324,8 +326,8 @@ export default function ForgotPasswordSecurityQuestions({
                         const { api } = await import('../../services');
                         api.loginWithGoogle();
                       }}
-                      className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                      style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                      className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm"
+                      style={SECUNDARIO}
                     >
                       Continuar con Google
                     </button>
@@ -338,35 +340,34 @@ export default function ForgotPasswordSecurityQuestions({
           <button
             type="submit"
             disabled={isLoading || countdown !== null}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+            className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={PRIMARIO}
           >
-            {isLoading 
-              ? 'Cargando...' 
-              : countdown !== null 
-                ? `Espera ${countdown}s` 
+            {isLoading
+              ? 'Cargando...'
+              : countdown !== null
+                ? `Espera ${countdown}s`
                 : 'Cargar Preguntas'
             }
           </button>
-          
+
           {/* Mostrar contador regresivo si hay rate limiting */}
           {countdown !== null && countdown > 0 && (
-            <div className="mt-4 p-3 rounded-lg border" style={{ 
-              backgroundColor: 'rgba(255, 193, 7, 0.1)',
-              borderColor: '#FFC107'
+            <div className="mt-4 p-3 rounded-[10px] border" style={{
+              backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+              borderColor: 'var(--warning)'
             }}>
-              <p className="text-sm text-center" style={{ color: '#FFC107' }}>
-                ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+              <p className="flex items-center justify-center gap-2 text-sm text-center" style={{ color: 'var(--warning-texto)' }}>
+                <Timer size={16} aria-hidden className="shrink-0" />
+                <span>Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos</span>
               </p>
             </div>
           )}
         </form>
 
         {(onSwitchToEmail || onSwitchToSMS) && (
-          <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-center text-sm mb-4" style={{ color: '#F2F1ED' }}>
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+            <p className="text-center text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2">
@@ -374,8 +375,8 @@ export default function ForgotPasswordSecurityQuestions({
                 <button
                   type="button"
                   onClick={onSwitchToEmail}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                  style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por Email
@@ -385,8 +386,8 @@ export default function ForgotPasswordSecurityQuestions({
                 <button
                   type="button"
                   onClick={onSwitchToSMS}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                  style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por SMS
@@ -400,11 +401,12 @@ export default function ForgotPasswordSecurityQuestions({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm transition-colors"
-              style={{ color: '#F2F1ED' }}
+              className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
-              ← Volver a Iniciar Sesión
+              <ArrowLeft size={16} aria-hidden />
+              Volver a Iniciar Sesión
             </button>
           </div>
         )}
@@ -412,4 +414,3 @@ export default function ForgotPasswordSecurityQuestions({
     </div>
   );
 }
-

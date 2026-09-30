@@ -1,6 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ArrowLeft, Timer } from 'lucide-react';
+
+const PRIMARIO = {
+  ['--btn-bg' as string]: 'var(--botones-principales)',
+  ['--btn-bg-hover' as string]: 'var(--hover)',
+  ['--btn-texto' as string]: '#F2F1ED',
+} as React.CSSProperties;
+
+const SECUNDARIO = {
+  ['--btn-bg' as string]: 'transparent',
+  ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+  ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+  ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+  ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
+} as React.CSSProperties;
 
 interface ForgotPasswordSMSProps {
   onSwitchToLogin?: () => void;
@@ -151,25 +166,25 @@ export default function ForgotPasswordSMS({
   if (codeSent) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-          <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
+        <div>
+          <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Código de Verificación
           </h2>
-          <p className="text-center text-[color:var(--texto-fondo-oscuro-70)] mb-6 text-sm">
-            Hemos enviado un código de 6 dígitos a <strong>{phone}</strong>
+          <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+            Hemos enviado un código de 6 dígitos a <strong style={{ color: 'var(--menu-texto-principal)' }}>{phone}</strong>
           </p>
-          
+
           <form onSubmit={handleVerifyCode} className="space-y-5">
             {errors.general && (
-              <div className="mb-4 p-3 rounded-lg border" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
-                <p className="text-sm text-center" style={{ color: '#F2F1ED' }}>{errors.general}</p>
+              <div className="mb-4 p-3 rounded-[10px] border" role="status" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+                <p className="text-sm text-center" style={{ color: 'var(--menu-texto-principal)' }}>{errors.general}</p>
               </div>
             )}
             <div>
-              <label 
-                htmlFor="code" 
+              <label
+                htmlFor="code"
                 className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 Código de Verificación
               </label>
@@ -188,30 +203,22 @@ export default function ForgotPasswordSMS({
                     });
                   }
                 }}
-                className={`w-full px-4 py-3 rounded-lg border text-center text-3xl tracking-widest ${
-                  errors.code 
-                    ? 'border-red-500 dark:border-red-600' 
-                    : 'border-zinc-300 dark:border-zinc-700'
-                } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.code ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+                className="mf-campo w-full px-4 py-3 text-center text-3xl tracking-widest"
+                aria-invalid={Boolean(errors.code)}
                 placeholder="000000"
                 disabled={isLoading}
                 maxLength={6}
               />
               {errors.code && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                   {errors.code}
                 </p>
               )}
             </div>
 
             {timeLeft > 0 && (
-              <p className="text-sm text-center" style={{ color: 'rgba(242,241,237,0.7)' }}>
-                El código expira en: <strong>{formatTime(timeLeft)}</strong>
+              <p className="text-sm text-center" style={{ color: 'var(--encabezados-alterno)' }}>
+                El código expira en: <strong style={{ color: 'var(--menu-texto-principal)' }}>{formatTime(timeLeft)}</strong>
               </p>
             )}
 
@@ -222,8 +229,8 @@ export default function ForgotPasswordSMS({
                   setCodeSent(false);
                   setCode('');
                 }}
-                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={SECUNDARIO}
               >
                 Reenviar Código
               </button>
@@ -232,10 +239,8 @@ export default function ForgotPasswordSMS({
             <button
               type="submit"
               disabled={isLoading || code.length !== 6}
-              className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+              className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              style={PRIMARIO}
             >
               {isLoading ? 'Verificando...' : 'Verificar Código'}
             </button>
@@ -248,11 +253,12 @@ export default function ForgotPasswordSMS({
                 setCode('');
                 setPhone('');
               }}
-              className="text-sm transition-colors"
-              style={{ color: '#F2F1ED' }}
+              className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
-              ← Cambiar número de teléfono
+              <ArrowLeft size={16} aria-hidden />
+              Cambiar número de teléfono
             </button>
           </div>
         </div>
@@ -262,25 +268,25 @@ export default function ForgotPasswordSMS({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#F2F1ED' }}>
+      <div>
+        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Recuperar por SMS
         </h2>
-        <p className="text-center mb-6 text-sm" style={{ color: '#F2F1ED' }}>
+        <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           Ingresa tu número de teléfono y te enviaremos un código de verificación
         </p>
-        
+
         <form onSubmit={handleSendCode} className="space-y-5">
           {errors.general && (
-            <div className="p-3 rounded-lg border" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
-              <p className="text-sm text-center" style={{ color: '#F2F1ED' }}>{errors.general}</p>
+            <div className="p-3 rounded-[10px] border" role="status" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+              <p className="text-sm text-center" style={{ color: 'var(--menu-texto-principal)' }}>{errors.general}</p>
             </div>
           )}
           <div>
-            <label 
-              htmlFor="phone" 
+            <label
+              htmlFor="phone"
               className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Número de Teléfono
             </label>
@@ -298,25 +304,17 @@ export default function ForgotPasswordSMS({
                   });
                 }
               }}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.phone 
-                  ? 'border-red-500 dark:border-red-600' 
-                  : 'border-zinc-300 dark:border-zinc-700'
-              } focus:outline-none focus:ring-2 transition-colors`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.phone ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+              className="mf-campo w-full px-4 py-3"
+              aria-invalid={Boolean(errors.phone)}
               placeholder="+1 234 567 8900"
               disabled={isLoading}
             />
             {errors.phone && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {errors.phone}
               </p>
             )}
-            <p className="mt-1 text-xs" style={{ color: 'rgba(242,241,237,0.7)' }}>
+            <p className="mt-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
               Incluye el código de país (ej: +1, +52)
             </p>
           </div>
@@ -324,33 +322,32 @@ export default function ForgotPasswordSMS({
           <button
             type="submit"
             disabled={isLoading || countdown !== null}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+            className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={PRIMARIO}
           >
             {isLoading ? 'Enviando...' : countdown !== null ? `Espera ${countdown}s` : 'Enviar Código SMS'}
           </button>
           {countdown !== null && countdown > 0 && (
-            <div className="mt-4 p-3 rounded-lg border" style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)', borderColor: 'var(--warning)' }}>
-              <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
-                ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+            <div className="mt-4 p-3 rounded-[10px] border" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)', borderColor: 'var(--warning)' }}>
+              <p className="flex items-center justify-center gap-2 text-sm text-center" style={{ color: 'var(--warning-texto)' }}>
+                <Timer size={16} aria-hidden className="shrink-0" />
+                <span>Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos</span>
               </p>
             </div>
           )}
         </form>
 
         {(onSwitchToEmail || onSwitchToSecurityQuestions) && (
-          <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-center text-sm text-[color:var(--texto-fondo-oscuro-70)] mb-4">
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+            <p className="text-center text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2">
               {onSwitchToEmail && (
                 <button
                   onClick={onSwitchToEmail}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por Email
@@ -359,8 +356,8 @@ export default function ForgotPasswordSMS({
               {onSwitchToSecurityQuestions && (
                 <button
                   onClick={onSwitchToSecurityQuestions}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-            style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad
@@ -374,11 +371,12 @@ export default function ForgotPasswordSMS({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm transition-colors"
-              style={{ color: '#F2F1ED' }}
+              className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
-              ← Volver a Iniciar Sesión
+              <ArrowLeft size={16} aria-hidden />
+              Volver a Iniciar Sesión
             </button>
           </div>
         )}
@@ -386,4 +384,3 @@ export default function ForgotPasswordSMS({
     </div>
   );
 }
-

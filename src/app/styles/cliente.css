@@ -641,3 +641,285 @@ html:has(.superficie-cliente) {
     animation-duration: 160ms;
   }
 }
+
+/* ==========================================================================
+   Autenticación con panel de marca deslizante (AuthContainer.tsx)
+   Escritorio: dos lados de 50% y un panel carbón que cubre el que no se usa. Se mueve con
+   ease-in-out (es un desplazamiento en pantalla, no una entrada) y su contenido hace un leve
+   contra-movimiento para dar profundidad. Móvil: cabecera compacta + pestañas.
+   ========================================================================== */
+.mf-auth {
+  min-height: 100dvh;
+}
+.mf-auth__lienzo {
+  position: relative;
+  min-height: 100dvh;
+}
+.mf-auth__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem var(--layout-gutter-x);
+  background-color: var(--header-footer);
+}
+.mf-auth__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(242, 241, 237, 0.85);
+  transition: color var(--mf-dur-hover) ease;
+}
+.mf-auth__volver svg {
+  color: var(--logo-branding);
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-auth__volver:hover {
+    color: #f2f1ed;
+  }
+  .mf-auth__volver:hover svg {
+    transform: translateX(-3px);
+  }
+}
+.mf-auth__pestanas {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 1.25rem auto 0;
+  width: calc(100% - 2 * var(--layout-gutter-x));
+  max-width: 28rem;
+  padding: 4px;
+  border-radius: 999px;
+  background-color: var(--fondos-suaves);
+}
+.mf-auth__pestanas button {
+  position: relative;
+  z-index: 1;
+  min-height: 44px;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--encabezados-alterno);
+  transition: color var(--mf-dur-hover) ease;
+}
+.mf-auth__pestanas button[aria-selected='true'] {
+  color: #f2f1ed;
+}
+.mf-auth__pestanas-indicador {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background-color: var(--botones-principales);
+  box-shadow: 0 6px 14px -8px rgba(113, 0, 20, 0.6);
+  transition: transform 260ms var(--mf-ease-out);
+}
+.mf-auth__pestanas[data-lado='registro'] .mf-auth__pestanas-indicador {
+  transform: translateX(100%);
+}
+.mf-auth__lado {
+  display: flex;
+  justify-content: center;
+  padding: 2rem var(--layout-gutter-x) 3rem;
+}
+.mf-auth__lado[data-activo='false'] {
+  display: none;
+}
+@keyframes mf-auth-desde-derecha {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+@keyframes mf-auth-desde-izquierda {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+.mf-auth__lado--izquierdo[data-activo='true'] {
+  animation: mf-auth-desde-derecha 300ms var(--mf-ease-out) both;
+}
+.mf-auth__lado--derecho[data-activo='true'] {
+  animation: mf-auth-desde-izquierda 300ms var(--mf-ease-out) both;
+}
+.mf-auth__formulario {
+  width: 100%;
+  max-width: 28rem;
+}
+.mf-auth__cambio {
+  animation: mf-aparecer 220ms ease both;
+}
+.mf-auth__panel {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .mf-auth__lienzo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+  .mf-auth__cabecera:not(.mf-auth__cabecera--fija),
+  .mf-auth__pestanas {
+    display: none;
+  }
+  .mf-auth__lado,
+  .mf-auth__lado[data-activo='false'] {
+    display: flex;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 3rem clamp(2rem, 5vw, 5rem);
+    animation: none;
+  }
+  /* El lado cubierto no alarga la página (el registro es más alto que el acceso) */
+  .mf-auth__lado[data-activo='false'] {
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .mf-auth__lado--izquierdo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .mf-auth__lado--derecho {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .mf-auth__panel {
+    display: block;
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 50%;
+    background-color: var(--header-footer);
+    transform: translateX(0);
+    transition: transform 680ms var(--mf-ease-in-out);
+    will-change: transform;
+  }
+  /* Filete dorado en el borde que avanza */
+  .mf-auth__panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    background: linear-gradient(transparent, rgba(159, 109, 31, 0.7) 30%, rgba(159, 109, 31, 0.7) 70%, transparent);
+    transition: right 0s linear 340ms;
+  }
+  .mf-auth__lienzo[data-lado='registro'] .mf-auth__panel {
+    transform: translateX(100%);
+  }
+  /* En oscuro la página ya es carbón: el panel se tiñe apenas de vino para separarse */
+  .dark .mf-auth__panel {
+    background-color: color-mix(in srgb, #161616 86%, #710014);
+  }
+  .mf-auth__lienzo[data-lado='registro'] .mf-auth__panel::after {
+    right: calc(100% - 1px);
+  }
+  .mf-auth__panel-contenido {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.5rem clamp(2rem, 4vw, 4rem);
+    transition: transform 680ms var(--mf-ease-in-out);
+  }
+  /* Contra-movimiento del contenido: se queda un poco atrás mientras el panel viaja */
+  .mf-auth__lienzo[data-animado='true'][data-lado='registro'] .mf-auth__panel-contenido {
+    animation: mf-auth-contra 680ms var(--mf-ease-in-out);
+  }
+  .mf-auth__lienzo[data-animado='true'][data-lado='acceso'] .mf-auth__panel-contenido {
+    animation: mf-auth-contra-vuelta 680ms var(--mf-ease-in-out);
+  }
+}
+@keyframes mf-auth-contra {
+  40% {
+    transform: translateX(-6%);
+  }
+}
+@keyframes mf-auth-contra-vuelta {
+  40% {
+    transform: translateX(6%);
+  }
+}
+.mf-auth__volver--panel {
+  align-self: flex-start;
+}
+.mf-auth__panel-invitacion {
+  margin-top: 2.5rem;
+  animation: mf-aparecer 420ms ease 200ms both;
+}
+.mf-auth__panel-boton {
+  margin-top: 1.5rem;
+  min-height: 44px;
+  padding: 0 1.75rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #f2f1ed;
+  border: 1px solid rgba(242, 241, 237, 0.45);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    border-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-auth__panel-boton:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-auth__panel-boton:hover {
+    background-color: rgba(242, 241, 237, 0.08);
+    border-color: #f2f1ed;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-auth__panel,
+  .mf-auth__panel-contenido,
+  .mf-auth__pestanas-indicador {
+    transition: none;
+    animation: none !important;
+  }
+  .mf-auth__lado--izquierdo[data-activo='true'],
+  .mf-auth__lado--derecho[data-activo='true'] {
+    animation-name: mf-aparecer;
+    animation-duration: 180ms;
+  }
+  .mf-auth__panel-boton:active {
+    transform: none;
+  }
+}
+
+/* ---- Menú principal del sitio (MenuHorizontal): píldoras sobre la barra vino ---- */
+.mf-nav-pildora {
+  color: #f2f1ed;
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-nav-pildora:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-nav-pildora:hover {
+    background-color: rgba(242, 241, 237, 0.12);
+  }
+}
+.mf-nav-pildora[aria-current='page'] {
+  background-color: rgba(242, 241, 237, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(242, 241, 237, 0.28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-nav-pildora:active {
+    transform: none;
+  }
+}

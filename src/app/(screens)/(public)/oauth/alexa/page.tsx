@@ -65,7 +65,7 @@ function OauthAlexaContent() {
       <Card padding="lg" className="w-full max-w-md">
         <div className="flex flex-col items-center mb-6 text-center">
           <Mic size={32} style={{ color: 'var(--menu-texto-principal)' }} />
-          <h1 className="text-xl font-semibold mt-3" style={{ color: 'var(--menu-texto-principal)' }}>
+          <h1 className="text-2xl font-bold mt-3" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
             Vincular cuenta con Alexa
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -94,7 +94,7 @@ function OauthAlexaContent() {
           />
 
           {error && (
-            <p className="text-sm" style={{ color: 'var(--danger)' }}>
+            <p role="alert" className="text-sm" style={{ color: 'var(--danger-texto)' }}>
               {error}
             </p>
           )}
@@ -113,7 +113,7 @@ function OauthAlexaContent() {
 
 export default function OauthAlexaPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando...</div>}>
+    <Suspense fallback={<div className="min-h-dvh" style={{ backgroundColor: 'var(--fondo-general)' }} />}>
       <OauthAlexaContent />
     </Suspense>
   );
