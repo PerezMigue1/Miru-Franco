@@ -54,22 +54,8 @@ export default function MenuHorizontal() {
             <li key={item.name} className="relative shrink-0">
               <Link
                 href={item.href}
-                className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 transition-all duration-300 whitespace-nowrap rounded-full text-texto-fondo-oscuro ${
-                  isActive ? 'shadow-lg' : 'hover:opacity-90'
-                }`}
-                style={{
-                  backgroundColor: isActive ? 'var(--hover)' : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
+                className="mf-nav-pildora relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 whitespace-nowrap rounded-full"
+                aria-current={isActive ? 'page' : undefined}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {item.icon}
@@ -84,15 +70,7 @@ export default function MenuHorizontal() {
                     item.name
                   )}
                 </span>
-                {isActive && (
-                  <svg className="w-3.5 h-3.5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                  </svg>
-                )}
               </Link>
-              {isActive && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-16 h-0.5 rounded-full bg-menu-texto-principal" />
-              )}
             </li>
           );
         })}
@@ -105,22 +83,8 @@ export default function MenuHorizontal() {
               <li key={marca.name} className="relative">
                 <Link
                   href={marca.href}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 transition-all duration-300 whitespace-nowrap rounded-full text-texto-fondo-oscuro ${
-                    isActive ? 'shadow-lg' : 'hover:opacity-90'
-                  }`}
-                  style={{
-                    backgroundColor: isActive ? 'var(--hover)' : 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'var(--hover)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
+                  className="mf-nav-pildora relative flex items-center gap-2 px-5 py-2.5 whitespace-nowrap rounded-full"
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   <span className="font-semibold text-sm">{marca.name}</span>
                   {isActive && (

@@ -1,84 +1,84 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowRight, Lock, SearchX, ServerCrash, TriangleAlert, type LucideIcon } from 'lucide-react';
+import SuperficieCliente from './cliente/SuperficieCliente';
+
+type IconoError = 'acceso' | 'buscar' | 'servidor' | 'solicitud';
 
 interface ErrorScreenProps {
   codigo: number;
   titulo: string;
   mensaje: string;
-  icono?: string;
+  icono?: IconoError;
 }
 
+const ICONOS: Record<IconoError, LucideIcon> = {
+  acceso: Lock,
+  buscar: SearchX,
+  servidor: ServerCrash,
+  solicitud: TriangleAlert,
+};
+
 const ENLACES = [
-  { href: '/', label: 'Inicio' },
-  { href: '/home', label: 'Home' },
   { href: '/cliente/tienda-online', label: 'Tienda' },
   { href: '/cliente/servicios-citas', label: 'Servicios y citas' },
   { href: '/login', label: 'Iniciar sesión' },
 ];
 
-export default function ErrorScreen({ codigo, titulo, mensaje, icono }: ErrorScreenProps) {
+/** Pantalla de error (400, 403, 404, 500): monograma, código, explicación y una salida clara. */
+export default function ErrorScreen({ codigo, titulo, mensaje, icono = 'solicitud' }: ErrorScreenProps) {
+  const Icono = ICONOS[icono];
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center p-6"
+    <SuperficieCliente
+      className="min-h-dvh flex flex-col items-center justify-center px-6 py-12"
       style={{ backgroundColor: 'var(--fondo-general)' }}
     >
-      <div
-        className="w-full max-w-lg rounded-2xl p-8 sm:p-10 shadow-xl text-center"
-        style={{
-          backgroundColor: 'var(--tarjetas-paneles)',
-          border: '2px solid var(--fondos-suaves)',
-        }}
-      >
-        <div
-          className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full flex items-center justify-center text-4xl sm:text-5xl mb-6"
-          style={{ backgroundColor: 'var(--header-footer)', color: 'var(--texto-fondo-oscuro)' }}
-        >
-          {icono ?? '⚠'}
-        </div>
+      <main className="mf-entrada w-full max-w-lg text-center">
+        <span className="relative mx-auto mb-8 block h-16 w-16">
+          <Image src="/logo-miru.jpg" alt="Mirú Franco" fill sizes="64px" className="object-contain" priority />
+        </span>
         <p
-          className="text-5xl sm:text-6xl font-bold mb-2"
-          style={{ color: 'var(--menu-texto-principal)' }}
+          className="mf-cifras flex items-center justify-center gap-3 text-6xl font-bold leading-none sm:text-7xl"
+          style={{ color: 'var(--logo-branding)', fontFamily: 'var(--font-family-serif)' }}
         >
+          <Icono size={34} strokeWidth={1.5} aria-hidden />
           {codigo}
         </p>
-        <h1
-          className="text-xl sm:text-2xl font-semibold mb-3"
-          style={{ color: 'var(--menu-texto-principal)' }}
-        >
+        <h1 className="mf-titulo-pagina mt-5" style={{ color: 'var(--menu-texto-principal)' }}>
           {titulo}
         </h1>
-        <p
-          className="text-sm sm:text-base mb-8"
-          style={{ color: 'var(--encabezados-alterno)' }}
-        >
+        <p className="mx-auto mt-3 max-w-md text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
           {mensaje}
         </p>
 
-        <div className="space-y-3">
-          <p
-            className="text-sm font-medium"
-            style={{ color: 'var(--menu-texto-principal)' }}
-          >
-            Volver a:
-          </p>
-          <nav className="flex flex-wrap justify-center gap-2">
-            {ENLACES.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: 'var(--botones-principales)',
-                  color: 'var(--texto-fondo-oscuro)',
-                }}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </div>
-    </div>
+        <Link
+          href="/home"
+          className="mf-btn mf-btn-color mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold uppercase tracking-wider"
+          style={{
+            ['--btn-bg' as string]: 'var(--botones-principales)',
+            ['--btn-bg-hover' as string]: 'var(--hover)',
+            ['--btn-texto' as string]: '#F2F1ED',
+          }}
+        >
+          Volver al inicio
+          <ArrowRight size={16} aria-hidden />
+        </Link>
+
+        <nav aria-label="Otras secciones" className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-1">
+          {ENLACES.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </main>
+    </SuperficieCliente>
   );
 }
