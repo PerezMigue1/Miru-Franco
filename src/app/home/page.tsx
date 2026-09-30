@@ -7,8 +7,6 @@ import { getProductosSinRedirigir, urlsGaleriaProductoCatalogo, type Producto } 
 import { getServicios } from '../services/servicios';
 import HomeLandingClient from '../components/home/HomeLandingClient';
 import HeroEscena from '../components/home/HeroEscena';
-import HeroProductos from '../components/home/HeroProductos';
-import { seleccionarProductosHero } from '../utils/heroProductos';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 import { metadataPublica } from '../utils/seo';
 
@@ -55,26 +53,6 @@ async function HomeDataSections() {
       initialProductos={conFotoPrimero(shuffle(productos)).slice(0, 10)}
       initialServicios={shuffle(servicios)}
     />
-  );
-}
-
-/**
- * Productos reales del catálogo para el hero (misma petición que la sección de productos: Next
- * la deduplica). Si el API no responde, queda la escena del monograma: nunca productos inventados.
- */
-async function HeroProductosDatos() {
-  const { data } = await getProductosSinRedirigir();
-  const productos = seleccionarProductosHero(shuffle(data));
-  return productos.length > 0 ? <HeroProductos productos={productos} /> : <HeroEscena />;
-}
-
-function HeroProductosCargando() {
-  return (
-    <div className="mf-hero-productos" aria-hidden>
-      <div className="mf-hero-productos__escenario flex items-center justify-center">
-        <div className="mf-skeleton aspect-[3/4] w-[38%] min-w-[8.25rem] max-w-56" style={{ borderRadius: 16 }} />
-      </div>
-    </div>
   );
 }
 
@@ -144,10 +122,8 @@ export default function Home() {
                 </Link>
               </div>
             </div>
-            <div className="mf-hero-escena-productos flex justify-center md:justify-end">
-              <Suspense fallback={<HeroProductosCargando />}>
-                <HeroProductosDatos />
-              </Suspense>
+            <div className="flex justify-center md:justify-end">
+              <HeroEscena />
             </div>
           </div>
         </section>
