@@ -127,7 +127,7 @@ export default function DetallePedidoPage() {
               <ArrowLeft size={16} aria-hidden className="mr-1.5" />
               Mis pedidos
             </Button>
-            <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+            <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               Detalle del pedido
             </h1>
             <p className="font-mono text-lg mb-2" style={{ color: 'var(--encabezados-alterno)' }}>

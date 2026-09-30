@@ -205,12 +205,7 @@ export default function ReprogramarCitaPage() {
                       type="date"
                       value={nuevaFecha}
                       onChange={(e) => setNuevaFecha(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                      style={{
-                        backgroundColor: 'var(--texto-fondo-oscuro)',
-                        borderColor: 'var(--fondos-suaves)',
-                        color: 'var(--menu-texto-principal)',
-                      }}
+                      className="mf-campo w-full px-4 py-2.5"
                     />
                   </div>
 

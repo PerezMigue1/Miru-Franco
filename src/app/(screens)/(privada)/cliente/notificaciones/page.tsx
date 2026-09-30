@@ -112,7 +112,7 @@ export default function ClienteNotificacionesPage() {
       <div className="max-w-3xl mx-auto py-4">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-hero mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
+            <h1 className="mf-titulo-pagina mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
               Notificaciones
             </h1>
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>

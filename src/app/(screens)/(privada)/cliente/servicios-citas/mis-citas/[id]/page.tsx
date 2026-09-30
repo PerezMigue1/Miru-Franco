@@ -93,7 +93,7 @@ export default function DetalleMiCitaPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1
-              className="text-hero mb-2"
+              className="mf-titulo-pagina mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
               Detalle de la Cita

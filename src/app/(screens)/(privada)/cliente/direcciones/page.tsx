@@ -172,7 +172,7 @@ function DireccionesPageContent() {
     <ModuleLayout>
       <div className="max-w-4xl mx-auto py-4">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <h1 className="text-hero" style={{ color: 'var(--menu-texto-principal)' }}>
+            <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>
               Mis direcciones
             </h1>
             <Button type="button" onClick={openNew} disabled={saving}>
@@ -181,7 +181,7 @@ function DireccionesPageContent() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+            <div role="alert" className="mb-4 rounded-[10px] px-4 py-3 text-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 14%, var(--fondo-general))', color: 'var(--warning-texto)' }}>
               {error}
             </div>
           )}
@@ -204,7 +204,7 @@ function DireccionesPageContent() {
                   <div className="flex flex-wrap justify-between gap-4">
                     <div>
                       {d.esPrincipal && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--success)] text-white mb-2 inline-block">
+                        <span className="mf-badge mb-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold" style={{ ['--badge-color' as string]: 'var(--success)', ['--badge-texto' as string]: 'var(--success-texto)' }}>
                           Principal
                         </span>
                       )}

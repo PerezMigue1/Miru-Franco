@@ -136,7 +136,7 @@ export default function TarjetasGuardadasPage() {
         </p>
       )}
       {error && (
-        <p className="text-sm mb-4 text-red-600 dark:text-red-400">{error}</p>
+        <p role="alert" className="text-sm mb-4" style={{ color: 'var(--danger-texto)' }}>{error}</p>
       )}
 
       <Card className="p-6 mb-6">
