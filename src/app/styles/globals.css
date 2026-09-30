@@ -1,5 +1,6 @@
 @import "tailwindcss";
-/* Variante de las pantallas de cliente, bajo .superficie-cliente (ver DESIGN.md) */
+/* Sistema compartido (cliente, operación, admin) y extras del portal de clientas — ver DESIGN.md */
+@import "./sistema.css";
 @import "./cliente.css";
 
 /* Modo oscuro controlado por clase .dark en <html> */
@@ -219,11 +220,12 @@ body {
 }
 
 /* Placeholder determinista (no depender de la opacidad por defecto del navegador, que
-   lava vino/oro sobre fondos claros). Auditoría de contraste: ver globals.css tokens arriba. */
+   lava vino/oro sobre fondos claros). --campo-placeholder (sistema.css) cumple 4.5:1 sobre
+   --input-bg en claro y en oscuro. */
 input::placeholder,
 textarea::placeholder {
-  color: var(--encabezados-alterno);
-  opacity: 0.85;
+  color: var(--campo-placeholder);
+  opacity: 1;
 }
 
 /* Scrollbars ocultos en toda la app: el contenido sigue siendo desplazable,

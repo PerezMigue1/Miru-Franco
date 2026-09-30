@@ -39,21 +39,17 @@ export function Drawer({ open, title, onClose, children }: DrawerProps) {
     <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <button
         type="button"
-        className="absolute inset-0 h-full w-full bg-black/50"
+        className="mf-velo absolute inset-0 h-full w-full"
         aria-label="Cerrar vista superpuesta"
         onClick={onClose}
       />
       <div className="pointer-events-none absolute inset-0 flex items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
         <div
-          className="pointer-events-auto relative my-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border shadow-2xl max-h-[min(92dvh,920px)] sm:max-h-[90dvh]"
-          style={{
-            backgroundColor: 'var(--fondos-suaves)',
-            borderColor: 'var(--encabezados-alterno)',
-          }}
+          className="mf-dialogo pointer-events-auto relative my-auto flex w-full max-w-3xl flex-col overflow-hidden max-h-[min(92dvh,920px)] sm:max-h-[90dvh]"
         >
           <div
             className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:px-5"
-            style={{ borderColor: 'var(--encabezados-alterno)' }}
+            style={{ borderColor: 'var(--mf-linea-fuerte)' }}
           >
             <h2
               id={titleId}
@@ -65,8 +61,13 @@ export function Drawer({ open, title, onClose, children }: DrawerProps) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium shrink-0"
-              style={{ color: 'var(--menu-texto-principal)', border: '1px solid var(--encabezados-alterno)' }}
+              className="mf-btn rounded-[10px] px-3 min-h-10 text-sm font-medium shrink-0"
+              style={{
+                ['--btn-bg' as string]: 'transparent',
+                ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+                ['--btn-borde' as string]: '1px solid var(--mf-linea-fuerte)',
+                ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+              }}
             >
               Cerrar
             </button>

@@ -1,45 +1,67 @@
-# Design System: Mirú Franco — superficies de cliente
+# Design System: Mirú Franco — "Atelier cálido"
 
-Alcance: pantallas públicas y de cliente (home, contacto, sobre nosotros, términos, auth, `/cliente/*`, `/perfil`). `/admin` y `/operacion` conservan su diseño y no heredan nada de esto: todo vive detrás de `.superficie-cliente` (clase) y `SuperficieCliente` (contexto React en `components/cliente/SuperficieCliente.tsx`).
+Alcance: todo el sitio. Un solo sistema de tokens y primitivas (`src/app/styles/sistema.css`) que comparten el portal de clientas, `/operacion` y `/admin`. Lo exclusivo del portal (hero, catálogo 3D, lectura larga, sello de confirmación) vive en `src/app/styles/cliente.css` bajo `.superficie-cliente` y el contexto `SuperficieCliente`. Los paneles usan el cascarón `components/layouts/PanelShell.tsx` (`.superficie-panel`).
 
-## 1. Atmósfera — "Atelier cálido"
-Un salón de autor, no un SaaS: superficies de terracota y lino, vino profundo como voz, oro solo como detalle de joyería. Densidad 4 (aire generoso en marketing y catálogo; compacta y predecible en carrito, checkout y reserva). Variación 6: composiciones asimétricas en páginas que persuaden (home, detalle), estructura estable en las que operan (checkout, citas). Movimiento 6, con un único momento cinematográfico: el hero de la home.
+## 1. Atmósfera
+Un salón de autor, no un SaaS: superficies de terracota y lino, vino profundo como voz, oro solo como detalle de joyería.
+- **Portal de clientas:** densidad 4, variación 6, movimiento 6. Composiciones asimétricas donde se persuade (home, detalle de producto); estructura estable donde se opera (carrito, checkout, reserva). Un único momento cinematográfico: el hero de la home.
+- **Paneles (`/operacion`, `/admin`):** modo "operar". Densidad 6–7, variación 2, movimiento 2: el personal trabaja desde la PC de recepción varias horas al día, así que la interfaz se vuelve familiar y rápida. La marca vive en los detalles (monograma, Playfair en los títulos, foco vino/oro), no en la decoración.
 
 ## 2. Paleta y roles (identidad existente, sin colores nuevos de marca)
 - **Lino** `#DCC8B6` (`--fondo-general`): lienzo de página.
-- **Terracota** `#B38E6F` (`--tarjetas-paneles`): superficie de tarjeta; siempre con sombra tintada, nunca plana sobre el lino.
+- **Terracota** `#B38E6F` (`--tarjetas-paneles`): superficie de tarjeta; siempre con sombra tintada.
 - **Arena** `#d0b29c` (`--fondos-suaves`): superficies secundarias, marcos de imagen, skeletons.
 - **Vino** `#710014` (`--botones-principales`): único acento de acción. Un CTA primario por pantalla.
-- **Oro** `#9f6d1f` (`--logo-branding`): foco, hairlines, brillo al hover, ornamento. Nunca texto largo.
-- **Carbón** `#161616` (`--header-footer`): cromo del sitio y placeholders de marca. Sin negro puro.
-- Las sombras se tiñen de café (`rgba(58, 28, 10, …)`), no de gris.
+- **Oro** `#9f6d1f` (`--logo-branding`): hairlines, ornamento, íconos activos en oscuro. Nunca texto largo.
+- **Carbón** `#161616` (`--header-footer`): cromo del sitio, barra de los paneles y placeholders de marca. Sin negro puro.
+- Modo oscuro: grises neutros `#161616` / `#1f1f1f` / `#2a2a2a` con el mismo vino y oro.
+- Sombras tintadas de café (`rgba(58, 28, 10, …)`) en claro; negras suaves en oscuro.
+
+Tokens semánticos del sistema (claro / oscuro):
+| Token | Claro | Oscuro | Uso |
+|---|---|---|---|
+| `--mf-foco` | `#710014` | `#c4954d` | Anillo de foco de 2px (≥3:1 en todas las superficies) |
+| `--texto-cuerpo` | `#2a2a2a` | `rgba(242,241,237,.88)` | Texto de diálogos y paneles |
+| `--superficie-modal` | lino | `#2a2a2a` | Diálogos, avisos, cajones |
+| `--superficie-lateral` | lino+arena | `#1b1b1b` | Menú lateral de los paneles |
+| `--campo-borde` | `#8a7667` | `#6e6e6e` | Borde de campos (≥3:1) |
+| `--campo-placeholder` | `#6b5a4e` | `#b8a597` | Placeholder (≥4.5:1 sobre `--input-bg`) |
+| `--nav-activo-*` | vino 10% / vino | blanco 8% / blanco + oro | Ítem activo del menú (sin borde lateral de color) |
+| `--mf-linea`, `--mf-linea-fuerte` | vino 14%, carbón 22% | blanco 8%, 16% | Divisores y bordes |
 
 ## 3. Tipografía
-- **Display y títulos:** Playfair Display (fijada por la marca), tracking −0.02em, `text-wrap: balance`. `PageHeader` usa esta voz en todas las pantallas de cliente.
+- **Display y títulos:** Playfair Display, tracking −0.02em, `text-wrap: balance`. En paneles, solo el título de la página y el de diálogos; etiquetas, botones y datos van en Geist.
 - **Texto:** Geist, interlineado 1.6, medida máxima de 65ch en párrafos largos.
-- **Precios y cifras:** `font-variant-numeric: tabular-nums`.
-- Sin eyebrows ni etiquetas sobre los títulos: el título lleva su propio peso.
+- **Cifras:** `tabular-nums` en precios, KPIs y todas las celdas de tabla.
+- **Acento manuscrito:** Great Vibes solo para "Franco" en la marca.
+- Sin eyebrows ni etiquetas sobre los títulos.
+- Las variables `--font-family-serif/-script` se resuelven en `body` (donde next/font define sus fuentes); en `:root` quedaban inválidas.
 
-## 4. Componentes (variante cliente)
-- **Tarjetas:** radio de 14px, elevación por sombra tintada (sin borde + sombra a la vez). Las clicables se elevan 2px y ganan sombra al hover (solo con puntero fino) y se hunden a `scale(0.99)` al presionar.
-- **Tarjetas de catálogo 3D:** inclinación máxima de 6°, con brillo dorado que sigue al puntero y un resorte (lerp en rAF). Se desactiva con puntero táctil o `prefers-reduced-motion`.
-- **Botones:** `scale(0.97)` al presionar (140ms), transición solo de color/sombra/transform; foco con anillo de oro de 2px separado 2px.
-- **Estados vacíos y carga:** composición con el monograma de la marca y una acción; skeleton con brillo lento en vez de spinners.
-- **Placeholders de imagen:** monograma dorado sobre carbón (`ServicioImagen`, tarjetas de producto).
-- **Pasos de flujo:** los flujos de reserva y compra muestran dónde está el usuario (`PasosFlujo`).
+## 4. Componentes (compartidos)
+- **Card:** radio 14px en el portal y 12px en paneles; sombra tintada `--mf-sombra-1`, nunca borde + sombra a la vez. Las clicables se hunden a `scale(0.99)`; solo en el portal se elevan 2px al hover.
+- **Button:** colores por variables (`--btn-bg`, `--btn-bg-hover`…); hover solo con puntero fino, `scale(0.97)` al presionar (140ms), altura mínima 44px con puntero táctil. "secondary" lleva texto oscuro sobre terracota (AA).
+- **Input / Select / Textarea (`.mf-campo`):** etiqueta vinculada por `htmlFor`, borde ≥3:1, foco con borde vino/oro y halo del 22%, error en `--danger-texto` con `role="alert"`.
+- **Badge (`.mf-badge`):** base clara opaca teñida del color de estado + texto oscuro de su familia (los rellenos sólidos anteriores quedaban entre 2.3 y 3.9:1).
+- **Table (`.mf-tabla`):** encabezado sutil de etiqueta, divisores de 1px, filas clicables con tinte al hover, marco con scroll horizontal propio y barra fina visible.
+- **Modal / Drawer / avisos (`.mf-dialogo`, `.mf-aviso`):** superficie `--superficie-modal`, velo carbón al 55%, entrada de 240ms (opacidad + `scale(0.97)`), Escape cierra, título en Playfair.
+- **Breadcrumb:** rastro sobrio con chevrones; la página actual en vino y `aria-current`.
+- **Estados vacíos y carga:** monograma + acción; skeleton `.mf-skeleton` en vez de spinners.
+- **Placeholders de imagen:** monograma dorado sobre carbón (`ServicioImagen`).
+- **Pasos de flujo:** reserva y compra muestran dónde está la clienta (`PasosFlujo`).
 
 ## 5. Layout
-- Contenedor `layout-page` existente; ritmo de 4px. Más espacio sobre un título que debajo.
-- Una sola columna por debajo de 768px, sin scroll horizontal y con objetivos táctiles de al menos 44px.
-- Resúmenes de compra y cita fijos (`sticky`) en escritorio.
+- Portal: contenedor `layout-page`, ritmo de 4px, más espacio sobre un título que debajo. Resúmenes de compra y cita `sticky` en escritorio.
+- Paneles (`PanelShell`): barra carbón de 56px con monograma, "Mirú Franco" y etiqueta del panel; menú lateral de 248px fijo desde 1024px (colapsable a 68px) y cajón deslizante por debajo, con velo y Escape; "Saltar al contenido"; contenido con máximo de 96rem.
+- Una sola columna por debajo de 768px, sin scroll horizontal de página de 360 a 1920px; las tablas anchas desplazan dentro de su marco.
+- Objetivos táctiles de al menos 44px.
 
 ## 6. Movimiento
-- Curvas: `--mf-ease-out: cubic-bezier(0.23, 1, 0.32, 1)`, `--mf-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)`.
-- Duraciones: press 140ms, hover 200ms, entradas 520ms, stagger de 60ms (`--i`).
-- Entradas de sección con `animation-timeline: view()` dentro de `@supports`: si el navegador no lo soporta, el contenido ya está visible. Nada de `data-reveal` ni IntersectionObserver.
-- Hero: capas de profundidad (monograma, anillos, halo, tipografía) con parallax por puntero y por scroll. Con `prefers-reduced-motion` o puntero táctil queda estático o solo con scroll suave.
+- Curvas: `--mf-ease-out: cubic-bezier(0.23, 1, 0.32, 1)`, `--mf-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)`, `--mf-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1)`.
+- Duraciones: press 140ms, hover 200ms, cajón 240ms, entradas 520ms, stagger de 60ms (`--i`).
+- Paneles: sin coreografías de carga; solo feedback (press, hover, cajón, diálogos).
+- Entradas de sección del portal con `animation-timeline: view()` dentro de `@supports`: sin soporte, el contenido ya está visible. Nada de `data-reveal` ni IntersectionObserver.
 - Feedback: "Agregar al carrito" y "Confirmar cita" transforman el botón (check + etiqueta) con un crossfade con blur.
 - `prefers-reduced-motion`: se conservan opacidad y color, se elimina el desplazamiento.
 
 ## 7. Prohibido
-Emojis como íconos (solo lucide-react), eyebrows, texto con gradiente, glows de neón, negro puro, flechas que rebotan ("Descubre"), filas de tres tarjetas iguales como estructura de marketing, cajas vacías con un ícono de cámara, `transition: all`, animar desde `scale(0)`.
+Emojis o glifos Unicode como íconos (solo lucide-react), eyebrows, texto con gradiente, glows de neón, negro puro, bordes laterales de color de más de 1px en tarjetas, ítems o avisos, flechas que rebotan, filas de tres tarjetas iguales como estructura de marketing, imágenes de relleno, `transition: all`, animar desde `scale(0)`, hover que dependa de JS (`onMouseEnter` para colores).

@@ -153,6 +153,30 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     return items;
   }
 
+  // Panel de operación (staff): Inicio / Panel de operación / [Módulo]
+  if (first === 'operacion') {
+    const operacion: BreadcrumbItem[] = [...base, { label: 'Panel de operación', href: '/operacion' }];
+    if (segments.length === 1) return operacion;
+    const modulos: Record<string, string> = {
+      'agenda-calendario': 'Agenda y calendario',
+      'clientes-crm': 'Perfil de cliente',
+      'cobro-sin-cita': 'Cobro sin cita',
+      'cola-atencion': 'Cola de atención',
+      'ejecucion-servicios': 'Ejecución de servicios',
+      'gestion-citas': 'Gestión de citas',
+      'gestion-equipo': 'Gestión de equipo',
+      'mi-asistencia': 'Mi asistencia',
+      'mis-solicitudes': 'Mis solicitudes',
+      'pedidos-online': 'Pedidos online',
+      'punto-de-venta': 'Punto de venta',
+      'segmentacion-clientes': 'Segmentación de clientes',
+      'seguimiento-post-servicio': 'Seguimiento posterior al servicio',
+      'subir-imagenes': 'Subir imágenes',
+    };
+    operacion.push({ label: modulos[segments[1]] ?? segments[1] });
+    return operacion;
+  }
+
   // Perfil (pantalla única de cuenta)
   if (first === 'perfil') {
     const perfil: BreadcrumbItem[] = [...base, { label: 'Mi perfil', href: '/perfil' }];
