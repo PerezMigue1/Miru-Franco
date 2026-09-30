@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { preload } from 'react-dom';
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { getProductosSinRedirigir, urlsGaleriaProductoCatalogo, type Producto } from '../services/productos';
@@ -6,7 +7,7 @@ import { getServicios } from '../services/servicios';
 import HomeLandingClient from '../components/home/HomeLandingClient';
 import HeroFluidos from '../components/home/HeroFluidos';
 import IntroGrieta from '../components/home/IntroGrieta';
-import { seleccionarFluidos } from '../utils/fluidosHero';
+import { SRCSET_GOJI_AVIF, TAMANO_GOJI, seleccionarFluidos } from '../utils/fluidosHero';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 import { metadataPublica } from '../utils/seo';
 
@@ -57,6 +58,15 @@ async function HomeDataSections() {
 }
 
 export default async function Home() {
+  // El Goji del hero es el LCP: su preload sale como hint al inicio del stream, antes que los
+  // preloads automáticos de imágenes (mismo srcset/sizes que su <source> AVIF: una sola descarga).
+  preload('/hero/web/goji-240.avif', {
+    as: 'image',
+    type: 'image/avif',
+    imageSrcSet: SRCSET_GOJI_AVIF,
+    imageSizes: TAMANO_GOJI,
+    fetchPriority: 'high',
+  });
   // Nombre y precio de los fluidos del hero: mismo fetch que la tienda (Next lo deduplica).
   const { data: catalogo } = await getProductosSinRedirigir();
   const fluidos = seleccionarFluidos(catalogo);

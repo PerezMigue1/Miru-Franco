@@ -11,6 +11,10 @@ export const FLUIDOS_HERO = [
 
 export type ClaveFluido = (typeof FLUIDOS_HERO)[number]['clave'];
 
+/** Ancho pintado del Goji, el LCP del home (lo comparten su <picture> y el preload de la página). */
+export const TAMANO_GOJI = '(min-width: 768px) 170px, 115px';
+export const SRCSET_GOJI_AVIF = '/hero/web/goji-240.avif 240w, /hero/web/goji-420.avif 420w';
+
 export interface FluidoHero {
   id: number;
   clave: ClaveFluido;

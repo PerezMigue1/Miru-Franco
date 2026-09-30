@@ -1072,6 +1072,9 @@ html:has(.superficie-cliente) {
 .mf-fluidos__capa {
   position: absolute;
   aspect-ratio: 422 / 1364;
+}
+/* Capas propias solo cuando llega el animador (no encarecen el primer frame) */
+.mf-fluidos[data-animado] .mf-fluidos__capa {
   will-change: transform;
 }
 .mf-fluidos__frasco {
@@ -1182,6 +1185,13 @@ html:has(.superficie-cliente) {
   }
 }
 
+/* Los stickers esperan al chunk de animación para su pop (sin movimiento se ven de inmediato) */
+@media (prefers-reduced-motion: no-preference) {
+  .mf-sticker-capa .mf-sticker {
+    opacity: 0;
+  }
+}
+
 /* ---- Intro: el monograma se parte por una grieta de papel rasgado ---- */
 .mf-intro {
   display: none;
@@ -1192,11 +1202,43 @@ html[data-intro='si'] .mf-intro {
   inset: 0;
   z-index: 1000;
   cursor: pointer;
-  /* Respaldo si el JS no llega: se retira sola */
-  animation: mf-intro-respaldo 0s linear 2.2s forwards;
+  /* Coreografía en CSS: corre fuera del hilo principal durante la carga y termina sola */
+  animation: mf-intro-salida 0.18s ease-out 1.1s forwards;
 }
-@keyframes mf-intro-respaldo {
+html[data-intro='si'] .mf-intro__pieza--izq {
+  animation: mf-intro-izq 0.85s var(--mf-ease-in-out) 0.34s forwards;
+}
+html[data-intro='si'] .mf-intro__pieza--der {
+  animation: mf-intro-der 0.85s var(--mf-ease-in-out) 0.34s forwards;
+}
+html[data-intro='si'] .mf-intro__trazo {
+  animation:
+    mf-intro-trazo 0.38s var(--mf-ease-out) forwards,
+    mf-intro-apagar 0.2s ease-out 0.4s forwards;
+}
+@keyframes mf-intro-trazo {
   to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mf-intro-apagar {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes mf-intro-izq {
+  to {
+    transform: translateX(-62%) rotate(-5deg);
+  }
+}
+@keyframes mf-intro-der {
+  to {
+    transform: translateX(62%) rotate(5deg);
+  }
+}
+@keyframes mf-intro-salida {
+  to {
+    opacity: 0;
     visibility: hidden;
     pointer-events: none;
   }
@@ -1207,7 +1249,6 @@ html[data-intro='si'] .mf-intro {
   display: grid;
   place-items: center;
   background-color: var(--header-footer);
-  will-change: transform;
 }
 .mf-intro__monograma {
   position: relative;
@@ -1228,7 +1269,6 @@ html[data-intro='si'] .mf-intro {
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 3px rgba(196, 149, 77, 0.7));
 }
 .mf-intro__saltar {
   position: absolute;
