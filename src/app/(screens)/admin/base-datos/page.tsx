@@ -1076,6 +1076,7 @@ export default function BaseDatosPage() {
   // Mientras no llega el resumen no se afirma un estado (antes se veía "Optimo 100/100" por defecto)
   const cargandoResumen = dbSummary === null;
   const ETIQUETA_ESTADO = { Optimo: 'Óptimo', Atencion: 'Atención', Critico: 'Crítico' } as const;
+  const sinMuestras = cargandoResumen && realtimeSeries.length === 0;
   // Texto de estado: tokens -texto (los de relleno no llegan a 3:1 sobre la terracota del panel)
   const estadoSistemaColor =
     estadoSistema === 'Optimo' ? 'var(--success-texto)' :
@@ -1787,7 +1788,7 @@ export default function BaseDatosPage() {
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Consultas por segundo</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {(latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}
+                              {sinMuestras ? '—' : (latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}
                             </p>
                             <DonutKpi value={latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0} max={Math.max(1, maxQps)} color="var(--success)" />
                           </div>
@@ -1796,7 +1797,7 @@ export default function BaseDatosPage() {
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Conexiones activas</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {formateador.format(latestRealtime?.activeConnections ?? conexionesActivasActual)}
+                              {sinMuestras ? '—' : formateador.format(latestRealtime?.activeConnections ?? conexionesActivasActual)}
                             </p>
                             <DonutKpi value={latestRealtime?.activeConnections ?? conexionesActivasActual} max={Math.max(1, totalConexionesActual)} color="var(--warning)" />
                           </div>
@@ -1805,7 +1806,7 @@ export default function BaseDatosPage() {
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo prom. respuesta</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms
+                              {sinMuestras ? '—' : `${(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms`}
                             </p>
                             <DonutKpi value={latestRealtime?.avgResponseMs ?? 0} max={Math.max(1, maxRespMs)} color="var(--danger)" />
                           </div>
