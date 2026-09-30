@@ -12,6 +12,8 @@ import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
 import CatalogoCard from '../../../components/admin/CatalogoCard';
 import { IMG_SERVICIO_PLACEHOLDER } from '../../../utils/serviceImagePlaceholder';
+import { imagenProductoMostrable } from '../../../utils/normalizarUrlImagen';
+import { ServicioImagenPlaceholder } from '../../../components/servicios/ServicioImagen';
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -436,8 +438,9 @@ export default function InventarioPage() {
                 return (
                   <CatalogoCard
                     key={producto.id}
-                    imagenUrl={producto.imagen}
+                    imagenUrl={imagenProductoMostrable(producto.imagenes?.[0] ?? producto.imagen)}
                     imagenFallback={IMG_SERVICIO_PLACEHOLDER}
+                    placeholder={<ServicioImagenPlaceholder />}
                     titulo={producto.nombre}
                     estadoBadge={
                       <Badge variant={getEstadoColor(!!producto.disponible)} size="sm">
