@@ -8,6 +8,7 @@ import Modal from '../../../../components/ui/Modal';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import TarjetaKpi from '../../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
@@ -190,46 +191,16 @@ export default function EjecucionServiciosPage() {
         </div>
 
         {error && (
-          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="elevated" padding="lg" style={pendientes > 0 ? { boxShadow: '0 0 0 2px var(--warning)' } : undefined}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Clock3 size={20} style={{ color: 'var(--warning-texto)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Servicios Pendientes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--warning-texto)' }}>{loading ? '…' : pendientes}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Wrench size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En Proceso</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enProceso}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Completados Hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : completadosHoy}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <TarjetaKpi icono={Clock3} etiqueta="Servicios Pendientes" cargando={loading} valor={pendientes} tono="aviso" alerta={pendientes > 0} />
+          <TarjetaKpi icono={Wrench} etiqueta="En Proceso" cargando={loading} valor={enProceso} />
+          <TarjetaKpi icono={CheckCircle2} etiqueta="Completados Hoy" cargando={loading} valor={completadosHoy} />
         </div>
 
         {/* Listado */}

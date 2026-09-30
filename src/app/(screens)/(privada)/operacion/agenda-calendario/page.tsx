@@ -217,6 +217,8 @@ export default function AgendaCalendarioPage() {
                       type="button"
                       onClick={() => setDiaSeleccionado(celda.iso)}
                       disabled={loading}
+                      aria-pressed={esSeleccionado}
+                      aria-label={`${celda.day}${esHoy ? ', hoy' : ''}${tieneCitas ? ', con citas' : ''}`}
                       className="aspect-square rounded-lg flex flex-col items-center justify-center gap-1 transition-colors relative"
                       style={{
                         backgroundColor: esSeleccionado ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
@@ -227,7 +229,7 @@ export default function AgendaCalendarioPage() {
                     >
                       <span
                         className="text-sm font-medium"
-                        style={{ color: esSeleccionado ? '#ffffff' : 'var(--menu-texto-principal)' }}
+                        style={{ color: esSeleccionado ? '#F2F1ED' : 'var(--menu-texto-principal)' }}
                       >
                         {celda.day}
                       </span>
@@ -235,7 +237,7 @@ export default function AgendaCalendarioPage() {
                         <span
                           aria-hidden
                           className={`w-1.5 h-1.5 rounded-full ${
-                            esSeleccionado ? 'bg-white' : 'bg-[var(--botones-principales)] dark:bg-[var(--logo-branding)]'
+                            esSeleccionado ? 'bg-[#F2F1ED]' : 'bg-[var(--botones-principales)] dark:bg-[var(--logo-branding)]'
                           }`}
                         />
                       )}

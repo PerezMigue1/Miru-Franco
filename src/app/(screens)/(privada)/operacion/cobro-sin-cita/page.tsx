@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import TarjetaKpi from '../../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
@@ -110,29 +111,9 @@ export default function CobroSinCitaPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ShoppingBag size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : ventas.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total cobrado</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>{loading ? '…' : fmtMoneda(totalCobrado)}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <TarjetaKpi icono={ShoppingBag} etiqueta="Ventas de hoy" cargando={loading} valor={ventas.length} />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total cobrado" cargando={loading} valor={fmtMoneda(totalCobrado)} tono="oro" />
         </div>
 
         {/* Listado */}
