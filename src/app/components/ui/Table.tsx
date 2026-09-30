@@ -25,42 +25,33 @@ export default function Table({
   headerSutil = false,
 }: TableProps) {
   const legible = headersLegibles === true;
+  // headerSutil se conserva por compatibilidad: el encabezado del sistema ya es el sutil (la banda
+  // oscura anterior caía a 2.9:1 en modo oscuro).
+  void headerSutil;
   return (
-    <div
-      className="overflow-x-auto rounded-xl border"
-      style={{ borderColor: 'var(--borde-sutil)', backgroundColor: 'var(--fondo-general)' }}
-    >
-      <table className={`w-full ${className}`}>
+    <div className="mf-tabla-marco">
+      <table className={`mf-tabla w-full ${className}`}>
         <thead>
-          <tr
-            style={
-              headerSutil
-                ? { backgroundColor: 'transparent', borderBottom: '2px solid var(--fondos-suaves)' }
-                : { backgroundColor: 'var(--encabezados-alterno)' }
-            }
-          >
+          <tr>
             {headers.map((header, index) => (
               <th
                 key={index}
+                scope="col"
                 className={`px-4 py-3 text-left text-xs font-semibold sticky top-0 z-10 ${
                   legible ? 'normal-case leading-snug' : 'uppercase tracking-wider'
                 }`}
-                style={{
-                  color: headerSutil ? 'var(--encabezados-alterno)' : 'var(--texto-fondo-oscuro)',
-                  backgroundColor: headerSutil ? 'var(--fondo-general)' : undefined,
-                  ...(stickyFirstColumn && index === 0
-                    ? { left: 0, zIndex: 12, boxShadow: '1px 0 0 var(--borde-sutil)' }
-                    : {}),
-                }}
+                style={
+                  stickyFirstColumn && index === 0
+                    ? { left: 0, zIndex: 12, boxShadow: '1px 0 0 var(--mf-linea-fuerte)' }
+                    : undefined
+                }
               >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y" style={{ borderColor: 'var(--borde-sutil)' }}>
-          {children}
-        </tbody>
+        <tbody>{children}</tbody>
       </table>
     </div>
   );
@@ -75,24 +66,8 @@ interface TableRowProps {
 export function TableRow({ children, onClick, className = '' }: TableRowProps) {
   return (
     <tr
-      className={`
-        transition-colors duration-200
-        ${onClick ? 'cursor-pointer hover:opacity-90' : ''}
-        ${className}
-      `}
-      style={{
-        backgroundColor: 'var(--fondo-general)',
-      }}
-      onMouseEnter={(e) => {
-        if (onClick) {
-          e.currentTarget.style.backgroundColor = 'var(--fondos-suaves)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (onClick) {
-          e.currentTarget.style.backgroundColor = 'var(--fondo-general)';
-        }
-      }}
+      className={className}
+      data-clicable={onClick ? 'true' : undefined}
       onClick={onClick}
     >
       {children}
@@ -123,7 +98,7 @@ export function TableCell({ children, className = '', colSpan, style, stickyLeft
               left: 0,
               zIndex: 8,
               backgroundColor: 'var(--fondo-general)',
-              boxShadow: '1px 0 0 var(--borde-sutil)',
+              boxShadow: '1px 0 0 var(--mf-linea-fuerte)',
             }
           : {}),
         ...style,

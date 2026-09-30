@@ -1,145 +1,17 @@
 /* ==========================================================================
-   Superficies de cliente (ver DESIGN.md)
-   Todo vive bajo .superficie-cliente: /admin y /operacion no se ven afectados.
+   Portal de clientas (ver DESIGN.md)
+   Tokens y primitivas compartidas viven en sistema.css; aquí solo lo propio del portal:
+   elevación al hover de tarjetas, hero, catálogo 3D, lectura larga y sello de confirmación.
    ========================================================================== */
 
-.superficie-cliente {
-  --mf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --mf-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --mf-dur-press: 140ms;
-  --mf-dur-hover: 200ms;
-  --mf-dur-entrada: 520ms;
-  /* Sombras tintadas de café: la elevación pertenece a la paleta cálida, no al gris */
-  --mf-sombra-1: 0 1px 2px rgba(58, 28, 10, 0.1), 0 6px 16px -6px rgba(58, 28, 10, 0.22);
-  --mf-sombra-2: 0 2px 4px rgba(58, 28, 10, 0.1), 0 22px 40px -16px rgba(58, 28, 10, 0.42);
-  --mf-linea: rgba(113, 0, 20, 0.14);
-  --mf-radio: 14px;
-  /* Banda oscura de contraste (secciones de servicios): carbón del cromo del sitio */
-  --mf-banda: #161616;
-  /* next/font define --font-playfair-display y --font-great-vibes en <body>; declaradas en
-     :root, --font-family-serif/-script quedaban inválidas y los títulos caían a Geist. Aquí,
-     dentro de <body>, sí resuelven: la voz Playfair de la marca vuelve a verse. */
-  --font-family-serif: var(--font-playfair-display), 'Times New Roman', serif;
-  --font-family-script: var(--font-great-vibes), cursive;
-  caret-color: var(--botones-principales);
-}
-
-.dark .superficie-cliente {
-  --mf-sombra-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 20px -8px rgba(0, 0, 0, 0.55);
-  --mf-sombra-2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 24px 44px -16px rgba(0, 0, 0, 0.75);
-  --mf-linea: rgba(255, 255, 255, 0.08);
-  --mf-banda: #1f1f1f;
-}
-
-/* ---- Superficies del navegador ---- */
-.superficie-cliente ::selection {
-  background: var(--botones-principales);
-  color: var(--texto-fondo-oscuro);
-}
 html:has(.superficie-cliente) {
   scrollbar-color: var(--tarjetas-paneles) var(--fondo-general);
 }
-.superficie-cliente a {
-  text-underline-offset: 0.2em;
-}
-.superficie-cliente :is(a, button, [role='button'], [tabindex]):focus-visible {
-  outline: 2px solid var(--logo-branding);
-  outline-offset: 2px;
-}
-.superficie-cliente :is(h1, h2, h3) {
-  text-wrap: balance;
-}
-.mf-cifras {
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---- Títulos de página (PageHeader) ---- */
-.mf-titulo-pagina {
-  font-family: var(--font-family-serif);
-  font-size: clamp(1.875rem, 1.4rem + 1.6vw, 2.5rem);
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* ---- Tarjetas ---- */
-.mf-card {
-  border-radius: var(--mf-radio);
-  transition:
-    transform var(--mf-dur-hover) var(--mf-ease-out),
-    box-shadow var(--mf-dur-hover) var(--mf-ease-out);
-}
-.mf-card--interactiva {
-  cursor: pointer;
-}
-.mf-card--interactiva:active {
-  transform: scale(0.99);
-  transition-duration: var(--mf-dur-press);
-}
 @media (hover: hover) and (pointer: fine) {
-  .mf-card--interactiva:hover {
+  .superficie-cliente .mf-card--interactiva:hover {
     transform: translateY(-2px);
     box-shadow: var(--mf-sombra-2) !important;
   }
-}
-
-/* ---- Botones ---- */
-.mf-btn {
-  transition:
-    background-color var(--mf-dur-hover) ease,
-    color var(--mf-dur-hover) ease,
-    border-color var(--mf-dur-hover) ease,
-    box-shadow var(--mf-dur-hover) var(--mf-ease-out),
-    transform var(--mf-dur-press) var(--mf-ease-out);
-  touch-action: manipulation;
-}
-.mf-btn:not(:disabled):active {
-  transform: scale(0.97);
-}
-
-/* ---- Entradas ----
-   .mf-entrada: al montar, escalonada con --i (60ms por elemento).
-   .mf-revelar: al entrar en viewport con scroll-driven animations; si el navegador no las
-   soporta el contenido simplemente ya está visible (sin JS ni IntersectionObserver). */
-@keyframes mf-entrada {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-}
-@keyframes mf-aparecer {
-  from {
-    opacity: 0;
-  }
-}
-.mf-entrada {
-  animation: mf-entrada var(--mf-dur-entrada) var(--mf-ease-out) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
-}
-@supports (animation-timeline: view()) {
-  .mf-revelar {
-    animation: mf-entrada linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 70%;
-  }
-}
-
-/* ---- Carga ---- */
-@keyframes mf-brillo {
-  to {
-    background-position: -200% 0;
-  }
-}
-.mf-skeleton {
-  border-radius: 10px;
-  background: linear-gradient(
-    100deg,
-    var(--fondos-suaves) 40%,
-    color-mix(in srgb, var(--fondos-suaves), #fff 22%) 50%,
-    var(--fondos-suaves) 60%
-  );
-  background-size: 200% 100%;
-  animation: mf-brillo 1.6s linear infinite;
 }
 
 /* ---- Tarjeta con profundidad 3D (catálogo) ----
@@ -174,42 +46,11 @@ html:has(.superficie-cliente) {
   transform: translateZ(28px);
 }
 
-/* ---- Feedback de acción (agregar al carrito, confirmar cita) ---- */
-.mf-feedback-contenido {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition:
-    opacity 200ms ease,
-    filter 200ms ease,
-    transform 200ms var(--mf-ease-out);
-}
-.mf-feedback-contenido[data-cambiando='true'] {
-  opacity: 0.4;
-  filter: blur(2px);
-  transform: scale(0.98);
-}
-
-/* ---- Accesibilidad: movimiento reducido ----
-   Se conserva la opacidad (ayuda a entender), se elimina el desplazamiento. */
 @media (prefers-reduced-motion: reduce) {
-  .mf-entrada,
-  .mf-revelar {
-    animation-name: mf-aparecer;
-    animation-duration: 200ms;
-  }
-  .mf-card--interactiva:hover,
-  .mf-card--interactiva:active,
-  .mf-btn:not(:disabled):active {
+  .superficie-cliente .mf-card--interactiva:hover {
     transform: none;
   }
-  .mf-skeleton {
-    animation: none;
-  }
-  .mf-inclinable {
-    transform: none;
-  }
+  .mf-inclinable,
   .mf-inclinable .mf-capa-frontal {
     transform: none;
   }

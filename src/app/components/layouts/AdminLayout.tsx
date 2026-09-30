@@ -1,8 +1,6 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { hasSession } from '../../utils/security';
 import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmacenado';
@@ -10,16 +8,13 @@ import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
 import { isAdminRol, getRolFromUser, rutaPorRol } from '../../utils/adminAuth';
 import { usePermisos } from '../../utils/permisos';
-import GlobalBreadcrumb from '../GlobalBreadcrumb';
-import ThemeToggle from '../ui/ThemeToggle';
+import PanelShell from './PanelShell';
+import PanelVerificando from './PanelVerificando';
 import {
   BarChart3,
   Bell,
-  ChevronLeft,
-  ChevronRight,
   Database,
   FileText,
-  Menu,
   Package,
   Receipt,
   RotateCcw,
@@ -30,15 +25,12 @@ import {
   Truck,
   User,
   Users,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
-
-const ADMIN_BAR_HEIGHT = 56;
 
 interface PerfilBasico {
   nombre: string;
@@ -135,8 +127,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const [verificando, setVerificando] = useState(true);
   const [accesoPermitido, setAccesoPermitido] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [colapsado, setColapsado] = useState(false);
   const [perfilUsuario, setPerfilUsuario] = useState<PerfilBasico | null>(null);
   const [fotoRota, setFotoRota] = useState(false);
   const { tienePermiso } = usePermisos();
@@ -223,253 +213,66 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       });
   }, [pathname, router]);
 
-  // Cierra sidebar al navegar
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
-
-  // Bloquea scroll del body mientras el sidebar está abierto
-  useEffect(() => {
-    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
-
   if (verificando) {
-    return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center"
-        style={{ backgroundColor: 'var(--fondo-general)' }}
-      >
-        <div className="text-center">
-          <p className="text-lg font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-            Verificando acceso...
-          </p>
-          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-            Comprobando sesión y permisos de administrador
-          </p>
-        </div>
-      </div>
-    );
+    return <PanelVerificando detalle="Comprobando sesión y permisos de administrador" />;
   }
 
   if (!accesoPermitido) {
     return null;
   }
 
+  const grupos = GRUPOS_MODULOS.map((grupo) => ({
+    titulo: grupo.titulo,
+    items: grupo.items.filter((item) => tienePermiso(item.permiso)),
+  })).filter((grupo) => grupo.items.length > 0);
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
-
-      {/* Barra superior */}
-      <header
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-6 h-14 border-b shadow-sm"
-        style={{
-          height: ADMIN_BAR_HEIGHT,
-          backgroundColor: 'var(--header-footer)',
-          color: 'var(--texto-fondo-oscuro)',
-          borderColor: 'rgba(255,255,255,0.08)',
-        }}
-      >
-        <div className="flex items-center gap-3">
-          {/* Botón hamburguesa: solo móvil/tablet, en escritorio el sidebar siempre está visible */}
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((v) => !v)}
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-150 hover:opacity-80"
-            style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
-            aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú de módulos'}
-          >
-            {sidebarOpen ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
-          </button>
-
-          <Link
-            href="/admin"
-            className="font-semibold text-sm md:text-base hover:opacity-90 transition-opacity"
-          >
-            Panel de administración
-          </Link>
-          {pathname && pathname !== '/admin' && (
-            <span className="text-xs opacity-70 hidden sm:inline">
-              {pathname.replace('/admin', '').replace(/^\//, '') || 'Inicio'}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 md:gap-3">
-          <div
-            className="flex items-center gap-1.5 rounded-lg border px-1 py-0.5"
-            style={{ borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(0,0,0,0.12)' }}
-            title="Modo claro u oscuro"
-          >
-            <span className="hidden sm:inline text-xs opacity-90 pr-0.5" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-              Tema
-            </span>
-            <ThemeToggle />
-          </div>
-          <Link
-            href="/admin"
-            className="text-xs md:text-sm opacity-90 hover:opacity-100 transition-opacity"
-          >
-            Inicio panel
-          </Link>
-          <Link
-            href="/home"
-            className="text-xs md:text-sm opacity-90 hover:opacity-100 transition-opacity"
-          >
-            Ver sitio web →
-          </Link>
-        </div>
-      </header>
-
-      {/* Backdrop del sidebar: solo móvil/tablet, en escritorio el sidebar nunca tapa el contenido */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 lg:hidden"
-          style={{ backgroundColor: 'rgba(0,0,0,0.35)', marginTop: ADMIN_BAR_HEIGHT }}
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden
-        />
-      )}
-
-      <div className="flex-1 flex" style={{ marginTop: ADMIN_BAR_HEIGHT }}>
-        {/* Sidebar de módulos: drawer superpuesto en móvil (<lg), fijo en el flujo en escritorio (lg+) */}
-        <aside
-          className={`fixed lg:sticky left-0 z-40 lg:z-0 flex flex-col shrink-0 transition-all duration-250 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 ${colapsado ? 'w-[232px] lg:w-16' : 'w-[232px]'}`}
-          style={{
-            top: ADMIN_BAR_HEIGHT,
-            maxHeight: `calc(100vh - ${ADMIN_BAR_HEIGHT}px)`,
-            backgroundColor: 'var(--fondo-general)',
-            borderRight: '1px solid var(--fondos-suaves)',
-            boxShadow: sidebarOpen ? '4px 0 16px rgba(0,0,0,0.12)' : 'none',
-          }}
-        >
-          {/* Logo + nombre de la empresa, junto al botón colapsar/expandir (solo escritorio) */}
-          <div
-            className={`flex items-center gap-2 px-2.5 pt-3 pb-2 border-b ${colapsado ? 'lg:justify-center' : ''}`}
-            style={{ borderColor: 'var(--fondos-suaves)' }}
-          >
-            <Link href="/admin" className={`flex items-center gap-2 min-w-0 flex-1 ${colapsado ? 'lg:hidden' : ''}`}>
-              <div className="relative w-7 h-7 shrink-0 rounded overflow-hidden">
-                <Image src="/logo-miru.jpg" alt="Mirú Franco" fill sizes="28px" className="object-contain" priority />
-              </div>
-              <div className="min-w-0 leading-tight">
-                <p className="text-[11px] font-bold uppercase truncate" style={{ color: 'var(--logo-branding)' }}>
-                  Mirú Franco
-                </p>
-                <p className="text-[8px] uppercase tracking-wide truncate" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Beauty Salón
-                </p>
-              </div>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setColapsado((v) => !v)}
-              className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg shrink-0 transition-all duration-150 hover:opacity-80"
-              style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}
-              aria-label={colapsado ? 'Expandir menú' : 'Colapsar menú'}
-              title={colapsado ? 'Expandir menú' : 'Colapsar menú'}
+    <PanelShell
+      etiqueta="Administración"
+      inicioHref="/admin"
+      grupos={grupos}
+      esActivo={(href) => !!pathname?.startsWith(href)}
+      pie={(colapsado) =>
+        perfilUsuario ? (
+          <div className={`flex items-center gap-2.5 ${colapsado ? 'lg:justify-center' : ''}`}>
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--botones-principales)', color: '#f2f1ed' }}
+              title={colapsado ? perfilUsuario.nombre : undefined}
             >
-              {colapsado ? <ChevronRight size={14} aria-hidden /> : <ChevronLeft size={14} aria-hidden />}
-            </button>
+              {perfilUsuario.foto && !fotoRota ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={perfilUsuario.foto}
+                  alt={perfilUsuario.nombre}
+                  className="h-full w-full object-cover"
+                  onError={() => setFotoRota(true)}
+                />
+              ) : (
+                <span>{iniciales(perfilUsuario.nombre)}</span>
+              )}
+            </div>
+            <div className={`min-w-0 ${colapsado ? 'lg:sr-only' : ''}`}>
+              <p className="truncate text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                {perfilUsuario.nombre || 'Administrador'}
+              </p>
+              <p className="truncate text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                {perfilUsuario.email}
+              </p>
+            </div>
           </div>
-
-          <nav className="p-3 flex-1 overflow-y-auto scrollbar-hide">
-            {GRUPOS_MODULOS.map((grupo, gi) => {
-              const itemsVisibles = grupo.items.filter((item) => tienePermiso(item.permiso));
-              if (itemsVisibles.length === 0) return null;
-              return (
-              <div key={grupo.titulo} className={gi > 0 ? 'mt-4 pt-4 border-t' : ''} style={{ borderColor: 'var(--fondos-suaves)' }}>
-                <p
-                  className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-1.5 ${colapsado ? 'lg:hidden' : ''}`}
-                  style={{ color: 'var(--encabezados-alterno)' }}
-                >
-                  {grupo.titulo}
-                </p>
-                {itemsVisibles.map((item) => {
-                  const isActive = pathname?.startsWith(item.href);
-                  return (
-                    <Link key={item.href} href={item.href} title={colapsado ? item.label : undefined}>
-                      <div
-                        className={`flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all duration-150 group ${colapsado ? 'lg:justify-center' : ''}`}
-                        style={{
-                          backgroundColor: isActive ? 'var(--fondos-suaves)' : 'transparent',
-                          borderLeft: isActive ? '3px solid var(--hover)' : '3px solid transparent',
-                          color: isActive ? 'var(--texto-acento-dark)' : 'var(--menu-texto-principal)',
-                        }}
-                        onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fondos-suaves)'; }}
-                        onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        <item.icon
-                          size={15}
-                          aria-hidden
-                          className="shrink-0"
-                          style={{ color: isActive ? 'var(--hover)' : 'var(--encabezados-alterno)' }}
-                        />
-                        <span className={`text-sm truncate ${isActive ? 'font-semibold' : 'font-medium'} ${colapsado ? 'lg:hidden' : ''}`}>
-                          {item.label}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-              );
-            })}
-          </nav>
-
-          {/* Cuenta del admin logueado: fija al fondo, fuera del scroll del menú */}
-          <div
-            className={`shrink-0 flex items-center gap-2.5 p-3 border-t ${colapsado ? 'lg:justify-center' : ''}`}
-            style={{ borderColor: 'var(--fondos-suaves)' }}
-          >
-            {perfilUsuario ? (
-              <>
-                <div
-                  className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-xs font-semibold"
-                  style={{ backgroundColor: 'var(--hover)', color: 'var(--texto-fondo-oscuro)' }}
-                  title={colapsado ? perfilUsuario.nombre : undefined}
-                >
-                  {perfilUsuario.foto && !fotoRota ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={perfilUsuario.foto}
-                      alt={perfilUsuario.nombre}
-                      className="w-full h-full object-cover"
-                      onError={() => setFotoRota(true)}
-                    />
-                  ) : (
-                    <span>{iniciales(perfilUsuario.nombre)}</span>
-                  )}
-                </div>
-                <div className={`min-w-0 ${colapsado ? 'lg:hidden' : ''}`}>
-                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--menu-texto-principal)' }}>
-                    {perfilUsuario.nombre || 'Administrador'}
-                  </p>
-                  <p className="text-xs truncate" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {perfilUsuario.email}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-8 h-8 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: 'var(--fondos-suaves)' }} />
-                <div className={`min-w-0 flex-1 space-y-1.5 ${colapsado ? 'lg:hidden' : ''}`}>
-                  <div className="h-3 rounded animate-pulse" style={{ backgroundColor: 'var(--fondos-suaves)', width: '70%' }} />
-                  <div className="h-2.5 rounded animate-pulse" style={{ backgroundColor: 'var(--fondos-suaves)', width: '90%' }} />
-                </div>
-              </>
-            )}
+        ) : (
+          <div className="flex items-center gap-2.5" aria-hidden>
+            <div className="mf-skeleton h-9 w-9 shrink-0" style={{ borderRadius: 999 }} />
+            <div className={`min-w-0 flex-1 space-y-1.5 ${colapsado ? 'lg:hidden' : ''}`}>
+              <div className="mf-skeleton h-3 w-3/4" />
+              <div className="mf-skeleton h-2.5 w-11/12" />
+            </div>
           </div>
-        </aside>
-
-        <main className="flex-1 min-w-0 layout-page pt-1.5 pb-6 md:pt-2 md:pb-8">
-          <GlobalBreadcrumb />
-          <div className="pt-1">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+        )
+      }
+    >
+      {children}
+    </PanelShell>
   );
 }

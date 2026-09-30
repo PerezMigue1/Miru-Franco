@@ -1,6 +1,6 @@
 'use client';
 
-import { InputHTMLAttributes, ReactNode } from 'react';
+import { InputHTMLAttributes, ReactNode, useId } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,6 +10,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   fullWidth?: boolean;
 }
 
+/** Campo del sistema (`.mf-campo`, sistema.css): etiqueta vinculada, foco visible y error anunciado. */
 export default function Input({
   label,
   error,
@@ -17,63 +18,48 @@ export default function Input({
   icon,
   fullWidth = false,
   className = '',
-  onFocus,
-  onBlur,
+  id,
   ...props
 }: InputProps) {
+  const idGenerado = useId();
+  const idCampo = id ?? idGenerado;
+  const idAyuda = `${idCampo}-ayuda`;
+  const ayuda = error || helperText;
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
       {label && (
-        <label
-          className="block mb-2 font-medium"
-          style={{ color: 'var(--menu-texto-principal)' }}
-        >
+        <label htmlFor={idCampo} className="mf-etiqueta">
           {label}
         </label>
       )}
       <div className="relative">
         {icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+          <div
+            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: 'var(--campo-placeholder)' }}
+          >
             {icon}
           </div>
         )}
         <input
-          className={`
-            w-full px-4 py-2.5 rounded-lg border transition-all duration-300
-            focus:outline-none focus:ring-2 focus:ring-offset-2
-            ${icon ? 'pl-10' : ''}
-            ${error ? 'border-red-500' : ''}
-            ${className}
-          `}
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            borderColor: error ? 'var(--danger)' : 'var(--encabezados-alterno)',
-            color: 'var(--menu-texto-principal)',
-          }}
-          onFocus={(e) => {
-            onFocus?.(e);
-            e.currentTarget.style.borderColor = 'var(--hover)';
-            e.currentTarget.style.boxShadow = '0 0 0 3px var(--hover)';
-          }}
-          onBlur={(e) => {
-            onBlur?.(e);
-            e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--encabezados-alterno)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
+          id={idCampo}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={ayuda ? idAyuda : undefined}
+          className={`mf-campo w-full px-4 py-2.5 ${icon ? 'pl-10' : ''} ${className}`}
           {...props}
         />
       </div>
       {error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+        <p id={idAyuda} role="alert" className="mt-1.5 text-sm" style={{ color: 'var(--danger-texto)' }}>
           {error}
         </p>
       )}
       {helperText && !error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+        <p id={idAyuda} className="mt-1.5 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           {helperText}
         </p>
       )}
     </div>
   );
 }
-

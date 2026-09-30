@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { CircleCheck, CircleX, Info, TriangleAlert } from 'lucide-react';
 import { setToastAPI, type ToastType } from '../utils/toast';
 import Button from '../components/ui/Button';
 
@@ -46,40 +47,18 @@ export function useToast() {
 }
 
 const toastIcons: Record<ToastType, React.ReactNode> = {
-  success: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  ),
-  error: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  ),
-  warning: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-  ),
-  info: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
+  success: <CircleCheck size={18} aria-hidden />,
+  error: <CircleX size={18} aria-hidden />,
+  warning: <TriangleAlert size={18} aria-hidden />,
+  info: <Info size={18} aria-hidden />,
 };
 
-const toastBorderColors: Record<ToastType, string> = {
-  success: 'var(--success)',
-  error: 'var(--danger)',
-  warning: 'var(--warning)',
-  info: 'var(--enlaces-textos-interactivos)',
-};
-
+/** Color del ícono por tipo: variantes "texto" de la paleta, AA en claro y oscuro. */
 const toastIconColors: Record<ToastType, string> = {
-  success: 'var(--logo-branding)',
-  error: 'var(--danger)',
-  warning: 'var(--warning)',
-  info: 'var(--logo-branding)',
+  success: 'var(--success-texto)',
+  error: 'var(--danger-texto)',
+  warning: 'var(--warning-texto)',
+  info: 'var(--info-texto)',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -166,28 +145,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         typeof document !== 'undefined' &&
         createPortal(
           <div
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 max-w-md w-full mx-4 pointer-events-none"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-md pointer-events-none"
             aria-live="polite"
           >
             {toasts.map((t) => (
               <div
                 key={t.id}
-                className="flex items-start gap-3 p-4 rounded-lg shadow-lg pointer-events-auto animate-toast-enter"
-                style={{
-                  backgroundColor: 'var(--fondo-general)',
-                  borderLeft: `4px solid ${toastBorderColors[t.type]}`,
-                }}
+                role="status"
+                className="mf-aviso flex items-start gap-3 p-4 pointer-events-auto"
               >
-                <div
-                  className="flex-shrink-0 mt-0.5"
-                  style={{ color: toastIconColors[t.type] }}
-                >
+                <span className="mt-0.5 shrink-0" style={{ color: toastIconColors[t.type] }}>
                   {toastIcons[t.type]}
-                </div>
-                <p
-                  className="text-sm leading-relaxed flex-1"
-                  style={{ color: 'var(--encabezados-alterno)' }}
-                >
+                </span>
+                <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--texto-cuerpo)' }}>
                   {t.message}
                 </p>
               </div>
@@ -198,34 +168,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Modal de alerta (reemplaza window.alert) */}
       {alertState && (
-        <div
-          className="fixed inset-0 z-[9998] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-        >
+        <div className="mf-velo fixed inset-0 z-[9998] flex items-center justify-center p-4">
           <div
-            className="max-w-md w-full rounded-lg shadow-xl"
-            style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
+            className="mf-dialogo max-w-md w-full"
             role="alertdialog"
+            aria-modal="true"
             aria-labelledby="alert-title"
             aria-describedby="alert-desc"
           >
-            <div className="px-6 py-4">
+            <div className="px-6 pt-5 pb-5">
               <h2
                 id="alert-title"
-                className="text-lg font-semibold mb-2"
-                style={{ color: 'var(--logo-branding)' }}
+                className="text-lg font-bold mb-2"
+                style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
               >
-                Miru Franco
+                Mirú Franco
               </h2>
-              <p
-                id="alert-desc"
-                className="text-sm mb-6 whitespace-pre-line"
-                style={{ color: 'var(--logo-branding)' }}
-              >
+              <p id="alert-desc" className="text-[0.9375rem] mb-6 whitespace-pre-line">
                 {alertState.message}
               </p>
               <div className="flex justify-end">
-                <Button onClick={handleAlertClose}>Aceptar</Button>
+                <Button onClick={handleAlertClose} autoFocus>
+                  Aceptar
+                </Button>
               </div>
             </div>
           </div>
@@ -234,37 +199,30 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Modal de confirmación (reemplaza window.confirm) */}
       {confirmState && (
-        <div
-          className="fixed inset-0 z-[9998] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-        >
+        <div className="mf-velo fixed inset-0 z-[9998] flex items-center justify-center p-4">
           <div
-            className="max-w-md w-full rounded-lg shadow-xl"
-            style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
+            className="mf-dialogo max-w-md w-full"
             role="alertdialog"
+            aria-modal="true"
             aria-labelledby="confirm-title"
             aria-describedby="confirm-desc"
           >
-            <div className="px-6 py-4">
+            <div className="px-6 pt-5 pb-5">
               <h2
                 id="confirm-title"
-                className="text-lg font-semibold mb-2"
-                style={{ color: 'var(--logo-branding)' }}
+                className="text-lg font-bold mb-2"
+                style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
               >
                 {confirmState.title ?? 'Confirmar'}
               </h2>
-              <p
-                id="confirm-desc"
-                className="text-sm mb-6 whitespace-pre-line"
-                style={{ color: 'var(--logo-branding)' }}
-              >
+              <p id="confirm-desc" className="text-[0.9375rem] mb-6 whitespace-pre-line">
                 {confirmState.message}
               </p>
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <Button variant="outline" onClick={() => handleConfirmResponse(false)}>
                   {confirmState.cancelText}
                 </Button>
-                <Button onClick={() => handleConfirmResponse(true)}>
+                <Button onClick={() => handleConfirmResponse(true)} autoFocus>
                   {confirmState.confirmText}
                 </Button>
               </div>

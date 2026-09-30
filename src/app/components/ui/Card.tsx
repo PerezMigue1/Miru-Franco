@@ -26,31 +26,18 @@ export default function Card({
   };
 
   const variants = {
-    default: {
-      bg: 'var(--tarjetas-paneles)',
-      border: 'none',
-      shadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    },
-    elevated: {
-      bg: 'var(--tarjetas-paneles)',
-      border: 'none',
-      shadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    },
-    outlined: {
-      bg: 'transparent',
-      border: '1px solid var(--encabezados-alterno)',
-      shadow: 'none',
-    },
+    default: { bg: 'var(--tarjetas-paneles)', border: 'none' },
+    elevated: { bg: 'var(--tarjetas-paneles)', border: 'none' },
+    outlined: { bg: 'transparent', border: '1px solid var(--mf-linea-fuerte)' },
   };
 
   const variantStyle = variants[variant];
-  // Pantallas de cliente: radio y sombra tintada de DESIGN.md, elevación al hover si es clicable.
-  // En /admin y /operacion (superficie 'panel') la salida es exactamente la de siempre.
+  // Mismo sistema en cliente, /operacion y /admin (DESIGN.md): sombra tintada y radio de marca.
+  // Solo cambia la escala: 14px en el portal de clientas, 12px en los paneles (más densos), y la
+  // elevación al hover de las tarjetas clicables, que existe solo en el portal (cliente.css).
   const cliente = useSuperficie() === 'cliente';
-  const forma = cliente
-    ? `mf-card${props.onClick ? ' mf-card--interactiva' : ''}`
-    : 'rounded-lg';
-  const sombra = cliente && variant !== 'outlined' ? 'var(--mf-sombra-1)' : variantStyle.shadow;
+  const forma = `mf-card${cliente ? '' : ' mf-card--panel'}${props.onClick ? ' mf-card--interactiva' : ''}`;
+  const sombra = variant === 'outlined' ? 'none' : 'var(--mf-sombra-1)';
 
   return (
     <div
