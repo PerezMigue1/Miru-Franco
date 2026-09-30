@@ -49,6 +49,13 @@ Tokens semánticos del sistema (claro / oscuro):
 - **Placeholders de imagen:** monograma dorado sobre carbón (`ServicioImagen`).
 - **Pasos de flujo:** reserva y compra muestran dónde está la clienta (`PasosFlujo`).
 
+## 4b. Piezas del portal y de los paneles
+- **Hero de la home (`HeroProductos`):** productos reales del catálogo (activos, con imagen) como láminas enmarcadas —paspartú y filete dorado mate— flotando en profundidad (three + @react-three/fiber + drei, cargado con `next/dynamic` `ssr:false`). La cámara sigue al puntero o al giroscopio con amortiguación (`damp`) y avanza entre las láminas al hacer scroll; el canvas se pausa fuera de pantalla. La **vitrina estática** CSS con los mismos productos es el HTML del servidor, el placeholder y el respaldo con `prefers-reduced-motion`, sin WebGL o en equipos modestos. Leyenda con anterior/siguiente accesible por teclado. Texturas 3:4 recortadas por Cloudinary (`c_fill,g_auto,w_600,h_800,f_auto,q_auto`).
+- **Galería (`GaleriaTrabajo`):** solo fotos reales de los servicios; mosaico editorial (cada 7 fotos: una 2×2, una 1×2 y una 2×1, llenando 12 celdas exactas) y visor a pantalla completa (flechas, deslizar por velocidad, Escape, foco devuelto). Sin fotos: estado vacío con monograma, nunca relleno.
+- **Acceso (`AuthContainer`):** panel de marca carbón (en oscuro, teñido de vino) que se desliza entre el lado del acceso y el del registro (680ms ease-in-out, contra-movimiento del contenido y filete dorado en el borde que avanza). Ambos formularios montados; cambio de vista con `history.pushState` (URL directa y botón Atrás funcionan). Móvil: cabecera compacta + pestañas con indicador deslizante.
+- **KPI de paneles (`TarjetaKpi`):** etiqueta que salta de línea, valor fluido con cifras tabulares, skeleton mientras carga, tonos AA (aviso, peligro, éxito, oro) y anillo de alerta solo cuando hay algo que atender. Dos columnas desde 360px.
+- **Oro sobre carbón:** el texto dorado pequeño sobre el cromo (#161616) usa `--oro-sobre-carbon` (#b07a28, 4.9:1); el oro de marca queda para ornamento, íconos y texto grande.
+
 ## 5. Layout
 - Portal: contenedor `layout-page`, ritmo de 4px, más espacio sobre un título que debajo. Resúmenes de compra y cita `sticky` en escritorio.
 - Paneles (`PanelShell`): barra carbón de 56px con monograma, "Mirú Franco" y etiqueta del panel; menú lateral de 248px fijo desde 1024px (colapsable a 68px) y cajón deslizante por debajo, con velo y Escape; "Saltar al contenido"; contenido con máximo de 96rem.
