@@ -14,7 +14,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 type EstiloBoton = CSSProperties & Record<`--${string}`, string>;
 
-/** Colores por variante como variables CSS: el hover lo resuelve `.mf-btn` (sistema.css), no JS. */
+/** Colores por variante como variables CSS: el hover lo resuelve `.mf-btn-color` (sistema.css), no JS. */
 const VARIANTES: Record<NonNullable<ButtonProps['variant']>, Record<string, string>> = {
   primary: {
     '--btn-bg': 'var(--botones-principales)',
@@ -78,7 +78,7 @@ export default function Button({
   // Mismo botón en cliente, /operacion y /admin (DESIGN.md): presión táctil, hover solo con
   // puntero fino y transiciones por propiedad.
   const baseStyles =
-    'mf-btn font-semibold rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed';
+    'mf-btn mf-btn-color font-semibold rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed';
   const widthStyle = fullWidth ? 'w-full' : '';
   const mergedClassName = `${baseStyles} ${TAMANOS[size]} ${widthStyle} ${className}`.trim();
   const estilo = { ...VARIANTES[variant], ...style } as EstiloBoton;

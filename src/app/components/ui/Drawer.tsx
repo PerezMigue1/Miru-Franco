@@ -61,7 +61,7 @@ export function Drawer({ open, title, onClose, children }: DrawerProps) {
             <button
               type="button"
               onClick={onClose}
-              className="mf-btn rounded-[10px] px-3 min-h-10 text-sm font-medium shrink-0"
+              className="mf-btn mf-btn-color rounded-[10px] px-3 min-h-10 text-sm font-medium shrink-0"
               style={{
                 ['--btn-bg' as string]: 'transparent',
                 ['--btn-texto' as string]: 'var(--menu-texto-principal)',

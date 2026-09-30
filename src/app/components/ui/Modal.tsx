@@ -81,7 +81,7 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="Cerrar"
-              className="mf-btn -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-[10px]"
+              className="mf-btn mf-btn-color -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-[10px]"
               style={{
                 ['--btn-bg' as string]: 'transparent',
                 ['--btn-texto' as string]: 'var(--menu-texto-principal)',

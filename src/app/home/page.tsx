@@ -7,6 +7,8 @@ import { getProductosSinRedirigir } from '../services/productos';
 import { getServicios } from '../services/servicios';
 import HomeLandingClient from '../components/home/HomeLandingClient';
 import HeroEscena from '../components/home/HeroEscena';
+import HeroProductos from '../components/home/HeroProductos';
+import { seleccionarProductosHero } from '../utils/heroProductos';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 import { metadataPublica } from '../utils/seo';
 
@@ -50,23 +52,40 @@ async function HomeDataSections() {
   );
 }
 
+/**
+ * Productos reales del catálogo para el hero (misma petición que la sección de productos: Next
+ * la deduplica). Si el API no responde, queda la escena del monograma: nunca productos inventados.
+ */
+async function HeroProductosDatos() {
+  const { data } = await getProductosSinRedirigir();
+  const productos = seleccionarProductosHero(shuffle(data));
+  return productos.length > 0 ? <HeroProductos productos={productos} /> : <HeroEscena />;
+}
+
+function HeroProductosCargando() {
+  return (
+    <div className="mf-hero-productos" aria-hidden>
+      <div className="mf-hero-productos__escenario flex items-center justify-center">
+        <div className="mf-skeleton aspect-[3/4] w-[38%] min-w-[8.25rem] max-w-56" style={{ borderRadius: 16 }} />
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
 
       <main className="flex-1">
-        {/* Hero: escena de profundidad (HeroEscena) + tipografía de marca. Un solo CTA primario;
-            reservar empieza eligiendo el servicio (crear-cita sin servicio/horario no se puede
-            completar). Sin flecha "Descubre": el contenido tira del scroll por sí mismo. */}
+        {/* Hero: tipografía de marca a la izquierda y vitrina de productos reales del catálogo a la
+            derecha (WebGL si el equipo lo permite; vitrina CSS si no). Un solo CTA primario:
+            reservar empieza eligiendo el servicio. */}
         <section
           className="mf-hero hero-bg-gradient relative w-full overflow-hidden layout-gutter-x flex items-center"
           style={{ marginTop: 'var(--mf-header-offset, 104px)' }}
         >
-          <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[1.05fr_1fr] items-center gap-6 md:gap-12 py-10 md:py-12">
-            <div className="flex justify-center md:justify-end">
-              <HeroEscena />
-            </div>
+          <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[0.9fr_1.1fr] items-center gap-8 md:gap-10 lg:gap-16 py-10 md:py-12">
             <div className="mf-hero-texto flex flex-col items-center md:items-start text-center md:text-left">
               <div className="flex items-center gap-3 mb-3 md:mb-4" style={{ ['--i' as string]: 0 }}>
                 <span className="hero-flourish" />
@@ -97,9 +116,11 @@ export default function Home() {
               >
                 <Link
                   href="/cliente/servicios-citas"
-                  className="mf-btn inline-flex items-center justify-center gap-2 px-7 rounded-full font-semibold text-sm uppercase tracking-wider bg-[var(--botones-principales)] hover:bg-[var(--hover)]"
+                  className="mf-btn mf-btn-color inline-flex items-center justify-center gap-2 px-7 rounded-full font-semibold text-sm uppercase tracking-wider"
                   style={{
-                    color: 'var(--texto-fondo-oscuro)',
+                    ['--btn-bg' as string]: 'var(--botones-principales)',
+                    ['--btn-bg-hover' as string]: 'var(--hover)',
+                    ['--btn-texto' as string]: 'var(--texto-fondo-oscuro)',
                     minHeight: '48px',
                     boxShadow: '0 10px 24px -10px rgba(113, 0, 20, 0.55)',
                   }}
@@ -116,6 +137,11 @@ export default function Home() {
                   <ArrowRight size={15} aria-hidden className="transition-transform duration-200 group-hover:translate-x-1" style={{ color: 'var(--logo-branding)' }} />
                 </Link>
               </div>
+            </div>
+            <div className="mf-hero-escena-productos flex justify-center md:justify-end">
+              <Suspense fallback={<HeroProductosCargando />}>
+                <HeroProductosDatos />
+              </Suspense>
             </div>
           </div>
         </section>
