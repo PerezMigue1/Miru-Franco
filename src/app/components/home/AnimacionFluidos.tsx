@@ -1,11 +1,9 @@
 'use client';
 
-import type { RefObject } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+gsap.registerPlugin(useGSAP);
 
 const PROPORCION_GIRO = 422 / 1364;
 
@@ -16,20 +14,24 @@ function desplazamientoCabecera(): number {
 }
 
 /**
- * Movimiento del hero de fluidos (parallax, pop de stickers, pin con giro del Goji). Vive en su
- * propio chunk y se carga después de hidratar: GSAP no compite con la imagen LCP del hero.
+ * Movimiento del hero de fluidos (parallax, pop de stickers, giro del Goji al hacer scroll). Vive
+ * en su propio chunk y se carga después de hidratar: GSAP no compite con la imagen LCP del hero.
  * No pinta nada; trabaja sobre el markup que ya renderizó HeroFluidos.
+ *
+ * El pin es CSS (escenario `position: sticky` + `.mf-fluidos__recorrido`) y el progreso del scroll
+ * se lee solo mientras el hero está a la vista (IntersectionObserver): fuera de ella no queda ningún
+ * bucle de requestAnimationFrame, y en reposo el ticker de GSAP se duerme solo. (ScrollTrigger
+ * mantiene un rAF perpetuo que no se puede pausar sin reinicializarlo.)
  */
-export default function AnimacionFluidos({ seccion }: { seccion: RefObject<HTMLElement | null> }) {
+export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
   useGSAP(
     () => {
-      const raiz = seccion.current;
+      const raiz = document.getElementById(idSeccion);
       if (!raiz) return;
       const escenario = raiz.querySelector<HTMLElement>('.mf-fluidos__escenario')!;
       const lienzo = raiz.querySelector<HTMLCanvasElement>('.mf-fluidos__giro')!;
       const gojiImg = raiz.querySelector<HTMLElement>('[data-clave="goji"] .mf-fluidos__frasco-img')!;
       const introActiva = document.documentElement.getAttribute('data-intro') === 'si';
-      ScrollTrigger.config({ ignoreMobileResize: true });
       raiz.dataset.animado = '';
 
       const mm = gsap.matchMedia();
@@ -138,27 +140,7 @@ export default function AnimacionFluidos({ seccion }: { seccion: RefObject<HTMLE
             '.mf-fluidos__texto, .mf-fluidos__capa:not([data-clave="goji"]), .mf-sticker-capa',
             raiz
           );
-          const tl = gsap.timeline({
-            defaults: { ease: 'none' },
-            scrollTrigger: {
-              trigger: escenario,
-              // Se fija justo bajo el cromo del sitio (header + barra de navegación)
-              start: () => `top ${desplazamientoCabecera()}px`,
-              end: grande ? '+=140%' : '+=70%',
-              pin: true,
-              scrub: 0.6,
-              invalidateOnRefresh: true,
-              onRefresh: medirLienzo,
-              onUpdate: (self) => {
-                const viajando = self.progress > 0.002 && listos > 0;
-                enReposo = self.progress < 0.002;
-                if (!enReposo) movedores.forEach((m) => (m.x(0), m.y(0), m.r(0)));
-                lienzo.style.opacity = viajando ? '1' : '0';
-                gojiImg.style.opacity = viajando ? '0' : '1';
-                pintar(tl.progress());
-              },
-            },
-          });
+          const tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
           tl.to(aSalir, { opacity: 0, y: -48, duration: 0.35, stagger: 0.02 }, 0)
             .fromTo(gigante, { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.45, ease: 'power1.out' }, 0.22)
             .fromTo(
@@ -168,21 +150,67 @@ export default function AnimacionFluidos({ seccion }: { seccion: RefObject<HTMLE
               0
             );
 
-          // El pin empieza bajo el cromo (--mf-header-offset, que publica el header): si su alto
-          // cambia después (menú, rotación), se vuelven a medir los puntos de inicio.
-          let ultimoDesplazamiento = desplazamientoCabecera();
-          const refrescar = () => ScrollTrigger.refresh();
-          const observador = new MutationObserver(() => {
-            const actual = desplazamientoCabecera();
-            if (actual !== ultimoDesplazamiento) {
-              ultimoDesplazamiento = actual;
-              refrescar();
+          // ── Progreso del scroll (0 = hero en reposo, 1 = Goji sobre la tipografía gigante), suavizado
+          // como un scrub de 0.6 s. Solo se escucha el scroll mientras el hero está a la vista.
+          const estado = { p: 0 };
+          const aplicar = () => {
+            const p = estado.p;
+            tl.progress(p);
+            const viajando = p > 0.002 && listos > 0;
+            enReposo = p < 0.002;
+            if (!enReposo) movedores.forEach((m) => (m.x(0), m.y(0), m.r(0)));
+            lienzo.style.opacity = viajando ? '1' : '0';
+            gojiImg.style.opacity = viajando ? '0' : '1';
+            pintar(p);
+          };
+          const irA = gsap.quickTo(estado, 'p', { duration: 0.6, ease: 'power3', onUpdate: aplicar });
+          let cabecera = desplazamientoCabecera();
+          const leer = () => {
+            const recorrido = raiz.offsetHeight - escenario.offsetHeight;
+            const p = recorrido > 0 ? gsap.utils.clamp(0, 1, (cabecera - raiz.getBoundingClientRect().top) / recorrido) : 0;
+            irA(p);
+          };
+          let cuadroPendiente = 0;
+          const alScroll = () => {
+            if (cuadroPendiente) return;
+            cuadroPendiente = requestAnimationFrame(() => {
+              cuadroPendiente = 0;
+              leer();
+            });
+          };
+          const vigia = new IntersectionObserver(([entrada]) => {
+            if (entrada?.isIntersecting) {
+              cabecera = desplazamientoCabecera();
+              window.addEventListener('scroll', alScroll, { passive: true });
+              leer();
+            } else {
+              window.removeEventListener('scroll', alScroll);
             }
           });
-          observador.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+          vigia.observe(raiz);
+
+          // Cambio de ancho (no el de la barra del navegador móvil): se remiden lienzo y trayectoria
+          let anchoPrevio = window.innerWidth;
+          let reajuste = 0;
+          const alRedimensionar = () => {
+            window.clearTimeout(reajuste);
+            reajuste = window.setTimeout(() => {
+              cabecera = desplazamientoCabecera();
+              if (window.innerWidth === anchoPrevio) return;
+              anchoPrevio = window.innerWidth;
+              medirLienzo();
+              tl.progress(0).invalidate();
+              aplicar();
+            }, 150);
+          };
+          window.addEventListener('resize', alRedimensionar);
 
           return () => {
-            observador.disconnect();
+            vigia.disconnect();
+            window.removeEventListener('scroll', alScroll);
+            window.removeEventListener('resize', alRedimensionar);
+            cancelAnimationFrame(cuadroPendiente);
+            window.clearTimeout(reajuste);
             window.clearTimeout(precargar);
             window.removeEventListener('pointermove', alPuntero);
             window.removeEventListener('deviceorientation', alOrientar);
@@ -191,7 +219,7 @@ export default function AnimacionFluidos({ seccion }: { seccion: RefObject<HTMLE
         }
       );
     },
-    { scope: seccion }
+    { dependencies: [idSeccion] }
   );
 
   return null;
