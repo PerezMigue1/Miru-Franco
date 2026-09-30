@@ -4,7 +4,7 @@ import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { getProductosSinRedirigir, urlsGaleriaProductoCatalogo, type Producto } from '../services/productos';
 import { getServicios } from '../services/servicios';
-import HomeLandingClient from '../components/home/HomeLandingClient';
+import SeccionesHome from '../components/home/SeccionesHome';
 import HeroFluidos from '../components/home/HeroFluidos';
 import IntroGrieta from '../components/home/IntroGrieta';
 import { SRCSET_GOJI_AVIF, TAMANO_GOJI, seleccionarFluidos } from '../utils/fluidosHero';
@@ -50,7 +50,7 @@ async function HomeDataSections() {
     getServicios(),
   ]);
   return (
-    <HomeLandingClient
+    <SeccionesHome
       initialProductos={conFotoPrimero(shuffle(productos)).slice(0, 10)}
       initialServicios={shuffle(servicios)}
     />
@@ -73,23 +73,32 @@ export default async function Home() {
 
   return (
     <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
-      <Header />
+      {/* Cada bloque en su propio límite de hidratación (mismo HTML; React cede el hilo entre ellos) */}
+      <Suspense fallback={null}>
+        <Header />
+      </Suspense>
 
       <main className="flex-1">
         {/* Intro de la primera visita (grieta en el monograma). El script decide antes del primer
             pintado (layout raíz) si se muestra, así no parpadea en visitas siguientes. */}
-        <IntroGrieta />
+        <Suspense fallback={null}>
+          <IntroGrieta />
+        </Suspense>
 
         {/* Hero 2.5D: los cuatro fluidos AVYNA del catálogo (nombre/precio del API, renders propios).
             Un solo CTA primario: reservar empieza eligiendo el servicio. */}
-        <HeroFluidos fluidos={fluidos} />
+        <Suspense fallback={null}>
+          <HeroFluidos fluidos={fluidos} />
+        </Suspense>
 
         <Suspense fallback={<div aria-hidden style={{ minHeight: '100vh' }} />}>
           <HomeDataSections />
         </Suspense>
       </main>
 
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </SuperficieCliente>
   );
 }

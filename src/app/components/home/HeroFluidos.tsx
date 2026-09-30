@@ -1,19 +1,14 @@
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { SRCSET_GOJI_AVIF, TAMANO_GOJI, type FluidoHero } from '../../utils/fluidosHero';
 import { Sticker } from './StickersSalon';
+import ActivadorFluidos from './ActivadorFluidos';
 
-// GSAP llega en un chunk aparte cuando la página ya está en calma (o con la primera interacción):
-// no compite con la imagen LCP del Goji ni con la hidratación.
-const AnimacionFluidos = dynamic(() => import('./AnimacionFluidos'), { ssr: false });
-const INTENCIONES = ['pointerdown', 'pointermove', 'touchstart', 'wheel', 'scroll', 'keydown'] as const;
+const ID_SECCION = 'mf-hero-fluidos';
 
 /** Posición y profundidad de cada frasco en la composición (profundidad = cuánto sigue al puntero). */
-const CAPAS: Record<FluidoHero['clave'], { estilo: React.CSSProperties; prof: number; giro: number }> = {
+const CAPAS: Record<FluidoHero['clave'], { estilo: CSSProperties; prof: number; giro: number }> = {
   hialuronico: { estilo: { left: '76%', bottom: '26%', height: '56%', zIndex: 1 }, prof: 0.35, giro: 3 },
   argan: { estilo: { left: '6%', bottom: '15%', height: '67%', zIndex: 2 }, prof: 0.55, giro: -3 },
   platino: { estilo: { left: '60%', bottom: '9%', height: '71%', zIndex: 3 }, prof: 0.7, giro: 2.5 },
@@ -61,26 +56,11 @@ function Frasco({ clave, sizes, prioridad }: { clave: string; sizes: string; pri
  * tipografía gigante. Con prefers-reduced-motion todo queda estático (lo resuelve el CSS).
  */
 export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
-  const seccion = useRef<HTMLElement>(null);
-  const [animar, setAnimar] = useState(false);
-
-  useEffect(() => {
-    const iniciar = () => setAnimar(true);
-    INTENCIONES.forEach((e) => window.addEventListener(e, iniciar, { once: true, passive: true }));
-    // Safari no tiene requestIdleCallback: ahí basta un respiro tras la carga
-    const conOcio = typeof window.requestIdleCallback === 'function';
-    const ocioso = conOcio ? window.requestIdleCallback(iniciar, { timeout: 2500 }) : window.setTimeout(iniciar, 1200);
-    return () => {
-      INTENCIONES.forEach((e) => window.removeEventListener(e, iniciar));
-      if (conOcio) window.cancelIdleCallback(ocioso);
-      else window.clearTimeout(ocioso);
-    };
-  }, []);
   const porClave = Object.fromEntries(fluidos.map((f) => [f.clave, f])) as Record<FluidoHero['clave'], FluidoHero>;
 
   return (
     <>
-      <section ref={seccion} className="mf-fluidos hero-bg-gradient" style={{ marginTop: 'var(--mf-header-offset, 104px)' }}>
+      <section id={ID_SECCION} className="mf-fluidos hero-bg-gradient" style={{ marginTop: 'var(--mf-header-offset, 104px)' }}>
         <div className="mf-fluidos__escenario">
           <div className="mf-fluidos__rejilla layout-gutter-x">
             <div className="mf-fluidos__texto">
@@ -120,7 +100,7 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                   const f = porClave[clave];
                   return (
                     <li key={clave}>
-                      <Link href={`/cliente/tienda-online/productos/${f.id}`} className="mf-fluidos__chip">
+                      <Link href={`/cliente/tienda-online/productos/${f.id}`} prefetch={false} className="mf-fluidos__chip">
                         <span className="mf-fluidos__punto" style={{ backgroundColor: f.color }} aria-hidden />
                         <span className="truncate">{f.nombre ?? 'Ver producto'}</span>
                         {f.precio && <span className="mf-cifras font-semibold">{f.precio}</span>}
@@ -156,6 +136,7 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                   >
                     <Link
                       href={`/cliente/tienda-online/productos/${f.id}`}
+                      prefetch={false}
                       className="mf-fluidos__frasco"
                       aria-label={`${f.nombre ?? 'Fluido AVYNA'}${f.precio ? `, ${f.precio}` : ''}`}
                     >
@@ -174,6 +155,7 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
             </p>
             <Link
               href={`/cliente/tienda-online/productos/${porClave.goji.id}`}
+              prefetch={false}
               className="mf-fluidos__destino-frasco"
               aria-label={`${porClave.goji.nombre ?? 'Fluido Di Goji'}${porClave.goji.precio ? `, ${porClave.goji.precio}` : ''}`}
             >
@@ -182,8 +164,10 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
           </div>
           <canvas className="mf-fluidos__giro" aria-hidden />
         </div>
+        {/* Distancia de scroll durante la que el escenario queda fijo y el Goji viaja (solo con movimiento) */}
+        <div className="mf-fluidos__recorrido" aria-hidden />
       </section>
-      {animar && <AnimacionFluidos seccion={seccion} />}
+      <ActivadorFluidos idSeccion={ID_SECCION} />
     </>
   );
 }

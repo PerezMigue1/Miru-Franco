@@ -1162,8 +1162,16 @@ html:has(.superficie-cliente) {
   filter: drop-shadow(0 26px 24px rgba(58, 28, 10, 0.32));
 }
 
-/* Con movimiento: el destino es una capa del escenario fijado (aparece al hacer scroll) */
+/* Con movimiento: el escenario se fija bajo el cromo del sitio (sticky) mientras se recorre
+   .mf-fluidos__recorrido; el destino es una capa del escenario que aparece al hacer scroll */
 @media (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__escenario {
+    position: sticky;
+    top: var(--mf-header-offset, 136px);
+  }
+  .mf-fluidos__recorrido {
+    height: 70svh;
+  }
   .mf-fluidos__destino {
     position: absolute;
     inset: 0;
@@ -1175,6 +1183,11 @@ html:has(.superficie-cliente) {
     display: none;
   }
 }
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__recorrido {
+    height: 140svh;
+  }
+}
 /* Sin movimiento: nada se fija ni gira; el destino es un bloque normal con el Goji estático */
 @media (prefers-reduced-motion: reduce) {
   .mf-fluidos__giro {
@@ -1183,6 +1196,13 @@ html:has(.superficie-cliente) {
   .mf-fluidos__destino {
     min-height: min(80vh, 44rem);
   }
+}
+
+/* Secciones del home bajo el hero: el navegador no las maqueta ni pinta hasta que se acercan a la
+   vista (aligera la primera tarea del documento). El alto estimado se sustituye por el real. */
+.mf-diferido {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56rem;
 }
 
 /* Los stickers esperan al chunk de animación para su pop (sin movimiento se ven de inmediato) */
