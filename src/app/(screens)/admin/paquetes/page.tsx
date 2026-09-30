@@ -7,6 +7,7 @@ import { getPaquetes, createPaquete, deletePaquete } from '../../../services/paq
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
@@ -154,33 +155,13 @@ export default function PaquetesPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Gift size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total paquetes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{paquetes.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Gift size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Precio promedio</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${precioPromedio.toLocaleString('es-MX')}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <TarjetaKpi icono={Gift} etiqueta="Total paquetes" valor={paquetes.length} />
+          <TarjetaKpi icono={Gift} etiqueta="Precio promedio" valor={<>${precioPromedio.toLocaleString('es-MX')}</>} />
         </div>
 
         {loadError && (
-          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--warning)' }}>
+          <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--warning-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--warning-texto) 35%, transparent)' }}>
             <div className="text-sm space-y-2">
               <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>No se pudieron cargar los paquetes</p>
               <p className="whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{loadError}</p>

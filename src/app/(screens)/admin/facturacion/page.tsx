@@ -15,6 +15,7 @@ import { generarNotaVentaPdf } from '../../../utils/generarNotaPdf';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
@@ -202,48 +203,18 @@ export default function FacturacionPage() {
         </div>
 
         {error && (
-          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+          <div role="alert" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--danger)', color: '#F2F1ED', boxShadow: 'var(--mf-sombra-1)' }}>
             {error}
           </div>
         )}
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Receipt size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Notas de venta</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{notasCount}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={Receipt} etiqueta="Notas de venta" valor={notasCount} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>CFDI sin PDF cargado</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{cfdiSinPdf}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={Clock3} etiqueta="CFDI sin PDF cargado" valor={cfdiSinPdf} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Monto total</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(montoTotal)}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto total" valor={fmtMoneda(montoTotal)} />
         </div>
 
         {/* Listado */}

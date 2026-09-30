@@ -1162,25 +1162,20 @@ export default function BaseDatosPage() {
   return (
     <AdminLayout>
       <div className="px-4 md:px-8 lg:px-12">
-        <header
-          className="rounded-2xl mb-8 px-6 py-6"
-          style={{
-            background: 'linear-gradient(135deg, var(--header-footer) 0%, var(--menu-texto-principal) 100%)',
-            color: 'var(--texto-fondo-oscuro)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          }}
-        >
-          <h1 className="text-2xl md:text-3xl font-bold">Gestor de Base de Datos</h1>
-          <p className="text-sm mt-1 opacity-80">Administración de la base de datos Neon (PostgreSQL)</p>
+        <header className="mb-8">
+          <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>Gestor de Base de Datos</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Administración de la base de datos Neon (PostgreSQL)</p>
         </header>
 
         <div className="relative space-y-6 overflow-hidden">
           {/* Trigger del menú lateral */}
           <button
             type="button"
-            aria-label="Mostrar menú"
+            aria-label="Mostrar menú de secciones"
+            aria-expanded={!menuLateralOculto}
+            onClick={() => setMenuLateralOculto((v) => !v)}
             onMouseEnter={() => setMenuLateralOculto(false)}
-            className="absolute left-0 top-6 z-40 h-10 w-8 rounded-r-lg border border-l-0 text-sm"
+            className="absolute left-0 top-6 z-40 h-11 w-9 rounded-r-lg border border-l-0 text-sm"
             style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
           >
             <Menu size={16} className="mx-auto" />
@@ -1190,7 +1185,7 @@ export default function BaseDatosPage() {
           {/* Menú lateral deslizable */}
           {!menuLateralOculto && (
             <aside
-              className="absolute top-0 left-0 h-full w-[280px] z-50 p-4 overflow-y-auto"
+              className="absolute top-0 left-0 h-full w-[min(280px,85%)] z-50 p-4 overflow-y-auto"
               style={{ backgroundColor: 'var(--fondo-general)', borderRight: `1px solid var(--encabezados-alterno)` }}
               onMouseEnter={() => setMenuLateralOculto(false)}
               onMouseLeave={() => setMenuLateralOculto(true)}
@@ -1280,11 +1275,10 @@ export default function BaseDatosPage() {
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Archivo (CSV o JSON)</label>
                     <input ref={fileInputRef} type="file" accept=".csv,.json"
                       onChange={(e) => setArchivoImport(e.target.files?.[0] ?? null)}
-                      className="w-full px-4 py-2.5 rounded-lg border"
-                      style={{ backgroundColor: 'var(--texto-fondo-oscuro)', borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }} />
+                      className="mf-campo w-full px-4 py-2.5" />
                     {tablaImport === 'usuarios' && (
                       <p className="mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                        Recomendación: evita importar la columna <code className="bg-black/10 px-1 rounded">password</code> con hash bcrypt.
+                        Recomendación: evita importar la columna <code className="bg-[var(--nav-hover-bg)] px-1 rounded">password</code> con hash bcrypt.
                       </p>
                     )}
                   </div>
@@ -1324,7 +1318,7 @@ export default function BaseDatosPage() {
                   <Download size={18} /> Exportar datos
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Conexión directa a la BD con <code className="text-xs bg-black/10 px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-black/10 px-1 rounded">public</code>.
+                  Conexión directa a la BD con <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">public</code>.
                 </p>
                 <form onSubmit={handleExportar} className="space-y-4">
                   <div>
@@ -1402,7 +1396,7 @@ export default function BaseDatosPage() {
                               Solo registros activos
                             </label>
                             <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                              (tablas con columna <code className="bg-black/10 px-1 rounded">activo</code> o <code className="bg-black/10 px-1 rounded">estado</code>)
+                              (tablas con columna <code className="bg-[var(--nav-hover-bg)] px-1 rounded">activo</code> o <code className="bg-[var(--nav-hover-bg)] px-1 rounded">estado</code>)
                             </p>
                           </div>
                         </>
@@ -1468,7 +1462,7 @@ export default function BaseDatosPage() {
                   <Trash2 size={18} /> Truncate de tabla
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  El comando <code className="text-xs bg-black/10 px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
+                  El comando <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
                   Esta operación es destructiva.
                 </p>
                 <form onSubmit={handleTruncateTabla} className="space-y-4">
@@ -1500,14 +1494,13 @@ export default function BaseDatosPage() {
                   </div>
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
-                      Confirmación (escribe exactamente: <code className="text-xs bg-black/10 px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
+                      Confirmación (escribe exactamente: <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
                     </label>
                     <input
                       type="text"
                       value={truncateConfirmText}
                       onChange={(e) => setTruncateConfirmText(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border"
-                      style={{ backgroundColor: 'var(--texto-fondo-oscuro)', borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
+                      className="mf-campo w-full px-4 py-2.5"
                       placeholder={tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}
                     />
                   </div>
@@ -1621,7 +1614,7 @@ export default function BaseDatosPage() {
 <button 
   onClick={realizarBackup}
   disabled={realizandoBackup}
-  className="flex flex-col items-center justify-center p-4 rounded-xl border transition-all hover:bg-white"
+  className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--nav-hover-bg)]"
 >
   <Database size={24} className={realizandoBackup ? "animate-spin" : ""} />
   <span className="text-[10px] font-bold mt-2">
@@ -1696,7 +1689,7 @@ export default function BaseDatosPage() {
                       const Icon = item.icon;
                       return (
                         <button key={item.id} type="button" onClick={() => navegarVistaMonitoreo(item.id)}
-                          className="px-3 py-2 rounded-lg text-sm font-medium border transition-all"
+                          className="px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
                           style={{
                             borderColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'var(--encabezados-alterno)',
                             backgroundColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'transparent',

@@ -9,6 +9,7 @@ import Textarea from '../../../components/ui/Textarea';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
@@ -182,29 +183,9 @@ export default function VentaLocalPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ShoppingCart size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : ventasHoy.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total del día</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${totalDia.toLocaleString('es-MX')}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <TarjetaKpi icono={ShoppingCart} etiqueta="Ventas de hoy" cargando={loading} valor={ventasHoy.length} />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total del día" valor={<>${totalDia.toLocaleString('es-MX')}</>} />
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

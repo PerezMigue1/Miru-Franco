@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Select from '../../../components/ui/Select';
@@ -237,61 +238,20 @@ export default function UsuariosRolesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card variant="elevated" padding="lg">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-              <Users size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total usuarios</p>
-              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalUsuarios}</p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <TarjetaKpi icono={Users} etiqueta="Total usuarios" valor={totalUsuarios} />
 
-        <Card variant="elevated" padding="lg">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-              <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Activos</p>
-              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{usuariosActivos}</p>
-            </div>
-          </div>
-        </Card>
+        <TarjetaKpi icono={CheckCircle2} etiqueta="Activos" valor={usuariosActivos} />
 
-        <Card
-          variant="elevated"
-          padding="lg"
-          style={usuariosInactivos > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
-        >
-          <div className="flex items-center gap-4">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: usuariosInactivos > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}
-            >
-              <PowerOff size={20} style={{ color: usuariosInactivos > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Inactivos</p>
-              <p className="text-2xl font-bold mt-0.5" style={{ color: usuariosInactivos > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{usuariosInactivos}</p>
-            </div>
-          </div>
-        </Card>
+        <TarjetaKpi
+          icono={PowerOff}
+          etiqueta="Inactivos"
+          valor={usuariosInactivos}
+          tono={usuariosInactivos > 0 ? 'aviso' : 'normal'}
+          alerta={usuariosInactivos > 0}
+        />
 
-        <Card variant="elevated" padding="lg">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-              <UserCog size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Clientes</p>
-              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalClientes}</p>
-            </div>
-          </div>
-        </Card>
+        <TarjetaKpi icono={UserCog} etiqueta="Clientes" valor={totalClientes} />
       </div>
 
       {successMessage && (
@@ -300,7 +260,12 @@ export default function UsuariosRolesPage() {
         </p>
       )}
       {error && (
-        <Card className="mb-6 border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+        <Card
+          className="mb-6"
+          padding="md"
+          role="alert"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}
+        >
           <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
         </Card>
       )}

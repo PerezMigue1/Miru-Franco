@@ -9,19 +9,12 @@ export default function RestauracionPage() {
   return (
     <AdminLayout>
       <div className="w-full max-w-none space-y-6">
-        <header
-          className="rounded-2xl px-6 py-6"
-          style={{
-            background: 'linear-gradient(135deg, var(--header-footer) 0%, var(--menu-texto-principal) 100%)',
-            color: 'var(--texto-fondo-oscuro)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          }}
-        >
+        <header>
           <div className="flex items-center gap-3">
-            <DatabaseBackup size={22} />
-            <h1 className="text-2xl md:text-3xl font-bold">Restauración de base de datos</h1>
+            <DatabaseBackup size={26} aria-hidden style={{ color: 'var(--oro-texto)' }} />
+            <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>Restauración de base de datos</h1>
           </div>
-          <p className="text-sm mt-2 opacity-90">
+          <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
             Vista independiente para recuperar datos desde respaldos y gestionar recuperación ante incidentes.
           </p>
         </header>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
@@ -139,48 +140,18 @@ export default function ProveedoresPage() {
         </div>
 
         {error && (
-          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Truck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total proveedores</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : proveedores.length}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={Truck} etiqueta="Total proveedores" cargando={loading} valor={proveedores.length} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Package size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Compras totales</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : totalCompras}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={Package} etiqueta="Compras totales" cargando={loading} valor={totalCompras} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Compras promedio</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : promedioCompras}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Compras promedio" cargando={loading} valor={promedioCompras} />
         </div>
 
         {/* Listado */}
