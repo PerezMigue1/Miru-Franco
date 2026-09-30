@@ -13,7 +13,7 @@ const CARD_WIDTH_PX = 288;
 const SCROLL_STEP = CARD_WIDTH_PX + 24;
 
 function TarjetaProducto({ producto }: { producto: Producto }) {
-  const ref = useInclinacion3D<HTMLAnchorElement>(5);
+  const { ref, brilloRef } = useInclinacion3D<HTMLAnchorElement>();
   const galeria = urlsGaleriaProductoCatalogo(producto);
   return (
     <Link
@@ -26,18 +26,19 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
         boxShadow: 'var(--mf-sombra-1)',
       }}
     >
+      <span ref={brilloRef} className="mf-inclinable__brillo" aria-hidden />
       <div className="aspect-square relative w-full overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
         {galeria.length > 0 ? (
           <ProductoImagenCarruselTarjeta
             urls={galeria}
             alt={producto.nombre}
-            imageClassName="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            imageClassName="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
           <ServicioImagenPlaceholder />
         )}
       </div>
-      <div className="mf-capa-frontal p-5">
+      <div className="p-5">
         <h3 className="font-semibold text-base line-clamp-1" style={{ color: 'var(--menu-texto-principal)' }}>
           {producto.nombre}
         </h3>

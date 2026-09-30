@@ -19,6 +19,8 @@ interface ToastItem {
   message: string;
   type: ToastType;
   duration: number;
+  /** Marcado al vencer: se anima la salida y se quita al terminar (SALIDA_TOAST_MS). */
+  saliendo?: boolean;
 }
 
 interface AlertState {
@@ -45,6 +47,9 @@ export function useToast() {
   if (!ctx) throw new Error('useToast debe usarse dentro de ToastProvider');
   return ctx;
 }
+
+/** Igual a la transición de salida de .mf-aviso[data-saliendo] en sistema.css. */
+const SALIDA_TOAST_MS = 160;
 
 const toastIcons: Record<ToastType, React.ReactNode> = {
   success: <CircleCheck size={18} aria-hidden />,
@@ -77,8 +82,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = ++toastIdRef.current;
     setToasts((prev) => [...prev, { id, message, type, duration }]);
     const t = setTimeout(() => {
-      setToasts((prev) => prev.filter((x) => x.id !== id));
-      timersRef.current.delete(id);
+      setToasts((prev) => prev.map((x) => (x.id === id ? { ...x, saliendo: true } : x)));
+      const salida = setTimeout(() => {
+        setToasts((prev) => prev.filter((x) => x.id !== id));
+        timersRef.current.delete(id);
+      }, SALIDA_TOAST_MS);
+      timersRef.current.set(id, salida);
     }, duration);
     timersRef.current.set(id, t);
   }, []);
@@ -152,6 +161,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <div
                 key={t.id}
                 role="status"
+                data-saliendo={t.saliendo ? 'true' : undefined}
                 className="mf-aviso flex items-start gap-3 p-4 pointer-events-auto"
               >
                 <span className="mt-0.5 shrink-0" style={{ color: toastIconColors[t.type] }}>

@@ -26,7 +26,7 @@ interface Props {
  * y la inclinación en la tarjeta, para que las dos transformaciones no se pisen.
  */
 export default function TarjetaCatalogo({ producto, noDisponible, indice, onAbrir }: Props) {
-  const ref = useInclinacion3D<HTMLElement>(5);
+  const { ref, brilloRef } = useInclinacion3D<HTMLElement>();
   const original = aNumero(producto.precioOriginal);
   const actual = aNumero(producto.precio);
   // El tachado solo cuando hay un descuento real (antes salía aunque fuera el mismo precio).
@@ -48,6 +48,7 @@ export default function TarjetaCatalogo({ producto, noDisponible, indice, onAbri
         className="mf-inclinable group h-full flex flex-col overflow-hidden cursor-pointer"
         style={{ borderRadius: 'var(--mf-radio)', backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-1)' }}
       >
+        <span ref={brilloRef} className="mf-inclinable__brillo" aria-hidden />
         <div className="relative aspect-square w-full overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
           <div
             className={`relative h-full w-full transition-[filter,opacity] duration-300 ${noDisponible ? 'grayscale opacity-60' : ''}`}
@@ -55,7 +56,7 @@ export default function TarjetaCatalogo({ producto, noDisponible, indice, onAbri
             <ProductoImagenCarruselTarjeta
               urls={urlsGaleriaProductoCatalogo(producto)}
               alt={producto.nombre}
-              imageClassName="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+              imageClassName="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             />
           </div>
           <div className="absolute top-3 right-3 z-30 flex flex-wrap justify-end gap-2">
@@ -65,7 +66,7 @@ export default function TarjetaCatalogo({ producto, noDisponible, indice, onAbri
           </div>
         </div>
 
-        <div className="mf-capa-frontal flex flex-1 flex-col p-5">
+        <div className="flex flex-1 flex-col p-5">
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
             {producto.categoria || 'Producto'}
             {producto.marca ? ` · ${producto.marca}` : ''}

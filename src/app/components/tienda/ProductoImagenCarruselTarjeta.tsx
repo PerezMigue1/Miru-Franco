@@ -1,10 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
-
-const INTERVAL_MS = 4500;
 
 /** Hosts permitidos en next.config `images.remotePatterns`: se pueden optimizar (WebP/AVIF + tamaño correcto). */
 const HOSTS_OPTIMIZABLES = new Set(['res.cloudinary.com', 'images.unsplash.com']);
@@ -25,49 +23,38 @@ type Props = {
 };
 
 /**
- * Carrusel automático para tarjetas del catálogo (pausa al pasar el ratón).
+ * Foto de la tarjeta del catálogo. Sin rotación automática (todas las tarjetas cambiando a la vez
+ * distraía mientras se escanea el catálogo): con puntero fino, al pasar por encima se ve la segunda
+ * foto; los puntos indican cuántas hay. La segunda foto solo se monta cuando se va a mostrar.
  */
 export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'object-contain' }: Props) {
   const safe = urls.filter(Boolean);
   const n = safe.length;
-  const [i, setI] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [maxVisto, setMaxVisto] = useState(0);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMaxVisto((m) => Math.max(m, i));
-  }, [i]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setI(0);
-  }, [safe.join('|')]);
-
-  useEffect(() => {
-    // Con movimiento reducido no hay rotación automática (se ve la primera foto; los puntos siguen indicando cuántas hay).
-    if (n <= 1 || paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setI((j) => (j + 1) % n), INTERVAL_MS);
-    return () => clearInterval(t);
-  }, [n, paused, safe.join('|')]);
+  const [encima, setEncima] = useState(false);
+  const [segundaVista, setSegundaVista] = useState(false);
+  const i = encima && n > 1 ? 1 : 0;
 
   if (!n) {
     // Placeholder de marca en vez de "Sin imagen" en gris.
     return <ServicioImagenPlaceholder />;
   }
 
+  const alEntrar = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || n < 2) return;
+    setSegundaVista(true);
+    setEncima(true);
+  };
+
   return (
     <div
       className="relative z-0 isolate h-full w-full"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onPointerEnter={alEntrar}
+      onPointerLeave={() => setEncima(false)}
     >
-      {safe.map((src, idx) => (
-        // Solo se montan la imagen visible, la siguiente y las ya vistas (evita descargar toda la galería).
-        idx > maxVisto + 1 ? null : (
+      {safe.slice(0, segundaVista ? 2 : 1).map((src, idx) => (
         <div
           key={`${src}-${idx}`}
-          className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+          className={`absolute inset-0 transition-opacity duration-200 ease-[ease] motion-reduce:transition-none ${
             idx === i ? 'z-[1] opacity-100' : 'z-0 opacity-0'
           }`}
           aria-hidden={idx !== i}
@@ -83,7 +70,6 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
             loading="lazy"
           />
         </div>
-        )
       ))}
       {n > 1 && (
         <div
@@ -93,7 +79,9 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
           {safe.map((_, idx) => (
             <span
               key={idx}
-              className={`h-1.5 rounded-full transition-all ${idx === i ? 'w-4 bg-white/90' : 'w-1.5 bg-white/45'}`}
+              className={`h-1.5 w-1.5 rounded-full bg-white transition-opacity duration-150 motion-reduce:transition-none ${
+                idx === i ? 'opacity-90' : 'opacity-45'
+              }`}
             />
           ))}
         </div>
