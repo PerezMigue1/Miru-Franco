@@ -226,6 +226,11 @@ html:has(.superficie-cliente) {
 .mf-hero-productos__capa[data-visible='false'] {
   opacity: 0;
   pointer-events: none;
+  transition-duration: 280ms;
+}
+/* Traspaso sin doble exposición: la vitrina sale primero (280ms) y la escena entra después */
+.mf-hero-productos__capa + .mf-hero-productos__capa[data-visible='true'] {
+  transition-delay: 260ms;
 }
 .mf-hero-productos__leyenda {
   display: flex;
@@ -1050,4 +1055,82 @@ html:has(.superficie-cliente) {
   .mf-perfil-nav__item:active {
     transform: none;
   }
+}
+
+/* ---- Carta de servicios de la home (sobre la banda carbón) ---- */
+.mf-carta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 3rem;
+  border-top: 1px solid rgba(242, 241, 237, 0.1);
+}
+@media (min-width: 1024px) {
+  .mf-carta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.mf-carta > li {
+  border-bottom: 1px solid rgba(242, 241, 237, 0.1);
+}
+.mf-carta-fila {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5.5rem;
+  padding: 0.75rem 0.25rem;
+  transition: background-color var(--mf-dur-hover) ease;
+}
+.mf-carta-fila__miniatura {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(196, 149, 77, 0.55);
+}
+.mf-carta-fila__flecha {
+  color: var(--oro-sobre-carbon);
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-carta-fila:hover {
+    background-color: rgba(242, 241, 237, 0.04);
+  }
+  .mf-carta-fila:hover .mf-carta-fila__flecha {
+    transform: translateX(3px);
+  }
+}
+
+/* ---- Logotipo del sitio: el mismo trazo que el hero ---- */
+.mf-logotipo {
+  font-family: var(--font-family-serif);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: var(--oro-sobre-carbon);
+}
+.mf-logotipo__franco {
+  font-family: var(--font-family-script);
+  font-weight: 400;
+  font-size: 1.3em;
+}
+.mf-logotipo__salon {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--oro-sobre-carbon);
+}
+@media (min-width: 768px) {
+  .mf-logotipo {
+    font-size: 1.45rem;
+  }
+}
+
+/* ---- Carrusel de productos de la home: la tarjeta parcial se desvanece en el borde ---- */
+.mf-carrusel-borde {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
 }
