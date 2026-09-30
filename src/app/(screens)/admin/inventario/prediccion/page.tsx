@@ -1928,7 +1928,7 @@ export default function PrediccionInventarioPage() {
                 <p
                   className="text-[11px] leading-relaxed rounded-lg px-3 py-2 mb-4"
                   style={{
-                    color: "var(--encabezados-alterno)",
+                    color: "var(--texto-cuerpo)",
                     backgroundColor:
                       "color-mix(in srgb, var(--menu-texto-principal) 5%, var(--superficie-elevada))",
                     border:
@@ -2654,8 +2654,8 @@ export default function PrediccionInventarioPage() {
                               style={{
                                 color:
                                   p.cambioPct <= 0
-                                    ? "var(--danger)"
-                                    : "var(--success)",
+                                    ? "var(--danger-texto)"
+                                    : "var(--success-texto)",
                               }}
                             >
                               {p.cambioPct.toFixed(1)}%
@@ -2911,8 +2911,8 @@ export default function PrediccionInventarioPage() {
                             style={{
                               color:
                                 p.cambioPct <= 0
-                                  ? "var(--danger)"
-                                  : "var(--success)",
+                                  ? "var(--danger-texto)"
+                                  : "var(--success-texto)",
                             }}
                           >
                             {p.cambioPct.toFixed(1)}%
