@@ -15,44 +15,30 @@ html:has(.superficie-cliente) {
 }
 
 /* ---- Tarjeta con profundidad 3D (catálogo) ----
-   --rx/--ry/--gx/--gy los escribe useInclinacion3D con un resorte en rAF. */
+   useInclinacion3D escribe el transform en la tarjeta y el brillo en su span, frame a frame, solo
+   mientras el puntero está encima (y will-change solo entonces). */
 .mf-inclinable {
-  --rx: 0deg;
-  --ry: 0deg;
-  --gx: 50%;
-  --gy: 50%;
-  --brillo: 0;
   position: relative;
-  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
-  transform-style: preserve-3d;
-  will-change: transform;
 }
-.mf-inclinable::after {
-  content: '';
+.mf-inclinable__brillo {
   position: absolute;
   inset: 0;
+  z-index: 2;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(
-    420px circle at var(--gx) var(--gy),
-    rgba(214, 170, 92, 0.28),
-    transparent 45%
-  );
-  opacity: var(--brillo);
+  opacity: 0;
   mix-blend-mode: soft-light;
-  transition: opacity 260ms var(--mf-ease-out);
-}
-.mf-inclinable .mf-capa-frontal {
-  transform: translateZ(28px);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .superficie-cliente .mf-card--interactiva:hover {
     transform: none;
   }
-  .mf-inclinable,
-  .mf-inclinable .mf-capa-frontal {
-    transform: none;
+  .mf-inclinable {
+    transform: none !important;
+  }
+  .mf-inclinable__brillo {
+    display: none;
   }
 }
 

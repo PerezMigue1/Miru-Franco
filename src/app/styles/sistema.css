@@ -326,19 +326,28 @@ table td {
   animation: mf-dialogo 240ms var(--mf-ease-out) both;
 }
 
-/* Aviso flotante (toast): entra desde arriba, de donde vive, y no roba el foco */
-@keyframes mf-aviso {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.98);
-  }
-}
+/* Aviso flotante (toast): entra desde arriba, de donde vive, y no roba el foco. Transición con
+   @starting-style (no keyframes): si llegan varios seguidos, cada uno parte de donde va. Al salir,
+   ToastContext marca data-saliendo y lo quita 160ms después. */
 .mf-aviso {
   background-color: var(--superficie-modal);
   border-radius: var(--mf-radio-panel);
   box-shadow: var(--mf-sombra-modal);
   border: 1px solid var(--mf-linea);
-  animation: mf-aviso 260ms var(--mf-ease-out) both;
+  transition:
+    opacity 260ms var(--mf-ease-out),
+    transform 260ms var(--mf-ease-out);
+}
+@starting-style {
+  .mf-aviso {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+.mf-aviso[data-saliendo='true'] {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transition-duration: 160ms;
 }
 
 /* ---- Entradas ----
@@ -367,26 +376,43 @@ table td {
   }
 }
 
-/* ---- Carga ---- */
+/* ---- Carga ----
+   El brillo es un ::after que se desplaza con transform (compositor), no background-position
+   (repintaba cada frame). En capa components para que rounded-full y demás utilidades ganen. */
 @keyframes mf-brillo {
+  from {
+    transform: translateX(-100%);
+  }
   to {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
-.mf-skeleton {
-  border-radius: 10px;
-  background: linear-gradient(
-    100deg,
-    var(--fondos-suaves) 40%,
-    color-mix(in srgb, var(--fondos-suaves), #fff 22%) 50%,
-    var(--fondos-suaves) 60%
-  );
-  background-size: 200% 100%;
-  animation: mf-brillo 1.6s linear infinite;
+@keyframes mf-pulso-carga {
+  to {
+    opacity: 0.6;
+  }
 }
-.dark .mf-skeleton {
-  background: linear-gradient(100deg, #262626 40%, #303030 50%, #262626 60%);
-  background-size: 200% 100%;
+@layer components {
+  .mf-skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    background-color: var(--fondos-suaves);
+  }
+  .mf-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
+    transform: translateX(-100%);
+    animation: mf-brillo 1.6s linear infinite;
+  }
+  .dark .mf-skeleton {
+    background-color: #262626;
+  }
+  .dark .mf-skeleton::after {
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.05) 50%, transparent 80%);
+  }
 }
 
 /* ---- Feedback de acción (agregar, confirmar, guardar) ---- */
@@ -614,18 +640,30 @@ table td {
     animation-name: mf-aparecer;
     animation-duration: 200ms;
   }
-  .mf-dialogo,
-  .mf-aviso {
+  .mf-dialogo {
     animation-name: mf-aparecer;
     animation-duration: 160ms;
+  }
+  .mf-aviso,
+  .mf-aviso[data-saliendo='true'] {
+    transform: none;
+  }
+  @starting-style {
+    .mf-aviso {
+      transform: none;
+    }
   }
   .mf-card--interactiva:active,
   .mf-btn:not(:disabled):active,
   .mf-panel-icono-btn:active {
     transform: none;
   }
+  /* Sin barrido: un pulso de opacidad lento */
+  .mf-skeleton::after {
+    display: none;
+  }
   .mf-skeleton {
-    animation: none;
+    animation: mf-pulso-carga 1.2s ease-in-out infinite alternate;
   }
   .mf-panel-lateral,
   .mf-panel-lateral[data-abierto='true'] {

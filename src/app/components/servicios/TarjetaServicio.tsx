@@ -12,7 +12,7 @@ import { formatearPrecioMXN } from '../../utils/formatoPrecio';
  * con formato, e inclinación 3D en escritorio. Es un enlace real (antes un div con onClick).
  */
 export default function TarjetaServicio({ servicio, indice }: { servicio: Servicio; indice: number }) {
-  const ref = useInclinacion3D<HTMLAnchorElement>(5);
+  const { ref, brilloRef } = useInclinacion3D<HTMLAnchorElement>();
   const duracion = servicio.duracion ?? (servicio.duracionMinutos ? `${servicio.duracionMinutos} min` : '');
   const precio = formatearPrecioMXN(servicio.precio);
 
@@ -24,8 +24,9 @@ export default function TarjetaServicio({ servicio, indice }: { servicio: Servic
         className="mf-inclinable group h-full flex flex-col overflow-hidden"
         style={{ borderRadius: 'var(--mf-radio)', backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-1)' }}
       >
+        <span ref={brilloRef} className="mf-inclinable__brillo" aria-hidden />
         <div className="relative aspect-[4/3] w-full overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-          <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-[1.04]">
+          <div className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
             <ServicioImagen
               src={servicio.imagen ?? servicio.imagenes?.[0]}
               alt={servicio.nombre}
@@ -33,7 +34,7 @@ export default function TarjetaServicio({ servicio, indice }: { servicio: Servic
             />
           </div>
         </div>
-        <div className="mf-capa-frontal flex flex-1 flex-col p-5">
+        <div className="flex flex-1 flex-col p-5">
           {servicio.categoria && (
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
               {servicio.categoria}
