@@ -18,7 +18,7 @@ export default function PasosFlujo({
   etiqueta: string;
 }) {
   return (
-    <nav aria-label={etiqueta} className="mb-8 mf-entrada">
+    <nav aria-label={etiqueta} className="mb-8">
       <ol className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
         {pasos.map((paso, i) => {
           const hecho = i < actual;

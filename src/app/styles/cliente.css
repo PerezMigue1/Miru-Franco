@@ -271,8 +271,14 @@ html:has(.superficie-cliente) {
     transform: scale(0.9);
   }
 }
+/* Movimiento reducido: sin trazo ni escala; el sello solo aparece */
 @media (prefers-reduced-motion: reduce) {
-  .mf-sello circle,
+  .mf-sello circle {
+    animation: none;
+  }
+  .mf-sello {
+    animation: mf-aparecer 200ms var(--mf-ease-out) both;
+  }
   .mf-sello__icono {
     animation: none;
   }
