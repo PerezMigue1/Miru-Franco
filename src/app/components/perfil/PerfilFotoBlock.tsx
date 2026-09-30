@@ -125,7 +125,7 @@ export default function PerfilFotoBlock({
   const inner = (
     <>
       {ok && (
-        <p className="text-sm" style={{ color: 'var(--success)' }} role="status">
+        <p className="text-sm" style={{ color: 'var(--success-texto)' }} role="status">
           {ok}
         </p>
       )}

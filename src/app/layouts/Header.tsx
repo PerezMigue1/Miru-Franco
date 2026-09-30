@@ -373,7 +373,7 @@ export default function Header() {
                                 router.push('/perfil');
                               }}
                               className="text-sm font-medium hover:underline flex items-center gap-1"
-                              style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                              style={{ color: 'var(--texto-enlace-sobre-calido)' }}
                             >
                               Mi perfil
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

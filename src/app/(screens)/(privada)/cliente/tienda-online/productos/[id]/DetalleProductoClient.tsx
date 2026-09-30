@@ -461,7 +461,7 @@ export default function DetalleProductoClient({ id }: Props) {
           {hasValidToken() && pedidosParaValorar.length === 0 && producto && (
             <p className="text-sm mt-4 pt-4 border-t" style={{ color: 'var(--encabezados-alterno)', borderColor: 'var(--fondos-suaves)' }}>
               Para valorar necesitas un pedido que incluya este producto.{' '}
-              <button type="button" className="underline font-medium" style={{ color: 'var(--botones-principales)' }} onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}>Ver mis pedidos</button>
+              <button type="button" className="underline font-medium" style={{ color: 'var(--menu-texto-principal)' }} onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}>Ver mis pedidos</button>
             </p>
           )}
         </Card>

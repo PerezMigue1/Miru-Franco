@@ -28,7 +28,9 @@
      como texto pequeño/número sobre --tarjetas-paneles y --fondo-general. --logo-branding,
      --warning y --danger NO se tocan (identidad de marca / fondos sólidos, ya cumplen ahí). */
   --oro-texto: #37280b;
-  --warning-texto: #4b3002;
+  /* Aviso como texto pequeño: el ámbar oscuro de marca (--oro-texto). El #4b3002 anterior daba 4.07:1
+     sobre --tarjetas-paneles; este da 4.77:1 ahí y 8.8:1 sobre --fondo-general. */
+  --warning-texto: var(--oro-texto);
   --danger-texto: #600011;
   --success-texto: #242d1b;
   --boton-acento-bg: #758764;

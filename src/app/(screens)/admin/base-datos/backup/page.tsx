@@ -375,7 +375,7 @@ export default function BackupPage() {
                   className="block w-full text-left rounded px-3 py-2 text-sm no-underline"
                   style={{
                     backgroundColor: item.href === '/admin/base-datos/backup' ? 'var(--hover)' : 'transparent',
-                    color: 'var(--menu-texto-principal)',
+                    color: item.href === '/admin/base-datos/backup' ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
                   }}
                 >
                   {item.label}

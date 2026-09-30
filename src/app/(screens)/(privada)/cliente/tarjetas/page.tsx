@@ -123,7 +123,7 @@ export default function TarjetasGuardadasPage() {
         <Link
           href="/perfil"
           className="text-sm font-medium inline-flex items-center gap-1.5 hover:underline underline-offset-4"
-          style={{ color: 'var(--enlaces-textos-interactivos)' }}
+          style={{ color: 'var(--texto-enlace-sobre-calido)' }}
         >
           <ArrowLeft size={16} aria-hidden />
           Volver al perfil

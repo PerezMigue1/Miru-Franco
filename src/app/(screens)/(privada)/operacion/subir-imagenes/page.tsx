@@ -139,7 +139,7 @@ export default function SubirImagenesPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm truncate flex-1 hover:underline"
-                      style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                      style={{ color: 'var(--texto-enlace-sobre-calido)' }}
                     >
                       {url}
                     </a>

@@ -67,6 +67,8 @@
   --mf-banda: #1f1f1f;
   --mf-foco: #c4954d;
   --oro-grande: #c4954d;
+  /* En oscuro la banda es #1f1f1f: el oro de #b07a28 quedaba en 4.44:1; el oro claro da 6.1:1 */
+  --oro-sobre-carbon: var(--oro-grande);
   --texto-cuerpo: rgba(242, 241, 237, 0.88);
   --superficie-modal: var(--tarjetas-paneles);
   --superficie-lateral: #1b1b1b;
