@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, CircleCheck, CircleX, Timer } from 'lucide-react';
 
 interface ForgotPasswordOTPProps {
   email: string;
@@ -164,21 +165,34 @@ export default function ForgotPasswordOTP({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const aviso = (
+    <div className="mt-3 p-3 rounded-[10px] border" style={{ 
+      backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+      borderColor: 'var(--warning)'
+    }}>
+      <p className="flex items-center justify-center gap-2 text-sm text-center" style={{ color: 'var(--warning-texto)' }}>
+        <Timer size={16} aria-hidden className="shrink-0" />
+        <span>Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos</span>
+      </p>
+    </div>
+  );
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
-        <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
+      <div>
+        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Verificar Código
         </h2>
-        <p className="text-center mb-6 text-sm text-texto-fondo-oscuro">
-          Hemos enviado un código de verificación de 6 dígitos a <strong>{email}</strong>
+        <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+          Hemos enviado un código de verificación de 6 dígitos a <strong style={{ color: 'var(--menu-texto-principal)' }}>{email}</strong>
         </p>
         
         <div className="space-y-5">
           <div>
             <label 
               htmlFor="codigoOTP" 
-              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Código de Verificación
             </label>
@@ -187,43 +201,48 @@ export default function ForgotPasswordOTP({
               id="codigoOTP"
               value={codigoOTP}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors text-center text-2xl tracking-widest bg-texto-fondo-oscuro text-header-footer"
-              style={{ 
-                borderColor: error ? 'var(--danger)' : 'var(--borde-visible)'
-              }}
+              className="mf-campo w-full px-4 py-3 text-center text-2xl tracking-widest"
+              aria-invalid={Boolean(error)}
               placeholder="000000"
               maxLength={6}
               disabled={isLoading}
               autoComplete="one-time-code"
             />
             {error && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {error}
               </p>
             )}
             {mensaje && !error && (
-              <p className={`mt-1 text-sm ${mensaje.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
-                {mensaje}
+              <p
+                className="mt-1 flex items-center gap-1.5 text-sm"
+                role={mensaje.includes('✅') ? 'status' : 'alert'}
+                style={{ color: mensaje.includes('✅') ? 'var(--success-texto)' : 'var(--danger-texto)' }}
+              >
+                {mensaje.includes('✅')
+                  ? <CircleCheck size={16} aria-hidden className="shrink-0" />
+                  : <CircleX size={16} aria-hidden className="shrink-0" />}
+                <span>{mensaje.replace(/^(✅|❌)\s*/u, '')}</span>
               </p>
             )}
           </div>
 
           {timeLeft > 0 && (
-            <p className="text-center text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-              El código expira en: <strong>{formatTime(timeLeft)}</strong>
+            <p className="text-center text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              El código expira en: <strong style={{ color: 'var(--menu-texto-principal)' }}>{formatTime(timeLeft)}</strong>
             </p>
           )}
 
           {timeLeft === 0 && (
             <div className="text-center">
-              <p className="text-sm mb-3" style={{ color: 'var(--danger)' }}>
+              <p className="text-sm mb-3" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 El código ha expirado
               </p>
               <button
                 onClick={handleReenviarOTP}
                 disabled={isResending || countdown !== null}
-                className="text-sm font-medium transition-colors text-texto-fondo-oscuro hover:opacity-80 disabled:opacity-50"
-                style={{ color: 'var(--botones-principales)' }}
+                className="inline-flex items-center min-h-11 text-sm font-semibold underline-offset-4 hover:underline disabled:opacity-50 disabled:no-underline"
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 {isResending 
                   ? 'Reenviando...' 
@@ -234,33 +253,18 @@ export default function ForgotPasswordOTP({
               </button>
               
               {/* Mostrar contador regresivo si hay rate limiting */}
-              {countdown !== null && countdown > 0 && (
-                <div className="mt-3 p-3 rounded-lg border" style={{ 
-                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                  borderColor: 'var(--warning)'
-                }}>
-                  <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
-                    ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
-                  </p>
-                </div>
-              )}
+              {countdown !== null && countdown > 0 && aviso}
             </div>
           )}
 
           <button
             onClick={handleVerificarOTP}
             disabled={isLoading || codigoOTP.length < 6}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
-            style={{ backgroundColor: 'var(--botones-principales)' }}
-            onMouseEnter={(e) => {
-              if (!isLoading && codigoOTP.length >= 6) {
-                e.currentTarget.style.backgroundColor = 'var(--hover)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isLoading && codigoOTP.length >= 6) {
-                e.currentTarget.style.backgroundColor = 'var(--botones-principales)';
-              }
+            className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              ['--btn-bg' as string]: 'var(--botones-principales)',
+              ['--btn-bg-hover' as string]: 'var(--hover)',
+              ['--btn-texto' as string]: '#F2F1ED',
             }}
           >
             {isLoading ? 'Verificando...' : 'Verificar Código'}
@@ -271,8 +275,14 @@ export default function ForgotPasswordOTP({
               <button
                 onClick={handleReenviarOTP}
                 disabled={isResending || countdown !== null}
-                className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro disabled:opacity-50"
-                style={{ borderColor: 'var(--borde-secundario)' }}
+                className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  ['--btn-bg' as string]: 'transparent',
+                  ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+                  ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+                  ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+                  ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
+                }}
               >
                 {isResending 
                   ? 'Reenviando...' 
@@ -283,16 +293,7 @@ export default function ForgotPasswordOTP({
               </button>
               
               {/* Mostrar contador regresivo si hay rate limiting */}
-              {countdown !== null && countdown > 0 && (
-                <div className="mt-3 p-3 rounded-lg border" style={{ 
-                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                  borderColor: 'var(--warning)'
-                }}>
-                  <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
-                    ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
-                  </p>
-                </div>
-              )}
+              {countdown !== null && countdown > 0 && aviso}
             </>
           )}
 
@@ -300,10 +301,12 @@ export default function ForgotPasswordOTP({
             <div className="text-center">
               <button
                 onClick={onBack}
-                className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
+                className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+                style={{ color: 'var(--menu-texto-principal)' }}
                 disabled={isLoading}
               >
-                ← Cambiar email
+                <ArrowLeft size={16} aria-hidden />
+                Cambiar email
               </button>
             </div>
           )}
@@ -312,10 +315,12 @@ export default function ForgotPasswordOTP({
             <div className="text-center">
               <button
                 onClick={onSwitchToLogin}
-                className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
+                className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+                style={{ color: 'var(--menu-texto-principal)' }}
                 disabled={isLoading}
               >
-                ← Volver a Iniciar Sesión
+                <ArrowLeft size={16} aria-hidden />
+                Volver a Iniciar Sesión
               </button>
             </div>
           )}
@@ -324,4 +329,3 @@ export default function ForgotPasswordOTP({
     </div>
   );
 }
-

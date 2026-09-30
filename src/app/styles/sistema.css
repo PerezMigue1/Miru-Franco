@@ -163,7 +163,8 @@ table td {
   .mf-btn-color:not(:disabled):hover {
     background-color: var(--btn-bg-hover);
     color: var(--btn-texto-hover, var(--btn-texto));
-    border-color: var(--btn-borde-hover, transparent);
+    /* Sin --btn-borde-hover el borde toma el color del texto (no desaparece el contorno) */
+    border-color: var(--btn-borde-hover, currentColor);
   }
 }
 @media (pointer: coarse) {
@@ -183,6 +184,14 @@ table td {
   transition:
     border-color var(--mf-dur-hover) ease,
     box-shadow var(--mf-dur-hover) var(--mf-ease-out);
+}
+/* Autocompletado del navegador: sin el azul de Chrome/Edge, con la superficie del campo */
+.mf-campo:-webkit-autofill,
+.mf-campo:-webkit-autofill:hover,
+.mf-campo:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--input-bg) inset;
+  -webkit-text-fill-color: var(--menu-texto-principal);
+  caret-color: var(--mf-foco);
 }
 .mf-campo::placeholder {
   color: var(--campo-placeholder);

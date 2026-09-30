@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Timer } from 'lucide-react';
 import Notification from '../ui/Notification';
 
 interface ActivateAccountProps {
@@ -196,44 +197,34 @@ export default function ActivateAccount({
   // por lo que no es necesario enviarlo nuevamente cuando se monta este componente.
   // El usuario puede hacer clic en "Reenviar código" si necesita otro código.
 
-  // Función para obtener clase CSS del input
-  const getInputClassName = (): string => {
-    if (error) return 'border-red-500 dark:border-red-600';
-    if (codigoOTP && !error) return 'border-green-500 dark:border-green-600';
-    return 'border-zinc-300 dark:border-zinc-700';
-  };
-
   return (
     <div className="w-full max-w-md mx-auto">
-      <div 
-        className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-8"
-        style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
-      >
-        <h2 
-          className="text-2xl font-bold text-center mb-2"
-          style={{ color: 'var(--texto-fondo-oscuro)' }}
+      <div>
+        <h2
+          className="mf-titulo-pagina text-center mb-2"
+          style={{ color: 'var(--menu-texto-principal)' }}
         >
           Activa tu cuenta
         </h2>
-        <p 
+        <p
           className="text-center mb-6 text-sm"
-          style={{ color: 'var(--texto-fondo-oscuro-80)' }}
+          style={{ color: 'var(--encabezados-alterno)' }}
         >
-          {metodoVerificacion === 'sms' 
+          {metodoVerificacion === 'sms'
             ? 'Hemos enviado un código de verificación a tu teléfono:'
             : 'Hemos enviado un código de verificación a:'
           }
           <br />
-          <span className="font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+          <span className="font-semibold break-all" style={{ color: 'var(--menu-texto-principal)' }}>
             {metodoVerificacion === 'sms' ? 'Tu teléfono registrado' : email}
           </span>
         </p>
 
         <div className="mb-4">
-          <label 
+          <label
             htmlFor="otp"
             className="block text-sm font-medium mb-2"
-            style={{ color: 'var(--texto-fondo-oscuro)' }}
+            style={{ color: 'var(--menu-texto-principal)' }}
           >
             Código de verificación (6 dígitos)
           </label>
@@ -244,16 +235,13 @@ export default function ActivateAccount({
             placeholder="000000"
             value={codigoOTP}
             onChange={handleInputChange}
-            className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors text-center text-2xl font-mono tracking-widest ${getInputClassName()}`}
-            style={{ 
-              backgroundColor: '#f2f1ed', 
-              color: '#161616',
-            }}
+            className="mf-campo w-full px-4 py-3 text-center text-2xl font-mono tracking-widest"
+            aria-invalid={Boolean(error)}
             maxLength={6}
             disabled={isLoading}
           />
           {error && (
-            <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+            <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
               {error}
             </p>
           )}
@@ -262,14 +250,11 @@ export default function ActivateAccount({
         <button
           onClick={handleVerificarOTP}
           disabled={isLoading || codigoOTP.length !== 6}
-          className={`w-full py-3 rounded-lg font-semibold transition-all mb-3 ${
-            isLoading || codigoOTP.length !== 6
-              ? 'opacity-50 cursor-not-allowed'
-              : 'hover:opacity-90 active:scale-95'
-          }`}
-          style={{ 
-            backgroundColor: 'var(--botones-principales)',
-            color: 'var(--texto-fondo-oscuro)'
+          className="mf-btn mf-btn-color w-full py-3 px-4 mb-3 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            ['--btn-bg' as string]: 'var(--botones-principales)',
+            ['--btn-bg-hover' as string]: 'var(--hover)',
+            ['--btn-texto' as string]: '#F2F1ED',
           }}
         >
           {isLoading ? 'Verificando...' : 'Verificar código'}
@@ -278,55 +263,56 @@ export default function ActivateAccount({
         <button
           onClick={() => handleReenviarOTP(false)}
           disabled={isResending || countdown !== null}
-          className={`w-full py-2 rounded-lg font-medium transition-all mb-4 ${
-            isResending || countdown !== null
-              ? 'opacity-50 cursor-not-allowed'
-              : 'hover:opacity-80'
-          }`}
-          style={{ 
-            backgroundColor: 'transparent',
-            color: 'var(--enlaces-textos-interactivos)',
-            border: '1px solid var(--enlaces-textos-interactivos)'
+          className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 mb-4 rounded-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            ['--btn-bg' as string]: 'transparent',
+            ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+            ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+            ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+            ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
           }}
         >
-          {isResending 
-            ? 'Enviando...' 
-            : countdown !== null 
-              ? `Espera ${countdown}s` 
+          {isResending
+            ? 'Enviando...'
+            : countdown !== null
+              ? `Espera ${countdown}s`
               : 'Reenviar código'
           }
         </button>
-        
+
         {/* Mostrar contador regresivo si hay rate limiting */}
         {countdown !== null && countdown > 0 && (
-          <div className="mb-4 p-3 rounded-lg border" style={{ 
-            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+          <div className="mb-4 p-3 rounded-[10px] border" style={{
+            backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)',
             borderColor: 'var(--warning)'
           }}>
-            <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
-              ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+            <p className="flex items-center justify-center gap-2 text-sm text-center" style={{ color: 'var(--warning-texto)' }}>
+              <Timer size={16} aria-hidden className="shrink-0" />
+              <span>Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos</span>
             </p>
           </div>
         )}
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 flex flex-col items-center gap-1">
           {onBackToRegister && (
             <button
               onClick={onBackToRegister}
-              className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity"
-              style={{ color: 'var(--enlaces-textos-interactivos)' }}
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
-              ← Volver
+              <ArrowLeft size={16} aria-hidden />
+              Volver
             </button>
           )}
 
           {onSkipToLogin && (
             <button
               onClick={onSkipToLogin}
-              className="w-full text-center text-sm py-2 hover:opacity-80 transition-opacity font-medium"
-              style={{ color: 'var(--enlaces-textos-interactivos)' }}
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
-              Ir al inicio de sesión →
+              Ir al inicio de sesión
+              <ArrowRight size={16} aria-hidden />
             </button>
           )}
         </div>
@@ -335,20 +321,20 @@ export default function ActivateAccount({
           <div className="mt-4">
             <Notification
               type={mensaje.includes('✅') ? 'success' : 'error'}
-              message={mensaje.replace('✅ ', '')}
+              message={mensaje.replace(/^(✅|❌)\s*/u, '')}
             />
           </div>
         )}
 
         <div className="mt-6 text-center">
-          <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-            El código expira en 2 minutos. 
-            {metodoVerificacion === 'sms' 
+          <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+            El código expira en 2 minutos.
+            {metodoVerificacion === 'sms'
               ? ' Si no lo recibes, verifica que tu teléfono esté correcto.'
               : ' Si no lo recibes, verifica tu carpeta de spam.'
             }
           </p>
-          <p className="text-xs mt-2" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+          <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
             {metodoVerificacion === 'sms'
               ? 'Puedes solicitar un nuevo código si es necesario.'
               : 'Puedes verificar tu correo más tarde desde el inicio de sesión.'
@@ -359,4 +345,3 @@ export default function ActivateAccount({
     </div>
   );
 }
-

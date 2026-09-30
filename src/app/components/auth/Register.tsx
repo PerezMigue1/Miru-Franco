@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check, Eye, EyeOff } from 'lucide-react';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -254,22 +254,16 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
     );
   }
 
-  const inputStyle = (hasError: boolean) => ({
-    backgroundColor: '#f2f1ed',
-    color: '#161616',
-    borderColor: hasError ? '#590C0C' : 'rgba(255,255,255,0.2)',
-  });
+  // Campo del sistema (.mf-campo, sistema.css): tema claro/oscuro y foco visibles; con error, borde de peligro.
+  const inputStyle = (hasError: boolean) => (hasError ? { borderColor: 'var(--danger-texto)' } : undefined);
 
-  const inputClass = (hasError: boolean) =>
-    `w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
-      hasError ? 'border-red-500' : 'border-zinc-300 dark:border-zinc-700'
-    }`;
+  const inputClass = (hasError: boolean) => `mf-campo w-full px-4 py-3${hasError ? ' shadow-[0_0_0_1px_var(--danger-texto)]' : ''}`;
 
   const renderStep1 = () => (
     <div className="space-y-5">
       {/* Nombre */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Nombre Completo</label>
+        <label htmlFor="name" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Nombre Completo</label>
         <input
           type="text"
           id="name"
@@ -285,12 +279,12 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             },
           })}
         />
-        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.name.message}</p>}
       </div>
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Correo Electrónico</label>
+        <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Correo Electrónico</label>
         <div className="relative">
           <input
             type="email"
@@ -306,35 +300,35 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           />
           {verificandoCorreo && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600" />
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--logo-branding)' }} aria-label="Verificando correo" />
             </div>
           )}
           {!verificandoCorreo && correoExiste && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <svg className="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-5 w-5 text-[color:var(--danger-texto)]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
           )}
           {!verificandoCorreo && !correoExiste && emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim()) && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-5 w-5 text-[color:var(--success-texto)]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
           )}
         </div>
-        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-        {correoExiste && !errors.email && <p className="mt-1 text-sm text-red-600">Este correo ya está registrado.</p>}
-        {!errors.email && verificandoCorreo && <p className="mt-1 text-sm text-yellow-600">Verificando correo...</p>}
+        {errors.email && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.email.message}</p>}
+        {correoExiste && !errors.email && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">Este correo ya está registrado.</p>}
+        {!errors.email && verificandoCorreo && <p className="mt-1 text-sm text-[color:var(--warning-texto)]">Verificando correo...</p>}
         {!errors.email && !verificandoCorreo && !correoExiste && emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim()) && (
-          <p className="mt-1 text-sm text-green-600">✓ Correo disponible</p>
+          <p className="mt-1 flex items-center gap-1 text-sm text-[color:var(--success-texto)]"><Check size={14} aria-hidden />Correo disponible</p>
         )}
       </div>
 
       {/* Teléfono */}
       <div>
-        <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Teléfono</label>
+        <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Teléfono</label>
         <input
           type="tel"
           id="phone"
@@ -352,13 +346,13 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               setValue('phone', sanitizarEntradaTelefono10(e.target.value)),
           })}
         />
-        <p className="mt-1 text-xs opacity-80" style={{ color: '#F2F1ED' }}>{MENSAJE_FORMATO_TELEFONO}</p>
-        {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
+        <p className="mt-1.5 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{MENSAJE_FORMATO_TELEFONO}</p>
+        {errors.phone && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.phone.message}</p>}
       </div>
 
       {/* Contraseña */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Contraseña</label>
+        <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Contraseña</label>
         <div className="relative">
           <input
             type={showPassword ? 'text' : 'password'}
@@ -379,42 +373,38 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               },
             })}
           />
-          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#161616' }} disabled={isSubmitting}>
-            {showPassword ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-            )}
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-1 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-[10px]" style={{ color: 'var(--campo-placeholder)' }} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} disabled={isSubmitting}>
+            {showPassword ? <EyeOff size={19} aria-hidden /> : <Eye size={19} aria-hidden />}
           </button>
         </div>
-        {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
+        {errors.password && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.password.message}</p>}
         {passwordErrors.length > 0 && !errors.password && (
           <div className="mt-1 space-y-1">
-            {passwordErrors.map((e, i) => <p key={i} className="text-xs text-red-600">• {e}</p>)}
+            {passwordErrors.map((e, i) => <p key={i} className="text-xs text-[color:var(--danger-texto)]">• {e}</p>)}
           </div>
         )}
         {passwordErrors.length === 0 && passwordValue && (
           <div className="mt-1">
-            <p className="text-xs text-green-600 mb-1">✓ Contraseña válida</p>
+            <p className="text-xs text-[color:var(--success-texto)] mb-1 flex items-center gap-1"><Check size={13} aria-hidden />Contraseña válida</p>
             {passwordStrength && (
               <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: '#F2F1ED' }}>Fortaleza:</span>
-                <div className="flex-1 h-2 bg-gray-300 rounded-full overflow-hidden">
-                  <div className={`h-full transition-all ${passwordStrength === 'strong' ? 'bg-green-500 w-full' : passwordStrength === 'medium' ? 'bg-yellow-500 w-2/3' : 'bg-red-500 w-1/3'}`} />
+                <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>Fortaleza:</span>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                  <div className={`h-full transition-[width] duration-300 ${passwordStrength === 'strong' ? 'bg-[color:var(--success)] w-full' : passwordStrength === 'medium' ? 'bg-[color:var(--warning)] w-2/3' : 'bg-[color:var(--danger-texto)] w-1/3'}`} />
                 </div>
-                <span className={`text-xs font-medium ${passwordStrength === 'strong' ? 'text-green-600' : passwordStrength === 'medium' ? 'text-yellow-600' : 'text-red-600'}`}>
+                <span className={`text-xs font-medium ${passwordStrength === 'strong' ? 'text-[color:var(--success-texto)]' : passwordStrength === 'medium' ? 'text-[color:var(--warning-texto)]' : 'text-[color:var(--danger-texto)]'}`}>
                   {passwordStrength === 'strong' ? 'Fuerte' : passwordStrength === 'medium' ? 'Media' : 'Débil'}
                 </span>
               </div>
             )}
           </div>
         )}
-        {!passwordValue && <p className="mt-1 text-xs" style={{ color: 'rgba(242,241,237,0.7)' }}>Mínimo 8 caracteres, con mayúsculas, minúsculas y números</p>}
+        {!passwordValue && <p className="mt-1.5 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Mínimo 8 caracteres, con mayúsculas, minúsculas y números</p>}
       </div>
 
       {/* Confirmar contraseña */}
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Confirmar Contraseña</label>
+        <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Confirmar Contraseña</label>
         <div className="relative">
           <input
             type={showConfirmPassword ? 'text' : 'password'}
@@ -428,20 +418,16 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               validate: (v) => v === getValues('password') || 'Las contraseñas no coinciden',
             })}
           />
-          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#161616' }} disabled={isSubmitting}>
-            {showConfirmPassword ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-            )}
+          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-1 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-[10px]" style={{ color: 'var(--campo-placeholder)' }} aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} disabled={isSubmitting}>
+            {showConfirmPassword ? <EyeOff size={19} aria-hidden /> : <Eye size={19} aria-hidden />}
           </button>
         </div>
-        {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>}
+        {errors.confirmPassword && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.confirmPassword.message}</p>}
       </div>
 
       {/* Fecha de nacimiento */}
       <div>
-        <label htmlFor="birthDate" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Fecha de Nacimiento</label>
+        <label htmlFor="birthDate" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Fecha de Nacimiento</label>
         <input
           type="date"
           id="birthDate"
@@ -461,18 +447,16 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             },
           })}
         />
-        {errors.birthDate && <p className="mt-1 text-sm text-red-600">{errors.birthDate.message}</p>}
+        {errors.birthDate && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.birthDate.message}</p>}
       </div>
 
       {/* Pregunta de seguridad */}
       <div>
-        <label htmlFor="securityQuestion" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>
+        <label htmlFor="securityQuestion" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Pregunta de Seguridad para Recuperación de Contraseña
         </label>
         {loadingQuestions ? (
-          <div className="w-full px-4 py-3 rounded-lg border" style={{ backgroundColor: '#f2f1ed', borderColor: 'rgba(255,255,255,0.2)' }}>
-            <p style={{ color: '#161616' }}>Cargando preguntas...</p>
-          </div>
+          <div className="mf-skeleton h-11 w-full" aria-busy="true" aria-label="Cargando preguntas de seguridad" />
         ) : securityQuestions.length === 0 && generalError ? (
           <Notification type="error" message={generalError} />
         ) : (
@@ -493,7 +477,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                 return <option key={key} value={key}>{q.pregunta}</option>;
               })}
             </select>
-            {errors.securityQuestion && <p className="mt-1 text-sm text-red-600">{errors.securityQuestion.message}</p>}
+            {errors.securityQuestion && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.securityQuestion.message}</p>}
           </>
         )}
       </div>
@@ -501,7 +485,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       {/* Respuesta de seguridad */}
       {securityQuestionId && (
         <div>
-          <label htmlFor="securityAnswer" className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>
+          <label htmlFor="securityAnswer" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Respuesta a la Pregunta de Seguridad
           </label>
           <input
@@ -519,7 +503,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               },
             })}
           />
-          {errors.securityAnswer && <p className="mt-1 text-sm text-red-600">{errors.securityAnswer.message}</p>}
+          {errors.securityAnswer && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.securityAnswer.message}</p>}
         </div>
       )}
     </div>
@@ -527,14 +511,14 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
   const renderStep2 = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold mb-2" style={{ color: '#F2F1ED' }}>Cuéntanos sobre tu cabello</h3>
-      <p className="text-sm mb-4 opacity-90" style={{ color: '#F2F1ED' }}>
+      <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>Cuéntanos sobre tu cabello</h3>
+      <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
         Las direcciones de envío las podrás agregar después desde tu perfil o al comprar en línea.
       </p>
 
       {/* Tipo de cabello */}
       <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: '#F2F1ED' }}>Tipo de cabello</label>
+        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Tipo de cabello</label>
         <Controller
           name="hairType"
           control={control}
@@ -549,42 +533,42 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                       type="radio"
                       value={val}
                       disabled={isSubmitting}
-                      className="h-4 w-4"
+                      className="h-4 w-4 accent-[var(--botones-principales)]"
                       checked={field.value === val}
                       onChange={() => field.onChange(val)}
                       onBlur={field.onBlur}
                     />
-                    <span className="ml-2" style={{ color: '#F2F1ED' }}>{type}</span>
+                    <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>{type}</span>
                   </label>
                 );
               })}
             </div>
           )}
         />
-        {errors.hairType && <p className="mt-1 text-sm text-red-600">{errors.hairType.message}</p>}
+        {errors.hairType && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.hairType.message}</p>}
       </div>
 
       {/* Color natural */}
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Color natural (opcional)</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Color natural (opcional)</label>
         <input type="text" placeholder="Ej. Castaño oscuro" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('colorNatural')} />
       </div>
 
       {/* Color actual */}
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Color actual (opcional)</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Color actual (opcional)</label>
         <input type="text" placeholder="Ej. Rubio cenizo" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('colorActual')} />
       </div>
 
       {/* Productos usados */}
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: '#F2F1ED' }}>Productos usados (opcional)</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Productos usados (opcional)</label>
         <input type="text" placeholder="Ej. Shampoo sin sulfatos" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('productosUsados')} />
       </div>
 
       {/* Alergias */}
       <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: '#F2F1ED' }}>¿Tienes alergias a productos?</label>
+        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>¿Tienes alergias a productos?</label>
         <div className="space-y-3">
           <Controller
             name="hasAllergies"
@@ -593,20 +577,20 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             render={({ field }) => (
               <>
                 <label className="flex items-center cursor-pointer">
-                  <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4"
+                  <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'no'}
                     onChange={() => { field.onChange('no'); setValue('allergies', ''); }}
                     onBlur={field.onBlur}
                   />
-                  <span className="ml-2" style={{ color: '#F2F1ED' }}>No</span>
+                  <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>No</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
-                  <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4"
+                  <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'yes'}
                     onChange={() => field.onChange('yes')}
                     onBlur={field.onBlur}
                   />
-                  <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
+                  <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>Sí</span>
                 </label>
               </>
             )}
@@ -628,14 +612,14 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               })}
             />
           )}
-          {errors.hasAllergies && <p className="mt-1 text-sm text-red-600">{errors.hasAllergies.message}</p>}
-          {errors.allergies && <p className="mt-1 text-sm text-red-600">{errors.allergies.message}</p>}
+          {errors.hasAllergies && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.hasAllergies.message}</p>}
+          {errors.allergies && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.allergies.message}</p>}
         </div>
       </div>
 
       {/* Tratamientos químicos */}
       <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: '#F2F1ED' }}>¿Tratamientos químicos previos?</label>
+        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>¿Tratamientos químicos previos?</label>
         <div className="space-y-3">
           <Controller
             name="hasChemicalTreatments"
@@ -644,20 +628,20 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             render={({ field }) => (
               <>
                 <label className="flex items-center cursor-pointer">
-                  <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4"
+                  <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'no'}
                     onChange={() => { field.onChange('no'); setValue('chemicalTreatments', ''); }}
                     onBlur={field.onBlur}
                   />
-                  <span className="ml-2" style={{ color: '#F2F1ED' }}>No</span>
+                  <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>No</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
-                  <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4"
+                  <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'yes'}
                     onChange={() => field.onChange('yes')}
                     onBlur={field.onBlur}
                   />
-                  <span className="ml-2" style={{ color: '#F2F1ED' }}>Sí</span>
+                  <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>Sí</span>
                 </label>
               </>
             )}
@@ -679,8 +663,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               })}
             />
           )}
-          {errors.hasChemicalTreatments && <p className="mt-1 text-sm text-red-600">{errors.hasChemicalTreatments.message}</p>}
-          {errors.chemicalTreatments && <p className="mt-1 text-sm text-red-600">{errors.chemicalTreatments.message}</p>}
+          {errors.hasChemicalTreatments && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.hasChemicalTreatments.message}</p>}
+          {errors.chemicalTreatments && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.chemicalTreatments.message}</p>}
         </div>
       </div>
 
@@ -695,21 +679,21 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               <input
                 type="checkbox"
                 disabled={isSubmitting}
-                className="mt-1 h-4 w-4 rounded border-zinc-300"
+                className="mt-1 h-4 w-4 rounded accent-[var(--botones-principales)]"
                 checked={!!field.value}
                 onChange={(e) => field.onChange(e.target.checked)}
                 onBlur={field.onBlur}
               />
             )}
           />
-          <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>
+          <span className="ml-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
             Acepto los{' '}
-            <a href="/terminos" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--iconografia)' }} onClick={(e) => e.stopPropagation()}>
+            <a href="/terminos" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4" style={{ color: 'var(--menu-texto-principal)' }} onClick={(e) => e.stopPropagation()}>
               Términos y Condiciones
             </a>
           </span>
         </label>
-        {errors.acceptTerms && <p className="text-sm text-red-600">{errors.acceptTerms.message}</p>}
+        {errors.acceptTerms && <p className="text-sm text-[color:var(--danger-texto)]">{errors.acceptTerms.message}</p>}
         <label className="flex items-start cursor-pointer">
           <Controller
             name="receivePromotions"
@@ -718,14 +702,14 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               <input
                 type="checkbox"
                 disabled={isSubmitting}
-                className="mt-1 h-4 w-4 rounded border-zinc-300"
+                className="mt-1 h-4 w-4 rounded accent-[var(--botones-principales)]"
                 checked={!!field.value}
                 onChange={(e) => field.onChange(e.target.checked)}
                 onBlur={field.onBlur}
               />
             )}
           />
-          <span className="ml-2 text-sm" style={{ color: '#F2F1ED' }}>Deseo recibir promociones</span>
+          <span className="ml-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Deseo recibir promociones</span>
         </label>
       </div>
     </div>
@@ -739,11 +723,11 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         </div>
       )}
 
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <div className="mb-6">
-          <h1 className="mf-titulo-pagina text-center mb-2" style={{ color: '#F2F1ED' }}>Crear Cuenta</h1>
+      <div>
+        <div className="mb-7">
+          <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Crear Cuenta</h1>
           {/* Pasos con nombre: la persona sabe qué falta antes de empezar (UX: progreso visible) */}
-          <ol className="flex items-start justify-center gap-3 mt-4 mb-2">
+          <ol className="flex items-start gap-3 mt-5 mb-2">
             {[
               { n: 1, etiqueta: 'Tu cuenta' },
               { n: 2, etiqueta: 'Tu cabello' },
@@ -756,20 +740,20 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
                       style={{
-                        backgroundColor: n <= currentStep ? '#710014' : 'rgba(255,255,255,0.12)',
-                        color: n <= currentStep ? '#F2F1ED' : 'rgba(255,255,255,0.6)',
+                        backgroundColor: n <= currentStep ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
+                        color: n <= currentStep ? '#F2F1ED' : 'var(--encabezados-alterno)',
                         boxShadow: activo ? '0 0 0 3px rgba(159, 109, 31, 0.55)' : 'none',
                         transition: 'background-color 240ms ease, box-shadow 240ms ease',
                       }}
                     >
                       {hecho ? <Check size={16} aria-hidden /> : n}
                     </div>
-                    <span className="text-xs" style={{ color: activo ? '#F2F1ED' : 'rgba(242, 241, 237, 0.65)' }}>
+                    <span className={`text-xs ${activo ? 'font-semibold' : ''}`} style={{ color: activo ? 'var(--menu-texto-principal)' : 'var(--encabezados-alterno)' }}>
                       {etiqueta}
                     </span>
                   </div>
                   {n < 2 && (
-                    <div className="w-10 h-px mt-4" style={{ backgroundColor: hecho ? '#710014' : 'rgba(255,255,255,0.2)' }} aria-hidden />
+                    <div className="w-10 h-px mt-4" style={{ backgroundColor: hecho ? 'var(--botones-principales)' : 'var(--mf-linea-fuerte)' }} aria-hidden />
                   )}
                 </li>
               );
@@ -797,8 +781,13 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               <button
                 type="button"
                 onClick={() => setCurrentStep((p) => p - 1)}
-                className="mf-btn flex-1 py-3 px-4 rounded-lg border font-medium hover:bg-white/5"
-                style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#F2F1ED' }}
+                className="mf-btn mf-btn-color flex-1 min-h-12 py-3 px-4 rounded-[10px] font-semibold"
+                style={{
+                  ['--btn-bg' as string]: 'transparent',
+                  ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+                  ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+                  ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+                }}
                 disabled={isSubmitting}
               >
                 Atrás
@@ -807,21 +796,28 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mf-btn flex-1 py-3 px-4 rounded-lg text-white font-medium hover:bg-[var(--hover)] disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#710014' }}
+              className="mf-btn mf-btn-color flex-1 min-h-12 py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                ['--btn-bg' as string]: 'var(--botones-principales)',
+                ['--btn-bg-hover' as string]: 'var(--hover)',
+                ['--btn-texto' as string]: '#F2F1ED',
+              }}
             >
-              {currentStep === 1 ? 'Continuar' : isSubmitting ? 'Registrando...' : 'Finalizar registro'}
+              <span className="mf-feedback-contenido" data-cambiando={isSubmitting ? 'true' : 'false'}>
+                {currentStep === 1 ? 'Continuar' : isSubmitting ? 'Registrando…' : 'Finalizar registro'}
+              </span>
             </button>
           </div>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-sm" style={{ color: '#F2F1ED' }}>
+          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
             ¿Ya tienes una cuenta?{' '}
             <button
+              type="button"
               onClick={handleSwitchToLogin}
-              className="font-medium hover:underline"
-              style={{ color: 'var(--iconografia)' }}
+              className="inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isSubmitting}
             >
               Inicia Sesión
