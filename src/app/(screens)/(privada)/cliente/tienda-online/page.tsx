@@ -550,7 +550,7 @@ export default function CatalogoProductosPage() {
 
       {error && (
         <Card className="text-center py-12 max-w-xl mx-auto" style={{ borderColor: 'var(--danger)' }}>
-          <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
+          <p className="text-lead mb-4" style={{ color: 'var(--danger-texto)' }}>
             {error}
           </p>
           {process.env.NODE_ENV === 'development' && error.includes('conectar') && (

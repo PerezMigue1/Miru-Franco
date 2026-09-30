@@ -130,7 +130,7 @@ export default function SobreNosotrosPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
               {VALORES.map((v) => (
                 <div key={v.titulo} className="mf-revelar border-t pt-6" style={{ borderColor: 'rgba(159, 109, 31, 0.45)' }}>
-                  <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--logo-branding)', fontFamily: 'var(--font-family-serif)' }}>
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--oro-sobre-carbon)', fontFamily: 'var(--font-family-serif)' }}>
                     {v.titulo}
                   </h3>
                   <p className="text-base leading-relaxed max-w-[52ch]" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>

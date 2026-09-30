@@ -104,7 +104,7 @@ export default function DetallePedidoPage() {
       <ModuleLayout>
         <div className="w-full max-w-none py-12">
           <Card className="p-8 text-center">
-            <p className="mb-4" style={{ color: 'var(--danger)' }}>
+            <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>
               {error ?? 'Pedido no encontrado'}
             </p>
             <Button onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}>

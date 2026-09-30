@@ -66,6 +66,7 @@
   --mf-linea-fuerte: rgba(255, 255, 255, 0.16);
   --mf-banda: #1f1f1f;
   --mf-foco: #c4954d;
+  --oro-grande: #c4954d;
   --texto-cuerpo: rgba(242, 241, 237, 0.88);
   --superficie-modal: var(--tarjetas-paneles);
   --superficie-lateral: #1b1b1b;
@@ -233,6 +234,7 @@ table td {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  container-type: inline-size;
 }
 .mf-kpi__etiqueta {
   font-size: 0.8125rem;
@@ -253,10 +255,12 @@ table td {
 }
 .mf-kpi__valor {
   margin-top: 0.5rem;
-  font-size: clamp(1.25rem, 1.05rem + 1vw, 1.75rem);
+  font-size: clamp(1.05rem, 13cqi, 1.75rem);
   line-height: 1.15;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---- Tablas ---- */

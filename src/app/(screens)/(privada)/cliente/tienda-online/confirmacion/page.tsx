@@ -143,7 +143,7 @@ function ConfirmacionCompraContent() {
       <ModuleLayout>
         <div className="max-w-3xl mx-auto">
           <Card className="p-8 text-center">
-            <p className="mb-4" style={{ color: 'var(--danger)' }}>
+            <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>
               {error ?? 'No se pudo mostrar el pedido'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

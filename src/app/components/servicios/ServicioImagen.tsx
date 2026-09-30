@@ -28,7 +28,7 @@ export function ServicioImagenPlaceholder() {
       </div>
       <span
         className="hidden @min-[10rem]:block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.3em]"
-        style={{ color: 'var(--logo-branding)' }}
+        style={{ color: 'var(--oro-sobre-carbon)' }}
       >
         Mirú Franco
       </span>

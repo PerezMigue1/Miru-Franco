@@ -950,7 +950,7 @@ export default function CheckoutPage() {
 
         {submitError && (
           <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
-            <p className="text-sm" style={{ color: 'var(--danger)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>
               {submitError}
             </p>
           </Card>
@@ -1303,7 +1303,7 @@ export default function CheckoutPage() {
                     {coherenciaTipoTarjetaMensaje() && (
                       <p
                         className="text-sm rounded-md px-3 py-2"
-                        style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger)' }}
+                        style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger-texto)' }}
                         role="alert"
                       >
                         {coherenciaTipoTarjetaMensaje()}

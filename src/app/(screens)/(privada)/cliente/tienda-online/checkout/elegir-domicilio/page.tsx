@@ -80,7 +80,7 @@ export default function ElegirDomicilioCheckoutPage() {
         </h1>
 
         {error && (
-          <p className="text-sm mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger)' }}>
+          <p className="text-sm mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger-texto)' }}>
             {error}
           </p>
         )}

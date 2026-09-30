@@ -128,7 +128,7 @@ export default function ClienteNotificacionesPage() {
 
         {error && (
           <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
-            <p className="mb-2" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="mb-2" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             {!hasValidToken() && (
               <Link href="/login" className="text-sm font-semibold underline" style={{ color: 'var(--botones-principales)' }}>
                 Iniciar sesión

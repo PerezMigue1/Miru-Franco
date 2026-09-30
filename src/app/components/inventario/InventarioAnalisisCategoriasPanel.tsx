@@ -312,7 +312,7 @@ export function InventarioAnalisisCategoriasPanel({
     <div className="space-y-6">
       {error && (
         <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
-          <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+          <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
         </Card>
       )}
 
@@ -682,7 +682,7 @@ export function InventarioAnalisisCategoriasPanel({
               </p>
             )}
             {movimientosError && (
-              <p className="text-sm" style={{ color: 'var(--danger)' }}>
+              <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>
                 {movimientosError}
               </p>
             )}

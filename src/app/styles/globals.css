@@ -12,7 +12,8 @@
   --logo-branding: #9f6d1f;
   --tarjetas-paneles: #B38E6F;
   --header-footer: #161616;
-  --menu-texto-principal: #710014;
+  /* Vino como texto: un paso más profundo que el de botones para cumplir AA sobre terracota (4.7:1) */
+  --menu-texto-principal: #600011;
   --warning: #D98E04;
   --danger: #710014;
   --success: #6E7D57;
@@ -28,7 +29,7 @@
      --warning y --danger NO se tocan (identidad de marca / fondos sólidos, ya cumplen ahí). */
   --oro-texto: #37280b;
   --warning-texto: #4b3002;
-  --danger-texto: var(--danger);
+  --danger-texto: #600011;
   --success-texto: #242d1b;
   --boton-acento-bg: #758764;
   --texto-sobre-acento: var(--header-footer);
@@ -64,6 +65,8 @@
   --menu-lateral-bg: #FFFFFF;
   /* Margen horizontal respecto al borde del viewport */
   --layout-gutter-x: 1rem;
+  /* Oro para cifras y títulos grandes sobre lino (3.7:1); el de marca daba 2.8:1 */
+  --oro-grande: #865a17;
 
   /* ========== SISTEMA TIPOGRÁFICO ========== */
   
@@ -145,6 +148,18 @@
 }
 
 /* Más ancho útil que el `container` por defecto de Tailwind (mejor en monitores comunes) */
+/* Margen lateral que crece con la pantalla (16px en móvil, hasta 48px en escritorio) */
+@media (min-width: 768px) {
+  :root {
+    --layout-gutter-x: 2rem;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --layout-gutter-x: 3rem;
+  }
+}
+
 .layout-page {
   margin-left: auto;
   margin-right: auto;

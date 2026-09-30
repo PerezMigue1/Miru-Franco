@@ -45,6 +45,7 @@ export default function HeroVitrinaEstatica({
                 sizes="(max-width: 768px) 42vw, 16rem"
                 className="object-cover"
                 priority={i === 0}
+                loading={i !== 0 && visible ? 'eager' : undefined}
               />
             </span>
           </Link>

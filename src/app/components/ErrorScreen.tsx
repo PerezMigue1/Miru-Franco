@@ -41,7 +41,7 @@ export default function ErrorScreen({ codigo, titulo, mensaje, icono = 'solicitu
         </span>
         <p
           className="mf-cifras flex items-center justify-center gap-3 text-6xl font-bold leading-none sm:text-7xl"
-          style={{ color: 'var(--logo-branding)', fontFamily: 'var(--font-family-serif)' }}
+          style={{ color: 'var(--oro-grande)', fontFamily: 'var(--font-family-serif)' }}
         >
           <Icono size={34} strokeWidth={1.5} aria-hidden />
           {codigo}
