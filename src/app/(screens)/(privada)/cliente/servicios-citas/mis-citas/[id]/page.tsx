@@ -90,8 +90,8 @@ export default function DetalleMiCitaPage() {
   return (
     <ModuleLayout>
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="min-w-0">
             <h1
               className="mf-titulo-pagina mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
@@ -103,7 +103,7 @@ export default function DetalleMiCitaPage() {
             </Badge>
           </div>
           {puedeGestionar && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={() => router.push(`/cliente/servicios-citas/reprogramar/${cita.id}`)}

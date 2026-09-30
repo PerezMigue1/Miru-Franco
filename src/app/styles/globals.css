@@ -135,6 +135,9 @@
      aquí porque ya cumplen en superficies oscuras; --danger sí, porque el vino oscuro
      como texto/acento sobre una Card oscura cae a ~1.17:1 (prácticamente invisible). */
   --oro-texto: #c4954d;
+  /* sistema.css ya lo redefine en .dark, pero se importa antes que este :root y perdía:
+     sin esto el oro grande (y --oro-sobre-carbon) quedaba en #865a17, ~3:1 sobre oscuro */
+  --oro-grande: #c4954d;
   --warning-texto: var(--warning);
   --danger-texto: #e0748f;
   --success-texto: #82a163;

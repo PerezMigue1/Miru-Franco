@@ -27,10 +27,10 @@ export default function PromocionesPage() {
                   <Badge variant="success">Activa</Badge>
                 </div>
               )}
-              <h3 className="text-subtitle mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+              <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                 {promocion.titulo}
               </h3>
-              <p className="text-sm mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+              <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                 {promocion.descripcion}
               </p>
               <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
