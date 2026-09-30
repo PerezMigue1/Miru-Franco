@@ -406,7 +406,7 @@ export default function PanelSegmentacionClientes({
         <Card
           padding="md"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))',
+            backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))',
             boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)',
           }}
         >
