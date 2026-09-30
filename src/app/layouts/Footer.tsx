@@ -56,12 +56,11 @@ export default function Footer() {
 
           {/* Columna 1: Marca + redes */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <p className="text-logo mb-1" style={{ color: 'var(--oro-sobre-carbon)' }}>
-              MIRÚ FRANCO
+            {/* Mismo logotipo que el encabezado: "Mirú" en Playfair y "Franco" en Great Vibes */}
+            <p className="mf-logotipo mb-1">
+              Mirú <span className="mf-logotipo__franco">Franco</span>
             </p>
-            <p className="text-logo-small mb-4" style={{ color: 'var(--oro-sobre-carbon)' }}>
-              BEAUTY SALÓN
-            </p>
+            <p className="mf-logotipo__salon mb-4">Beauty Salón</p>
             <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               Salón de belleza profesional dedicado a realzar tu belleza natural con productos y servicios de alta calidad.
             </p>

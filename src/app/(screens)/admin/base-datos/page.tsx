@@ -1073,6 +1073,9 @@ export default function BaseDatosPage() {
   const estadoSistema =
     saludGeneral >= 85 && rendimientoTiempoReal >= 85 ? 'Optimo' :
     saludGeneral >= 65 && rendimientoTiempoReal >= 65 ? 'Atencion' : 'Critico';
+  // Mientras no llega el resumen no se afirma un estado (antes se veía "Optimo 100/100" por defecto)
+  const cargandoResumen = dbSummary === null;
+  const ETIQUETA_ESTADO = { Optimo: 'Óptimo', Atencion: 'Atención', Critico: 'Crítico' } as const;
   // Texto de estado: tokens -texto (los de relleno no llegan a 3:1 sobre la terracota del panel)
   const estadoSistemaColor =
     estadoSistema === 'Optimo' ? 'var(--success-texto)' :
@@ -1168,7 +1171,7 @@ export default function BaseDatosPage() {
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Administración de la base de datos Neon (PostgreSQL)</p>
         </header>
 
-        <div className="relative space-y-6 overflow-hidden">
+        <div className="relative pl-11 space-y-6 overflow-hidden">
           {/* Trigger del menú lateral */}
           <button
             type="button"
@@ -1728,19 +1731,21 @@ export default function BaseDatosPage() {
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado del sistema</p>
-                          <p className="text-4xl md:text-5xl font-extrabold leading-none mt-1" style={{ color: estadoSistemaColor }}>{estadoSistema}</p>
+                          <p className="text-3xl xl:text-4xl font-extrabold leading-none mt-1 break-words" style={{ color: cargandoResumen ? 'var(--encabezados-alterno)' : estadoSistemaColor }}>
+                            {cargandoResumen ? '—' : ETIQUETA_ESTADO[estadoSistema]}
+                          </p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Salud</p>
                           <div className="mt-1 flex items-center justify-between">
                             <div>
-                              <p className="text-4xl md:text-5xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>{saludGeneral}</p>
+                              <p className="text-3xl xl:text-4xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : saludGeneral}</p>
                               <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>/100</p>
                             </div>
-                            <DonutKpi value={saludGeneral} max={100} color={saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)'} />
+                            <DonutKpi value={cargandoResumen ? 0 : saludGeneral} max={100} color={saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)'} />
                           </div>
                           <div className="w-full h-2 rounded mt-2" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                            <div className="h-full rounded" style={{ width: `${saludGeneral}%`, backgroundColor: saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)' }} />
+                            <div className="h-full rounded" style={{ width: `${cargandoResumen ? 0 : saludGeneral}%`, backgroundColor: saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)' }} />
                           </div>
                         </Card>
                         <Card variant="elevated" padding="md">

@@ -977,10 +977,36 @@ html:has(.superficie-cliente) {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
 }
+/* Flechas del carrusel de productos: fila de controles bajo la pista (no tapan fotos) */
+.mf-carrusel-flecha {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: var(--texto-fondo-oscuro);
+  background-color: var(--botones-principales);
+  box-shadow: var(--mf-sombra-1);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-carrusel-flecha:active {
+  transform: scale(0.97);
+}
+.mf-carrusel-flecha:focus-visible {
+  outline: 2px solid var(--mf-foco);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-carrusel-flecha:hover {
+    background-color: var(--hover);
+  }
+}
 
 /* ==========================================================================
    Hero 2.5D de la home (HeroFluidos.tsx) + intro de grieta (IntroGrieta.tsx)
-   Con movimiento: escenario fijado por ScrollTrigger, el Goji viaja en <canvas> hasta el
+   Con movimiento: escenario fijado (sticky) sobre su recorrido, el Goji viaja en <canvas> hasta el
    destino. Con prefers-reduced-motion: composición estática y el destino como bloque normal.
    ========================================================================== */
 .mf-fluidos {
@@ -1020,11 +1046,20 @@ html:has(.superficie-cliente) {
   align-items: flex-start;
 }
 .mf-fluidos__leyenda {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 1.75rem;
+  width: 100%;
+  margin-top: 1.25rem;
   max-width: 34rem;
+}
+@media (min-width: 480px) {
+  .mf-fluidos__leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    width: auto;
+    margin-top: 1.75rem;
+  }
 }
 .mf-fluidos__chip {
   display: inline-flex;
@@ -1115,12 +1150,19 @@ html:has(.superficie-cliente) {
   }
 }
 
-/* Destino: tipografía gigante en Playfair detrás del Goji (texto PROVISIONAL) */
+/* Destino: tipografía gigante en Playfair con el Goji al lado (texto PROVISIONAL). La frase se lee
+   entera: en escritorio va a la izquierda y el frasco termina en la columna derecha; en móvil el
+   frasco termina debajo de la frase. */
 .mf-fluidos__destino {
   position: relative;
   z-index: 1;
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
   padding: 3rem var(--layout-gutter-x);
   text-align: center;
 }
@@ -1131,7 +1173,6 @@ html:has(.superficie-cliente) {
   line-height: 0.88;
   letter-spacing: -0.03em;
   color: var(--mf-gigante);
-  text-wrap: balance;
 }
 .mf-fluidos__gigante span {
   display: block;
@@ -1140,17 +1181,36 @@ html:has(.superficie-cliente) {
   letter-spacing: 0;
   color: var(--oro-grande);
 }
+/* Ancla invisible: marca dónde termina el Goji que viaja en el lienzo */
+.mf-fluidos__destino-marca {
+  display: none;
+}
 .mf-fluidos__destino-frasco {
-  position: absolute;
-  inset: 0;
   display: grid;
   place-items: center;
 }
 .mf-fluidos__destino-frasco picture,
 .mf-fluidos__destino-frasco img {
-  height: min(62vh, 30rem);
+  height: min(40vh, 18rem);
   width: auto;
   filter: drop-shadow(0 26px 24px rgba(58, 28, 10, 0.32));
+}
+@media (min-width: 768px) {
+  .mf-fluidos__destino {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+  }
+  .mf-fluidos__gigante {
+    font-size: clamp(4.5rem, 12vw, 11.5rem);
+  }
+  .mf-fluidos__destino-frasco {
+    justify-self: center;
+  }
+  .mf-fluidos__destino-frasco picture,
+  .mf-fluidos__destino-frasco img {
+    height: min(56vh, 28rem);
+  }
 }
 .mf-fluidos__giro {
   position: absolute;
@@ -1174,10 +1234,21 @@ html:has(.superficie-cliente) {
   }
   .mf-fluidos__destino {
     position: absolute;
-    inset: 0;
-    padding: 0 var(--layout-gutter-x);
+    /* Solo el área visible bajo el cromo: en móvil el escenario es más alto que la pantalla */
+    inset: 0 0 auto 0;
+    height: min(100%, calc(100svh - var(--mf-header-offset, 136px)));
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    padding: 1.5rem var(--layout-gutter-x);
     opacity: 0;
     pointer-events: none;
+  }
+  .mf-fluidos__gigante {
+    align-self: start;
+  }
+  .mf-fluidos__destino-marca {
+    display: block;
+    width: 100%;
   }
   .mf-fluidos__destino-frasco {
     display: none;
@@ -1186,6 +1257,13 @@ html:has(.superficie-cliente) {
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
   .mf-fluidos__recorrido {
     height: 140svh;
+  }
+  .mf-fluidos__destino {
+    grid-template-rows: minmax(0, 1fr);
+    padding-block: 0;
+  }
+  .mf-fluidos__gigante {
+    align-self: center;
   }
 }
 /* Sin movimiento: nada se fija ni gira; el destino es un bloque normal con el Goji estático */

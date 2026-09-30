@@ -148,11 +148,12 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
             </div>
           </div>
 
-          {/* Destino del Goji: tipografía gigante detrás del frasco. Texto PROVISIONAL. */}
+          {/* Destino del Goji: tipografía gigante con el frasco al lado. Texto PROVISIONAL. */}
           <div className="mf-fluidos__destino">
             <p className="mf-fluidos__gigante">
               Brillo <span>que se</span> nota
             </p>
+            <span className="mf-fluidos__destino-marca" aria-hidden />
             <Link
               href={`/cliente/tienda-online/productos/${porClave.goji.id}`}
               prefetch={false}

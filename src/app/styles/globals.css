@@ -511,13 +511,14 @@ p {
 }
 .hero-bg-gradient {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(191, 161, 129, 0.25), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(163, 107, 31, 0.12), transparent 50%),
+    /* El brillo cálido de abajo se centra por encima del borde y se apaga antes de él */
+    radial-gradient(ellipse 60% 35% at 50% 70%, rgba(163, 107, 31, 0.12), transparent 60%),
     /* Vuelve al lino antes del borde inferior: sin línea dura contra la sección siguiente */
     linear-gradient(180deg, var(--fondo-general) 0%, var(--fondos-suaves) 55%, var(--fondo-general) 100%);
 }
 .dark .hero-bg-gradient {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(113, 0, 20, 0.2), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(113, 0, 20, 0.15), transparent 50%),
+    radial-gradient(ellipse 60% 35% at 50% 70%, rgba(113, 0, 20, 0.15), transparent 60%),
     var(--fondo-general);
 }
 
