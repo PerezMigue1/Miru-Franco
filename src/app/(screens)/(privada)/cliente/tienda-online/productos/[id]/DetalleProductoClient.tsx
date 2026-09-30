@@ -214,7 +214,7 @@ export default function DetalleProductoClient({ id }: Props) {
       <ModuleLayout>
         <div className="max-w-4xl mx-auto py-12">
           <Card className="text-center py-12" style={{ borderColor: 'var(--danger)' }}>
-            <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>{error ?? 'Producto no encontrado'}</p>
+            <p className="text-lead mb-4" style={{ color: 'var(--danger-texto)' }}>{error ?? 'Producto no encontrado'}</p>
           </Card>
         </div>
       </ModuleLayout>

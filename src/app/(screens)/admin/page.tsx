@@ -511,7 +511,7 @@ export default function AdminDashboardPage() {
                 <div className="pt-4 border-t" style={{ borderColor: 'var(--fondo-general)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <PackageX size={14} style={{ color: 'var(--danger)' }} />
+                      <PackageX size={14} style={{ color: 'var(--danger-texto)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Por caducar</span>
                     </div>
                     <Link href="/admin/control-caducidad" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -544,7 +544,7 @@ export default function AdminDashboardPage() {
                 <div className="pt-4 border-t" style={{ borderColor: 'var(--fondo-general)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <MessageSquareWarning size={14} style={{ color: 'var(--danger)' }} />
+                      <MessageSquareWarning size={14} style={{ color: 'var(--danger-texto)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Quejas abiertas</span>
                     </div>
                     <Link href="/admin/quejas-garantias" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -921,7 +921,7 @@ function BarraRanking({ items, max }: { items: { nombre: string; valor: number }
 const TIPO_ACTIVIDAD: Record<ItemActividad['tipo'], { icon: LucideIcon; color: string; bg: string }> = {
   venta: { icon: ShoppingCart, color: 'var(--success)', bg: 'rgba(110, 125, 87, 0.18)' },
   cita: { icon: CalendarClock, color: 'var(--enlaces-textos-interactivos)', bg: 'rgba(74, 123, 167, 0.18)' },
-  queja: { icon: MessageSquareWarning, color: 'var(--danger)', bg: 'rgba(113, 0, 20, 0.12)' },
+  queja: { icon: MessageSquareWarning, color: 'var(--danger-texto)', bg: 'rgba(113, 0, 20, 0.12)' },
 };
 
 function ItemActividadFila({ item }: { item: ItemActividad }) {
@@ -964,7 +964,7 @@ function MensajeVacio({ texto, compacto }: { texto: string; compacto?: boolean }
 
 function MensajeError({ texto }: { texto: string }) {
   return (
-    <p className="text-sm py-2" style={{ color: 'var(--danger)' }}>
+    <p className="text-sm py-2" style={{ color: 'var(--danger-texto)' }}>
       {texto}
     </p>
   );

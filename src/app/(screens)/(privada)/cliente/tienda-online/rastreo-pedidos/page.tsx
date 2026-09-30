@@ -96,7 +96,7 @@ export default function RastreoPedidosPage() {
 
         {error && (
           <Card className="mb-6 p-6 text-center">
-            <p className="mb-4" style={{ color: 'var(--danger)' }}>
+            <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>
               {error}
             </p>
             <Button variant="outline" onClick={() => router.push('/login')}>

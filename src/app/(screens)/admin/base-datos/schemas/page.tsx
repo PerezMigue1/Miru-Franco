@@ -177,7 +177,7 @@ export default function BaseDatosSchemasPage() {
           )}
 
           {error && (
-            <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>
+            <p className="mt-4 text-sm" style={{ color: 'var(--danger-texto)' }}>
               {error}
             </p>
           )}

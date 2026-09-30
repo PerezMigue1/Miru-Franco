@@ -198,7 +198,7 @@ export default function PerfilFotoBlock({
             )}
           </div>
           {error && (
-            <p className="text-sm" style={{ color: 'var(--danger)' }} role="alert">
+            <p className="text-sm" style={{ color: 'var(--danger-texto)' }} role="alert">
               {error}
             </p>
           )}

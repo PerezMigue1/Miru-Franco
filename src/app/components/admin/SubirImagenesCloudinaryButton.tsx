@@ -116,7 +116,7 @@ export function SubirImagenesCloudinaryButton({
           role="alert"
           className="text-xs font-medium rounded px-2 py-1.5 border"
           style={{
-            color: 'var(--danger)',
+            color: 'var(--danger-texto)',
             borderColor: 'var(--danger)',
             backgroundColor: 'rgba(220, 38, 38, 0.08)',
           }}

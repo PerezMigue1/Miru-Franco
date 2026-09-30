@@ -464,7 +464,7 @@ export default function BackupPage() {
           </button>
 
           {errorBackup && (
-            <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger)' }}>
+            <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger-texto)' }}>
               <ShieldAlert size={16} /> {errorBackup}
             </div>
           )}

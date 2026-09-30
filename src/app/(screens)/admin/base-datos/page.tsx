@@ -1301,7 +1301,7 @@ export default function BaseDatosPage() {
                     );
                   }
                   return (
-                    <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.15)', color: 'var(--danger)' }}>
+                    <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.15)', color: 'var(--danger-texto)' }}>
                       <p>{(r as Extract<ResultadoImportacion, { success: false }>).error}</p>
                     </div>
                   );
@@ -1449,7 +1449,7 @@ export default function BaseDatosPage() {
                     </p>
                   </div>
                 )}
-                {errorExport && <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>{errorExport}</p>}
+                {errorExport && <p className="mt-4 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorExport}</p>}
               </Card>
             )}
 
@@ -1624,7 +1624,7 @@ export default function BaseDatosPage() {
 
                   {errorBackup && (
                     <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm"
-                      style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger)' }}>
+                      style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger-texto)' }}>
                       <ShieldAlert size={16} /> {errorBackup}
                     </div>
                   )}
@@ -1814,7 +1814,7 @@ export default function BaseDatosPage() {
                             {[
                               { label: 'QPS', series: qpsSeries, color: 'var(--success)' },
                               { label: 'Conexiones activas', series: connSeries, color: 'var(--warning)' },
-                              { label: 'Tiempo respuesta (ms)', series: respSeries, color: 'var(--danger)' },
+                              { label: 'Tiempo respuesta (ms)', series: respSeries, color: 'var(--danger-texto)' },
                             ].map(({ label, series, color }) => (
                               <div key={label}>
                                 <p className="text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>{label}</p>
@@ -1867,7 +1867,7 @@ export default function BaseDatosPage() {
                   </div>
                 )}
 
-                {errorRendimiento && <p className="mb-3 text-sm" style={{ color: 'var(--danger)' }}>{errorRendimiento}</p>}
+                {errorRendimiento && <p className="mb-3 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorRendimiento}</p>}
 
                 {/* ── Tablas ── */}
                 {vistaMonitoreo === 'tablas' && tableStats.length > 0 && (
@@ -2256,7 +2256,7 @@ export default function BaseDatosPage() {
                     )}
                   </div>
                 )}
-                {errorDiagrama && <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>{errorDiagrama}</p>}
+                {errorDiagrama && <p className="mt-4 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorDiagrama}</p>}
               </Card>
             )}
 
@@ -2289,7 +2289,7 @@ export default function BaseDatosPage() {
                             {loadingModulo === item.id ? (
                               <div className="py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</div>
                             ) : errorModulo ? (
-                              <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>{errorModulo}</p>
+                              <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>{errorModulo}</p>
                             ) : item.id === 'inventario' ? (
                               <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
                                 <Table headers={['', 'ID', 'Nombre', 'Categoría', 'Marca', 'Precio', 'Stock']}>

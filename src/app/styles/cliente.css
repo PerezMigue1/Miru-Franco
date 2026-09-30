@@ -295,7 +295,9 @@ html:has(.superficie-cliente) {
   height: 100%;
   overflow: hidden;
   border-radius: 11px;
-  background-color: var(--header-footer);
+  background: linear-gradient(100deg, var(--fondos-suaves) 40%, color-mix(in srgb, var(--fondos-suaves), #fff 22%) 50%, var(--fondos-suaves) 60%);
+  background-size: 200% 100%;
+  animation: mf-brillo 1.6s linear infinite;
 }
 .mf-vitrina__tarjeta[data-pos='0'] {
   --t: translate3d(0, 2%, 80px);
@@ -654,6 +656,7 @@ html:has(.superficie-cliente) {
 .mf-auth__lienzo {
   position: relative;
   min-height: 100dvh;
+  overflow-x: clip;
 }
 .mf-auth__cabecera {
   display: flex;

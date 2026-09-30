@@ -68,7 +68,7 @@ export default function MisPedidosPage() {
 
       {error && (
         <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
-          <p style={{ color: 'var(--danger)' }}>{error}</p>
+          <p style={{ color: 'var(--danger-texto)' }}>{error}</p>
         </Card>
       )}
 
