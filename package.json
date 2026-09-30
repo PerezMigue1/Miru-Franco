@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "jszip": "^3.10.1",
@@ -23,6 +25,7 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.54.0",
     "recharts": "^3.8.1",
+    "three": "^0.186.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

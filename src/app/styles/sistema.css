@@ -139,11 +139,10 @@ table td {
 }
 
 /* ---- Botones ----
-   Colores por variables (--btn-*) para que el hover sea CSS y no se quede "pegado" al tocar. */
+   .mf-btn: transiciones y presión (cualquier elemento pulsable).
+   .mf-btn-color: colores por variables (--btn-*) para que el hover sea CSS y no se quede "pegado"
+   al tocar. Fuera de capa, igual que antes el estilo inline de Button: la variante manda. */
 .mf-btn {
-  background-color: var(--btn-bg);
-  color: var(--btn-texto);
-  border: var(--btn-borde, none);
   transition:
     background-color var(--mf-dur-hover) ease,
     color var(--mf-dur-hover) ease,
@@ -152,18 +151,23 @@ table td {
     transform var(--mf-dur-press) var(--mf-ease-out);
   touch-action: manipulation;
 }
+.mf-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.mf-btn-color {
+  background-color: var(--btn-bg);
+  color: var(--btn-texto);
+  border: var(--btn-borde, none);
+}
 @media (hover: hover) and (pointer: fine) {
-  .mf-btn:not(:disabled):hover {
+  .mf-btn-color:not(:disabled):hover {
     background-color: var(--btn-bg-hover);
     color: var(--btn-texto-hover, var(--btn-texto));
     border-color: var(--btn-borde-hover, transparent);
   }
 }
-.mf-btn:not(:disabled):active {
-  transform: scale(0.97);
-}
 @media (pointer: coarse) {
-  .mf-btn {
+  .mf-btn-color {
     min-height: 44px;
   }
 }

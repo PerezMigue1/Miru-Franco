@@ -2,7 +2,6 @@
 
 import { useRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import ScrollArrows, { SCROLL_ARROW_PADDING_X } from '../ui/ScrollArrows';
 import { ProductoImagenCarruselTarjeta } from '../tienda/ProductoImagenCarruselTarjeta';
 import { urlsGaleriaProductoCatalogo, type Producto } from '../../services/productos';
@@ -11,6 +10,9 @@ import { ArrowRight, Calendar, Clock3, Droplets, Scissors, Sparkles, Star, Wind 
 import ServicioImagen, { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
 import { useInclinacion3D } from '../../hooks/useInclinacion3D';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
+import { fotosDeServicios } from '../../utils/galeria';
+import GaleriaTrabajo from '../galeria/GaleriaTrabajo';
+import GaleriaVacia from '../galeria/GaleriaVacia';
 
 const CARD_WIDTH_PX = 288;
 const SCROLL_STEP = CARD_WIDTH_PX + 24;
@@ -189,7 +191,7 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
   };
 
   const servicios = initialServicios.slice(0, 5);
-  const fotoSalon = initialServicios.map((s) => s.imagen ?? s.imagenes?.[0]).find((u) => u?.startsWith('http'));
+  const fotos = fotosDeServicios(initialServicios).slice(0, 7);
 
   return (
     <>
@@ -268,7 +270,26 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
         </div>
       </section>
 
-      {/* ── Sobre nosotros: foto real del salón en arco (eco del monograma) ── */}
+      {/* ── Nuestro trabajo: fotos reales de los servicios (mismas que sube el equipo desde
+          /operacion/subir-imagenes). Sin fotos, estado vacío honesto; nunca relleno. ── */}
+      <section className="py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
+        <div className="container-max">
+          <EncabezadoSeccion
+            titulo="Nuestro trabajo"
+            descripcion="Fotos de servicios hechos en el salón. Tócalas para verlas en grande."
+            accion={fotos.length > 0 ? { href: '/cliente/galeria', label: 'Ver galería completa' } : undefined}
+          />
+          <div className="mf-revelar">
+            {fotos.length > 0 ? (
+              <GaleriaTrabajo fotos={fotos} etiqueta="Fotos de trabajos del salón" />
+            ) : (
+              <GaleriaVacia />
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Sobre nosotros: monograma en arco (las fotos reales ya viven en la galería) ── */}
       <section className="py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
         <div className="container-max grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-20 items-center">
           <div className="mf-revelar flex justify-center lg:justify-start order-last lg:order-first">
@@ -279,11 +300,7 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
                 aria-hidden
               />
               <div className="relative h-full w-full overflow-hidden rounded-t-full" style={{ boxShadow: 'var(--mf-sombra-2)' }}>
-                {fotoSalon ? (
-                  <Image src={fotoSalon} alt="Trabajo realizado en Mirú Franco" fill className="object-cover" sizes="(max-width: 640px) 256px, 320px" />
-                ) : (
-                  <ServicioImagenPlaceholder />
-                )}
+                <ServicioImagenPlaceholder />
               </div>
             </div>
           </div>
