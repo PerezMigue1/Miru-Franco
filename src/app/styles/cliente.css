@@ -598,7 +598,7 @@ html:has(.superficie-cliente) {
   max-width: 28rem;
 }
 .mf-auth__cambio {
-  animation: mf-aparecer 220ms ease both;
+  animation: mf-aparecer 200ms var(--mf-ease-out) both;
 }
 .mf-auth__panel {
   display: none;
@@ -645,7 +645,7 @@ html:has(.superficie-cliente) {
     width: 50%;
     background-color: var(--header-footer);
     transform: translateX(0);
-    transition: transform 680ms var(--mf-ease-in-out);
+    transition: transform 500ms var(--mf-ease-in-out);
     will-change: transform;
   }
   /* Filete dorado en el borde que avanza */
@@ -657,7 +657,7 @@ html:has(.superficie-cliente) {
     right: 0;
     width: 1px;
     background: linear-gradient(transparent, rgba(159, 109, 31, 0.7) 30%, rgba(159, 109, 31, 0.7) 70%, transparent);
-    transition: right 0s linear 340ms;
+    transition: right 0s linear 250ms;
   }
   .mf-auth__lienzo[data-lado='registro'] .mf-auth__panel {
     transform: translateX(100%);
@@ -677,14 +677,14 @@ html:has(.superficie-cliente) {
     flex-direction: column;
     justify-content: space-between;
     padding: 2.5rem clamp(2rem, 4vw, 4rem);
-    transition: transform 680ms var(--mf-ease-in-out);
+    transition: transform 500ms var(--mf-ease-in-out);
   }
   /* Contra-movimiento del contenido: se queda un poco atrás mientras el panel viaja */
   .mf-auth__lienzo[data-animado='true'][data-lado='registro'] .mf-auth__panel-contenido {
-    animation: mf-auth-contra 680ms var(--mf-ease-in-out);
+    animation: mf-auth-contra 500ms var(--mf-ease-in-out);
   }
   .mf-auth__lienzo[data-animado='true'][data-lado='acceso'] .mf-auth__panel-contenido {
-    animation: mf-auth-contra-vuelta 680ms var(--mf-ease-in-out);
+    animation: mf-auth-contra-vuelta 500ms var(--mf-ease-in-out);
   }
 }
 @keyframes mf-auth-contra {
@@ -702,7 +702,7 @@ html:has(.superficie-cliente) {
 }
 .mf-auth__panel-invitacion {
   margin-top: 2.5rem;
-  animation: mf-aparecer 420ms ease 200ms both;
+  animation: mf-aparecer 240ms var(--mf-ease-out) 120ms both;
 }
 .mf-auth__panel-boton {
   margin-top: 1.5rem;
