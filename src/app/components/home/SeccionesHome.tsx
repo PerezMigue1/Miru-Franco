@@ -75,7 +75,7 @@ function EncabezadoSeccion({
           <ArrowRight
             size={16}
             aria-hidden
-            className="transition-transform duration-200 group-hover:translate-x-1"
+            className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
             style={{ color: 'var(--logo-branding)' }}
           />
         </Link>

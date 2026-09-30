@@ -437,7 +437,7 @@ export default function DetalleProductoClient({ id }: Props) {
                       onClick={() => setPuntuacion(String(star))}
                       onMouseEnter={() => setHoveredStar(star)}
                       onMouseLeave={() => setHoveredStar(0)}
-                      className="transition-transform duration-100 hover:scale-110 focus:outline-none"
+                      className="rounded-md transition-transform duration-150 ease-out hover:scale-110 active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
                       aria-label={star + ' estrella' + (star > 1 ? 's' : '')}
                     >
                       <Star

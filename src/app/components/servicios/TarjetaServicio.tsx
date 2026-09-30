@@ -64,7 +64,7 @@ export default function TarjetaServicio({ servicio, indice }: { servicio: Servic
             </div>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
               Ver y agendar
-              <ArrowRight size={16} aria-hidden className="transition-transform duration-200 group-hover:translate-x-1" />
+              <ArrowRight size={16} aria-hidden className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
             </span>
           </div>
         </div>

@@ -96,7 +96,7 @@ export default function TarjetaCatalogo({ producto, noDisponible, indice, onAbri
               aria-hidden
             >
               Ver detalles
-              <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
+              <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
             </span>
           </div>
         </div>
