@@ -122,10 +122,10 @@ export default function DevolucionesPage() {
     <ModuleLayout>
       <div className="max-w-4xl mx-auto py-4">
         <div className="text-center mb-8">
-          <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Devoluciones y cambios
           </h1>
-          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
+          <p className="text-base md:text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
             Solicitudes registradas en el sistema según tus pedidos
           </p>
         </div>

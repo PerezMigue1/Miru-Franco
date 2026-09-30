@@ -1,6 +1,7 @@
 'use client';
 
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
@@ -16,14 +17,7 @@ export default function PromocionesPage() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
-        <div className="text-center mb-12">
-          <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Promociones Especiales
-          </h1>
-          <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
-            Aprovecha nuestras promociones y ofertas especiales
-          </p>
-        </div>
+        <PageHeader title="Promociones Especiales" subtitle="Aprovecha nuestras promociones y ofertas especiales" />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {promociones.map((promocion) => (

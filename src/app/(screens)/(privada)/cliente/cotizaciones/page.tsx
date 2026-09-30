@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -27,14 +28,7 @@ export default function CotizacionesPage() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
-          <div className="text-center mb-12">
-            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Cotizaciones para Eventos Especiales
-            </h1>
-            <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
-              Paquetes especiales de maquillaje y peinado para tus eventos más importantes
-            </p>
-          </div>
+          <PageHeader title="Cotizaciones para Eventos Especiales" subtitle="Paquetes especiales de maquillaje y peinado para tus eventos más importantes" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {paquetes.map((paquete) => (
