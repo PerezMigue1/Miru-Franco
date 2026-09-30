@@ -55,10 +55,10 @@ export default function Footer() {
 
           {/* Columna 1: Marca + redes */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <p className="text-logo mb-1" style={{ color: 'var(--logo-branding)' }}>
+            <p className="text-logo mb-1" style={{ color: 'var(--oro-sobre-carbon)' }}>
               MIRÚ FRANCO
             </p>
-            <p className="text-logo-small mb-4" style={{ color: 'var(--logo-branding)' }}>
+            <p className="text-logo-small mb-4" style={{ color: 'var(--oro-sobre-carbon)' }}>
               BEAUTY SALÓN
             </p>
             <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
@@ -112,7 +112,7 @@ export default function Footer() {
 
           {/* Columna 2: Enlaces rápidos */}
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--logo-branding)' }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Enlaces
             </h2>
             <ul className="space-y-3">
@@ -132,7 +132,7 @@ export default function Footer() {
 
           {/* Columna 3: Servicios */}
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--logo-branding)' }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Servicios
             </h2>
             <ul className="space-y-3">
@@ -146,7 +146,7 @@ export default function Footer() {
 
           {/* Columna 4: Contacto */}
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--logo-branding)' }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Contacto
             </h2>
             <ul className="space-y-4 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>

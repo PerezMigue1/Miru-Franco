@@ -623,7 +623,7 @@ export default function BackupPage() {
                 <div
                   key={backup.id}
                   className="p-4 rounded-lg flex flex-wrap justify-between items-center gap-3"
-                  style={{ borderLeft: `4px solid ${backup.estado === 'exitoso' ? 'var(--success)' : 'var(--danger)'}`, backgroundColor: 'var(--fondos-suaves)' }}
+                  style={{ boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${backup.estado === 'exitoso' ? 'var(--success)' : 'var(--danger)'} 45%, transparent)`, backgroundColor: 'var(--fondos-suaves)' }}
                 >
                   <div>
                     <p className="font-semibold text-sm uppercase" style={{ color: 'var(--menu-texto-principal)' }}>

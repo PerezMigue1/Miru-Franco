@@ -1641,7 +1641,7 @@ export default function BaseDatosPage() {
                         <div key={backup.id}
                           className="p-4 rounded-lg flex flex-wrap justify-between items-center gap-3"
                           style={{
-                            borderLeft: `4px solid ${backup.estado === 'exitoso' ? 'var(--success)' : 'var(--danger)'}`,
+                            boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${backup.estado === 'exitoso' ? 'var(--success)' : 'var(--danger)'} 45%, transparent)`,
                             backgroundColor: 'var(--fondos-suaves)',
                           }}>
                           <div>
@@ -2273,7 +2273,7 @@ export default function BaseDatosPage() {
                   <div className="space-y-2">
                     {MODULOS_CONSULTAR.map((item) => (
                       <div key={item.id} className="rounded-lg overflow-hidden"
-                        style={{ backgroundColor: 'var(--fondos-suaves)', borderLeft: `4px solid var(--hover)` }}>
+                        style={{ backgroundColor: 'var(--fondos-suaves)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--hover) 35%, transparent)' }}>
                         <button type="button" onClick={() => toggleModulo(item.id)}
                           className="w-full p-4 text-left flex items-center justify-between hover:opacity-90 transition-opacity">
                           <div>
