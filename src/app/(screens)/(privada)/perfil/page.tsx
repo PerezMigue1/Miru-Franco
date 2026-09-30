@@ -1,20 +1,26 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { hasValidToken } from '../../../utils/security';
 import ModuleLayout from '../../../components/layouts/ModuleLayout';
 import UserProfile from '../../../components/perfil/UserProfile';
 
+function sinSuscripcion() {
+  return () => {};
+}
+
 export default function PerfilPage() {
   const router = useRouter();
-  const isAuthed = typeof window !== 'undefined' && hasValidToken();
+  // En el servidor no hay sesión que leer: el primer render del cliente coincide con el del servidor
+  // (sin error de hidratación) y luego muestra el perfil si hay sesión.
+  const isAuthed = useSyncExternalStore(sinSuscripcion, hasValidToken, () => false);
 
   useEffect(() => {
-    if (!isAuthed) {
+    if (!hasValidToken()) {
       router.replace('/login?returnUrl=/perfil');
     }
-  }, [isAuthed, router]);
+  }, [router]);
 
   if (!isAuthed) {
     return (
