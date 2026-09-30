@@ -102,7 +102,7 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                     <li key={clave}>
                       <Link href={`/cliente/tienda-online/productos/${f.id}`} prefetch={false} className="mf-fluidos__chip">
                         <span className="mf-fluidos__punto" style={{ backgroundColor: f.color }} aria-hidden />
-                        <span className="truncate">{f.nombre ?? 'Ver producto'}</span>
+                        <span className="mf-fluidos__chip-nombre">{f.nombre ?? 'Ver producto'}</span>
                         {f.precio && <span className="mf-cifras font-semibold">{f.precio}</span>}
                       </Link>
                     </li>
