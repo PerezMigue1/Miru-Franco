@@ -155,7 +155,7 @@ export default function DetalleProductoClient({ id }: Props) {
     const precioNum = typeof presActual?.precio === 'string' ? parseFloat(String(presActual.precio).replace(/[^0-9.]/g, '')) || 0 : 0;
     setAgregando(true);
     try {
-      await addItem({ nombre: producto.nombre, precio: precioNum, cantidad, imagen: urlsGaleria[0] ?? producto.imagenes?.[0] ?? producto.imagen, presentacion: presentacionSeleccionada, productoId: productoIdNum, presentacionId });
+      await addItem({ nombre: producto.nombre, precio: precioNum, cantidad, imagen: urlsGaleria[0], presentacion: presentacionSeleccionada, productoId: productoIdNum, presentacionId });
       setMensajeAñadido(true);
       setTimeout(() => setMensajeAñadido(false), 3000);
     } catch (e) { void showAlert(e instanceof Error ? e.message : 'No se pudo añadir al carrito'); }
@@ -171,7 +171,7 @@ export default function DetalleProductoClient({ id }: Props) {
     if (!Number.isFinite(productoIdNum) || productoIdNum <= 0 || !presActual?.id) { void showAlert('No se pudo identificar la presentación.'); return; }
     const precioNum = typeof presActual.precio === 'string' ? parseFloat(String(presActual.precio).replace(/[^0-9.]/g, '')) || 0 : 0;
     try {
-      await addItem({ nombre: producto.nombre, precio: precioNum, cantidad, imagen: urlsGaleria[0] ?? producto.imagenes?.[0] ?? producto.imagen, presentacion: presentacionSeleccionada, productoId: productoIdNum, presentacionId: presActual.id });
+      await addItem({ nombre: producto.nombre, precio: precioNum, cantidad, imagen: urlsGaleria[0], presentacion: presentacionSeleccionada, productoId: productoIdNum, presentacionId: presActual.id });
       router.push('/cliente/tienda-online/checkout');
     } catch (e) { void showAlert(e instanceof Error ? e.message : 'No se pudo preparar la compra'); }
   };

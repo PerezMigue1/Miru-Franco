@@ -17,7 +17,7 @@ import {
   eliminarCarritoItem,
   type CarritoItemApi,
 } from '../services/ecommerce';
-import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
+import { imagenProductoMostrable } from '../utils/normalizarUrlImagen';
 
 const CART_STORAGE_KEY = 'miru-cart';
 
@@ -69,22 +69,16 @@ function apiItemToCartItem(row: CarritoItemApi): CartItem {
   const rowWithPresentacion = rowAny as CarritoItemApi & {
     presentacion?: CarritoItemApi['presentacion'] & { imagen?: unknown; imagenes?: unknown };
   };
-  const imgRaw =
-    row.producto?.imagenes?.[0] ??
-    (typeof rowAny.producto?.imagen === 'string' ? rowAny.producto.imagen : undefined) ??
-    (Array.isArray(rowWithPresentacion.presentacion?.imagenes) &&
-    typeof rowWithPresentacion.presentacion.imagenes[0] === 'string'
-      ? rowWithPresentacion.presentacion.imagenes[0]
-      : undefined) ??
-    (typeof rowWithPresentacion.presentacion?.imagen === 'string'
-      ? rowWithPresentacion.presentacion.imagen
-      : undefined) ??
-    (typeof rowAny.imagen === 'string' ? rowAny.imagen : undefined) ??
-    (typeof rowAny.imagenUrl === 'string' ? rowAny.imagenUrl : undefined);
-  const img =
-    typeof imgRaw === 'string' && imgRaw.trim()
-      ? normalizarUrlImagenExterna(imgRaw) || undefined
-      : undefined;
+  // Primera imagen mostrable entre las candidatas (las que no son de Cloudinary se descartan)
+  const candidatas: unknown[] = [
+    ...(row.producto?.imagenes ?? []),
+    rowAny.producto?.imagen,
+    ...(Array.isArray(rowWithPresentacion.presentacion?.imagenes) ? rowWithPresentacion.presentacion.imagenes : []),
+    rowWithPresentacion.presentacion?.imagen,
+    rowAny.imagen,
+    rowAny.imagenUrl,
+  ];
+  const img = candidatas.map(imagenProductoMostrable).find((u): u is string => !!u);
   return {
     id: `srv-${row.id}`,
     carritoItemId: row.id,
@@ -124,7 +118,7 @@ function loadFromStorage(): CartItem[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isCartItemRow).map((item) => ({
       ...item,
-      imagen: item.imagen ? normalizarUrlImagenExterna(item.imagen) || undefined : undefined,
+      imagen: imagenProductoMostrable(item.imagen) ?? undefined,
     }));
   } catch {
     return [];

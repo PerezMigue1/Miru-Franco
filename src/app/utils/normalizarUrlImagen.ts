@@ -37,3 +37,17 @@ export function urlImagenEsValida(url: string): boolean {
     return false;
   }
 }
+
+/** Origen de las fotos reales de producto (las que sube el equipo). */
+export const ORIGEN_IMAGENES_PRODUCTO = 'https://res.cloudinary.com/';
+
+/**
+ * Regla única para mostrar la imagen de un producto: solo si está alojada en Cloudinary. Cualquier
+ * otra URL (p. ej. el relleno "https://url.jpg" que hay en la base) se trata como "sin imagen" y la
+ * pantalla muestra el placeholder de marca. Solo afecta a la presentación: no cambia el dato.
+ */
+export function imagenProductoMostrable(url: unknown): string | null {
+  if (typeof url !== 'string') return null;
+  const n = normalizarUrlImagenExterna(url);
+  return n.startsWith(ORIGEN_IMAGENES_PRODUCTO) ? n : null;
+}
