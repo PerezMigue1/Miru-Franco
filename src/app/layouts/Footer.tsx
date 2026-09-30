@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { socialColors } from '../utils/colors';
+import { TELEFONO_SALON } from '../utils/contactoSalon';
 
 function IconInstagram({ className }: { className?: string }) {
   return (
@@ -164,16 +165,17 @@ export default function Footer() {
                   contacto@mirufranco.com
                 </a>
               </li>
-              <li className="flex items-center gap-3">
-                <Phone size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
-                {/* TODO: Agregar número real */}
-                <a
-                  href="tel:+521234567890"
-                  className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
-                >
-                  +52 123 456 7890
-                </a>
-              </li>
+              {TELEFONO_SALON && (
+                <li className="flex items-center gap-3">
+                  <Phone size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
+                  <a
+                    href={TELEFONO_SALON.enlace}
+                    className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                  >
+                    {TELEFONO_SALON.visible}
+                  </a>
+                </li>
+              )}
               <li className="flex items-start gap-3">
                 <Clock size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 <span>Lun – Sáb: 9:00 AM – 8:00 PM</span>

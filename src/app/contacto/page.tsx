@@ -2,6 +2,7 @@ import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { MapPin, Mail, Phone, Clock } from 'lucide-react';
 import { metadataPublica } from '../utils/seo';
+import { TELEFONO_SALON } from '../utils/contactoSalon';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 
 function IconInstagram({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -78,25 +79,26 @@ export default function ContactoPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                    >
-                      <Phone className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
-                      {/* TODO: Agregar número real */}
-                      <a
-                        href="tel:+521234567890"
-                        className="text-sm hover:opacity-80 transition-opacity"
-                        style={{ color: 'var(--botones-principales)' }}
+                  {TELEFONO_SALON && (
+                    <div className="flex items-start gap-4">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'var(--fondos-suaves)' }}
                       >
-                        +52 123 456 7890
-                      </a>
+                        <Phone className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
+                        <a
+                          href={TELEFONO_SALON.enlace}
+                          className="text-sm hover:opacity-80 transition-opacity"
+                          style={{ color: 'var(--menu-texto-principal)' }}
+                        >
+                          {TELEFONO_SALON.visible}
+                        </a>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex items-start gap-4">
                     <div
