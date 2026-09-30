@@ -122,7 +122,7 @@ export default function BaseDatosSchemasPage() {
               style={{ borderColor: 'var(--encabezados-alterno)' }}
             >
               <table className="w-full text-sm">
-                <thead style={{ backgroundColor: 'var(--encabezados-alterno)' }}>
+                <thead style={{ backgroundColor: 'var(--header-footer)' }}>
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                       Columna

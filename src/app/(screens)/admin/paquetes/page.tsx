@@ -161,10 +161,10 @@ export default function PaquetesPage() {
         </div>
 
         {loadError && (
-          <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--warning-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--warning-texto) 35%, transparent)' }}>
+          <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--warning-texto) 35%, transparent)' }}>
             <div className="text-sm space-y-2">
               <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>No se pudieron cargar los paquetes</p>
-              <p className="whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>{loadError}</p>
+              <p className="whitespace-pre-wrap" style={{ color: 'var(--texto-cuerpo)' }}>{loadError}</p>
               <Button variant="outline" size="sm" onClick={() => cargarDatos()}>
                 Reintentar
               </Button>
