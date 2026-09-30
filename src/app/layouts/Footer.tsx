@@ -122,7 +122,7 @@ export default function Footer() {
                     href={item.href}
                     className="text-sm flex items-center gap-2 group transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                   >
-                    <ArrowRight size={14} aria-hidden className="shrink-0 transition-transform duration-200 group-hover:translate-x-1" style={{ color: 'var(--logo-branding)' }} />
+                    <ArrowRight size={14} aria-hidden className="shrink-0 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" style={{ color: 'var(--logo-branding)' }} />
                     {item.label}
                   </Link>
                 </li>
