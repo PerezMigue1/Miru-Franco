@@ -457,14 +457,14 @@ export default function BackupPage() {
           <button
             onClick={() => void realizarBackup('manual')}
             disabled={realizandoBackup}
-            className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--nav-hover-bg)]"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--badge-base)]"
           >
             <Database size={24} className={realizandoBackup ? 'animate-spin' : ''} />
             <span className="text-[10px] font-bold mt-2">{realizandoBackup ? 'Generando backup...' : 'Generar backup'}</span>
           </button>
 
           {errorBackup && (
-            <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger-texto)' }}>
+            <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', color: 'var(--danger-texto)' }}>
               <ShieldAlert size={16} /> {errorBackup}
             </div>
           )}

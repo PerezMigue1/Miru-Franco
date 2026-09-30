@@ -1283,7 +1283,7 @@ export default function BaseDatosPage() {
                       className="mf-campo w-full px-4 py-2.5" />
                     {tablaImport === 'usuarios' && (
                       <p className="mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                        Recomendación: evita importar la columna <code className="bg-[var(--nav-hover-bg)] px-1 rounded">password</code> con hash bcrypt.
+                        Recomendación: evita importar la columna <code className="bg-[var(--badge-base)] px-1 rounded">password</code> con hash bcrypt.
                       </p>
                     )}
                   </div>
@@ -1294,7 +1294,7 @@ export default function BaseDatosPage() {
                   if (r.success) {
                     const { importados, fallidos, errores } = r as Extract<ResultadoImportacion, { success: true }>;
                     return (
-                      <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'rgba(110,125,87,0.2)', color: 'var(--success)' }}>
+                      <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--success) 12%, var(--badge-base))', color: 'var(--success)' }}>
                         <p className="font-medium">Importados: {importados}{(fallidos ?? 0) > 0 && <> • Fallidos: {fallidos ?? 0}</>}</p>
                         {(errores?.length ?? 0) > 0 && (
                           <ul className="mt-2 list-disc list-inside space-y-1 opacity-90">
@@ -1306,7 +1306,7 @@ export default function BaseDatosPage() {
                     );
                   }
                   return (
-                    <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.15)', color: 'var(--danger-texto)' }}>
+                    <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', color: 'var(--danger-texto)' }}>
                       <p>{(r as Extract<ResultadoImportacion, { success: false }>).error}</p>
                     </div>
                   );
@@ -1323,7 +1323,7 @@ export default function BaseDatosPage() {
                   <Download size={18} /> Exportar datos
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Conexión directa a la BD con <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">public</code>.
+                  Conexión directa a la BD con <code className="text-xs bg-[var(--badge-base)] px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-[var(--badge-base)] px-1 rounded">public</code>.
                 </p>
                 <form onSubmit={handleExportar} className="space-y-4">
                   <div>
@@ -1401,7 +1401,7 @@ export default function BaseDatosPage() {
                               Solo registros activos
                             </label>
                             <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                              (tablas con columna <code className="bg-[var(--nav-hover-bg)] px-1 rounded">activo</code> o <code className="bg-[var(--nav-hover-bg)] px-1 rounded">estado</code>)
+                              (tablas con columna <code className="bg-[var(--badge-base)] px-1 rounded">activo</code> o <code className="bg-[var(--badge-base)] px-1 rounded">estado</code>)
                             </p>
                           </div>
                         </>
@@ -1467,7 +1467,7 @@ export default function BaseDatosPage() {
                   <Trash2 size={18} /> Truncate de tabla
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  El comando <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
+                  El comando <code className="text-xs bg-[var(--badge-base)] px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
                   Esta operación es destructiva.
                 </p>
                 <form onSubmit={handleTruncateTabla} className="space-y-4">
@@ -1499,7 +1499,7 @@ export default function BaseDatosPage() {
                   </div>
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
-                      Confirmación (escribe exactamente: <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
+                      Confirmación (escribe exactamente: <code className="text-xs bg-[var(--badge-base)] px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
                     </label>
                     <input
                       type="text"
@@ -1517,7 +1517,7 @@ export default function BaseDatosPage() {
                   <div
                     className="mt-4 p-4 rounded-lg text-sm"
                     style={{
-                      backgroundColor: resultadoTruncate.success ? 'rgba(110,125,87,0.2)' : 'rgba(89,12,12,0.15)',
+                      backgroundColor: resultadoTruncate.success ? 'color-mix(in srgb, var(--success) 12%, var(--badge-base))' : 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))',
                       color: resultadoTruncate.success ? 'var(--success-texto)' : 'var(--danger-texto)',
                     }}
                   >
@@ -1619,7 +1619,7 @@ export default function BaseDatosPage() {
 <button 
   onClick={realizarBackup}
   disabled={realizandoBackup}
-  className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--nav-hover-bg)]"
+  className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--badge-base)]"
 >
   <Database size={24} className={realizandoBackup ? "animate-spin" : ""} />
   <span className="text-[10px] font-bold mt-2">
@@ -1629,7 +1629,7 @@ export default function BaseDatosPage() {
 
                   {errorBackup && (
                     <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm"
-                      style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger-texto)' }}>
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', color: 'var(--danger-texto)' }}>
                       <ShieldAlert size={16} /> {errorBackup}
                     </div>
                   )}
@@ -1781,7 +1781,7 @@ export default function BaseDatosPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(89,12,12,0.05)' }}>
+                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Rendimiento en tiempo real</p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                         <Card variant="elevated" padding="md">
@@ -1863,7 +1863,7 @@ export default function BaseDatosPage() {
 
                 {/* Alertas activas */}
                 {vistaMonitoreo === 'resumen' && (tableStats.length > 0 || indexStats.length > 0 || locksRows.length > 0) && (
-                  <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(89,12,12,0.08)' }}>
+                  <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                     <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Alertas activas</p>
                     <ul className="text-sm space-y-1" style={{ color: 'var(--menu-texto-principal)' }}>
                       {locksPendientes > 0 && <li className="inline-flex items-center gap-1"><ShieldAlert size={14} />Critico: hay {locksPendientes} lock(s) en espera.</li>}

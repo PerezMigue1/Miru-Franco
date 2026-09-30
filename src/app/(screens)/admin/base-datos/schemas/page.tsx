@@ -103,8 +103,8 @@ export default function BaseDatosSchemasPage() {
 
           {tablaSeleccionada && (
             <p className="text-sm mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-              Mostrando columnas de la tabla <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">{tablaSeleccionada}</code>
-              {' '}del schema <code className="text-xs bg-[var(--nav-hover-bg)] px-1 rounded">public</code>.
+              Mostrando columnas de la tabla <code className="text-xs bg-[var(--badge-base)] px-1 rounded">{tablaSeleccionada}</code>
+              {' '}del schema <code className="text-xs bg-[var(--badge-base)] px-1 rounded">public</code>.
             </p>
           )}
 

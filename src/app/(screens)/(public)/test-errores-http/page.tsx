@@ -54,7 +54,7 @@ export default function TestErroresHttpPage() {
         </h1>
         <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
           El backend debe tener rutas de prueba que devuelvan cada código. Al pulsar cada botón se llama a{' '}
-          <code className="text-xs bg-black/10 px-1 rounded">/api/test/errores/XXX</code>.
+          <code className="text-xs bg-[var(--badge-base)] px-1 rounded">/api/test/errores/XXX</code>.
         </p>
 
         <div className="space-y-3">
