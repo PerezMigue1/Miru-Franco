@@ -2,12 +2,12 @@
 
 import { useRef } from 'react';
 import Link from 'next/link';
-import ScrollArrows, { SCROLL_ARROW_PADDING_X } from '../ui/ScrollArrows';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductoImagenCarruselTarjeta } from '../tienda/ProductoImagenCarruselTarjeta';
 import { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
 import { urlsGaleriaProductoCatalogo, type Producto } from '../../services/productos';
 import { useInclinacion3D } from '../../hooks/useInclinacion3D';
-import { formatearPrecioMXN } from '../../utils/formatoPrecio';
+import { precioParaMostrar } from '../../utils/formatoPrecio';
 
 const CARD_WIDTH_PX = 288;
 const SCROLL_STEP = CARD_WIDTH_PX + 24;
@@ -46,15 +46,19 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
             {producto.marca}
           </p>
         )}
+        {/* Sin precio cargado (0 o vacío) no se anuncia "$0": se invita a consultar */}
         <p className="mf-cifras mt-3 text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
-          {formatearPrecioMXN(producto.precio)}
+          {precioParaMostrar(producto.precio) ?? 'Consultar precio'}
         </p>
       </div>
     </Link>
   );
 }
 
-/** Carrusel de productos del home: la única parte de esa sección que necesita estado (flechas e inclinación). */
+/**
+ * Carrusel de productos del home: la única parte de esa sección que necesita estado (flechas e
+ * inclinación). Las flechas van en una fila de controles debajo, nunca encima de las fotos.
+ */
 export default function CarruselProductosHome({ productos }: { productos: Producto[] }) {
   const carrilRef = useRef<HTMLDivElement>(null);
 
@@ -63,17 +67,8 @@ export default function CarruselProductosHome({ productos }: { productos: Produc
   };
 
   return (
-    <div className="relative mf-revelar">
-      <ScrollArrows
-        onPrev={() => desplazar('left')}
-        onNext={() => desplazar('right')}
-        prevAriaLabel="Ver productos anteriores"
-        nextAriaLabel="Ver más productos"
-      />
-      <div
-        ref={carrilRef}
-        className={`mf-carrusel-borde w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth scrollbar-hide ${SCROLL_ARROW_PADDING_X}`}
-      >
+    <div className="mf-revelar">
+      <div ref={carrilRef} className="mf-carrusel-borde w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth scrollbar-hide">
         <div className="flex gap-6 min-w-max">
           {productos.map((producto) => (
             <div key={producto.id}>
@@ -81,6 +76,14 @@ export default function CarruselProductosHome({ productos }: { productos: Produc
             </div>
           ))}
         </div>
+      </div>
+      <div className="mt-2 flex justify-end gap-3">
+        <button type="button" className="mf-carrusel-flecha" onClick={() => desplazar('left')} aria-label="Ver productos anteriores">
+          <ChevronLeft size={20} aria-hidden />
+        </button>
+        <button type="button" className="mf-carrusel-flecha" onClick={() => desplazar('right')} aria-label="Ver más productos">
+          <ChevronRight size={20} aria-hidden />
+        </button>
       </div>
     </div>
   );

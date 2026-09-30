@@ -12,3 +12,13 @@ export function formatearPrecioMXN(valor: string | number | null | undefined): s
     maximumFractionDigits: 2,
   })}`;
 }
+
+/**
+ * Precio listo para mostrar, o null si no hay precio real (vacío, no numérico o 0): así la tienda
+ * no anuncia "$0" y la pantalla decide qué texto poner en su lugar.
+ */
+export function precioParaMostrar(valor: string | number | null | undefined): string | null {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const numero = Number(String(valor).trim().replace(/[$,\s]/g, ''));
+  return Number.isFinite(numero) && numero > 0 ? formatearPrecioMXN(numero) : null;
+}

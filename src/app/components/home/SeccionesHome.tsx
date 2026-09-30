@@ -97,7 +97,7 @@ function FilaServicio({ servicio }: { servicio: Servicio }) {
         <ServicioImagen src={servicio.imagen ?? servicio.imagenes?.[0]} alt="" sizes="64px" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-lg font-semibold" style={{ color: 'var(--texto-fondo-oscuro)', fontFamily: 'var(--font-family-serif)' }}>
+        <span className="line-clamp-2 text-lg font-semibold leading-snug" style={{ color: 'var(--texto-fondo-oscuro)', fontFamily: 'var(--font-family-serif)' }}>
           {servicio.nombre}
         </span>
         {duracion && (

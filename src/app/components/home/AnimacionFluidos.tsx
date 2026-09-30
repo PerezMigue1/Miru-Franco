@@ -113,7 +113,9 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
 
           // ── Tamaño del lienzo = tamaño final del frasco en la sección de destino
           const medirLienzo = () => {
-            const alto = Math.min(escenario.clientHeight * (grande ? 0.78 : 0.42), 760);
+            // Sobre el alto visible del escenario (en móvil el escenario es más alto que la pantalla)
+            const visible = Math.min(escenario.clientHeight, window.innerHeight - desplazamientoCabecera());
+            const alto = Math.min(visible * (grande ? 0.7 : 0.42), 700);
             const ancho = alto * PROPORCION_GIRO;
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
             lienzo.style.width = `${ancho}px`;
@@ -135,7 +137,15 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
             };
           };
 
-          const gigante = raiz.querySelector('.mf-fluidos__destino')!;
+          const gigante = raiz.querySelector<HTMLElement>('.mf-fluidos__destino')!;
+          const marca = raiz.querySelector<HTMLElement>('.mf-fluidos__destino-marca')!;
+          // Punto final del Goji: centro del ancla del destino, relativo al centro del escenario (el
+          // lienzo está centrado en él). Se mide con offsets de layout, no con getBoundingClientRect,
+          // porque el destino entra escalado.
+          const destinoFinal = () => ({
+            x: gigante.offsetLeft + marca.offsetLeft + marca.offsetWidth / 2 - escenario.clientWidth / 2,
+            y: gigante.offsetTop + marca.offsetTop + marca.offsetHeight / 2 - escenario.clientHeight / 2,
+          });
           const aSalir = gsap.utils.toArray<HTMLElement>(
             '.mf-fluidos__texto, .mf-fluidos__capa:not([data-clave="goji"]), .mf-sticker-capa',
             raiz
@@ -146,7 +156,7 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
             .fromTo(
               lienzo,
               { xPercent: -50, yPercent: -50, x: () => inicio().x, y: () => inicio().y, scale: () => inicio().scale },
-              { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 1, duration: 1, ease: 'power1.inOut' },
+              { xPercent: -50, yPercent: -50, x: () => destinoFinal().x, y: () => destinoFinal().y, scale: 1, duration: 1, ease: 'power1.inOut' },
               0
             );
 

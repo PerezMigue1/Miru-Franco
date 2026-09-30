@@ -327,7 +327,7 @@ export default function BackupPage() {
 
   return (
     <AdminLayout>
-      <div className="relative space-y-6 overflow-hidden">
+      <div className="relative pl-11 space-y-6 overflow-hidden">
         <button
           type="button"
           aria-label="Mostrar menú de secciones"
