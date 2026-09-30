@@ -12,7 +12,7 @@
   --mf-dur-press: 140ms;
   --mf-dur-hover: 200ms;
   --mf-dur-panel: 240ms;
-  --mf-dur-entrada: 520ms;
+  --mf-dur-entrada: 300ms;
 
   /* Elevación: sombras tintadas de café, nunca gris */
   --mf-sombra-1: 0 1px 2px rgba(58, 28, 10, 0.1), 0 6px 16px -6px rgba(58, 28, 10, 0.22);
@@ -318,6 +318,15 @@ table td {
   background-color: rgba(22, 22, 22, 0.55);
   animation: mf-velo 200ms ease both;
 }
+/* Menú móvil del sitio (Header.tsx): entra desde el borde izquierdo, donde vive */
+@keyframes mf-menu-movil {
+  from {
+    transform: translateX(-100%);
+  }
+}
+.mf-menu-movil {
+  animation: mf-menu-movil var(--mf-dur-panel) var(--mf-ease-drawer) both;
+}
 .mf-dialogo {
   background-color: var(--superficie-modal);
   color: var(--texto-cuerpo);
@@ -351,12 +360,12 @@ table td {
 }
 
 /* ---- Entradas ----
-   .mf-entrada: al montar, escalonada con --i (60ms por elemento).
+   .mf-entrada: al montar, escalonada con --i (50ms por elemento).
    .mf-revelar: al entrar en viewport con scroll-driven animations; sin soporte, ya está visible. */
 @keyframes mf-entrada {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
 }
 @keyframes mf-aparecer {
@@ -366,7 +375,7 @@ table td {
 }
 .mf-entrada {
   animation: mf-entrada var(--mf-dur-entrada) var(--mf-ease-out) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation-delay: calc(var(--i, 0) * 50ms);
 }
 @supports (animation-timeline: view()) {
   .mf-revelar {
@@ -448,17 +457,18 @@ table td {
 .mf-saltar {
   position: absolute;
   left: 0.75rem;
-  top: -3rem;
+  top: 0.5rem;
   z-index: 80;
   padding: 0.6rem 0.9rem;
   border-radius: var(--mf-radio-control);
   background: var(--botones-principales);
   color: #f2f1ed;
   font-weight: 600;
-  transition: top var(--mf-dur-hover) var(--mf-ease-out);
+  transform: translateY(-3.5rem);
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
 }
 .mf-saltar:focus-visible {
-  top: 0.5rem;
+  transform: none;
 }
 .mf-panel-barra {
   position: fixed;
@@ -640,9 +650,13 @@ table td {
     animation-name: mf-aparecer;
     animation-duration: 200ms;
   }
-  .mf-dialogo {
+  .mf-dialogo,
+  .mf-menu-movil {
     animation-name: mf-aparecer;
     animation-duration: 160ms;
+  }
+  .mf-saltar {
+    transition: none;
   }
   .mf-aviso,
   .mf-aviso[data-saliendo='true'] {
@@ -665,9 +679,20 @@ table td {
   .mf-skeleton {
     animation: mf-pulso-carga 1.2s ease-in-out infinite alternate;
   }
-  .mf-panel-lateral,
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 1023.98px) {
+  .mf-panel-lateral {
+    transform: none;
+    opacity: 0;
+    transition:
+      opacity 160ms var(--mf-ease-out),
+      visibility 0s linear 160ms;
+  }
   .mf-panel-lateral[data-abierto='true'] {
-    transition-duration: 0s;
+    opacity: 1;
+    transition:
+      opacity 160ms var(--mf-ease-out),
+      visibility 0s;
   }
 }
 

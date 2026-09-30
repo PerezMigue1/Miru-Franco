@@ -211,7 +211,7 @@ export default function Header() {
       >
         {/* Barra Superior - Top Header */}
         <header
-          className={`relative z-20 transition-[backdrop-filter] duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
+          className={`relative z-20 ${scrolled ? 'backdrop-blur-sm' : ''}`}
           style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
         >
         <div className="layout-page">
@@ -487,13 +487,13 @@ export default function Header() {
       {isMenuOpen && (
         <>
           <div
-            className="fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide"
+            className="mf-menu-movil fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide"
             style={{ backgroundColor: 'var(--header-footer)' }}
           >
             <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
           </div>
           <div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="mf-velo fixed inset-0 z-40"
             onClick={() => setIsMenuOpen(false)}
           />
         </>
