@@ -225,6 +225,37 @@ table td {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--badge-color) 30%, transparent);
 }
 
+/* ---- KPI de paneles (TarjetaKpi) ---- */
+.mf-kpi {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.mf-kpi__etiqueta {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--encabezados-alterno);
+  overflow-wrap: anywhere;
+}
+.mf-kpi__icono {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background-color: var(--fondo-general);
+  color: var(--encabezados-alterno);
+}
+.mf-kpi__valor {
+  margin-top: 0.5rem;
+  font-size: clamp(1.25rem, 1.05rem + 1vw, 1.75rem);
+  line-height: 1.15;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 /* ---- Tablas ---- */
 .mf-tabla-marco {
   max-width: 100%;

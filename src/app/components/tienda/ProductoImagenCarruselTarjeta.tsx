@@ -79,7 +79,7 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
             className={imageClassName}
             sizes="288px"
             unoptimized={!puedeOptimizar(src)}
-            quality={70}
+            quality={75}
             loading="lazy"
           />
         </div>
