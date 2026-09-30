@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OperacionLayout from '../../../components/layouts/OperacionLayout';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import { listarCitasDelDia, type CitaApi } from '../../../services/citas';
@@ -124,63 +125,38 @@ export default function OperacionPage() {
         </div>
 
         {error && (
-          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 10%, var(--tarjetas-paneles))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CalendarDays size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Citas de hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : citasHoy.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg" style={enCurso > 0 ? { boxShadow: '0 0 0 2px var(--warning)' } : undefined}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Scissors size={20} style={{ color: 'var(--warning-texto)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En curso ahora</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: enCurso > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{loading ? '…' : enCurso}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
-                {loading ? (
-                  <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>…</p>
-                ) : ventasHoyMonto === null ? (
-                  <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>No disponible para tu rol</p>
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>{fmtMoneda(ventasHoyMonto)}</p>
-                )}
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg" style={seguimientosPendientes > 0 ? { boxShadow: '0 0 0 2px var(--danger)' } : undefined}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <AlertTriangle size={20} style={{ color: 'var(--danger-texto)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Seguimientos pendientes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: seguimientosPendientes > 0 ? 'var(--danger-texto)' : 'var(--menu-texto-principal)' }}>{loading ? '…' : seguimientosPendientes}</p>
-              </div>
-            </div>
-          </Card>
+        {/* KPIs: dos columnas desde 360px, cuatro en escritorio */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={CalendarDays} etiqueta="Citas de hoy" cargando={loading} valor={citasHoy.length} />
+          <TarjetaKpi
+            icono={Scissors}
+            etiqueta="En curso ahora"
+            cargando={loading}
+            valor={enCurso}
+            tono={enCurso > 0 ? 'aviso' : 'normal'}
+            alerta={enCurso > 0}
+          />
+          <TarjetaKpi
+            icono={BadgeDollarSign}
+            etiqueta="Ventas de hoy"
+            cargando={loading}
+            tono="oro"
+            valor={ventasHoyMonto === null ? '—' : fmtMoneda(ventasHoyMonto)}
+            detalle={ventasHoyMonto === null ? 'No disponible para tu rol' : undefined}
+          />
+          <TarjetaKpi
+            icono={AlertTriangle}
+            etiqueta="Seguimientos pendientes"
+            cargando={loading}
+            valor={seguimientosPendientes}
+            tono={seguimientosPendientes > 0 ? 'peligro' : 'normal'}
+            alerta={seguimientosPendientes > 0}
+          />
         </div>
 
         {/* Mis citas de hoy */}

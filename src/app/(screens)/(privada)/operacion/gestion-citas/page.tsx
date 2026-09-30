@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import TarjetaKpi from '../../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
@@ -284,57 +285,18 @@ export default function GestionCitasPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes / confirmadas</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : pendientes}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En curso</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : enCurso}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <XCircle size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Canceladas</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : canceladas}</p>
-              </div>
-            </div>
-          </Card>
-          <Card
-            variant="elevated"
-            padding="lg"
-            style={altoRiesgo > 0 ? { boxShadow: '0 0 0 1.5px var(--danger), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BrainCircuit size={21} style={{ color: altoRiesgo > 0 ? 'var(--danger)' : 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Riesgo alto previsto</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: altoRiesgo > 0 ? 'var(--danger-texto)' : 'var(--menu-texto-principal)' }}>
-                  {loading || loadingRiesgos ? '…' : altoRiesgo}
-                </p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={Clock3} etiqueta="Pendientes / confirmadas" cargando={loading} valor={pendientes} />
+          <TarjetaKpi icono={CheckCircle2} etiqueta="En curso" cargando={loading} valor={enCurso} />
+          <TarjetaKpi icono={XCircle} etiqueta="Canceladas" cargando={loading} valor={canceladas} />
+          <TarjetaKpi
+            icono={BrainCircuit}
+            etiqueta="Riesgo alto previsto"
+            cargando={loading || loadingRiesgos}
+            valor={altoRiesgo}
+            tono={altoRiesgo > 0 ? 'peligro' : 'normal'}
+            alerta={altoRiesgo > 0}
+          />
         </div>
 
         {/* Filtros */}
