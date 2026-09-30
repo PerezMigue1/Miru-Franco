@@ -438,7 +438,8 @@ export default function PuntoDeVentaPage() {
                       value={busquedaCliente}
                       onChange={(e) => { setBusquedaCliente(e.target.value); setMostrarResultadosCliente(true); }}
                       onFocus={() => setMostrarResultadosCliente(true)}
-                      placeholder="Buscar por nombre o teléfono... (vacío = Público en general)"
+                      placeholder="Buscar por nombre o teléfono…"
+                      helperText="Déjalo vacío para vender a Público en general."
                       fullWidth
                     />
                     {mostrarResultadosCliente && busquedaCliente.trim().length >= 2 && (
