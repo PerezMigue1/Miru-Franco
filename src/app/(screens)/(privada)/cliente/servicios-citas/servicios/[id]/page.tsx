@@ -211,7 +211,7 @@ export default function DetalleServicioPage() {
                 <ul className="space-y-2">
                   {servicio.recomendaciones.map((item, index) => (
                     <li key={index} className="flex items-start">
-                      <span className="mr-2" style={{ color: 'var(--warning)' }}>ℹ</span>
+                      <Info size={16} aria-hidden className="mr-2 mt-1 shrink-0" style={{ color: 'var(--warning-texto)' }} />
                       <span style={{ color: 'var(--encabezados-alterno)' }}>{item}</span>
                     </li>
                   ))}

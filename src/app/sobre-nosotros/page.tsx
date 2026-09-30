@@ -106,7 +106,7 @@ export default function SobreNosotrosPage() {
                 >
                   <p
                     className="mf-cifras text-4xl md:text-5xl font-bold mb-2"
-                    style={{ color: 'var(--botones-principales)', fontFamily: 'var(--font-family-serif)' }}
+                    style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
                   >
                     {stat.num}
                   </p>

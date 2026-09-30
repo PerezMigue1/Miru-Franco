@@ -1852,7 +1852,7 @@ export default function PrediccionInventarioPage() {
                         {hayFiltrosCatalogo ? (
                           <>
                             Reorden sugerido en{" "}
-                            <span style={{ color: "var(--warning)" }}>
+                            <span style={{ color: "var(--warning-texto)" }}>
                               {restockGlobal.dias} d
                             </span>{" "}
                             en esta selección.
@@ -1860,7 +1860,7 @@ export default function PrediccionInventarioPage() {
                         ) : (
                           <>
                             Próximo cruce de umbral en el catálogo:{" "}
-                            <span style={{ color: "var(--warning)" }}>
+                            <span style={{ color: "var(--warning-texto)" }}>
                               ~{restockGlobal.dias} d
                             </span>
                             .

@@ -996,7 +996,7 @@ export default function CheckoutPage() {
                           <span className="font-bold text-base" style={{ color: 'var(--menu-texto-principal)' }}>
                             Enviar a domicilio
                           </span>
-                          <span className="font-bold shrink-0" style={{ color: 'var(--success)' }}>
+                          <span className="font-bold shrink-0" style={{ color: 'var(--success-texto)' }}>
                             {envio === 0 ? 'Gratis' : `$${envio.toLocaleString()}`}
                           </span>
                         </div>
@@ -1059,7 +1059,7 @@ export default function CheckoutPage() {
                         <span className="font-bold text-base" style={{ color: 'var(--menu-texto-principal)' }}>
                           Retirar en la estética
                         </span>
-                        <span className="font-bold shrink-0" style={{ color: 'var(--success)' }}>
+                        <span className="font-bold shrink-0" style={{ color: 'var(--success-texto)' }}>
                           Gratis
                         </span>
                       </div>

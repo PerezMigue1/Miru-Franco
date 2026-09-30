@@ -1073,9 +1073,10 @@ export default function BaseDatosPage() {
   const estadoSistema =
     saludGeneral >= 85 && rendimientoTiempoReal >= 85 ? 'Optimo' :
     saludGeneral >= 65 && rendimientoTiempoReal >= 65 ? 'Atencion' : 'Critico';
+  // Texto de estado: tokens -texto (los de relleno no llegan a 3:1 sobre la terracota del panel)
   const estadoSistemaColor =
-    estadoSistema === 'Optimo' ? 'var(--success)' :
-    estadoSistema === 'Atencion' ? 'var(--warning)' : 'var(--danger)';
+    estadoSistema === 'Optimo' ? 'var(--success-texto)' :
+    estadoSistema === 'Atencion' ? 'var(--warning-texto)' : 'var(--danger-texto)';
   const formateador = new Intl.NumberFormat('es-MX');
   const uptimeTotal = Number(dbSummary?.uptimeSeconds ?? 0);
   const uptimeDias = Math.floor(uptimeTotal / 86400);
@@ -1146,10 +1147,10 @@ export default function BaseDatosPage() {
     );
   };
 
-  const colorDeadTuples = (dead: number) => dead > 40 ? 'var(--danger)' : dead > 10 ? 'var(--warning)' : 'var(--success)';
-  const colorEficiencia = (eff: number) => eff < 40 ? 'var(--danger)' : eff < 80 ? 'var(--warning)' : 'var(--success)';
-  const colorWait = (wait: string | null) => wait ? 'var(--warning)' : 'var(--success)';
-  const colorGranted = (granted: boolean) => granted ? 'var(--success)' : 'var(--danger)';
+  // Cifras de estado en tablas: insignia del sistema (base clara + tinta de la misma familia)
+  type VarianteEstado = 'danger' | 'warning' | 'success';
+  const varianteDeadTuples = (dead: number): VarianteEstado => (dead > 40 ? 'danger' : dead > 10 ? 'warning' : 'success');
+  const varianteEficiencia = (eff: number): VarianteEstado => (eff < 40 ? 'danger' : eff < 80 ? 'warning' : 'success');
 
   const DetalleCampo = ({ label, value, fullWidth }: { label: string; value: React.ReactNode; fullWidth?: boolean }) => (
     <div className={fullWidth ? 'col-span-full' : ''}>
@@ -1207,7 +1208,7 @@ export default function BaseDatosPage() {
                   <button key={item.id} type="button"
                     onClick={() => { navegarVistaPrincipal(item.id); setMenuLateralOculto(true); }}
                     className="w-full text-left rounded px-3 py-2 text-sm"
-                    style={{ backgroundColor: vistaPrincipal === item.id ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                    style={{ backgroundColor: vistaPrincipal === item.id ? 'var(--hover)' : 'transparent', color: vistaPrincipal === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                     {item.label}
                   </button>
                 ))}
@@ -1235,7 +1236,7 @@ export default function BaseDatosPage() {
                   {([{ id: 'importar', label: 'Importación' }, { id: 'exportar', label: 'Exportación' }, { id: 'truncate', label: 'Truncate' }] as const).map((item) => (
                     <button key={item.id} type="button" onClick={() => navegarVistaOperaciones(item.id)}
                       className="px-3 py-1.5 rounded-full text-sm font-medium border"
-                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: vistaOperaciones === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                       {item.label}
                     </button>
                   ))}
@@ -1513,7 +1514,7 @@ export default function BaseDatosPage() {
                     className="mt-4 p-4 rounded-lg text-sm"
                     style={{
                       backgroundColor: resultadoTruncate.success ? 'rgba(110,125,87,0.2)' : 'rgba(89,12,12,0.15)',
-                      color: resultadoTruncate.success ? 'var(--success)' : 'var(--danger)',
+                      color: resultadoTruncate.success ? 'var(--success-texto)' : 'var(--danger-texto)',
                     }}
                   >
                     {resultadoTruncate.success
@@ -1693,7 +1694,7 @@ export default function BaseDatosPage() {
                           style={{
                             borderColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'var(--encabezados-alterno)',
                             backgroundColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'transparent',
-                            color: 'var(--menu-texto-principal)',
+                            color: vistaMonitoreo === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
                             boxShadow: vistaMonitoreo === item.id ? '0 2px 10px rgba(24,108,131,0.25)' : 'none',
                           }}>
                           <Icon size={14} className="inline-block mr-1 mb-[1px]" />{item.label}
@@ -1761,7 +1762,7 @@ export default function BaseDatosPage() {
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Cache hit ratio</p>
                           <div className="mt-1 flex items-center justify-between">
-                            <p className="text-2xl font-bold" style={{ color: (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)' }}>
+                            <p className="text-2xl font-bold" style={{ color: (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success-texto)' : 'var(--warning-texto)' }}>
                               {(dbSummary?.cacheHitRatio ?? 0).toFixed(2)}%
                             </p>
                             <DonutKpi value={dbSummary?.cacheHitRatio ?? 0} max={100} color={(dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)'} />
@@ -1845,7 +1846,7 @@ export default function BaseDatosPage() {
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado de analítica SQL</p>
-                          <p className="text-xl font-bold mt-1" style={{ color: pgStatStatementsEnabled ? 'var(--success)' : 'var(--warning)' }}>
+                          <p className="text-xl font-bold mt-1" style={{ color: pgStatStatementsEnabled ? 'var(--success-texto)' : 'var(--warning-texto)' }}>
                             {pgStatStatementsEnabled ? 'Activa' : 'Limitada'}
                           </p>
                         </Card>
@@ -1908,7 +1909,7 @@ export default function BaseDatosPage() {
                       <div className="inline-flex rounded border overflow-hidden" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                         {(['tabla', 'grafica'] as const).map((v) => (
                           <button key={v} type="button" className="px-3 py-1 text-xs" onClick={() => setVistaTablasMonitoreo(v)}
-                            style={{ backgroundColor: vistaTablasMonitoreo === v ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                            style={{ backgroundColor: vistaTablasMonitoreo === v ? 'var(--hover)' : 'transparent', color: vistaTablasMonitoreo === v ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                             {v === 'tabla' ? 'Tabla' : 'Gráfica'}
                           </button>
                         ))}
@@ -1927,10 +1928,10 @@ export default function BaseDatosPage() {
                             return (
                               <TableRow key={`${t.schemaname}.${t.relname}`}>
                                 <TableCell>{t.schemaname}.{t.relname}</TableCell>
-                                <TableCell style={{ color: live > 0 ? 'var(--success)' : 'var(--encabezados-alterno)', fontWeight: 700 }}>{live}</TableCell>
-                                <TableCell style={{ color: colorDeadTuples(dead), fontWeight: 700 }}>{dead}</TableCell>
-                                <TableCell style={{ color: consultaRapida >= consultaLenta ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: consultaRapida >= consultaLenta ? 700 : 500 }}>{consultaRapida}</TableCell>
-                                <TableCell style={{ color: consultaLenta > consultaRapida ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: consultaLenta > consultaRapida ? 700 : 500 }}>{consultaLenta}</TableCell>
+                                <TableCell style={{ color: live > 0 ? 'var(--success-texto)' : 'var(--encabezados-alterno)', fontWeight: 700 }}>{live}</TableCell>
+                                <TableCell><Badge size="sm" variant={varianteDeadTuples(dead)}>{dead}</Badge></TableCell>
+                                <TableCell style={{ color: consultaRapida >= consultaLenta ? 'var(--success-texto)' : 'var(--menu-texto-principal)', fontWeight: consultaRapida >= consultaLenta ? 700 : 500 }}>{consultaRapida}</TableCell>
+                                <TableCell>{consultaLenta > consultaRapida ? <Badge size="sm" variant="warning">{consultaLenta}</Badge> : consultaLenta}</TableCell>
                                 <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
                               </TableRow>
                             );
@@ -2014,7 +2015,7 @@ export default function BaseDatosPage() {
                       <div className="inline-flex rounded border overflow-hidden" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                         {(['tabla', 'grafica'] as const).map((v) => (
                           <button key={v} type="button" className="px-3 py-1 text-xs" onClick={() => setVistaIndicesMonitoreo(v)}
-                            style={{ backgroundColor: vistaIndicesMonitoreo === v ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                            style={{ backgroundColor: vistaIndicesMonitoreo === v ? 'var(--hover)' : 'transparent', color: vistaIndicesMonitoreo === v ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                             {v === 'tabla' ? 'Tabla' : 'Gráfica'}
                           </button>
                         ))}
@@ -2032,9 +2033,9 @@ export default function BaseDatosPage() {
                               <TableRow key={`${i.schemaname}.${i.indexname}`}>
                                 <TableCell>{i.indexname}</TableCell>
                                 <TableCell>{i.schemaname}.{i.tablename}</TableCell>
-                                <TableCell style={{ color: idxScan >= seqScan ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: idxScan >= seqScan ? 700 : 500 }}>{idxScan}</TableCell>
-                                <TableCell style={{ color: seqScan > idxScan ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: seqScan > idxScan ? 700 : 500 }}>{seqScan}</TableCell>
-                                <TableCell style={{ color: colorEficiencia(eff), fontWeight: 700 }}>{eff.toFixed(2)}%</TableCell>
+                                <TableCell style={{ color: idxScan >= seqScan ? 'var(--success-texto)' : 'var(--menu-texto-principal)', fontWeight: idxScan >= seqScan ? 700 : 500 }}>{idxScan}</TableCell>
+                                <TableCell>{seqScan > idxScan ? <Badge size="sm" variant="warning">{seqScan}</Badge> : seqScan}</TableCell>
+                                <TableCell><Badge size="sm" variant={varianteEficiencia(eff)}>{eff.toFixed(2)}%</Badge></TableCell>
                                 <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
                               </TableRow>
                             );
@@ -2116,10 +2117,10 @@ export default function BaseDatosPage() {
                       <Table headers={['PID', 'Usuario', 'Estado', 'Wait', 'Query']}>
                         {actividadRows.slice(0, 30).map((r) => (
                           <TableRow key={`${r.pid}-${r.query_start ?? 'x'}`}>
-                            <TableCell style={{ color: 'var(--hover)', fontWeight: 700 }}>{r.pid}</TableCell>
+                            <TableCell style={{ color: 'var(--menu-texto-principal)', fontWeight: 700 }}>{r.pid}</TableCell>
                             <TableCell>{r.usename}</TableCell>
                             <TableCell><Badge size="sm" variant={r.state === 'active' ? 'success' : r.state === 'idle' ? 'info' : 'warning'}>{r.state ?? '—'}</Badge></TableCell>
-                            <TableCell style={{ color: colorWait(r.wait_event_type), fontWeight: r.wait_event_type ? 700 : 500 }}>{r.wait_event_type ?? '—'}</TableCell>
+                            <TableCell>{r.wait_event_type ? <Badge size="sm" variant="warning">{r.wait_event_type}</Badge> : '—'}</TableCell>
                             <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
                           </TableRow>
                         ))}
@@ -2175,10 +2176,10 @@ export default function BaseDatosPage() {
                       <Table headers={['PID', 'Relación', 'Modo', 'Granted', 'Query']}>
                         {locksRows.slice(0, 40).map((r, idx) => (
                           <TableRow key={`${r.pid}-${r.locktype}-${idx}`}>
-                            <TableCell style={{ color: 'var(--hover)', fontWeight: 700 }}>{r.pid}</TableCell>
+                            <TableCell style={{ color: 'var(--menu-texto-principal)', fontWeight: 700 }}>{r.pid}</TableCell>
                             <TableCell>{r.relation ?? '—'}</TableCell>
                             <TableCell><Badge size="sm" variant={r.mode.toLowerCase().includes('exclusive') ? 'warning' : 'info'}>{r.mode}</Badge></TableCell>
-                            <TableCell style={{ color: colorGranted(r.granted), fontWeight: 700 }}>{r.granted ? 'Sí' : 'No'}</TableCell>
+                            <TableCell><Badge size="sm" variant={r.granted ? 'success' : 'danger'}>{r.granted ? 'Sí' : 'No'}</Badge></TableCell>
                             <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
                           </TableRow>
                         ))}
@@ -2240,7 +2241,7 @@ export default function BaseDatosPage() {
                           dangerouslySetInnerHTML={{ __html: previewSvg }}
                         />
                         {diagramaMensaje && (
-                          <p className="text-sm mt-2 font-medium animate-pulse" style={{ color: 'var(--hover)' }}>{diagramaMensaje}</p>
+                          <p className="text-sm mt-2 font-medium animate-pulse" style={{ color: 'var(--menu-texto-principal)' }}>{diagramaMensaje}</p>
                         )}
                       </>
                     ) : (

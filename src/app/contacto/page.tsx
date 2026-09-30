@@ -112,7 +112,7 @@ export default function ContactoPage() {
                       <a
                         href="mailto:contacto@mirufranco.com"
                         className="text-sm hover:opacity-80 transition-opacity"
-                        style={{ color: 'var(--botones-principales)' }}
+                        style={{ color: 'var(--menu-texto-principal)' }}
                       >
                         contacto@mirufranco.com
                       </a>
@@ -154,7 +154,7 @@ export default function ContactoPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
-                              style={{ color: 'var(--botones-principales)' }}
+                              style={{ color: 'var(--menu-texto-principal)' }}
                             >
                               <IconInstagram className="w-4 h-4" />
                               Instagram
@@ -166,7 +166,7 @@ export default function ContactoPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
-                              style={{ color: 'var(--botones-principales)' }}
+                              style={{ color: 'var(--menu-texto-principal)' }}
                             >
                               <IconFacebook className="w-4 h-4" />
                               Facebook
