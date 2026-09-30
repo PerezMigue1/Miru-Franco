@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
-import Link from 'next/link';
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
-import { ArrowRight } from 'lucide-react';
 import { getProductosSinRedirigir, urlsGaleriaProductoCatalogo, type Producto } from '../services/productos';
 import { getServicios } from '../services/servicios';
 import HomeLandingClient from '../components/home/HomeLandingClient';
-import HeroEscena from '../components/home/HeroEscena';
+import HeroFluidos from '../components/home/HeroFluidos';
+import IntroGrieta from '../components/home/IntroGrieta';
+import { seleccionarFluidos } from '../utils/fluidosHero';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 import { metadataPublica } from '../utils/seo';
 
@@ -56,77 +56,23 @@ async function HomeDataSections() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  // Nombre y precio de los fluidos del hero: mismo fetch que la tienda (Next lo deduplica).
+  const { data: catalogo } = await getProductosSinRedirigir();
+  const fluidos = seleccionarFluidos(catalogo);
+
   return (
     <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
 
       <main className="flex-1">
-        {/* Hero: tipografía de marca a la izquierda y vitrina de productos reales del catálogo a la
-            derecha (WebGL si el equipo lo permite; vitrina CSS si no). Un solo CTA primario:
-            reservar empieza eligiendo el servicio. */}
-        <section
-          className="mf-hero hero-bg-gradient relative w-full overflow-hidden layout-gutter-x flex items-center"
-          style={{ marginTop: 'var(--mf-header-offset, 104px)' }}
-        >
-          <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[0.9fr_1.1fr] items-center gap-8 md:gap-10 lg:gap-16 py-10 md:py-12">
-            <div className="mf-hero-texto flex flex-col items-center md:items-start text-center md:text-left">
-              <div className="flex items-center gap-3 mb-3 md:mb-4" style={{ ['--i' as string]: 0 }}>
-                <span className="hero-flourish" />
-                <span className="hero-ornament" />
-                <span className="hero-flourish" />
-              </div>
-              <div className="relative" style={{ ['--i' as string]: 1 }}>
-                <h1 className="text-brand-miru text-brand-gold tracking-tight leading-none">MIRÚ</h1>
-                <span className="text-brand-franco text-brand-gold block -mt-1 md:ml-10 ml-6">Franco</span>
-              </div>
-              <div
-                className="flex items-center justify-center md:justify-start gap-2 mt-3 md:mt-4"
-                style={{ ['--i' as string]: 2 }}
-              >
-                <span className="w-6 h-px shrink-0 opacity-70" style={{ backgroundColor: 'var(--logo-branding)' }} />
-                <p className="text-brand-tagline tracking-[0.2em] px-2" style={{ color: 'var(--hero-tagline-color)' }}>BEAUTY SALON</p>
-                <span className="w-6 h-px shrink-0 opacity-70" style={{ backgroundColor: 'var(--logo-branding)' }} />
-              </div>
-              <p
-                className="mt-5 md:mt-7 max-w-md text-base md:text-lg leading-relaxed"
-                style={{ color: 'var(--hero-tagline-color)', ['--i' as string]: 3 }}
-              >
-                Realza tu belleza natural con productos y servicios profesionales. Agenda tu cita, explora nuestra tienda y descubre la experiencia Mirú Franco.
-              </p>
-              <div
-                className="flex flex-wrap items-center justify-center md:justify-start gap-x-7 gap-y-3 mt-7 md:mt-9"
-                style={{ ['--i' as string]: 4 }}
-              >
-                <Link
-                  href="/cliente/servicios-citas"
-                  className="mf-btn mf-btn-color inline-flex items-center justify-center gap-2 px-7 rounded-full font-semibold text-sm uppercase tracking-wider"
-                  style={{
-                    ['--btn-bg' as string]: 'var(--botones-principales)',
-                    ['--btn-bg-hover' as string]: 'var(--hover)',
-                    ['--btn-texto' as string]: 'var(--texto-fondo-oscuro)',
-                    minHeight: '48px',
-                    boxShadow: '0 10px 24px -10px rgba(113, 0, 20, 0.55)',
-                  }}
-                >
-                  Agendar cita
-                  <ArrowRight size={16} aria-hidden />
-                </Link>
-                <Link
-                  href="/cliente/tienda-online"
-                  className="group inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider underline-offset-4 hover:underline"
-                  style={{ color: 'var(--hero-tagline-color)', minHeight: '44px' }}
-                >
-                  Ver la tienda
-                  <ArrowRight size={15} aria-hidden className="transition-transform duration-200 group-hover:translate-x-1" style={{ color: 'var(--logo-branding)' }} />
-                </Link>
-              </div>
-            </div>
-            <div className="flex justify-center md:justify-end">
-              <HeroEscena />
-            </div>
-          </div>
-        </section>
+        {/* Intro de la primera visita (grieta en el monograma). El script decide antes del primer
+            pintado (layout raíz) si se muestra, así no parpadea en visitas siguientes. */}
+        <IntroGrieta />
+
+        {/* Hero 2.5D: los cuatro fluidos AVYNA del catálogo (nombre/precio del API, renders propios).
+            Un solo CTA primario: reservar empieza eligiendo el servicio. */}
+        <HeroFluidos fluidos={fluidos} />
 
         <Suspense fallback={<div aria-hidden style={{ minHeight: '100vh' }} />}>
           <HomeDataSections />

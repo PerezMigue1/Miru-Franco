@@ -6,6 +6,7 @@ import "./styles/globals.css";
 import { TokenChecker } from "./components/TokenChecker";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { SCRIPT_INTRO } from "./components/home/introScript";
 import { ToastProvider } from "./context/ToastContext";
 import { OG_IMAGE_DEFAULT, SITE_NAME, SITE_URL } from "./utils/seo";
 const geistSans = Geist({
@@ -67,7 +68,8 @@ export default async function RootLayout({
         <script
           {...(nonce ? { nonce } : {})}
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');})();`,
+            // Tema antes del primer pintado + decisión de la intro de la home (IntroGrieta.tsx)
+            __html: `(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');})();${SCRIPT_INTRO}`,
           }}
         />
       </head>

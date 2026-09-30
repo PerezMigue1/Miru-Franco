@@ -977,3 +977,270 @@ html:has(.superficie-cliente) {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
 }
+
+/* ==========================================================================
+   Hero 2.5D de la home (HeroFluidos.tsx) + intro de grieta (IntroGrieta.tsx)
+   Con movimiento: escenario fijado por ScrollTrigger, el Goji viaja en <canvas> hasta el
+   destino. Con prefers-reduced-motion: composición estática y el destino como bloque normal.
+   ========================================================================== */
+.mf-fluidos {
+  position: relative;
+  --mf-gigante: var(--menu-texto-principal);
+}
+.dark .mf-fluidos {
+  --mf-gigante: #c9a585;
+}
+.mf-fluidos__escenario {
+  position: relative;
+  min-height: calc(100dvh - var(--mf-header-offset, 136px));
+  overflow: clip;
+}
+.mf-fluidos__rejilla {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  min-height: inherit;
+}
+@media (min-width: 768px) {
+  .mf-fluidos__rejilla {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 3rem;
+  }
+}
+.mf-fluidos__texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.mf-fluidos__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+  max-width: 34rem;
+}
+.mf-fluidos__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--texto-cuerpo);
+  background-color: color-mix(in srgb, var(--fondo-general) 70%, transparent);
+  box-shadow: inset 0 0 0 1px var(--mf-linea-fuerte);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-fluidos__chip:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-fluidos__chip:hover {
+    background-color: var(--fondo-general);
+  }
+}
+.mf-fluidos__punto {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px rgba(246, 239, 230, 0.9);
+}
+.mf-fluidos__composicion {
+  position: relative;
+  width: 100%;
+  max-width: 34rem;
+  height: clamp(20rem, 92vw, 26rem);
+  margin: 0 auto;
+}
+@media (min-width: 768px) {
+  .mf-fluidos__composicion {
+    height: min(38rem, calc(100dvh - var(--mf-header-offset, 136px) - 5rem));
+  }
+}
+.mf-fluidos__capa {
+  position: absolute;
+  aspect-ratio: 422 / 1364;
+  will-change: transform;
+}
+.mf-fluidos__frasco {
+  display: block;
+  height: 100%;
+  border-radius: 12px;
+  filter: drop-shadow(0 24px 22px rgba(58, 28, 10, 0.28));
+  transition: filter var(--mf-dur-hover) ease;
+}
+.dark .mf-fluidos__frasco {
+  filter: drop-shadow(0 24px 26px rgba(0, 0, 0, 0.6));
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-fluidos__frasco:hover {
+    filter: drop-shadow(0 30px 26px rgba(58, 28, 10, 0.36)) brightness(1.04);
+  }
+}
+.mf-fluidos__frasco-img {
+  display: block;
+  width: auto;
+  height: 100%;
+}
+.mf-sticker-capa {
+  position: absolute;
+  z-index: 5;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+.mf-sticker {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 8px rgba(58, 28, 10, 0.28));
+}
+@media (max-width: 767.98px) {
+  .mf-sticker-capa--escritorio {
+    display: none;
+  }
+}
+
+/* Destino: tipografía gigante en Playfair detrás del Goji (texto PROVISIONAL) */
+.mf-fluidos__destino {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 3rem var(--layout-gutter-x);
+  text-align: center;
+}
+.mf-fluidos__gigante {
+  font-family: var(--font-family-serif);
+  font-weight: 700;
+  font-size: clamp(4.5rem, 25vw, 11.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  color: var(--mf-gigante);
+  text-wrap: balance;
+}
+.mf-fluidos__gigante span {
+  display: block;
+  font-family: var(--font-family-script);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--oro-grande);
+}
+.mf-fluidos__destino-frasco {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.mf-fluidos__destino-frasco picture,
+.mf-fluidos__destino-frasco img {
+  height: min(62vh, 30rem);
+  width: auto;
+  filter: drop-shadow(0 26px 24px rgba(58, 28, 10, 0.32));
+}
+.mf-fluidos__giro {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 26px 24px rgba(58, 28, 10, 0.32));
+}
+
+/* Con movimiento: el destino es una capa del escenario fijado (aparece al hacer scroll) */
+@media (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__destino {
+    position: absolute;
+    inset: 0;
+    padding: 0 var(--layout-gutter-x);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .mf-fluidos__destino-frasco {
+    display: none;
+  }
+}
+/* Sin movimiento: nada se fija ni gira; el destino es un bloque normal con el Goji estático */
+@media (prefers-reduced-motion: reduce) {
+  .mf-fluidos__giro {
+    display: none;
+  }
+  .mf-fluidos__destino {
+    min-height: min(80vh, 44rem);
+  }
+}
+
+/* ---- Intro: el monograma se parte por una grieta de papel rasgado ---- */
+.mf-intro {
+  display: none;
+}
+html[data-intro='si'] .mf-intro {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  cursor: pointer;
+  /* Respaldo si el JS no llega: se retira sola */
+  animation: mf-intro-respaldo 0s linear 2.2s forwards;
+}
+@keyframes mf-intro-respaldo {
+  to {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+.mf-intro__pieza {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background-color: var(--header-footer);
+  will-change: transform;
+}
+.mf-intro__monograma {
+  position: relative;
+  width: 11rem;
+  height: 11rem;
+}
+.mf-intro__grieta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.mf-intro__trazo {
+  fill: none;
+  stroke: #c4954d;
+  stroke-width: 2;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px rgba(196, 149, 77, 0.7));
+}
+.mf-intro__saltar {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f2f1ed;
+  border: 1px solid rgba(242, 241, 237, 0.35);
+}
