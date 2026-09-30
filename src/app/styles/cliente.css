@@ -544,7 +544,8 @@ html:has(.superficie-cliente) {
   z-index: 200;
   display: grid;
   grid-template-rows: 1fr auto;
-  background-color: rgba(18, 18, 18, 0.95);
+  /* Opaco: la galería de fondo no debe asomar bajo la foto ni su pie */
+  background-color: #121212;
   color: #f2f1ed;
   animation: mf-velo 220ms ease both;
 }
