@@ -64,12 +64,13 @@ export default function CarruselProductosHome({ productos }: { productos: Produc
   const carrilRef = useRef<HTMLDivElement>(null);
 
   const desplazar = (dir: 'left' | 'right') => {
-    carrilRef.current?.scrollBy({ left: dir === 'left' ? -SCROLL_STEP : SCROLL_STEP, behavior: 'smooth' });
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    carrilRef.current?.scrollBy({ left: dir === 'left' ? -SCROLL_STEP : SCROLL_STEP, behavior: reducido ? 'auto' : 'smooth' });
   };
 
   return (
     <div className="mf-revelar">
-      <div ref={carrilRef} className="mf-carrusel-borde w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth scrollbar-hide">
+      <div ref={carrilRef} className="mf-carrusel-borde w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth motion-reduce:scroll-auto scrollbar-hide">
         <div className="flex gap-6 min-w-max">
           {productos.map((producto) => (
             <div key={producto.id}>
