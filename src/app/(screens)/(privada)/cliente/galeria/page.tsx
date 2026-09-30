@@ -48,7 +48,11 @@ export default function GaleriaPage() {
       <div className="w-full max-w-none py-4">
         <PageHeader
           title="Galería de Trabajos"
-          subtitle="Fotos de servicios hechos en Mirú Franco. Toca cualquiera para verla en grande."
+          subtitle={
+            fotos && fotos.length === 0
+              ? 'Aquí verás fotos de servicios hechos en Mirú Franco.'
+              : 'Fotos de servicios hechos en Mirú Franco. Toca cualquiera para verla en grande.'
+          }
         />
 
         {fotos === null ? (

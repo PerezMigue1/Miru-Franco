@@ -126,44 +126,35 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
   );
 }
 
-function TarjetaServicio({ servicio, destacada }: { servicio: Servicio; destacada: boolean }) {
-  const ref = useInclinacion3D<HTMLAnchorElement>(destacada ? 3 : 5);
-  const meta = [servicio.duracion ?? (servicio.duracionMinutos ? `${servicio.duracionMinutos} min` : ''), formatearPrecioMXN(servicio.precio)]
-    .filter(Boolean)
-    .join(' · ');
+/** Fila de la carta de servicios: nombre en Playfair, duración y precio; la foto es solo una miniatura
+ * (las fotos grandes viven en la galería "Nuestro trabajo", sin repetir el mismo mosaico dos veces). */
+function FilaServicio({ servicio }: { servicio: Servicio }) {
+  const duracion = servicio.duracion ?? (servicio.duracionMinutos ? `${servicio.duracionMinutos} min` : '');
   return (
     <Link
-      ref={ref}
       href={`/cliente/servicios-citas/servicios/${encodeURIComponent(String(servicio.id))}`}
-      className={`mf-inclinable mf-revelar group flex flex-col overflow-hidden ${destacada ? 'lg:col-span-2 lg:row-span-2' : ''}`}
-      style={{ borderRadius: 'var(--mf-radio)', backgroundColor: 'rgba(255, 255, 255, 0.04)', boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.07)' }}
+      className="mf-carta-fila group"
     >
-      <div className={`relative w-full overflow-hidden ${destacada ? 'aspect-[4/3] lg:aspect-auto lg:flex-1 lg:min-h-[22rem]' : 'aspect-[4/3]'}`}>
-        <ServicioImagen
-          src={servicio.imagen ?? servicio.imagenes?.[0]}
-          alt={servicio.nombre}
-          sizes={destacada ? '(max-width:1024px) 100vw, 50vw' : '(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw'}
-        />
-      </div>
-      <div className="mf-capa-frontal p-5">
-        <h3
-          className={destacada ? 'text-2xl font-semibold' : 'text-base font-semibold'}
-          style={{ color: 'var(--texto-fondo-oscuro)', fontFamily: destacada ? 'var(--font-family-serif)' : undefined }}
-        >
+      <span className="mf-carta-fila__miniatura">
+        <ServicioImagen src={servicio.imagen ?? servicio.imagenes?.[0]} alt="" sizes="64px" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-lg font-semibold" style={{ color: 'var(--texto-fondo-oscuro)', fontFamily: 'var(--font-family-serif)' }}>
           {servicio.nombre}
-        </h3>
-        {destacada && servicio.descripcion && (
-          <p className="mt-2 text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-            {servicio.descripcion}
-          </p>
+        </span>
+        {duracion && (
+          <span className="mf-cifras mt-0.5 flex items-center gap-1.5 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            <Clock3 size={14} aria-hidden style={{ color: 'var(--oro-sobre-carbon)' }} />
+            {duracion}
+          </span>
         )}
-        {meta && (
-          <p className="mf-cifras mt-2 flex items-center gap-1.5 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-            <Clock3 size={14} aria-hidden style={{ color: 'var(--logo-branding)' }} />
-            {meta}
-          </p>
-        )}
-      </div>
+      </span>
+      {servicio.precio && (
+        <span className="mf-cifras shrink-0 text-base font-semibold" style={{ color: 'var(--oro-sobre-carbon)' }}>
+          {formatearPrecioMXN(servicio.precio)}
+        </span>
+      )}
+      <ArrowRight size={16} aria-hidden className="mf-carta-fila__flecha shrink-0" />
     </Link>
   );
 }
@@ -190,7 +181,7 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
     productosScrollRef.current?.scrollBy({ left: dir === 'left' ? -SCROLL_STEP : SCROLL_STEP, behavior: 'smooth' });
   };
 
-  const servicios = initialServicios.slice(0, 5);
+  const servicios = initialServicios.slice(0, 6);
   const fotos = fotosDeServicios(initialServicios).slice(0, 7);
 
   return (
@@ -218,7 +209,7 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
               />
               <div
                 ref={productosScrollRef}
-                className={`w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth scrollbar-hide ${SCROLL_ARROW_PADDING_X}`}
+                className={`mf-carrusel-borde w-full overflow-x-auto overflow-y-hidden pt-2 pb-6 scroll-smooth scrollbar-hide ${SCROLL_ARROW_PADDING_X}`}
               >
                 <div className="flex gap-6 min-w-max">
                   {initialProductos.map((producto) => (
@@ -238,17 +229,19 @@ export default function HomeLandingClient({ initialProductos, initialServicios }
         <div className="container-max">
           <EncabezadoSeccion
             titulo="Nuestros Servicios"
-            descripcion="Elige un servicio para ver qué incluye y reservar tu horario."
+            descripcion="Nuestra carta: elige un servicio para ver qué incluye y reservar tu horario."
             accion={{ href: '/cliente/servicios-citas', label: 'Todos los servicios' }}
             sobreOscuro
           />
 
           {servicios.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:auto-rows-fr gap-5">
-              {servicios.map((s, i) => (
-                <TarjetaServicio key={s.id} servicio={s} destacada={i === 0} />
+            <ul className="mf-carta mf-revelar">
+              {servicios.map((s) => (
+                <li key={s.id}>
+                  <FilaServicio servicio={s} />
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {SERVICIOS_FALLBACK.map((s) => {

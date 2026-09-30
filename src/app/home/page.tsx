@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { ArrowRight } from 'lucide-react';
-import { getProductosSinRedirigir } from '../services/productos';
+import { getProductosSinRedirigir, urlsGaleriaProductoCatalogo, type Producto } from '../services/productos';
 import { getServicios } from '../services/servicios';
 import HomeLandingClient from '../components/home/HomeLandingClient';
 import HeroEscena from '../components/home/HeroEscena';
@@ -38,6 +38,12 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/** Productos con foto antes que los que solo tendrían el placeholder (orden estable dentro de cada grupo). */
+function conFotoPrimero(productos: Producto[]): Producto[] {
+  const tieneFoto = (p: Producto) => urlsGaleriaProductoCatalogo(p).length > 0;
+  return [...productos.filter(tieneFoto), ...productos.filter((p) => !tieneFoto(p))];
+}
+
 /** Carga productos/servicios en streaming: el hero no espera al backend (mejora TTFB/FCP/LCP). */
 async function HomeDataSections() {
   const [{ data: productos }, { data: servicios }] = await Promise.all([
@@ -46,7 +52,7 @@ async function HomeDataSections() {
   ]);
   return (
     <HomeLandingClient
-      initialProductos={shuffle(productos).slice(0, 10)}
+      initialProductos={conFotoPrimero(shuffle(productos)).slice(0, 10)}
       initialServicios={shuffle(servicios)}
     />
   );
