@@ -126,7 +126,8 @@
   --menu-lateral-bg: #710014;
   --superficie-elevada: #2a2a2a;
   --checkout-entrega-borde-seleccion: #a64b63;
-  --checkout-entrega-enlace: #4a7ba7;
+  /* Enlaces sobre oscuro: el azul claro del sistema (#4a7ba7 daba 4.0:1 sobre #161616) */
+  --checkout-entrega-enlace: var(--info-texto);
   --enlaces-textos-interactivos: #4a7ba7;
   --hero-brand-color: var(--texto-fondo-oscuro);
   --hero-tagline-color: rgba(242, 241, 237, 0.85);
@@ -149,7 +150,7 @@
   --texto-acento-dark: #689bc0;
   /* En dark, --tarjetas-paneles/--fondo-general son grises neutros, no cálidos: el azul
      original ya funciona ahí (no se toca, per instrucción). */
-  --texto-enlace-sobre-calido: var(--enlaces-textos-interactivos);
+  --texto-enlace-sobre-calido: var(--info-texto);
 }
 
 /* Más ancho útil que el `container` por defecto de Tailwind (mejor en monitores comunes) */
