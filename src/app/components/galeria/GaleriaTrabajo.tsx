@@ -83,18 +83,24 @@ interface VisorProps {
   onCerrar: () => void;
 }
 
-/** Visor a pantalla completa: flechas del teclado, deslizar en táctil y Escape. */
+/**
+ * Visor a pantalla completa: flechas del teclado, deslizar en táctil y Escape. Con el teclado la
+ * foto cambia sin animación (se navega rápido y repetido); al deslizar, la foto sigue al dedo.
+ */
 function VisorGaleria({ fotos, inicial, onCerrar }: VisorProps) {
   const [indice, setIndice] = useState(inicial);
   const [direccion, setDireccion] = useState<1 | -1>(1);
+  const [porTeclado, setPorTeclado] = useState(false);
   const cerrarRef = useRef<HTMLButtonElement>(null);
-  const arrastre = useRef<{ x: number; t: number; id: number } | null>(null);
+  const escenarioRef = useRef<HTMLDivElement>(null);
+  const arrastre = useRef<{ x: number; t: number; id: number; seguir: boolean } | null>(null);
   const total = fotos.length;
   const foto = fotos[indice]!;
 
   const mover = useCallback(
-    (paso: 1 | -1) => {
+    (paso: 1 | -1, teclado = false) => {
       if (total < 2) return;
+      setPorTeclado(teclado);
       setDireccion(paso);
       setIndice((i) => (i + paso + total) % total);
     },
@@ -106,8 +112,8 @@ function VisorGaleria({ fotos, inicial, onCerrar }: VisorProps) {
     document.body.style.overflow = 'hidden';
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCerrar();
-      else if (e.key === 'ArrowRight') mover(1);
-      else if (e.key === 'ArrowLeft') mover(-1);
+      else if (e.key === 'ArrowRight') mover(1, true);
+      else if (e.key === 'ArrowLeft') mover(-1, true);
     };
     window.addEventListener('keydown', alTeclear);
     return () => {
@@ -116,15 +122,36 @@ function VisorGaleria({ fotos, inicial, onCerrar }: VisorProps) {
     };
   }, [mover, onCerrar]);
 
-  // Deslizar: basta un gesto rápido (velocidad) aunque sea corto, como en Sonner/Vaul.
-  const alPresionar = (e: React.PointerEvent) => {
+  // Deslizar: basta un gesto rápido (velocidad) aunque sea corto, como en Sonner/Vaul. El escenario
+  // captura el puntero y sigue al dedo (transform directo, sin estado de React); con movimiento
+  // reducido no se desplaza, solo cuenta el gesto.
+  const soltarEscenario = () => {
+    const el = escenarioRef.current;
+    if (!el) return;
+    el.style.transition = 'transform 200ms var(--mf-ease-out)';
+    el.style.transform = '';
+  };
+  const alPresionar = (e: React.PointerEvent<HTMLDivElement>) => {
     if (arrastre.current || e.pointerType === 'mouse') return;
-    arrastre.current = { x: e.clientX, t: performance.now(), id: e.pointerId };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.style.transition = 'none';
+    const seguir = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    arrastre.current = { x: e.clientX, t: performance.now(), id: e.pointerId, seguir };
+  };
+  const alArrastrar = (e: React.PointerEvent<HTMLDivElement>) => {
+    const inicio = arrastre.current;
+    if (!inicio || inicio.id !== e.pointerId || !inicio.seguir || total < 2) return;
+    e.currentTarget.style.transform = `translateX(${e.clientX - inicio.x}px)`;
+  };
+  const alCancelar = () => {
+    arrastre.current = null;
+    soltarEscenario();
   };
   const alSoltar = (e: React.PointerEvent) => {
     const inicio = arrastre.current;
     if (!inicio || inicio.id !== e.pointerId) return;
     arrastre.current = null;
+    soltarEscenario();
     const dx = e.clientX - inicio.x;
     const velocidad = Math.abs(dx) / Math.max(1, performance.now() - inicio.t);
     if (Math.abs(dx) > 60 || (Math.abs(dx) > 16 && velocidad > 0.11)) mover(dx < 0 ? 1 : -1);
@@ -149,13 +176,20 @@ function VisorGaleria({ fotos, inicial, onCerrar }: VisorProps) {
       </button>
 
       <div
+        ref={escenarioRef}
         className="mf-visor__escenario"
         onClick={(e) => e.stopPropagation()}
         onPointerDown={alPresionar}
+        onPointerMove={alArrastrar}
         onPointerUp={alSoltar}
-        onPointerCancel={() => (arrastre.current = null)}
+        onPointerCancel={alCancelar}
       >
-        <div key={indice} className="mf-visor__foto" data-direccion={direccion === 1 ? 'siguiente' : 'anterior'}>
+        <div
+          key={indice}
+          className="mf-visor__foto"
+          data-direccion={direccion === 1 ? 'siguiente' : 'anterior'}
+          data-origen={porTeclado ? 'teclado' : undefined}
+        >
           <Image
             src={foto.url}
             alt={`${foto.servicio} en Mirú Franco`}

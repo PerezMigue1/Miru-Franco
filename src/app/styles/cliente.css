@@ -322,7 +322,7 @@ html:has(.superficie-cliente) {
 }
 .mf-foto__imagen {
   object-fit: cover;
-  transition: transform 700ms var(--mf-ease-out);
+  transition: transform 300ms var(--mf-ease-out);
 }
 .mf-foto__pie {
   position: absolute;
@@ -340,7 +340,7 @@ html:has(.superficie-cliente) {
 }
 @media (hover: hover) and (pointer: fine) {
   .mf-foto:hover .mf-foto__imagen {
-    transform: scale(1.04);
+    transform: scale(1.03);
   }
 }
 .mf-galeria-vacia {
@@ -381,7 +381,7 @@ html:has(.superficie-cliente) {
   /* Opaco: la galería de fondo no debe asomar bajo la foto ni su pie */
   background-color: #121212;
   color: #f2f1ed;
-  animation: mf-velo 220ms ease both;
+  animation: mf-velo 200ms var(--mf-ease-out) both;
 }
 .mf-visor__escenario {
   position: relative;
@@ -400,6 +400,10 @@ html:has(.superficie-cliente) {
 }
 .mf-visor__foto[data-direccion='anterior'] {
   animation-name: mf-visor-anterior;
+}
+/* Con flechas del teclado se navega rápido y repetido: la foto cambia sin animación */
+.mf-visor__foto[data-origen='teclado'] {
+  animation: none;
 }
 .mf-visor__boton {
   position: absolute;
@@ -475,6 +479,9 @@ html:has(.superficie-cliente) {
   .mf-visor__foto,
   .mf-visor__foto[data-direccion='anterior'] {
     animation-name: mf-aparecer;
+    animation-duration: 160ms;
+  }
+  .mf-visor {
     animation-duration: 160ms;
   }
 }
