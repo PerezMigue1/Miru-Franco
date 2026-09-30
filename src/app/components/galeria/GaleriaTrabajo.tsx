@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -58,9 +59,11 @@ export default function GaleriaTrabajo({ fotos, etiqueta }: GaleriaTrabajoProps)
         ))}
       </ul>
 
-      {abierta !== null && fotos[abierta] && (
-        <VisorGaleria fotos={fotos} inicial={abierta} onCerrar={cerrar} />
-      )}
+      {/* El visor se monta en <body>: ninguna sección contenedora (content-visibility, transform)
+          puede recortarlo ni cambiar su referencia de position: fixed */}
+      {abierta !== null &&
+        fotos[abierta] &&
+        createPortal(<VisorGaleria fotos={fotos} inicial={abierta} onCerrar={cerrar} />, document.body)}
     </>
   );
 }
