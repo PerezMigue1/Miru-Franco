@@ -1080,6 +1080,26 @@ html:has(.superficie-cliente) {
 .mf-fluidos__chip:active {
   transform: scale(0.97);
 }
+.mf-fluidos__chip-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Dos por fila en pantallas chicas: el nombre usa hasta dos líneas en lugar de cortarse */
+@media (max-width: 479.98px) {
+  .mf-fluidos__chip {
+    border-radius: 14px;
+    padding-block: 0.35rem;
+    line-height: 1.2;
+  }
+  .mf-fluidos__chip-nombre {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+  }
+}
 @media (hover: hover) and (pointer: fine) {
   .mf-fluidos__chip:hover {
     background-color: var(--fondo-general);

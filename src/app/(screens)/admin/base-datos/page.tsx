@@ -1222,7 +1222,7 @@ export default function BaseDatosPage() {
                     <button key={item.id} type="button"
                       onClick={() => { navegarVistaOperaciones(item.id); setMenuLateralOculto(true); }}
                       className="w-full text-left rounded px-3 py-2 text-sm"
-                      style={{ backgroundColor: vistaOperaciones === item.id ? 'rgba(24,108,131,0.16)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      style={{ backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: vistaOperaciones === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                       {item.label}
                     </button>
                   ))}
@@ -1687,7 +1687,7 @@ export default function BaseDatosPage() {
             {vistaPrincipal === 'monitoreo' && (
               <Card variant="elevated" padding="lg">
                 {/* Tabs de monitoreo */}
-                <div className="rounded-xl border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.08)' }}>
+                <div className="rounded-xl border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                   <div className="flex flex-wrap gap-2">
                     {tabsMonitoreo.map((item) => {
                       const Icon = item.icon;
@@ -1698,7 +1698,7 @@ export default function BaseDatosPage() {
                             borderColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'var(--encabezados-alterno)',
                             backgroundColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'transparent',
                             color: vistaMonitoreo === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
-                            boxShadow: vistaMonitoreo === item.id ? '0 2px 10px rgba(24,108,131,0.25)' : 'none',
+                            boxShadow: vistaMonitoreo === item.id ? 'var(--mf-sombra-1)' : 'none',
                           }}>
                           <Icon size={14} className="inline-block mr-1 mb-[1px]" />{item.label}
                         </button>
@@ -1726,9 +1726,9 @@ export default function BaseDatosPage() {
                 {/* ── Resumen ── */}
                 {vistaMonitoreo === 'resumen' && (
                   <>
-                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.07)' }}>
+                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Estado y salud</p>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado del sistema</p>
                           <p className="text-3xl xl:text-4xl font-extrabold leading-none mt-1 break-words" style={{ color: cargandoResumen ? 'var(--encabezados-alterno)' : estadoSistemaColor }}>
@@ -1754,28 +1754,28 @@ export default function BaseDatosPage() {
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Uptime servidor</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{uptimeLabel}</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : uptimeLabel}</p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><HardDrive size={12} />Tamaño total BD</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{formateador.format(dbSummary?.sizeMB ?? 0)} MB</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : `${formateador.format(dbSummary?.sizeMB ?? 0)} MB`}</p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><TableProperties size={12} />Número de tablas</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{formateador.format(dbSummary?.totalTablas ?? tableStats.length)}</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : formateador.format(dbSummary?.totalTablas ?? tableStats.length)}</p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Cache hit ratio</p>
                           <div className="mt-1 flex items-center justify-between">
-                            <p className="text-2xl font-bold" style={{ color: (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success-texto)' : 'var(--warning-texto)' }}>
-                              {(dbSummary?.cacheHitRatio ?? 0).toFixed(2)}%
+                            <p className="text-2xl font-bold" style={{ color: cargandoResumen ? 'var(--encabezados-alterno)' : (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success-texto)' : 'var(--warning-texto)' }}>
+                              {cargandoResumen ? '—' : `${(dbSummary?.cacheHitRatio ?? 0).toFixed(2)}%`}
                             </p>
                             <DonutKpi value={dbSummary?.cacheHitRatio ?? 0} max={100} color={(dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)'} />
                           </div>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><GitCompareArrows size={12} />Transacciones por segundo</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{(dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : (dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}</p>
                         </Card>
                       </div>
                     </div>
@@ -1878,7 +1878,7 @@ export default function BaseDatosPage() {
                 {/* ── Tablas ── */}
                 {vistaMonitoreo === 'tablas' && tableStats.length > 0 && (
                   <div className="mb-4">
-                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.06)' }}>
+                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Lectura rápida</p>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <Badge size="sm" variant="success">Verde: filas vivas</Badge>
@@ -1982,7 +1982,7 @@ export default function BaseDatosPage() {
                 {/* ── Índices ── */}
                 {vistaMonitoreo === 'indices' && indexStats.length > 0 && (
                   <div className="mb-4">
-                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.06)' }}>
+                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Lectura rápida</p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <DonutCategoria title="Óptima (≥ 80%)" value={indicesOptimos} color="var(--success)" />
