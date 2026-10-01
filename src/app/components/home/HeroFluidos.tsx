@@ -77,8 +77,9 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                 <span className="text-brand-miru text-brand-gold tracking-tight block">MIRÚ</span>
                 <span className="text-brand-franco text-brand-gold block -mt-1 ml-6 md:ml-10">Franco</span>
               </h1>
+              {/* Mismo texto que el logotipo de la cabecera y del pie; las mayúsculas las pone .text-brand-tagline */}
               <p className="text-brand-tagline tracking-[0.2em] mt-2 md:mt-4" style={{ color: 'var(--hero-tagline-color)' }}>
-                BEAUTY SALON
+                Beauty Salón
               </p>
               <p className="mt-3 md:mt-6 max-w-md text-base md:text-lg leading-relaxed" style={{ color: 'var(--hero-tagline-color)' }}>
                 Realza tu belleza natural con productos y servicios profesionales. Agenda tu cita y descubre la experiencia Mirú Franco.
