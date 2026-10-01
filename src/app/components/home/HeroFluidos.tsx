@@ -18,11 +18,15 @@ const ORDEN_CAPAS: FluidoHero['clave'][] = ['hialuronico', 'argan', 'platino', '
 /** Ancho pintado de los frascos de fondo (composición de 20–26rem de alto en móvil, 38rem en escritorio). */
 const TAMANO_FRASCO = '(min-width: 768px) 140px, 95px';
 
+/**
+ * Posición de cada sticker como variables CSS (ver .mf-sticker-capa). Las terminadas en -m son las
+ * de móvil, donde la composición es más baja: ahí las tijeras van a la esquina, lejos del Goji.
+ */
 const STICKERS = [
-  { motivo: 'tijeras', fondo: '#710014', tinta: '#f6efe6', estilo: { left: '1%', top: '10%', width: '4.25rem', rotate: '-12deg' }, prof: 1.3, movil: true },
-  { motivo: 'destello', fondo: '#9f6d1f', tinta: '#f6efe6', estilo: { left: '56%', top: '2%', width: '3.25rem', rotate: '8deg' }, prof: 1.5, movil: true },
-  { motivo: 'gota', fondo: '#d9728f', tinta: '#710014', estilo: { right: '0%', top: '30%', width: '3.4rem', rotate: '10deg' }, prof: 1.2, movil: false },
-  { motivo: 'peine', fondo: '#dcc8b6', tinta: '#710014', estilo: { left: '22%', bottom: '4%', width: '3.9rem', rotate: '-7deg' }, prof: 1.4, movil: false },
+  { motivo: 'tijeras', fondo: '#710014', tinta: '#f6efe6', estilo: { '--x': '1%', '--y': '10%', '--ancho': '4.25rem', '--giro': '-12deg', '--x-m': '-2%', '--y-m': '0%', '--ancho-m': '3.25rem' }, prof: 1.3, movil: true },
+  { motivo: 'destello', fondo: '#9f6d1f', tinta: '#f6efe6', estilo: { '--x': '56%', '--y': '2%', '--ancho': '3.25rem', '--giro': '8deg', '--x-m': '58%', '--y-m': '0%', '--ancho-m': '2.75rem' }, prof: 1.5, movil: true },
+  { motivo: 'gota', fondo: '#d9728f', tinta: '#710014', estilo: { '--x-der': '0%', '--y': '30%', '--ancho': '3.4rem', '--giro': '10deg' }, prof: 1.2, movil: false },
+  { motivo: 'peine', fondo: '#dcc8b6', tinta: '#710014', estilo: { '--x': '22%', '--y-abajo': '4%', '--ancho': '3.9rem', '--giro': '-7deg' }, prof: 1.4, movil: false },
 ] as const;
 
 function Frasco({ clave, sizes, prioridad }: { clave: string; sizes: string; prioridad?: boolean }) {
@@ -64,7 +68,7 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
         <div className="mf-fluidos__escenario">
           <div className="mf-fluidos__rejilla layout-gutter-x">
             <div className="mf-fluidos__texto">
-              <div className="flex items-center gap-3 mb-3 md:mb-4">
+              <div className="flex items-center gap-3 mb-2 md:mb-4">
                 <span className="hero-flourish" />
                 <span className="hero-ornament" />
                 <span className="hero-flourish" />
@@ -73,15 +77,15 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                 <span className="text-brand-miru text-brand-gold tracking-tight block">MIRÚ</span>
                 <span className="text-brand-franco text-brand-gold block -mt-1 ml-6 md:ml-10">Franco</span>
               </h1>
-              <p className="text-brand-tagline tracking-[0.2em] mt-3 md:mt-4" style={{ color: 'var(--hero-tagline-color)' }}>
+              <p className="text-brand-tagline tracking-[0.2em] mt-2 md:mt-4" style={{ color: 'var(--hero-tagline-color)' }}>
                 BEAUTY SALON
               </p>
-              <p className="mt-5 md:mt-6 max-w-md text-base md:text-lg leading-relaxed" style={{ color: 'var(--hero-tagline-color)' }}>
+              <p className="mt-3 md:mt-6 max-w-md text-base md:text-lg leading-relaxed" style={{ color: 'var(--hero-tagline-color)' }}>
                 Realza tu belleza natural con productos y servicios profesionales. Agenda tu cita y descubre la experiencia Mirú Franco.
               </p>
               <Link
                 href="/cliente/servicios-citas"
-                className="mf-btn mf-btn-color mt-7 md:mt-9 inline-flex items-center justify-center gap-2 px-7 rounded-full font-semibold text-sm uppercase tracking-wider"
+                className="mf-btn mf-btn-color mt-4 md:mt-9 inline-flex items-center justify-center gap-2 px-7 rounded-full font-semibold text-sm uppercase tracking-wider"
                 style={{
                   ['--btn-bg' as string]: 'var(--botones-principales)',
                   ['--btn-bg-hover' as string]: 'var(--hover)',
@@ -94,21 +98,6 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                 <ArrowRight size={16} aria-hidden />
               </Link>
 
-              {/* Los cuatro fluidos con nombre y precio del catálogo */}
-              <ul className="mf-fluidos__leyenda" aria-label="Fluidos AVYNA en la tienda">
-                {ORDEN_CAPAS.slice().reverse().map((clave) => {
-                  const f = porClave[clave];
-                  return (
-                    <li key={clave}>
-                      <Link href={`/cliente/tienda-online/productos/${f.id}`} prefetch={false} className="mf-fluidos__chip">
-                        <span className="mf-fluidos__punto" style={{ backgroundColor: f.color }} aria-hidden />
-                        <span className="mf-fluidos__chip-nombre">{f.nombre ?? 'Ver producto'}</span>
-                        {f.precio && <span className="mf-cifras font-semibold">{f.precio}</span>}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
             </div>
 
             <div className="mf-fluidos__composicion">
@@ -146,6 +135,23 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                 );
               })}
             </div>
+
+            {/* Los cuatro fluidos con nombre y precio del catálogo. En escritorio van bajo el texto;
+                en móvil, debajo de los frascos, para que estos quepan en la primera pantalla. */}
+            <ul className="mf-fluidos__leyenda" aria-label="Fluidos AVYNA en la tienda">
+              {ORDEN_CAPAS.slice().reverse().map((clave) => {
+                const f = porClave[clave];
+                return (
+                  <li key={clave}>
+                    <Link href={`/cliente/tienda-online/productos/${f.id}`} prefetch={false} className="mf-fluidos__chip">
+                      <span className="mf-fluidos__punto" style={{ backgroundColor: f.color }} aria-hidden />
+                      <span className="mf-fluidos__chip-nombre">{f.nombre ?? 'Ver producto'}</span>
+                      {f.precio && <span className="mf-cifras font-semibold">{f.precio}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           {/* Destino del Goji: tipografía gigante con el frasco al lado. Texto PROVISIONAL. */}

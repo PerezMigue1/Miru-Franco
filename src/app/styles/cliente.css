@@ -1034,9 +1034,44 @@ html:has(.superficie-cliente) {
   min-height: inherit;
 }
 @media (min-width: 768px) {
+  /* El texto y la leyenda comparten la columna izquierda; los frascos ocupan la derecha */
   .mf-fluidos__rejilla {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-    gap: 3rem;
+    grid-template-areas: 'texto composicion' 'leyenda composicion';
+    align-content: center;
+    gap: 0 3rem;
+  }
+  .mf-fluidos__texto {
+    grid-area: texto;
+    align-self: end;
+  }
+  .mf-fluidos__leyenda {
+    grid-area: leyenda;
+    align-self: start;
+  }
+  .mf-fluidos__composicion {
+    grid-area: composicion;
+  }
+}
+/* Móvil: texto, frascos y leyenda en columna. Los frascos toman el alto que queda en la primera
+   pantalla (entre 14 y 24rem) para verse enteros, con el líquido y la etiqueta. */
+@media (max-width: 767.98px) {
+  .mf-fluidos__rejilla {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1rem;
+  }
+  .mf-fluidos .mf-fluidos__composicion {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 14rem;
+    max-height: 24rem;
+  }
+  .mf-fluidos .mf-fluidos__leyenda {
+    margin-top: 0;
   }
 }
 .mf-fluidos__texto {
@@ -1155,8 +1190,21 @@ html:has(.superficie-cliente) {
 .mf-sticker-capa {
   position: absolute;
   z-index: 5;
+  left: var(--x, auto);
+  right: var(--x-der, auto);
+  top: var(--y, auto);
+  bottom: var(--y-abajo, auto);
+  width: var(--ancho);
+  rotate: var(--giro, 0deg);
   aspect-ratio: 1;
   pointer-events: none;
+}
+@media (max-width: 767.98px) {
+  .mf-sticker-capa {
+    left: var(--x-m, var(--x, auto));
+    top: var(--y-m, var(--y, auto));
+    width: var(--ancho-m, var(--ancho));
+  }
 }
 .mf-sticker {
   display: block;
