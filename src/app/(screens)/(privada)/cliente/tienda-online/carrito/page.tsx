@@ -12,6 +12,10 @@ import Modal from '../../../../../components/ui/Modal';
 import { useCart, type CartItem } from '../../../../../context/CartContext';
 import { hasValidToken } from '../../../../../utils/security';
 import { calcularResumenCarritoVistaPrevia } from '../../../../../utils/ventaDesdeCarrito';
+import Link from 'next/link';
+import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { ServicioImagenPlaceholder } from '../../../../../components/servicios/ServicioImagen';
+import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 
 export default function CarritoComprasPage() {
   const router = useRouter();
@@ -42,181 +46,155 @@ export default function CarritoComprasPage() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-none">
-        <Button 
-          variant="outline" 
-          onClick={() => router.push('/cliente/tienda-online')} 
-          className="mb-6"
+        <Link
+          href="/cliente/tienda-online"
+          className="group mb-4 inline-flex items-center gap-2 text-sm font-semibold"
+          style={{ color: 'var(--menu-texto-principal)', minHeight: 44 }}
         >
-          ← Continuar Comprando
-        </Button>
+          <ArrowLeft size={16} aria-hidden className="transition-transform duration-200 group-hover:-translate-x-1" />
+          Seguir comprando
+        </Link>
 
         <PageHeader
           title="Carrito de Compras"
           subtitle="Revisa tus productos antes de finalizar la compra"
         />
 
-        {cartLoading && (
-          <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            Sincronizando carrito…
-          </p>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 lg:gap-10">
+          <div>
             {items.length === 0 ? (
-              <Card className="text-center py-16">
-                <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+              <Card className="mf-entrada text-center py-16 px-6">
+                <ShoppingBag size={40} strokeWidth={1.5} className="mx-auto mb-4" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+                <p className="text-lg font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Tu carrito está vacío
+                </p>
+                <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Agrega productos desde la tienda y aparecerán aquí.
                 </p>
                 <Button onClick={() => router.push('/cliente/tienda-online')}>
                   Explorar Productos
                 </Button>
               </Card>
             ) : (
-              items.map((item, index) => {
-                const delay = index * 80;
-                return (
-                  <div
-                    key={String(item.id)}
-                    style={{ animation: 'fadeUp 500ms ease-out ' + delay + 'ms both' }}
-                  >
-                    <Card>
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <div
-                          className="w-full md:w-32 h-32 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                          style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                        >
-                          {item.imagen ? (
-                            <Image
-                              src={item.imagen}
-                              alt={item.nombre}
-                              width={256}
-                              height={256}
-                              className="w-full h-full object-contain"
-                              unoptimized
-                            />
-                          ) : (
-                            <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>
-                              Imagen
-                            </span>
-                          )}
+              <Card className="mf-entrada !p-0 overflow-hidden" aria-busy={cartLoading}>
+                <ul>
+                  {items.map((item, index) => (
+                    <li
+                      key={String(item.id)}
+                      className={`flex gap-4 p-4 sm:p-6 ${index > 0 ? 'border-t' : ''}`}
+                      style={{ borderColor: 'var(--mf-linea)' }}
+                    >
+                      <div
+                        className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-[10px] flex-shrink-0 overflow-hidden"
+                        style={{ backgroundColor: 'var(--superficie-elevada)' }}
+                      >
+                        {item.imagen ? (
+                          <Image
+                            src={item.imagen}
+                            alt={item.nombre}
+                            width={192}
+                            height={192}
+                            className="w-full h-full object-contain"
+                            unoptimized
+                          />
+                        ) : (
+                          <ServicioImagenPlaceholder />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold leading-snug" style={{ color: 'var(--menu-texto-principal)' }}>
+                              {item.nombre}
+                            </h3>
+                            {item.presentacion && (
+                              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{item.presentacion}</p>
+                            )}
+                            <p className="mf-cifras mt-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                              {formatearPrecioMXN(item.precio)} c/u
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setItemToRemove(item)}
+                            aria-label={`Eliminar ${item.nombre} del carrito`}
+                            className="mf-btn w-11 h-11 -mr-2 -mt-2 inline-flex items-center justify-center rounded-full shrink-0 hover:bg-[var(--fondos-suaves)]"
+                            style={{ color: 'var(--danger-texto)' }}
+                          >
+                            <Trash2 size={18} aria-hidden />
+                          </button>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3
-                                className="text-subtitle mb-1"
-                                style={{ color: 'var(--menu-texto-principal)' }}
-                              >
-                                {item.nombre}
-                                {item.presentacion && (
-                                  <span className="text-sm font-normal ml-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                                    — {item.presentacion}
-                                  </span>
-                                )}
-                              </h3>
-                              <p
-                                className="text-lg font-bold"
-                                style={{ color: 'var(--menu-texto-principal)' }}
-                              >
-                                ${item.precio.toLocaleString()}
-                              </p>
-                            </div>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5" role="group" aria-label={`Cantidad de ${item.nombre}`}>
                             <Button
                               size="sm"
-                              variant="danger"
-                              onClick={() => setItemToRemove(item)}
+                              variant="outline"
+                              className="w-9 h-9 !p-0 inline-flex items-center justify-center"
+                              aria-label="Quitar uno"
+                              disabled={cartLoading || item.cantidad <= 1}
+                              onClick={() => handleQuantityChange(item, item.cantidad - 1)}
                             >
-                              Eliminar
+                              <Minus size={16} aria-hidden />
+                            </Button>
+                            <Input
+                              type="number"
+                              aria-label="Cantidad"
+                              value={item.cantidad}
+                              disabled={cartLoading}
+                              onChange={(e) => handleQuantityChange(item, parseInt(e.target.value, 10))}
+                              className="mf-cifras w-16 text-center !py-1.5"
+                              min={1}
+                              max={999}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-9 h-9 !p-0 inline-flex items-center justify-center"
+                              aria-label="Agregar uno"
+                              disabled={cartLoading}
+                              onClick={() => handleQuantityChange(item, item.cantidad + 1)}
+                            >
+                              <Plus size={16} aria-hidden />
                             </Button>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <label className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
-                                Cantidad:
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={cartLoading}
-                                  onClick={() => handleQuantityChange(item, item.cantidad - 1)}
-                                >
-                                  -
-                                </Button>
-                                <Input
-                                  type="number"
-                                  value={item.cantidad}
-                                  disabled={cartLoading}
-                                  onChange={(e) => handleQuantityChange(item, parseInt(e.target.value, 10))}
-                                  className="w-20 text-center"
-                                  min={1}
-                                  max={999}
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={cartLoading}
-                                  onClick={() => handleQuantityChange(item, item.cantidad + 1)}
-                                >
-                                  +
-                                </Button>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                                Subtotal:
-                              </p>
-                              <p
-                                className="text-xl font-bold"
-                                style={{ color: 'var(--menu-texto-principal)' }}
-                              >
-                                ${(item.precio * item.cantidad).toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
+                          <p className="mf-cifras text-lg font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                            {formatearPrecioMXN(item.precio * item.cantidad)}
+                          </p>
                         </div>
                       </div>
-                    </Card>
-                  </div>
-                );
-              })
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+            {cartLoading && (
+              <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }} aria-live="polite">
+                Sincronizando carrito…
+              </p>
             )}
           </div>
 
-          <div style={{ animation: 'fadeUp 500ms ease-out 240ms both' }}>
-            <Card>
-              <h3
-                className="text-subtitle mb-4"
-                style={{ color: 'var(--menu-texto-principal)' }}
-              >
+          <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
+            <Card className="mf-entrada" style={{ ['--i' as string]: 1 }} padding="lg">
+              <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
                 Resumen de Compra
-              </h3>
-              <div className="space-y-3 mb-4">
+              </h2>
+              <dl className="mf-cifras space-y-3 mb-5">
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>${subtotal.toLocaleString()}</span>
+                  <dt style={{ color: 'var(--encabezados-alterno)' }}>Subtotal</dt>
+                  <dd style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(subtotal)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>${envio.toLocaleString()}</span>
+                  <dt style={{ color: 'var(--encabezados-alterno)' }}>Envío</dt>
+                  <dd style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(envio)}</dd>
                 </div>
-                <div className="pt-3 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                  <div className="flex justify-between">
-                    <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
-                      Total:
-                    </span>
-                    <span
-                      className="text-2xl font-bold"
-                      style={{ color: 'var(--menu-texto-principal)' }}
-                    >
-                      ${total.toLocaleString()}
-                    </span>
-                  </div>
+                <div className="pt-4 border-t flex justify-between items-baseline" style={{ borderColor: 'var(--mf-linea)' }}>
+                  <dt className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>Total</dt>
+                  <dd className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(total)}</dd>
                 </div>
-              </div>
+              </dl>
               {enCliente && !haySesion && items.length > 0 && (
-                <p className="text-sm mb-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}>
+                <p className="text-sm mb-4 p-3 rounded-[10px]" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}>
                   Para <strong>pagar y generar tu pedido</strong> en el sistema necesitas{' '}
                   <strong>iniciar sesión</strong>. Te pediremos la cuenta antes del checkout.
                 </p>
@@ -235,14 +213,6 @@ export default function CarritoComprasPage() {
                 disabled={items.length === 0 || cartLoading}
               >
                 {!enCliente ? 'Continuar' : haySesion ? 'Continuar compra' : 'Iniciar sesión y continuar'}
-              </Button>
-              <Button
-                fullWidth
-                variant="outline"
-                className="mt-3"
-                onClick={() => router.push('/cliente/tienda-online')}
-              >
-                Continuar Comprando
               </Button>
             </Card>
           </div>

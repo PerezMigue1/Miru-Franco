@@ -1,6 +1,6 @@
 'use client';
 
-import { TextareaHTMLAttributes } from 'react';
+import { TextareaHTMLAttributes, useId } from 'react';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -9,58 +9,45 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   fullWidth?: boolean;
 }
 
+/** Área de texto del sistema (`.mf-campo`, sistema.css). */
 export default function Textarea({
   label,
   error,
   helperText,
   fullWidth = false,
   className = '',
+  id,
   ...props
 }: TextareaProps) {
+  const idGenerado = useId();
+  const idCampo = id ?? idGenerado;
+  const idAyuda = `${idCampo}-ayuda`;
+  const ayuda = error || helperText;
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
       {label && (
-        <label
-          className="block mb-2 font-medium"
-          style={{ color: 'var(--menu-texto-principal)' }}
-        >
+        <label htmlFor={idCampo} className="mf-etiqueta">
           {label}
         </label>
       )}
       <textarea
-        className={`
-          w-full px-4 py-2.5 rounded-lg border transition-all duration-300
-          focus:outline-none focus:ring-2 focus:ring-offset-2
-          resize-y
-          ${error ? 'border-red-500' : ''}
-          ${className}
-        `}
-        style={{
-          backgroundColor: 'var(--input-bg)',
-          borderColor: error ? 'var(--danger)' : 'var(--encabezados-alterno)',
-          color: 'var(--menu-texto-principal)',
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = 'var(--hover)';
-          e.currentTarget.style.boxShadow = '0 0 0 3px var(--hover)';
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--encabezados-alterno)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        id={idCampo}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={ayuda ? idAyuda : undefined}
+        className={`mf-campo w-full px-4 py-2.5 resize-y ${className}`}
         {...props}
       />
       {error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+        <p id={idAyuda} role="alert" className="mt-1.5 text-sm" style={{ color: 'var(--danger-texto)' }}>
           {error}
         </p>
       )}
       {helperText && !error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+        <p id={idAyuda} className="mt-1.5 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           {helperText}
         </p>
       )}
     </div>
   );
 }
-

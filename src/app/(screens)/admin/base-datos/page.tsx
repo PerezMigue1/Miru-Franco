@@ -1073,9 +1073,14 @@ export default function BaseDatosPage() {
   const estadoSistema =
     saludGeneral >= 85 && rendimientoTiempoReal >= 85 ? 'Optimo' :
     saludGeneral >= 65 && rendimientoTiempoReal >= 65 ? 'Atencion' : 'Critico';
+  // Mientras no llega el resumen no se afirma un estado (antes se veía "Optimo 100/100" por defecto)
+  const cargandoResumen = dbSummary === null;
+  const ETIQUETA_ESTADO = { Optimo: 'Óptimo', Atencion: 'Atención', Critico: 'Crítico' } as const;
+  const sinMuestras = cargandoResumen && realtimeSeries.length === 0;
+  // Texto de estado: tokens -texto (los de relleno no llegan a 3:1 sobre la terracota del panel)
   const estadoSistemaColor =
-    estadoSistema === 'Optimo' ? 'var(--success)' :
-    estadoSistema === 'Atencion' ? 'var(--warning)' : 'var(--danger)';
+    estadoSistema === 'Optimo' ? 'var(--success-texto)' :
+    estadoSistema === 'Atencion' ? 'var(--warning-texto)' : 'var(--danger-texto)';
   const formateador = new Intl.NumberFormat('es-MX');
   const uptimeTotal = Number(dbSummary?.uptimeSeconds ?? 0);
   const uptimeDias = Math.floor(uptimeTotal / 86400);
@@ -1146,10 +1151,10 @@ export default function BaseDatosPage() {
     );
   };
 
-  const colorDeadTuples = (dead: number) => dead > 40 ? 'var(--danger)' : dead > 10 ? 'var(--warning)' : 'var(--success)';
-  const colorEficiencia = (eff: number) => eff < 40 ? 'var(--danger)' : eff < 80 ? 'var(--warning)' : 'var(--success)';
-  const colorWait = (wait: string | null) => wait ? 'var(--warning)' : 'var(--success)';
-  const colorGranted = (granted: boolean) => granted ? 'var(--success)' : 'var(--danger)';
+  // Cifras de estado en tablas: insignia del sistema (base clara + tinta de la misma familia)
+  type VarianteEstado = 'danger' | 'warning' | 'success';
+  const varianteDeadTuples = (dead: number): VarianteEstado => (dead > 40 ? 'danger' : dead > 10 ? 'warning' : 'success');
+  const varianteEficiencia = (eff: number): VarianteEstado => (eff < 40 ? 'danger' : eff < 80 ? 'warning' : 'success');
 
   const DetalleCampo = ({ label, value, fullWidth }: { label: string; value: React.ReactNode; fullWidth?: boolean }) => (
     <div className={fullWidth ? 'col-span-full' : ''}>
@@ -1162,25 +1167,20 @@ export default function BaseDatosPage() {
   return (
     <AdminLayout>
       <div className="px-4 md:px-8 lg:px-12">
-        <header
-          className="rounded-2xl mb-8 px-6 py-6"
-          style={{
-            background: 'linear-gradient(135deg, var(--header-footer) 0%, var(--menu-texto-principal) 100%)',
-            color: 'var(--texto-fondo-oscuro)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          }}
-        >
-          <h1 className="text-2xl md:text-3xl font-bold">Gestor de Base de Datos</h1>
-          <p className="text-sm mt-1 opacity-80">Administración de la base de datos Neon (PostgreSQL)</p>
+        <header className="mb-8">
+          <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>Gestor de Base de Datos</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Administración de la base de datos Neon (PostgreSQL)</p>
         </header>
 
-        <div className="relative space-y-6 overflow-hidden">
+        <div className="relative pl-11 space-y-6 overflow-hidden">
           {/* Trigger del menú lateral */}
           <button
             type="button"
-            aria-label="Mostrar menú"
+            aria-label="Mostrar menú de secciones"
+            aria-expanded={!menuLateralOculto}
+            onClick={() => setMenuLateralOculto((v) => !v)}
             onMouseEnter={() => setMenuLateralOculto(false)}
-            className="absolute left-0 top-6 z-40 h-10 w-8 rounded-r-lg border border-l-0 text-sm"
+            className="absolute left-0 top-6 z-40 h-11 w-9 rounded-r-lg border border-l-0 text-sm"
             style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
           >
             <Menu size={16} className="mx-auto" />
@@ -1190,7 +1190,7 @@ export default function BaseDatosPage() {
           {/* Menú lateral deslizable */}
           {!menuLateralOculto && (
             <aside
-              className="absolute top-0 left-0 h-full w-[280px] z-50 p-4 overflow-y-auto"
+              className="absolute top-0 left-0 h-full w-[min(280px,85%)] z-50 p-4 overflow-y-auto"
               style={{ backgroundColor: 'var(--fondo-general)', borderRight: `1px solid var(--encabezados-alterno)` }}
               onMouseEnter={() => setMenuLateralOculto(false)}
               onMouseLeave={() => setMenuLateralOculto(true)}
@@ -1212,7 +1212,7 @@ export default function BaseDatosPage() {
                   <button key={item.id} type="button"
                     onClick={() => { navegarVistaPrincipal(item.id); setMenuLateralOculto(true); }}
                     className="w-full text-left rounded px-3 py-2 text-sm"
-                    style={{ backgroundColor: vistaPrincipal === item.id ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                    style={{ backgroundColor: vistaPrincipal === item.id ? 'var(--hover)' : 'transparent', color: vistaPrincipal === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                     {item.label}
                   </button>
                 ))}
@@ -1223,7 +1223,7 @@ export default function BaseDatosPage() {
                     <button key={item.id} type="button"
                       onClick={() => { navegarVistaOperaciones(item.id); setMenuLateralOculto(true); }}
                       className="w-full text-left rounded px-3 py-2 text-sm"
-                      style={{ backgroundColor: vistaOperaciones === item.id ? 'rgba(24,108,131,0.16)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      style={{ backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: vistaOperaciones === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                       {item.label}
                     </button>
                   ))}
@@ -1240,7 +1240,7 @@ export default function BaseDatosPage() {
                   {([{ id: 'importar', label: 'Importación' }, { id: 'exportar', label: 'Exportación' }, { id: 'truncate', label: 'Truncate' }] as const).map((item) => (
                     <button key={item.id} type="button" onClick={() => navegarVistaOperaciones(item.id)}
                       className="px-3 py-1.5 rounded-full text-sm font-medium border"
-                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                      style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: vistaOperaciones === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                       {item.label}
                     </button>
                   ))}
@@ -1280,11 +1280,10 @@ export default function BaseDatosPage() {
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Archivo (CSV o JSON)</label>
                     <input ref={fileInputRef} type="file" accept=".csv,.json"
                       onChange={(e) => setArchivoImport(e.target.files?.[0] ?? null)}
-                      className="w-full px-4 py-2.5 rounded-lg border"
-                      style={{ backgroundColor: 'var(--texto-fondo-oscuro)', borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }} />
+                      className="mf-campo w-full px-4 py-2.5" />
                     {tablaImport === 'usuarios' && (
                       <p className="mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                        Recomendación: evita importar la columna <code className="bg-black/10 px-1 rounded">password</code> con hash bcrypt.
+                        Recomendación: evita importar la columna <code className="bg-[var(--badge-base)] px-1 rounded">password</code> con hash bcrypt.
                       </p>
                     )}
                   </div>
@@ -1295,7 +1294,7 @@ export default function BaseDatosPage() {
                   if (r.success) {
                     const { importados, fallidos, errores } = r as Extract<ResultadoImportacion, { success: true }>;
                     return (
-                      <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'rgba(110,125,87,0.2)', color: 'var(--success)' }}>
+                      <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--success) 12%, var(--badge-base))', color: 'var(--success)' }}>
                         <p className="font-medium">Importados: {importados}{(fallidos ?? 0) > 0 && <> • Fallidos: {fallidos ?? 0}</>}</p>
                         {(errores?.length ?? 0) > 0 && (
                           <ul className="mt-2 list-disc list-inside space-y-1 opacity-90">
@@ -1307,7 +1306,7 @@ export default function BaseDatosPage() {
                     );
                   }
                   return (
-                    <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'rgba(89,12,12,0.15)', color: 'var(--danger)' }}>
+                    <div className="mt-4 p-4 rounded-lg text-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', color: 'var(--danger-texto)' }}>
                       <p>{(r as Extract<ResultadoImportacion, { success: false }>).error}</p>
                     </div>
                   );
@@ -1324,7 +1323,7 @@ export default function BaseDatosPage() {
                   <Download size={18} /> Exportar datos
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Conexión directa a la BD con <code className="text-xs bg-black/10 px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-black/10 px-1 rounded">public</code>.
+                  Conexión directa a la BD con <code className="text-xs bg-[var(--badge-base)] px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-[var(--badge-base)] px-1 rounded">public</code>.
                 </p>
                 <form onSubmit={handleExportar} className="space-y-4">
                   <div>
@@ -1402,7 +1401,7 @@ export default function BaseDatosPage() {
                               Solo registros activos
                             </label>
                             <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                              (tablas con columna <code className="bg-black/10 px-1 rounded">activo</code> o <code className="bg-black/10 px-1 rounded">estado</code>)
+                              (tablas con columna <code className="bg-[var(--badge-base)] px-1 rounded">activo</code> o <code className="bg-[var(--badge-base)] px-1 rounded">estado</code>)
                             </p>
                           </div>
                         </>
@@ -1455,7 +1454,7 @@ export default function BaseDatosPage() {
                     </p>
                   </div>
                 )}
-                {errorExport && <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>{errorExport}</p>}
+                {errorExport && <p className="mt-4 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorExport}</p>}
               </Card>
             )}
 
@@ -1468,7 +1467,7 @@ export default function BaseDatosPage() {
                   <Trash2 size={18} /> Truncate de tabla
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  El comando <code className="text-xs bg-black/10 px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
+                  El comando <code className="text-xs bg-[var(--badge-base)] px-1 rounded">TRUNCATE TABLE</code> elimina todas las filas de una tabla.
                   Esta operación es destructiva.
                 </p>
                 <form onSubmit={handleTruncateTabla} className="space-y-4">
@@ -1500,14 +1499,13 @@ export default function BaseDatosPage() {
                   </div>
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
-                      Confirmación (escribe exactamente: <code className="text-xs bg-black/10 px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
+                      Confirmación (escribe exactamente: <code className="text-xs bg-[var(--badge-base)] px-1 rounded">{tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}</code>)
                     </label>
                     <input
                       type="text"
                       value={truncateConfirmText}
                       onChange={(e) => setTruncateConfirmText(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border"
-                      style={{ backgroundColor: 'var(--texto-fondo-oscuro)', borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
+                      className="mf-campo w-full px-4 py-2.5"
                       placeholder={tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}
                     />
                   </div>
@@ -1519,8 +1517,8 @@ export default function BaseDatosPage() {
                   <div
                     className="mt-4 p-4 rounded-lg text-sm"
                     style={{
-                      backgroundColor: resultadoTruncate.success ? 'rgba(110,125,87,0.2)' : 'rgba(89,12,12,0.15)',
-                      color: resultadoTruncate.success ? 'var(--success)' : 'var(--danger)',
+                      backgroundColor: resultadoTruncate.success ? 'color-mix(in srgb, var(--success) 12%, var(--badge-base))' : 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))',
+                      color: resultadoTruncate.success ? 'var(--success-texto)' : 'var(--danger-texto)',
                     }}
                   >
                     {resultadoTruncate.success
@@ -1621,7 +1619,7 @@ export default function BaseDatosPage() {
 <button 
   onClick={realizarBackup}
   disabled={realizandoBackup}
-  className="flex flex-col items-center justify-center p-4 rounded-xl border transition-all hover:bg-white"
+  className="flex flex-col items-center justify-center p-4 rounded-xl border transition-colors hover:bg-[var(--badge-base)]"
 >
   <Database size={24} className={realizandoBackup ? "animate-spin" : ""} />
   <span className="text-[10px] font-bold mt-2">
@@ -1631,7 +1629,7 @@ export default function BaseDatosPage() {
 
                   {errorBackup && (
                     <div className="mt-4 p-3 rounded-lg flex items-center gap-2 text-sm"
-                      style={{ backgroundColor: 'rgba(89,12,12,0.12)', color: 'var(--danger)' }}>
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', color: 'var(--danger-texto)' }}>
                       <ShieldAlert size={16} /> {errorBackup}
                     </div>
                   )}
@@ -1648,7 +1646,7 @@ export default function BaseDatosPage() {
                         <div key={backup.id}
                           className="p-4 rounded-lg flex flex-wrap justify-between items-center gap-3"
                           style={{
-                            borderLeft: `4px solid ${backup.estado === 'exitoso' ? 'var(--success)' : 'var(--danger)'}`,
+                            boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${backup.estado === 'exitoso' ? 'var(--success)' : 'var(--danger)'} 45%, transparent)`,
                             backgroundColor: 'var(--fondos-suaves)',
                           }}>
                           <div>
@@ -1690,18 +1688,18 @@ export default function BaseDatosPage() {
             {vistaPrincipal === 'monitoreo' && (
               <Card variant="elevated" padding="lg">
                 {/* Tabs de monitoreo */}
-                <div className="rounded-xl border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.08)' }}>
+                <div className="rounded-xl border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                   <div className="flex flex-wrap gap-2">
                     {tabsMonitoreo.map((item) => {
                       const Icon = item.icon;
                       return (
                         <button key={item.id} type="button" onClick={() => navegarVistaMonitoreo(item.id)}
-                          className="px-3 py-2 rounded-lg text-sm font-medium border transition-all"
+                          className="px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
                           style={{
                             borderColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'var(--encabezados-alterno)',
                             backgroundColor: vistaMonitoreo === item.id ? 'var(--hover)' : 'transparent',
-                            color: 'var(--menu-texto-principal)',
-                            boxShadow: vistaMonitoreo === item.id ? '0 2px 10px rgba(24,108,131,0.25)' : 'none',
+                            color: vistaMonitoreo === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
+                            boxShadow: vistaMonitoreo === item.id ? 'var(--mf-sombra-1)' : 'none',
                           }}>
                           <Icon size={14} className="inline-block mr-1 mb-[1px]" />{item.label}
                         </button>
@@ -1729,24 +1727,26 @@ export default function BaseDatosPage() {
                 {/* ── Resumen ── */}
                 {vistaMonitoreo === 'resumen' && (
                   <>
-                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.07)' }}>
+                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Estado y salud</p>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado del sistema</p>
-                          <p className="text-4xl md:text-5xl font-extrabold leading-none mt-1" style={{ color: estadoSistemaColor }}>{estadoSistema}</p>
+                          <p className="text-3xl xl:text-4xl font-extrabold leading-none mt-1 break-words" style={{ color: cargandoResumen ? 'var(--encabezados-alterno)' : estadoSistemaColor }}>
+                            {cargandoResumen ? '—' : ETIQUETA_ESTADO[estadoSistema]}
+                          </p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Salud</p>
                           <div className="mt-1 flex items-center justify-between">
                             <div>
-                              <p className="text-4xl md:text-5xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>{saludGeneral}</p>
+                              <p className="text-3xl xl:text-4xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : saludGeneral}</p>
                               <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>/100</p>
                             </div>
-                            <DonutKpi value={saludGeneral} max={100} color={saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)'} />
+                            <DonutKpi value={cargandoResumen ? 0 : saludGeneral} max={100} color={saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)'} />
                           </div>
                           <div className="w-full h-2 rounded mt-2" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                            <div className="h-full rounded" style={{ width: `${saludGeneral}%`, backgroundColor: saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)' }} />
+                            <div className="h-full rounded" style={{ width: `${cargandoResumen ? 0 : saludGeneral}%`, backgroundColor: saludGeneral < 60 ? 'var(--danger)' : saludGeneral < 80 ? 'var(--warning)' : 'var(--success)' }} />
                           </div>
                         </Card>
                         <Card variant="elevated" padding="md">
@@ -1755,40 +1755,40 @@ export default function BaseDatosPage() {
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Uptime servidor</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{uptimeLabel}</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : uptimeLabel}</p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><HardDrive size={12} />Tamaño total BD</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{formateador.format(dbSummary?.sizeMB ?? 0)} MB</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : `${formateador.format(dbSummary?.sizeMB ?? 0)} MB`}</p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><TableProperties size={12} />Número de tablas</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{formateador.format(dbSummary?.totalTablas ?? tableStats.length)}</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : formateador.format(dbSummary?.totalTablas ?? tableStats.length)}</p>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Cache hit ratio</p>
                           <div className="mt-1 flex items-center justify-between">
-                            <p className="text-2xl font-bold" style={{ color: (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)' }}>
-                              {(dbSummary?.cacheHitRatio ?? 0).toFixed(2)}%
+                            <p className="text-2xl font-bold" style={{ color: cargandoResumen ? 'var(--encabezados-alterno)' : (dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success-texto)' : 'var(--warning-texto)' }}>
+                              {cargandoResumen ? '—' : `${(dbSummary?.cacheHitRatio ?? 0).toFixed(2)}%`}
                             </p>
                             <DonutKpi value={dbSummary?.cacheHitRatio ?? 0} max={100} color={(dbSummary?.cacheHitRatio ?? 0) >= 95 ? 'var(--success)' : 'var(--warning)'} />
                           </div>
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase flex items-center gap-1" style={{ color: 'var(--encabezados-alterno)' }}><GitCompareArrows size={12} />Transacciones por segundo</p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{(dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}</p>
+                          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>{cargandoResumen ? '—' : (dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}</p>
                         </Card>
                       </div>
                     </div>
 
-                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(89,12,12,0.05)' }}>
+                    <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-sm font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Rendimiento en tiempo real</p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Consultas por segundo</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {(latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}
+                              {sinMuestras ? '—' : (latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0).toFixed(2)}
                             </p>
                             <DonutKpi value={latestRealtime?.qps ?? dbSummary?.transaccionesPorSegundo ?? 0} max={Math.max(1, maxQps)} color="var(--success)" />
                           </div>
@@ -1797,7 +1797,7 @@ export default function BaseDatosPage() {
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Conexiones activas</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {formateador.format(latestRealtime?.activeConnections ?? conexionesActivasActual)}
+                              {sinMuestras ? '—' : formateador.format(latestRealtime?.activeConnections ?? conexionesActivasActual)}
                             </p>
                             <DonutKpi value={latestRealtime?.activeConnections ?? conexionesActivasActual} max={Math.max(1, totalConexionesActual)} color="var(--warning)" />
                           </div>
@@ -1806,7 +1806,7 @@ export default function BaseDatosPage() {
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Tiempo prom. respuesta</p>
                           <div className="mt-1 flex items-center justify-between">
                             <p className="text-3xl font-extrabold leading-none" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms
+                              {realtimeSeries.length === 0 ? '—' : <span className="whitespace-nowrap">{(latestRealtime?.avgResponseMs ?? 0).toFixed(2)} ms</span>}
                             </p>
                             <DonutKpi value={latestRealtime?.avgResponseMs ?? 0} max={Math.max(1, maxRespMs)} color="var(--danger)" />
                           </div>
@@ -1821,7 +1821,7 @@ export default function BaseDatosPage() {
                             {[
                               { label: 'QPS', series: qpsSeries, color: 'var(--success)' },
                               { label: 'Conexiones activas', series: connSeries, color: 'var(--warning)' },
-                              { label: 'Tiempo respuesta (ms)', series: respSeries, color: 'var(--danger)' },
+                              { label: 'Tiempo respuesta (ms)', series: respSeries, color: 'var(--danger-texto)' },
                             ].map(({ label, series, color }) => (
                               <div key={label}>
                                 <p className="text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>{label}</p>
@@ -1852,7 +1852,7 @@ export default function BaseDatosPage() {
                         </Card>
                         <Card variant="elevated" padding="md">
                           <p className="text-xs uppercase" style={{ color: 'var(--encabezados-alterno)' }}>Estado de analítica SQL</p>
-                          <p className="text-xl font-bold mt-1" style={{ color: pgStatStatementsEnabled ? 'var(--success)' : 'var(--warning)' }}>
+                          <p className="text-xl font-bold mt-1" style={{ color: pgStatStatementsEnabled ? 'var(--success-texto)' : 'var(--warning-texto)' }}>
                             {pgStatStatementsEnabled ? 'Activa' : 'Limitada'}
                           </p>
                         </Card>
@@ -1863,7 +1863,7 @@ export default function BaseDatosPage() {
 
                 {/* Alertas activas */}
                 {vistaMonitoreo === 'resumen' && (tableStats.length > 0 || indexStats.length > 0 || locksRows.length > 0) && (
-                  <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(89,12,12,0.08)' }}>
+                  <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                     <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Alertas activas</p>
                     <ul className="text-sm space-y-1" style={{ color: 'var(--menu-texto-principal)' }}>
                       {locksPendientes > 0 && <li className="inline-flex items-center gap-1"><ShieldAlert size={14} />Critico: hay {locksPendientes} lock(s) en espera.</li>}
@@ -1874,12 +1874,12 @@ export default function BaseDatosPage() {
                   </div>
                 )}
 
-                {errorRendimiento && <p className="mb-3 text-sm" style={{ color: 'var(--danger)' }}>{errorRendimiento}</p>}
+                {errorRendimiento && <p className="mb-3 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorRendimiento}</p>}
 
                 {/* ── Tablas ── */}
                 {vistaMonitoreo === 'tablas' && tableStats.length > 0 && (
                   <div className="mb-4">
-                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.06)' }}>
+                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Lectura rápida</p>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <Badge size="sm" variant="success">Verde: filas vivas</Badge>
@@ -1915,7 +1915,7 @@ export default function BaseDatosPage() {
                       <div className="inline-flex rounded border overflow-hidden" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                         {(['tabla', 'grafica'] as const).map((v) => (
                           <button key={v} type="button" className="px-3 py-1 text-xs" onClick={() => setVistaTablasMonitoreo(v)}
-                            style={{ backgroundColor: vistaTablasMonitoreo === v ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                            style={{ backgroundColor: vistaTablasMonitoreo === v ? 'var(--hover)' : 'transparent', color: vistaTablasMonitoreo === v ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                             {v === 'tabla' ? 'Tabla' : 'Gráfica'}
                           </button>
                         ))}
@@ -1934,10 +1934,10 @@ export default function BaseDatosPage() {
                             return (
                               <TableRow key={`${t.schemaname}.${t.relname}`}>
                                 <TableCell>{t.schemaname}.{t.relname}</TableCell>
-                                <TableCell style={{ color: live > 0 ? 'var(--success)' : 'var(--encabezados-alterno)', fontWeight: 700 }}>{live}</TableCell>
-                                <TableCell style={{ color: colorDeadTuples(dead), fontWeight: 700 }}>{dead}</TableCell>
-                                <TableCell style={{ color: consultaRapida >= consultaLenta ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: consultaRapida >= consultaLenta ? 700 : 500 }}>{consultaRapida}</TableCell>
-                                <TableCell style={{ color: consultaLenta > consultaRapida ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: consultaLenta > consultaRapida ? 700 : 500 }}>{consultaLenta}</TableCell>
+                                <TableCell style={{ color: live > 0 ? 'var(--success-texto)' : 'var(--encabezados-alterno)', fontWeight: 700 }}>{live}</TableCell>
+                                <TableCell><Badge size="sm" variant={varianteDeadTuples(dead)}>{dead}</Badge></TableCell>
+                                <TableCell style={{ color: consultaRapida >= consultaLenta ? 'var(--success-texto)' : 'var(--menu-texto-principal)', fontWeight: consultaRapida >= consultaLenta ? 700 : 500 }}>{consultaRapida}</TableCell>
+                                <TableCell>{consultaLenta > consultaRapida ? <Badge size="sm" variant="warning">{consultaLenta}</Badge> : consultaLenta}</TableCell>
                                 <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
                               </TableRow>
                             );
@@ -1983,7 +1983,7 @@ export default function BaseDatosPage() {
                 {/* ── Índices ── */}
                 {vistaMonitoreo === 'indices' && indexStats.length > 0 && (
                   <div className="mb-4">
-                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'rgba(24,108,131,0.06)' }}>
+                    <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                       <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Lectura rápida</p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <DonutCategoria title="Óptima (≥ 80%)" value={indicesOptimos} color="var(--success)" />
@@ -2021,7 +2021,7 @@ export default function BaseDatosPage() {
                       <div className="inline-flex rounded border overflow-hidden" style={{ borderColor: 'var(--encabezados-alterno)' }}>
                         {(['tabla', 'grafica'] as const).map((v) => (
                           <button key={v} type="button" className="px-3 py-1 text-xs" onClick={() => setVistaIndicesMonitoreo(v)}
-                            style={{ backgroundColor: vistaIndicesMonitoreo === v ? 'var(--hover)' : 'transparent', color: 'var(--menu-texto-principal)' }}>
+                            style={{ backgroundColor: vistaIndicesMonitoreo === v ? 'var(--hover)' : 'transparent', color: vistaIndicesMonitoreo === v ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                             {v === 'tabla' ? 'Tabla' : 'Gráfica'}
                           </button>
                         ))}
@@ -2039,9 +2039,9 @@ export default function BaseDatosPage() {
                               <TableRow key={`${i.schemaname}.${i.indexname}`}>
                                 <TableCell>{i.indexname}</TableCell>
                                 <TableCell>{i.schemaname}.{i.tablename}</TableCell>
-                                <TableCell style={{ color: idxScan >= seqScan ? 'var(--success)' : 'var(--menu-texto-principal)', fontWeight: idxScan >= seqScan ? 700 : 500 }}>{idxScan}</TableCell>
-                                <TableCell style={{ color: seqScan > idxScan ? 'var(--warning)' : 'var(--menu-texto-principal)', fontWeight: seqScan > idxScan ? 700 : 500 }}>{seqScan}</TableCell>
-                                <TableCell style={{ color: colorEficiencia(eff), fontWeight: 700 }}>{eff.toFixed(2)}%</TableCell>
+                                <TableCell style={{ color: idxScan >= seqScan ? 'var(--success-texto)' : 'var(--menu-texto-principal)', fontWeight: idxScan >= seqScan ? 700 : 500 }}>{idxScan}</TableCell>
+                                <TableCell>{seqScan > idxScan ? <Badge size="sm" variant="warning">{seqScan}</Badge> : seqScan}</TableCell>
+                                <TableCell><Badge size="sm" variant={varianteEficiencia(eff)}>{eff.toFixed(2)}%</Badge></TableCell>
                                 <TableCell><Badge size="sm" variant={variant}>{estado}</Badge></TableCell>
                               </TableRow>
                             );
@@ -2123,10 +2123,10 @@ export default function BaseDatosPage() {
                       <Table headers={['PID', 'Usuario', 'Estado', 'Wait', 'Query']}>
                         {actividadRows.slice(0, 30).map((r) => (
                           <TableRow key={`${r.pid}-${r.query_start ?? 'x'}`}>
-                            <TableCell style={{ color: 'var(--hover)', fontWeight: 700 }}>{r.pid}</TableCell>
+                            <TableCell style={{ color: 'var(--menu-texto-principal)', fontWeight: 700 }}>{r.pid}</TableCell>
                             <TableCell>{r.usename}</TableCell>
                             <TableCell><Badge size="sm" variant={r.state === 'active' ? 'success' : r.state === 'idle' ? 'info' : 'warning'}>{r.state ?? '—'}</Badge></TableCell>
-                            <TableCell style={{ color: colorWait(r.wait_event_type), fontWeight: r.wait_event_type ? 700 : 500 }}>{r.wait_event_type ?? '—'}</TableCell>
+                            <TableCell>{r.wait_event_type ? <Badge size="sm" variant="warning">{r.wait_event_type}</Badge> : '—'}</TableCell>
                             <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
                           </TableRow>
                         ))}
@@ -2182,10 +2182,10 @@ export default function BaseDatosPage() {
                       <Table headers={['PID', 'Relación', 'Modo', 'Granted', 'Query']}>
                         {locksRows.slice(0, 40).map((r, idx) => (
                           <TableRow key={`${r.pid}-${r.locktype}-${idx}`}>
-                            <TableCell style={{ color: 'var(--hover)', fontWeight: 700 }}>{r.pid}</TableCell>
+                            <TableCell style={{ color: 'var(--menu-texto-principal)', fontWeight: 700 }}>{r.pid}</TableCell>
                             <TableCell>{r.relation ?? '—'}</TableCell>
                             <TableCell><Badge size="sm" variant={r.mode.toLowerCase().includes('exclusive') ? 'warning' : 'info'}>{r.mode}</Badge></TableCell>
-                            <TableCell style={{ color: colorGranted(r.granted), fontWeight: 700 }}>{r.granted ? 'Sí' : 'No'}</TableCell>
+                            <TableCell><Badge size="sm" variant={r.granted ? 'success' : 'danger'}>{r.granted ? 'Sí' : 'No'}</Badge></TableCell>
                             <TableCell>{(r.query ?? '').slice(0, 90) || '—'}</TableCell>
                           </TableRow>
                         ))}
@@ -2247,7 +2247,7 @@ export default function BaseDatosPage() {
                           dangerouslySetInnerHTML={{ __html: previewSvg }}
                         />
                         {diagramaMensaje && (
-                          <p className="text-sm mt-2 font-medium animate-pulse" style={{ color: 'var(--hover)' }}>{diagramaMensaje}</p>
+                          <p className="text-sm mt-2 font-medium animate-pulse" style={{ color: 'var(--menu-texto-principal)' }}>{diagramaMensaje}</p>
                         )}
                       </>
                     ) : (
@@ -2263,7 +2263,7 @@ export default function BaseDatosPage() {
                     )}
                   </div>
                 )}
-                {errorDiagrama && <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>{errorDiagrama}</p>}
+                {errorDiagrama && <p className="mt-4 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorDiagrama}</p>}
               </Card>
             )}
 
@@ -2280,7 +2280,7 @@ export default function BaseDatosPage() {
                   <div className="space-y-2">
                     {MODULOS_CONSULTAR.map((item) => (
                       <div key={item.id} className="rounded-lg overflow-hidden"
-                        style={{ backgroundColor: 'var(--fondos-suaves)', borderLeft: `4px solid var(--hover)` }}>
+                        style={{ backgroundColor: 'var(--fondos-suaves)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--hover) 35%, transparent)' }}>
                         <button type="button" onClick={() => toggleModulo(item.id)}
                           className="w-full p-4 text-left flex items-center justify-between hover:opacity-90 transition-opacity">
                           <div>
@@ -2296,7 +2296,7 @@ export default function BaseDatosPage() {
                             {loadingModulo === item.id ? (
                               <div className="py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</div>
                             ) : errorModulo ? (
-                              <p className="text-sm py-4" style={{ color: 'var(--danger)' }}>{errorModulo}</p>
+                              <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>{errorModulo}</p>
                             ) : item.id === 'inventario' ? (
                               <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
                                 <Table headers={['', 'ID', 'Nombre', 'Categoría', 'Marca', 'Precio', 'Stock']}>

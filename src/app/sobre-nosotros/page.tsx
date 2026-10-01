@@ -1,11 +1,18 @@
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import Image from 'next/image';
+import { metadataPublica } from '../utils/seo';
+import SuperficieCliente from '../components/cliente/SuperficieCliente';
 
-export const metadata = {
-  title: 'Sobre Nosotros — Mirú Franco Beauty Salón',
-  description: 'Conoce la historia y el equipo detrás de Mirú Franco Beauty Salón.',
-};
+export const metadata = metadataPublica({
+  title: 'Sobre nosotros',
+  description:
+    'Conoce la historia, los valores y el equipo detrás de Mirú Franco Beauty Salón, tu salón de belleza profesional en Huejutla de Reyes.',
+  path: '/sobre-nosotros',
+});
+
+/** Contenido público y no personalizado: HTML prerenderizado y cacheable en CDN (ver RUTAS_PUBLICAS_ESTATICAS en utils/rutasPublicasEstaticas.ts). */
+export const dynamic = 'force-static';
 
 const STATS = [
   { num: '5+', label: 'Años de experiencia' },
@@ -35,23 +42,19 @@ const VALORES = [
 
 export default function SobreNosotrosPage() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
+    <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
       <main className="flex-1" style={{ marginTop: 'var(--mf-header-offset, 104px)' }}>
 
         {/* Hero */}
-        <section className="section-padding text-center" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
-          <div className="container-max max-w-3xl mx-auto">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--iconografia)' }}>
-              Nuestra historia
-            </p>
-            <h1 className="text-elegant-hero hyphens-none mb-6" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+        <section className="py-16 md:py-24 layout-gutter-x" style={{ backgroundColor: 'var(--mf-banda)' }}>
+          <div className="container-max mf-entrada">
+            <h1 className="text-elegant-hero hyphens-none" style={{ color: 'var(--texto-fondo-oscuro)', letterSpacing: '-0.02em' }}>
               Sobre Nosotros
             </h1>
-            <div className="flex items-center justify-center gap-3">
-              <span className="h-px w-16 opacity-30" style={{ backgroundColor: 'var(--iconografia)' }} />
-              <span className="w-1.5 h-1.5 rounded-full opacity-50" style={{ backgroundColor: 'var(--iconografia)' }} />
-              <span className="h-px w-16 opacity-30" style={{ backgroundColor: 'var(--iconografia)' }} />
+            <div className="flex items-center gap-3 mt-5" aria-hidden>
+              <span className="hero-flourish" />
+              <span className="hero-ornament" />
             </div>
           </div>
         </section>
@@ -59,7 +62,7 @@ export default function SobreNosotrosPage() {
         {/* Historia */}
         <section className="section-padding" style={{ backgroundColor: 'var(--fondo-general)' }}>
           <div className="container-max grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
+            <div className="mf-revelar max-w-[62ch]">
               <h2 className="text-elegant-title mb-6 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }}>
                 Pasión por la belleza natural
               </h2>
@@ -73,17 +76,18 @@ export default function SobreNosotrosPage() {
                 Cada cliente es único, y por eso diseñamos un plan de cuidado personalizado para adaptarnos a tus necesidades específicas, tu tipo de cabello y tus preferencias de estilo.
               </p>
             </div>
-            <div className="flex justify-center">
+            <div className="mf-revelar flex justify-center">
+              {/* Arco: eco de la forma del monograma */}
               <div
-                className="relative w-72 h-72 sm:w-96 sm:h-96 rounded-full overflow-hidden shadow-2xl"
-                style={{ outline: '3px solid var(--logo-branding)', outlineOffset: '6px' }}
+                className="relative w-64 sm:w-80 aspect-[4/5] rounded-t-full overflow-hidden"
+                style={{ backgroundColor: 'var(--mf-banda)', boxShadow: 'var(--mf-sombra-2)', outline: '1px solid rgba(159, 109, 31, 0.55)', outlineOffset: '10px' }}
               >
                 <Image
                   src="/logo-miru.jpg"
                   alt="Mirú Franco"
                   fill
-                  className="object-contain"
-                  sizes="(max-width: 640px) 288px, 384px"
+                  className="object-contain p-10"
+                  sizes="(max-width: 640px) 256px, 320px"
                 />
               </div>
             </div>
@@ -91,18 +95,22 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Stats */}
-        <section className="section-padding" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+        <section className="py-14 md:py-16 layout-gutter-x" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
           <div className="container-max">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-              {STATS.map((stat) => (
-                <div key={stat.label}>
+            <div className="mf-revelar grid grid-cols-2 sm:grid-cols-4 gap-y-8">
+              {STATS.map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={`px-4 sm:px-8 ${i % 2 === 0 ? 'border-r' : ''} sm:border-r sm:last:border-r-0`}
+                  style={{ borderColor: 'var(--mf-linea)' }}
+                >
                   <p
-                    className="text-5xl font-bold mb-2"
-                    style={{ color: 'var(--botones-principales)', fontFamily: 'var(--font-family-serif)' }}
+                    className="mf-cifras text-4xl md:text-5xl font-bold mb-2"
+                    style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
                   >
                     {stat.num}
                   </p>
-                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)', opacity: 0.7 }}>
+                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                     {stat.label}
                   </p>
                 </div>
@@ -112,27 +120,20 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Valores */}
-        <section className="section-padding" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
+        <section className="py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--mf-banda)' }}>
           <div className="container-max">
-            <div className="text-center mb-12">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--iconografia)' }}>
-                Lo que nos define
-              </p>
-              <h2 className="text-elegant-title hyphens-none" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+            <div className="mf-revelar mb-12">
+              <h2 className="text-elegant-title hyphens-none" style={{ color: 'var(--texto-fondo-oscuro)', letterSpacing: '-0.02em' }}>
                 Nuestros Valores
               </h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
               {VALORES.map((v) => (
-                <div
-                  key={v.titulo}
-                  className="rounded-2xl p-6 border"
-                  style={{ borderColor: 'rgba(159,109,31,0.2)', backgroundColor: 'rgba(159,109,31,0.06)' }}
-                >
-                  <h3 className="font-semibold text-base mb-2" style={{ color: 'var(--logo-branding)' }}>
+                <div key={v.titulo} className="mf-revelar border-t pt-6" style={{ borderColor: 'rgba(159, 109, 31, 0.45)' }}>
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--oro-sobre-carbon)', fontFamily: 'var(--font-family-serif)' }}>
                     {v.titulo}
                   </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+                  <p className="text-base leading-relaxed max-w-[52ch]" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
                     {v.desc}
                   </p>
                 </div>
@@ -143,6 +144,6 @@ export default function SobreNosotrosPage() {
 
       </main>
       <Footer />
-    </div>
+    </SuperficieCliente>
   );
 }

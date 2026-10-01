@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OperacionLayout from '../../../components/layouts/OperacionLayout';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import { listarCitasDelDia, type CitaApi } from '../../../services/citas';
 import { resumenVentas } from '../../../services/pos';
 import { listarSeguimientos } from '../../../services/seguimientos';
+import { usePermisos, evaluarPermiso } from '../../../utils/permisos';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../utils/estados';
 import {
   CalendarDays,
@@ -17,6 +19,9 @@ import {
   AlertTriangle,
   Clock3,
 } from 'lucide-react';
+
+/** Cualquiera de estas claves permite leer citas (mismas que exige GET /api/citas/dia en el backend). */
+const PERMISOS_CITAS = ['citas:propias', 'citas:asignadas', 'citas:escritura', 'citas:propia'];
 
 /** Lee el id del usuario logueado desde localStorage (solo para personalizar "Mis citas de hoy"). */
 function miUsuarioId(): string | undefined {
@@ -49,20 +54,35 @@ export default function OperacionPage() {
   const [seguimientosPendientes, setSeguimientosPendientes] = useState(0);
   const [misCitas, setMisCitas] = useState<CitaApi[]>([]);
 
+  // Permisos del rol (de /auth/me, que OperacionLayout repuebla en localStorage). Como clave
+  // estable para no recargar el dashboard cada vez que se reescribe el usuario guardado.
+  const { permisos } = usePermisos();
+  const permisosClave = permisos.join(',');
+
   useEffect(() => {
+    // Sin permisos todavía no se sabe qué puede ver el rol: esperar a que lleguen en vez de
+    // disparar peticiones que el backend va a rechazar con 403.
+    if (!permisosClave) return;
+    const lista = permisosClave.split(',');
+    const puedeVerCitas = PERMISOS_CITAS.some((p) => evaluarPermiso(lista, p));
+    const puedeVerCaja = evaluarPermiso(lista, 'caja:lectura');
+    const puedeVerSeguimientos = evaluarPermiso(lista, 'seguimientos:lectura');
+
     const hoy = new Date().toISOString().slice(0, 10);
     const miId = miUsuarioId();
 
     setLoading(true);
     setError(null);
 
-    // Cada fuente se carga por separado: algunos roles (estilista/becario) no tienen
-    // permiso sobre /api/pos/* y no deben tumbar el resto del dashboard si falla.
+    // Cada fuente se carga por separado y solo si el rol tiene el permiso que exige el
+    // backend (p. ej. empleado no tiene caja:lectura ni seguimientos:lectura).
     Promise.allSettled([
-      listarCitasDelDia(hoy),
-      resumenVentas(hoy, hoy),
-      listarSeguimientos({ requiereAccion: true, limit: 100 }),
-      miId ? listarCitasDelDia(hoy, miId) : Promise.resolve<CitaApi[]>([]),
+      puedeVerCitas ? listarCitasDelDia(hoy) : Promise.resolve<CitaApi[]>([]),
+      puedeVerCaja ? resumenVentas(hoy, hoy) : Promise.reject(new Error('Sin permiso caja:lectura')),
+      puedeVerSeguimientos
+        ? listarSeguimientos({ requiereAccion: true, limit: 100 })
+        : Promise.resolve({ data: [], total: 0 }),
+      miId && puedeVerCitas ? listarCitasDelDia(hoy, miId) : Promise.resolve<CitaApi[]>([]),
     ])
       .then(([citasRes, ventasRes, seguimientosRes, miasRes]) => {
         if (citasRes.status === 'fulfilled') {
@@ -86,7 +106,7 @@ export default function OperacionPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [permisosClave]);
 
   const enCurso = citasHoy.filter((c) => c.estado === 'en_curso').length;
 
@@ -105,63 +125,38 @@ export default function OperacionPage() {
         </div>
 
         {error && (
-          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CalendarDays size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Citas de hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : citasHoy.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg" style={enCurso > 0 ? { boxShadow: '0 0 0 2px var(--warning)' } : undefined}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Scissors size={20} style={{ color: 'var(--warning-texto)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>En curso ahora</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: enCurso > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{loading ? '…' : enCurso}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
-                {loading ? (
-                  <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>…</p>
-                ) : ventasHoyMonto === null ? (
-                  <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>No disponible para tu rol</p>
-                ) : (
-                  <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>{fmtMoneda(ventasHoyMonto)}</p>
-                )}
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg" style={seguimientosPendientes > 0 ? { boxShadow: '0 0 0 2px var(--danger)' } : undefined}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <AlertTriangle size={20} style={{ color: 'var(--danger-texto)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Seguimientos pendientes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: seguimientosPendientes > 0 ? 'var(--danger-texto)' : 'var(--menu-texto-principal)' }}>{loading ? '…' : seguimientosPendientes}</p>
-              </div>
-            </div>
-          </Card>
+        {/* KPIs: dos columnas desde 360px, cuatro en escritorio */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={CalendarDays} etiqueta="Citas de hoy" cargando={loading} valor={citasHoy.length} />
+          <TarjetaKpi
+            icono={Scissors}
+            etiqueta="En curso ahora"
+            cargando={loading}
+            valor={enCurso}
+            tono={enCurso > 0 ? 'aviso' : 'normal'}
+            alerta={enCurso > 0}
+          />
+          <TarjetaKpi
+            icono={BadgeDollarSign}
+            etiqueta="Ventas de hoy"
+            cargando={loading}
+            tono="oro"
+            valor={ventasHoyMonto === null ? '—' : fmtMoneda(ventasHoyMonto)}
+            detalle={ventasHoyMonto === null ? 'No disponible para tu rol' : undefined}
+          />
+          <TarjetaKpi
+            icono={AlertTriangle}
+            etiqueta="Seguimientos pendientes"
+            cargando={loading}
+            valor={seguimientosPendientes}
+            tono={seguimientosPendientes > 0 ? 'peligro' : 'normal'}
+            alerta={seguimientosPendientes > 0}
+          />
         </div>
 
         {/* Mis citas de hoy */}

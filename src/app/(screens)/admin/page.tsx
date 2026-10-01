@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import Card from '../../components/ui/Card';
+import TarjetaKpi from '../../components/ui/TarjetaKpi';
 import Badge from '../../components/ui/Badge';
 import { getProductosParaDashboard } from '../../services/productos';
 import { listarVentas } from '../../services/pos';
@@ -51,6 +52,7 @@ import {
   Users,
   Wallet,
   type LucideIcon,
+  ArrowRight,
 } from 'lucide-react';
 
 // Paleta de gráficos derivada de la marca — orden fijo, nunca cíclico.
@@ -366,7 +368,7 @@ export default function AdminDashboardPage() {
 
         {/* KPIs con jerarquía */}
         <section className="mb-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
             <KpiCard icon={Package} label="Total productos" loading={productos.loading} error={productos.error} value={totalProductos} />
             <KpiCard icon={AlertTriangle} label="Stock bajo" loading={productos.loading} error={productos.error} value={stockBajo} valueColor="var(--warning)" />
             <KpiCard
@@ -385,9 +387,7 @@ export default function AdminDashboardPage() {
 
         {/* Distribución: los 3 gráficos agrupados por naturaleza (proporciones/conteos) */}
         <section className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-            Distribución
-          </p>
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Distribución</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card variant="elevated" padding="lg">
               <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>Citas por estado</h3>
@@ -432,9 +432,7 @@ export default function AdminDashboardPage() {
 
         {/* Operación del día: agenda, alertas y actividad, agrupadas por ser accionables hoy */}
         <section className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-            Operación del día
-          </p>
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Operación del día</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card variant="elevated" padding="lg">
               <div className="flex items-center justify-between mb-4">
@@ -442,8 +440,9 @@ export default function AdminDashboardPage() {
                   <Clock3 size={17} style={{ color: 'var(--hover)' }} />
                   <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Agenda de hoy</h3>
                 </div>
-                <Link href="/operacion/gestion-citas" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
-                  Ver agenda →
+                <Link href="/operacion/gestion-citas" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Ver agenda
+                  <ArrowRight size={14} aria-hidden />
                 </Link>
               </div>
               {citasHoy.loading ? (
@@ -482,8 +481,9 @@ export default function AdminDashboardPage() {
                       <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Stock bajo</span>
                     </div>
-                    <Link href="/admin/inventario" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
-                      Ver todos →
+                    <Link href="/admin/inventario" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Ver todos
+                      <ArrowRight size={14} aria-hidden />
                     </Link>
                   </div>
                   {alertasStock.loading ? (
@@ -511,11 +511,12 @@ export default function AdminDashboardPage() {
                 <div className="pt-4 border-t" style={{ borderColor: 'var(--fondo-general)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <PackageX size={14} style={{ color: 'var(--danger)' }} />
+                      <PackageX size={14} style={{ color: 'var(--danger-texto)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Por caducar</span>
                     </div>
-                    <Link href="/admin/control-caducidad" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
-                      Ver todos →
+                    <Link href="/admin/control-caducidad" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Ver todos
+                      <ArrowRight size={14} aria-hidden />
                     </Link>
                   </div>
                   {caducidades.loading ? (
@@ -543,11 +544,12 @@ export default function AdminDashboardPage() {
                 <div className="pt-4 border-t" style={{ borderColor: 'var(--fondo-general)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <MessageSquareWarning size={14} style={{ color: 'var(--danger)' }} />
+                      <MessageSquareWarning size={14} style={{ color: 'var(--danger-texto)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Quejas abiertas</span>
                     </div>
-                    <Link href="/admin/quejas-garantias" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
-                      Ver todas →
+                    <Link href="/admin/quejas-garantias" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Ver todas
+                      <ArrowRight size={14} aria-hidden />
                     </Link>
                   </div>
                   {quejas.loading ? (
@@ -591,9 +593,7 @@ export default function AdminDashboardPage() {
 
         {/* Rendimiento: qué servicios/especialistas mueven el negocio + quién llega nuevo */}
         <section className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-            Rendimiento
-          </p>
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Rendimiento</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card variant="elevated" padding="lg">
               <div className="flex items-center gap-2 mb-4">
@@ -633,8 +633,9 @@ export default function AdminDashboardPage() {
                   <UserPlus size={17} style={{ color: 'var(--hover)' }} />
                   <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Clientes nuevos</h3>
                 </div>
-                <Link href="/admin/clientes-crm" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
-                  Ver todos →
+                <Link href="/admin/clientes-crm" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Ver todos
+                  <ArrowRight size={14} aria-hidden />
                 </Link>
               </div>
               {clientesRecientes.loading ? (
@@ -663,9 +664,7 @@ export default function AdminDashboardPage() {
 
         {/* Canal online: pedidos de la tienda, separado de las ventas POS locales */}
         <section className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-            Canal online
-          </p>
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Canal online</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card variant="elevated" padding="lg">
               <div className="flex items-center gap-2 mb-4">
@@ -686,8 +685,9 @@ export default function AdminDashboardPage() {
             <Card variant="elevated" padding="lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Pedidos recientes</h3>
-                <Link href="/admin/venta-online" className="text-xs font-medium hover:opacity-80" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
-                  Ver todos →
+                <Link href="/admin/venta-online" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Ver todos
+                  <ArrowRight size={14} aria-hidden />
                 </Link>
               </div>
               {pedidosOnline.loading ? (
@@ -732,7 +732,7 @@ export default function AdminDashboardPage() {
               <Link
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full transition-all duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={{ backgroundColor: 'var(--tarjetas-paneles)', color: 'var(--menu-texto-principal)', outlineColor: 'var(--hover)' }}
               >
                 <Icon size={14} aria-hidden />
@@ -749,7 +749,7 @@ export default function AdminDashboardPage() {
               <Link
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-all duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-opacity duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)', outlineColor: 'var(--hover)' }}
               >
                 <Icon size={12} aria-hidden />
@@ -769,12 +769,12 @@ export default function AdminDashboardPage() {
 // ─────────────────────────────────────────────────────────────────────────
 
 function KpiCard({
-  icon: Icon,
+  icon,
   label,
   loading,
   error,
   value,
-  valueColor = 'var(--menu-texto-principal)',
+  valueColor,
   destacado,
 }: {
   icon: LucideIcon;
@@ -785,34 +785,18 @@ function KpiCard({
   valueColor?: string;
   destacado?: boolean;
 }) {
+  // Colores de valor con las variantes "texto" (AA sobre terracota): --warning/--danger directos no cumplían.
+  const tono = valueColor === 'var(--warning)' ? 'aviso' : valueColor === 'var(--danger)' ? 'peligro' : 'normal';
   return (
-    <Card
-      variant="elevated"
-      padding="lg"
-      className="transition-all duration-200"
-      style={destacado ? { boxShadow: '0 0 0 1.5px var(--danger), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-          style={{ backgroundColor: destacado ? 'rgba(113, 0, 20, 0.15)' : 'var(--fondo-general)' }}
-        >
-          <Icon size={17} style={{ color: destacado ? 'var(--danger)' : 'var(--encabezados-alterno)' }} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-medium truncate" style={{ color: 'var(--encabezados-alterno)' }}>{label}</p>
-          {loading ? (
-            <div className={`h-7 w-14 rounded bg-current opacity-20 animate-pulse mt-1`} />
-          ) : error ? (
-            <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>Error</p>
-          ) : (
-            <p className={`font-bold mt-0.5 truncate ${destacado ? 'text-3xl' : 'text-xl'}`} style={{ color: valueColor }}>
-              {value}
-            </p>
-          )}
-        </div>
-      </div>
-    </Card>
+    <TarjetaKpi
+      icono={icon}
+      etiqueta={label}
+      cargando={loading}
+      error={error}
+      valor={value}
+      tono={tono}
+      alerta={destacado && Number(value) > 0}
+    />
   );
 }
 
@@ -937,7 +921,7 @@ function BarraRanking({ items, max }: { items: { nombre: string; valor: number }
 const TIPO_ACTIVIDAD: Record<ItemActividad['tipo'], { icon: LucideIcon; color: string; bg: string }> = {
   venta: { icon: ShoppingCart, color: 'var(--success)', bg: 'rgba(110, 125, 87, 0.18)' },
   cita: { icon: CalendarClock, color: 'var(--enlaces-textos-interactivos)', bg: 'rgba(74, 123, 167, 0.18)' },
-  queja: { icon: MessageSquareWarning, color: 'var(--danger)', bg: 'rgba(113, 0, 20, 0.12)' },
+  queja: { icon: MessageSquareWarning, color: 'var(--danger-texto)', bg: 'rgba(113, 0, 20, 0.12)' },
 };
 
 function ItemActividadFila({ item }: { item: ItemActividad }) {
@@ -980,7 +964,7 @@ function MensajeVacio({ texto, compacto }: { texto: string; compacto?: boolean }
 
 function MensajeError({ texto }: { texto: string }) {
   return (
-    <p className="text-sm py-2" style={{ color: 'var(--danger)' }}>
+    <p className="text-sm py-2" style={{ color: 'var(--danger-texto)' }}>
       {texto}
     </p>
   );

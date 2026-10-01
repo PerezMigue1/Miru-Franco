@@ -1,8 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ArrowLeft, Check, Eye, EyeOff, Timer, TriangleAlert } from 'lucide-react';
 import { validatePassword, removeToken } from '../../utils/security';
 import Notification from '../ui/Notification';
+
+const PRIMARIO = {
+  ['--btn-bg' as string]: 'var(--botones-principales)',
+  ['--btn-bg-hover' as string]: 'var(--hover)',
+  ['--btn-texto' as string]: '#F2F1ED',
+} as React.CSSProperties;
 
 interface ResetPasswordProps {
   onSwitchToLogin?: () => void;
@@ -168,14 +175,8 @@ export default function ResetPassword({
       
       const token = tokenFromUrl || tokenFromStorage || tokenFromLocalStorage;
       const email = emailFromProps || identifier || emailFromLocalStorage;
-      
-      console.log('[ResetPassword] Datos para cambio:', {
-        token: token ? `${token.substring(0, 10)}...` : null,
-        email: email,
-        tieneToken: !!token,
-        tieneEmail: !!email
-      });
-      
+      // Nunca registrar el token de recuperación (ni parcial) ni el correo en consola.
+
       // Verificar si el token expiró
       if (expiresFromLocalStorage && Date.now() > parseInt(expiresFromLocalStorage)) {
         localStorage.removeItem('resetPasswordToken');
@@ -197,9 +198,7 @@ export default function ResetPassword({
       }
       
       console.log('✅ Contraseña cambiada exitosamente');
-      console.log('[ResetPassword] Email usado para cambio:', email);
-      console.log('[ResetPassword] Resultado del cambio:', result);
-      
+
       // ✅ Limpiar TODOS los tokens después de cambiar la contraseña
       // Esto incluye tokens de autenticación y tokens temporales de recuperación
       removeToken(); // Limpia token y authToken
@@ -262,18 +261,22 @@ export default function ResetPassword({
   if (tokenFromProps && !tokenValidado) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <div>
           <div className="text-center">
             {validandoToken ? (
-              <>
-                <div className="mx-auto w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <h2 className="text-page-title mb-2" style={{ color: '#F2F1ED' }}>
+              <div role="status">
+                <div
+                  className="mx-auto w-12 h-12 border-4 rounded-full animate-spin mb-4"
+                  style={{ borderColor: 'var(--mf-linea-fuerte)', borderTopColor: 'var(--menu-texto-principal)' }}
+                  aria-hidden
+                ></div>
+                <h2 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Validando enlace...
                 </h2>
-                <p className="text-sm" style={{ color: '#F2F1ED' }}>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   Por favor espera mientras validamos tu enlace de recuperación
                 </p>
-              </>
+              </div>
             ) : errors.general ? (
               <>
                 <div className="mb-4">
@@ -285,10 +288,8 @@ export default function ResetPassword({
                 {onSwitchToLogin && (
                   <button
                     onClick={onSwitchToLogin}
-                    className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
-                    style={{ backgroundColor: '#710014' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+                    className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={PRIMARIO}
                   >
                     Ir a Iniciar Sesión
                   </button>
@@ -304,7 +305,7 @@ export default function ResetPassword({
   if (isSuccess) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <div>
           <div className="text-center">
             <div className="mb-4">
               <Notification
@@ -315,10 +316,8 @@ export default function ResetPassword({
             {onSwitchToLogin && (
               <button
                 onClick={onSwitchToLogin}
-                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
-                style={{ backgroundColor: '#710014' }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+                className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                style={PRIMARIO}
               >
                 Ir a Iniciar Sesión
               </button>
@@ -331,39 +330,47 @@ export default function ResetPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border" style={{ backgroundColor: '#161616', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <h2 className="text-page-title text-center mb-2" style={{ color: '#F2F1ED' }}>
+      <div>
+        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Nueva Contraseña
         </h2>
         {nombreUsuario ? (
-          <p className="text-center mb-4 text-sm" style={{ color: '#F2F1ED' }}>
-            Hola <strong>{nombreUsuario}</strong>, ingresa tu nueva contraseña
+          <p className="text-center mb-4 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+            Hola <strong style={{ color: 'var(--menu-texto-principal)' }}>{nombreUsuario}</strong>, ingresa tu nueva contraseña
           </p>
         ) : (
-          <p className="text-center mb-4 text-sm" style={{ color: '#F2F1ED' }}>
+          <p className="text-center mb-4 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
             Ingresa tu nueva contraseña
           </p>
         )}
-        <div className="mb-4 p-3 rounded-lg bg-blue-900/20 border border-blue-700/50">
-          <p className="text-xs text-center" style={{ color: '#F2F1ED' }}>
-            ⚠️ La nueva contraseña debe ser diferente a la contraseña anterior
+        <div
+          className="mb-4 p-3 rounded-[10px] border"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)', borderColor: 'var(--warning)' }}
+        >
+          <p className="flex items-center justify-center gap-2 text-xs text-center" style={{ color: 'var(--warning-texto)' }}>
+            <TriangleAlert size={16} aria-hidden className="shrink-0" />
+            <span>La nueva contraseña debe ser diferente a la contraseña anterior</span>
           </p>
         </div>
-        
+
         {timeRemaining !== null && timeRemaining > 0 && (
-          <div className="mb-4 p-3 rounded-lg bg-yellow-900/20 border border-yellow-700/50">
-            <p className="text-sm text-center" style={{ color: '#F2F1ED' }}>
-              ⏱️ Tiempo restante: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+          <div
+            className="mb-4 p-3 rounded-[10px] border"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)', borderColor: 'var(--warning)' }}
+          >
+            <p className="flex items-center justify-center gap-2 text-sm text-center mf-cifras" style={{ color: 'var(--warning-texto)' }}>
+              <Timer size={16} aria-hidden className="shrink-0" />
+              <span>Tiempo restante: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</span>
             </p>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
-            <label 
-              htmlFor="password" 
+            <label
+              htmlFor="password"
               className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Nueva Contraseña
             </label>
@@ -373,46 +380,31 @@ export default function ResetPassword({
                 id="password"
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.password 
-                    ? 'border-red-500 dark:border-red-600' 
-                    : 'border-zinc-300 dark:border-zinc-700'
-                } focus:outline-none focus:ring-2 transition-colors pr-12`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.password ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+                className="mf-campo w-full px-4 py-3 pr-12"
+                aria-invalid={Boolean(errors.password)}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                className="absolute right-1 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-[10px]"
+                style={{ color: 'var(--campo-placeholder)' }}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 disabled={isLoading}
               >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
+                {showPassword ? <EyeOff size={19} aria-hidden /> : <Eye size={19} aria-hidden />}
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {errors.password}
               </p>
             )}
             {passwordErrors.length > 0 && (
               <div className="mt-1 space-y-1">
                 {passwordErrors.map((error, i) => (
-                  <p key={i} className="text-xs text-red-600 dark:text-red-400">
+                  <p key={i} className="text-xs" style={{ color: 'var(--danger-texto)' }}>
                     • {error}
                   </p>
                 ))}
@@ -420,30 +412,31 @@ export default function ResetPassword({
             )}
             {passwordErrors.length === 0 && formData.password && (
               <div className="mt-1">
-                <p className="text-xs text-green-600 dark:text-green-400 mb-1">
-                  ✓ Contraseña válida
+                <p className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--success-texto)' }}>
+                  <Check size={13} aria-hidden />
+                  Contraseña válida
                 </p>
                 {passwordStrength && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs" style={{ color: '#F2F1ED' }}>Fortaleza:</span>
-                    <div className="flex-1 h-2 bg-gray-300 rounded-full overflow-hidden">
+                    <span className="text-xs" style={{ color: 'var(--menu-texto-principal)' }}>Fortaleza:</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                       <div
-                        className={`h-full transition-all ${
+                        className={`h-full transition-[width] duration-300 ${
                           passwordStrength === 'strong'
-                            ? 'bg-green-500 w-full'
+                            ? 'bg-[color:var(--success)] w-full'
                             : passwordStrength === 'medium'
-                            ? 'bg-yellow-500 w-2/3'
-                            : 'bg-red-500 w-1/3'
+                            ? 'bg-[color:var(--warning)] w-2/3'
+                            : 'bg-[color:var(--danger-texto)] w-1/3'
                         }`}
                       />
                     </div>
                     <span
                       className={`text-xs font-medium ${
                         passwordStrength === 'strong'
-                          ? 'text-green-600'
+                          ? 'text-[color:var(--success-texto)]'
                           : passwordStrength === 'medium'
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
+                          ? 'text-[color:var(--warning-texto)]'
+                          : 'text-[color:var(--danger-texto)]'
                       }`}
                     >
                       {passwordStrength === 'strong' ? 'Fuerte' : passwordStrength === 'medium' ? 'Media' : 'Débil'}
@@ -453,17 +446,17 @@ export default function ResetPassword({
               </div>
             )}
             {passwordErrors.length === 0 && !formData.password && (
-              <p className="mt-1 text-xs" style={{ color: 'rgba(242,241,237,0.7)' }}>
+              <p className="mt-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                 Mínimo 8 caracteres, con mayúsculas, minúsculas, números y caracteres especiales
               </p>
             )}
           </div>
 
           <div>
-            <label 
-              htmlFor="confirmPassword" 
+            <label
+              htmlFor="confirmPassword"
               className="block text-sm font-medium mb-2"
-              style={{ color: '#F2F1ED' }}
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Confirmar Nueva Contraseña
             </label>
@@ -473,39 +466,24 @@ export default function ResetPassword({
                 id="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.confirmPassword 
-                    ? 'border-red-500 dark:border-red-600' 
-                    : 'border-zinc-300 dark:border-zinc-700'
-                } focus:outline-none focus:ring-2 transition-colors pr-12`}
-              style={{ 
-                backgroundColor: '#f2f1ed', 
-                color: '#161616',
-                borderColor: errors.password ? '#590C0C' : 'rgba(255,255,255,0.2)'
-              }}
+                className="mf-campo w-full px-4 py-3 pr-12"
+                aria-invalid={Boolean(errors.confirmPassword)}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                className="absolute right-1 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-[10px]"
+                style={{ color: 'var(--campo-placeholder)' }}
+                aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 disabled={isLoading}
               >
-                {showConfirmPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
+                {showConfirmPassword ? <EyeOff size={19} aria-hidden /> : <Eye size={19} aria-hidden />}
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {errors.confirmPassword}
               </p>
             )}
@@ -523,10 +501,8 @@ export default function ResetPassword({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#710014' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#710014'}
+            className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={PRIMARIO}
           >
             {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
           </button>
@@ -536,11 +512,12 @@ export default function ResetPassword({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm transition-colors"
-              style={{ color: '#F2F1ED' }}
+              className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
-              ← Volver a Iniciar Sesión
+              <ArrowLeft size={16} aria-hidden />
+              Volver a Iniciar Sesión
             </button>
           </div>
         )}
@@ -548,4 +525,3 @@ export default function ResetPassword({
     </div>
   );
 }
-

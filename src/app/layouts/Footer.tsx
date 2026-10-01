@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { socialColors } from '../utils/colors';
+import { TELEFONO_SALON } from '../utils/contactoSalon';
 
 function IconInstagram({ className }: { className?: string }) {
   return (
@@ -54,12 +56,11 @@ export default function Footer() {
 
           {/* Columna 1: Marca + redes */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <p className="text-logo mb-1" style={{ color: 'var(--logo-branding)' }}>
-              MIRÚ FRANCO
+            {/* Mismo logotipo que el encabezado: "Mirú" en Playfair y "Franco" en Great Vibes */}
+            <p className="mf-logotipo mb-1">
+              Mirú <span className="mf-logotipo__franco">Franco</span>
             </p>
-            <p className="text-logo-small mb-4" style={{ color: 'var(--logo-branding)' }}>
-              BEAUTY SALÓN
-            </p>
+            <p className="mf-logotipo__salon mb-4">Beauty Salón</p>
             <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               Salón de belleza profesional dedicado a realzar tu belleza natural con productos y servicios de alta calidad.
             </p>
@@ -111,18 +112,17 @@ export default function Footer() {
 
           {/* Columna 2: Enlaces rápidos */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--logo-branding)' }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Enlaces
-            </h4>
+            </h2>
             <ul className="space-y-3">
               {LINKS_RAPIDOS.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="text-sm flex items-center gap-2 group transition-opacity hover:opacity-100"
-                    style={{ color: 'var(--texto-fondo-oscuro-70)' }}
+                    className="text-sm flex items-center gap-2 group transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                   >
-                    <span className="inline-block group-hover:translate-x-1 transition-transform" style={{ color: 'var(--logo-branding)' }}>→</span>
+                    <ArrowRight size={14} aria-hidden className="shrink-0 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" style={{ color: 'var(--logo-branding)' }} />
                     {item.label}
                   </Link>
                 </li>
@@ -132,9 +132,9 @@ export default function Footer() {
 
           {/* Columna 3: Servicios */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--logo-branding)' }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Servicios
-            </h4>
+            </h2>
             <ul className="space-y-3">
               {SERVICIOS.map((s) => (
                 <li key={s} className="text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
@@ -146,38 +146,37 @@ export default function Footer() {
 
           {/* Columna 4: Contacto */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--logo-branding)' }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Contacto
-            </h4>
+            </h2>
             <ul className="space-y-4 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               <li className="flex items-start gap-3">
-                <span className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }}>📍</span>
+                <MapPin size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 {/* TODO: Agregar dirección exacta */}
                 <span>Huejutla de Reyes, Hidalgo, México</span>
               </li>
               <li className="flex items-center gap-3">
-                <span style={{ color: 'var(--logo-branding)' }}>📧</span>
+                <Mail size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 <a
                   href="mailto:contacto@mirufranco.com"
-                  className="hover:opacity-100 transition-opacity"
-                  style={{ color: 'var(--texto-fondo-oscuro-70)' }}
+                  className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                 >
                   contacto@mirufranco.com
                 </a>
               </li>
-              <li className="flex items-center gap-3">
-                <span style={{ color: 'var(--logo-branding)' }}>📞</span>
-                {/* TODO: Agregar número real */}
-                <a
-                  href="tel:+521234567890"
-                  className="hover:opacity-100 transition-opacity"
-                  style={{ color: 'var(--texto-fondo-oscuro-70)' }}
-                >
-                  +52 123 456 7890
-                </a>
-              </li>
+              {TELEFONO_SALON && (
+                <li className="flex items-center gap-3">
+                  <Phone size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
+                  <a
+                    href={TELEFONO_SALON.enlace}
+                    className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                  >
+                    {TELEFONO_SALON.visible}
+                  </a>
+                </li>
+              )}
               <li className="flex items-start gap-3">
-                <span style={{ color: 'var(--logo-branding)' }}>🕒</span>
+                <Clock size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 <span>Lun – Sáb: 9:00 AM – 8:00 PM</span>
               </li>
             </ul>
@@ -190,14 +189,14 @@ export default function Footer() {
             © {new Date().getFullYear()} Mirú Franco. Todos los derechos reservados.
           </p>
           <div className="flex gap-6 text-sm flex-wrap justify-center">
-            <Link href="/terminos" className="hover:opacity-80 transition-opacity" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            <Link href="/terminos" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Términos y Condiciones
             </Link>
-            <Link href="/terminos" className="hover:opacity-80 transition-opacity" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            <Link href="/terminos" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Política de Privacidad
             </Link>
           </div>
-          <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)', opacity: 0.6 }}>
+          <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
             Diseñado en Guadalajara
           </p>
         </div>

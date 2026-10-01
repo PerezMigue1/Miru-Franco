@@ -9,7 +9,7 @@ import {
   ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
-import { getToken } from '../utils/security';
+import { hasSession } from '../utils/security';
 import {
   listarCarrito,
   crearCarritoItem,
@@ -17,7 +17,7 @@ import {
   eliminarCarritoItem,
   type CarritoItemApi,
 } from '../services/ecommerce';
-import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
+import { imagenProductoMostrable } from '../utils/normalizarUrlImagen';
 
 const CART_STORAGE_KEY = 'miru-cart';
 
@@ -69,22 +69,16 @@ function apiItemToCartItem(row: CarritoItemApi): CartItem {
   const rowWithPresentacion = rowAny as CarritoItemApi & {
     presentacion?: CarritoItemApi['presentacion'] & { imagen?: unknown; imagenes?: unknown };
   };
-  const imgRaw =
-    row.producto?.imagenes?.[0] ??
-    (typeof rowAny.producto?.imagen === 'string' ? rowAny.producto.imagen : undefined) ??
-    (Array.isArray(rowWithPresentacion.presentacion?.imagenes) &&
-    typeof rowWithPresentacion.presentacion.imagenes[0] === 'string'
-      ? rowWithPresentacion.presentacion.imagenes[0]
-      : undefined) ??
-    (typeof rowWithPresentacion.presentacion?.imagen === 'string'
-      ? rowWithPresentacion.presentacion.imagen
-      : undefined) ??
-    (typeof rowAny.imagen === 'string' ? rowAny.imagen : undefined) ??
-    (typeof rowAny.imagenUrl === 'string' ? rowAny.imagenUrl : undefined);
-  const img =
-    typeof imgRaw === 'string' && imgRaw.trim()
-      ? normalizarUrlImagenExterna(imgRaw) || undefined
-      : undefined;
+  // Primera imagen mostrable entre las candidatas (las que no son de Cloudinary se descartan)
+  const candidatas: unknown[] = [
+    ...(row.producto?.imagenes ?? []),
+    rowAny.producto?.imagen,
+    ...(Array.isArray(rowWithPresentacion.presentacion?.imagenes) ? rowWithPresentacion.presentacion.imagenes : []),
+    rowWithPresentacion.presentacion?.imagen,
+    rowAny.imagen,
+    rowAny.imagenUrl,
+  ];
+  const img = candidatas.map(imagenProductoMostrable).find((u): u is string => !!u);
   return {
     id: `srv-${row.id}`,
     carritoItemId: row.id,
@@ -124,7 +118,7 @@ function loadFromStorage(): CartItem[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isCartItemRow).map((item) => ({
       ...item,
-      imagen: item.imagen ? normalizarUrlImagenExterna(item.imagen) || undefined : undefined,
+      imagen: imagenProductoMostrable(item.imagen) ?? undefined,
     }));
   } catch {
     return [];
@@ -148,8 +142,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const refreshCart = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    const token = getToken();
-    if (token) {
+    const conSesion = hasSession();
+    if (conSesion) {
       setLoading(true);
       try {
         const localGuest = loadFromStorage().filter((i) => String(i.id).startsWith('local-'));
@@ -195,7 +189,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onFocus = () => {
-      if (getToken()) void refreshCart();
+      if (hasSession()) void refreshCart();
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
@@ -203,15 +197,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!getToken()) saveToStorage(items);
+    if (!hasSession()) saveToStorage(items);
   }, [items, mounted]);
 
   const addItem = useCallback(
     async (item: AddCartItemInput) => {
       const cantidad = item.cantidad ?? 1;
-      const token = getToken();
+      const conSesion = hasSession();
 
-      if (token) {
+      if (conSesion) {
         setLoading(true);
         try {
           await crearCarritoItem({
@@ -255,8 +249,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const removeItem = useCallback(async (id: string) => {
-    const token = getToken();
-    if (token && id.startsWith('srv-')) {
+    const conSesion = hasSession();
+    if (conSesion && id.startsWith('srv-')) {
       const cid = Number(id.replace(/^srv-/, ''));
       if (Number.isFinite(cid)) {
         setLoading(true);
@@ -275,8 +269,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = useCallback(async (id: string, cantidad: number) => {
     if (cantidad < 1) return;
-    const token = getToken();
-    if (token && id.startsWith('srv-')) {
+    const conSesion = hasSession();
+    if (conSesion && id.startsWith('srv-')) {
       const cid = Number(id.replace(/^srv-/, ''));
       if (Number.isFinite(cid)) {
         setLoading(true);
@@ -296,8 +290,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearCart = useCallback(async () => {
-    const token = getToken();
-    if (token) {
+    const conSesion = hasSession();
+    if (conSesion) {
       setLoading(true);
       try {
         const rows = await listarCarrito();
@@ -320,7 +314,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         items,
         totalItems,
         loading,
-        isServerCart: Boolean(typeof window !== 'undefined' && getToken()),
+        isServerCart: Boolean(typeof window !== 'undefined' && hasSession()),
         addItem,
         removeItem,
         updateQuantity,

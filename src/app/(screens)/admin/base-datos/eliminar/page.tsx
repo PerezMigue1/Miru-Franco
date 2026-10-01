@@ -10,11 +10,8 @@ export default function BaseDatosEliminarPage() {
     <AdminLayout>
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
-          <p className="text-sm font-medium uppercase tracking-wider opacity-80 mb-1">
-            Módulo de base de datos · Eliminar
-          </p>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Eliminar / desactivar datos</h1>
-          <p className="text-base opacity-80">
+          <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Eliminar / desactivar datos</h1>
+          <p className="text-base" style={{ color: 'var(--encabezados-alterno)' }}>
             Pantalla pensada como hub para enlaces a inventario, usuarios, servicios, etc. donde se manejan bajas o
             desactivaciones.
           </p>

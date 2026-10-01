@@ -119,8 +119,8 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
       <h3 className="text-elegant-title mb-6" style={{ color: 'var(--encabezados-alterno)', fontFamily: 'var(--font-family-serif)' }}>Información personal</h3>
 
       {loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>}
-      {loadError && !loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--danger)' }}>{loadError}</p>}
-      {saveOk && <p className="text-sm mb-4" style={{ color: 'var(--success)' }} role="status">{saveOk}</p>}
+      {loadError && !loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--danger-texto)' }}>{loadError}</p>}
+      {saveOk && <p className="text-sm mb-4" style={{ color: 'var(--success-texto)' }} role="status">{saveOk}</p>}
 
       <div className="mb-8">
         <PerfilFotoBlock

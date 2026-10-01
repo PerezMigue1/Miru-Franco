@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
@@ -67,10 +68,11 @@ export default function ElegirDomicilioCheckoutPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <Link
           href={RETURN_CHECKOUT}
-          className="text-sm font-medium underline mb-6 inline-block"
+          className="text-sm font-medium mb-6 inline-flex items-center gap-1.5 hover:underline underline-offset-4"
           style={{ color: 'var(--checkout-entrega-enlace)' }}
         >
-          ← Volver al checkout
+          <ArrowLeft size={16} aria-hidden />
+          Volver al checkout
         </Link>
 
         <h1 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -78,7 +80,7 @@ export default function ElegirDomicilioCheckoutPage() {
         </h1>
 
         {error && (
-          <p className="text-sm mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger)' }}>
+          <p className="text-sm mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--danger-texto)' }}>
             {error}
           </p>
         )}

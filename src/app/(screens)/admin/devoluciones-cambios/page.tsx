@@ -7,6 +7,7 @@ import Textarea from '../../../components/ui/Textarea';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
@@ -118,52 +119,24 @@ export default function DevolucionesCambiosPage() {
         </div>
 
         {error && (
-          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+          <div role="alert" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--danger)', color: '#F2F1ED', boxShadow: 'var(--mf-sombra-1)' }}>
             {error}
           </div>
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <RotateCcw size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total solicitudes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{solicitudes.length}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <TarjetaKpi icono={RotateCcw} etiqueta="Total solicitudes" valor={solicitudes.length} />
 
-          <Card
-            variant="elevated"
-            padding="lg"
-            style={pendientes > 0 ? { boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' } : undefined}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: pendientes > 0 ? 'rgba(217, 142, 4, 0.2)' : 'var(--fondos-suaves)' }}>
-                <Clock3 size={20} style={{ color: pendientes > 0 ? 'var(--warning)' : 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p>
-                <p className="text-3xl font-bold mt-0.5" style={{ color: pendientes > 0 ? 'var(--warning-texto)' : 'var(--menu-texto-principal)' }}>{pendientes}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi
+            icono={Clock3}
+            etiqueta="Pendientes"
+            valor={pendientes}
+            tono={pendientes > 0 ? 'aviso' : 'normal'}
+            alerta={pendientes > 0}
+          />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Resueltas</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{resueltas}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={CheckCircle2} etiqueta="Resueltas" valor={resueltas} />
         </div>
 
         {/* Listado */}

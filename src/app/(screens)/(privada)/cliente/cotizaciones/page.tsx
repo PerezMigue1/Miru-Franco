@@ -1,148 +1,52 @@
-'use client';
-
-import { useState } from 'react';
+import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
-import Button from '../../../../components/ui/Button';
-import Input from '../../../../components/ui/Input';
-import Select from '../../../../components/ui/Select';
-import Textarea from '../../../../components/ui/Textarea';
-import Badge from '../../../../components/ui/Badge';
-import { showAlert } from '../../../../utils/toast';
 
+/**
+ * Mis cotizaciones (eventos especiales).
+ *
+ * PENDIENTE de backend: la tabla `cotizaciones` existe, pero no hay un endpoint para que la
+ * clienta lea las suyas (GET /api/cotizaciones lista todas y exige `servicios:lectura`). Hasta que
+ * exista, la pantalla muestra el estado vacío; antes mostraba paquetes, precios y cotizaciones
+ * inventados en el código.
+ */
 export default function CotizacionesPage() {
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-
-  const paquetes = [
-    { id: 1, nombre: 'Maquillaje Social', precio: '$800', descripcion: 'Maquillaje para eventos sociales generales' },
-    { id: 2, nombre: 'Quince Años', precio: '$1,200', descripcion: 'Paquete completo para quinceañeras (maquillaje + peinado)' },
-    { id: 3, nombre: 'Bodas', precio: '$1,500', descripcion: 'Paquete para novias (maquillaje + peinado)' },
-  ];
-
-  const cotizaciones = [
-    { id: 1, evento: 'Boda', fecha: '2024-02-14', paquete: 'Bodas', estado: 'pendiente' },
-    { id: 2, evento: 'Quince Años', fecha: '2024-03-20', paquete: 'Quince Años', estado: 'enviada' },
-  ];
-
   return (
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
-          <div className="text-center mb-12">
-            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Cotizaciones para Eventos Especiales
-            </h1>
-            <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
-              Paquetes especiales de maquillaje y peinado para tus eventos más importantes
+        <PageHeader
+          title="Mis cotizaciones"
+          subtitle="Paquetes de maquillaje y peinado para bodas, XV años y otros eventos especiales."
+        />
+
+        <Card className="max-w-2xl">
+          <div className="flex flex-col items-center px-2 py-10 text-center">
+            <span
+              className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full"
+              style={{ backgroundColor: 'var(--fondos-suaves)' }}
+              aria-hidden
+            >
+              <FileText size={24} style={{ color: 'var(--menu-texto-principal)' }} />
+            </span>
+            <p className="text-xl font-bold" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
+              Aún no tienes cotizaciones
             </p>
+            <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
+              Cuando el salón prepare una cotización para tu evento, aparecerá aquí con su fecha, el paquete y el
+              monto. Para pedir una, escríbenos.
+            </p>
+            <Link
+              href="/contacto"
+              className="mt-6 inline-flex min-h-11 items-center rounded-[10px] px-5 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
+            >
+              Contactar al salón
+            </Link>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {paquetes.map((paquete) => (
-              <Card key={paquete.id} variant="elevated">
-                <h3 className="text-subtitle mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                  {paquete.nombre}
-                </h3>
-                <p className="text-2xl font-bold mb-2" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                  {paquete.precio}
-                </p>
-                <p className="text-sm mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                  {paquete.descripcion}
-                </p>
-                <Button 
-                  fullWidth 
-                  size="sm"
-                  onClick={() => setMostrarFormulario(true)}
-                >
-                  Solicitar Cotización
-                </Button>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="mb-6">
-            <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Mis Cotizaciones
-            </h2>
-            <div className="space-y-4">
-              {cotizaciones.map((cotizacion) => (
-                <div
-                  key={cotizacion.id}
-                  className="flex items-center justify-between p-4 rounded-lg"
-                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                >
-                  <div>
-                    <p className="font-semibold mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
-                      {cotizacion.evento} - {cotizacion.paquete}
-                    </p>
-                    <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Fecha del evento: {cotizacion.fecha}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={cotizacion.estado === 'enviada' ? 'success' : 'warning'}>
-                      {cotizacion.estado === 'enviada' ? 'Enviada' : 'Pendiente'}
-                    </Badge>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        showAlert(`Detalles de cotización: ${cotizacion.evento} - ${cotizacion.paquete}\nFecha: ${cotizacion.fecha}\nEstado: ${cotizacion.estado}`);
-                      }}
-                    >
-                      Ver Detalles
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {!mostrarFormulario ? (
-            <Card>
-              <div className="text-center">
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Solicitar Nueva Cotización
-                </h2>
-                <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Completa el formulario y te enviaremos una cotización personalizada para tu evento
-                </p>
-                <Button onClick={() => setMostrarFormulario(true)}>
-                  Solicitar Cotización
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <Card>
-              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                Nueva Solicitud de Cotización
-              </h2>
-              <div className="space-y-4">
-                <Select
-                  label="Tipo de Evento"
-                  options={[
-                    { value: 'social', label: 'Maquillaje Social' },
-                    { value: 'quince', label: 'Quince Años' },
-                    { value: 'boda', label: 'Boda' },
-                  ]}
-                  fullWidth
-                />
-                <Input label="Fecha del Evento" type="date" fullWidth />
-                <Input label="Cantidad de Personas" type="number" fullWidth />
-                <Input label="Lugar del Evento" placeholder="Dirección o lugar" fullWidth />
-                <Textarea label="Detalles Adicionales" placeholder="Hora del evento, estilo deseado, etc..." rows={4} fullWidth />
-                <div className="flex gap-3">
-                  <Button variant="outline" fullWidth onClick={() => setMostrarFormulario(false)}>
-                    Cancelar
-                  </Button>
-                  <Button fullWidth onClick={() => setMostrarFormulario(false)}>
-                    Enviar Solicitud
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
+        </Card>
       </div>
     </ModuleLayout>
   );
 }
-

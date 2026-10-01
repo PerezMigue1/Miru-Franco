@@ -54,16 +54,14 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
             return (
               <li
                 key={item.href}
-                style={{
-                  borderBottom: '1px solid rgba(242,241,237,0.07)',
-                  opacity: 0,
-                  animation: `fadeUp 350ms ease-out ${i * 75}ms forwards`,
-                }}
+                className="mf-entrada"
+                style={{ borderBottom: '1px solid rgba(242,241,237,0.07)', ['--i' as string]: i }}
               >
                 <Link
                   href={item.href}
                   onClick={onClose}
-                  className="block py-4 transition-opacity hover:opacity-60"
+                  className="block py-4 transition-opacity hover:opacity-70"
+                  aria-current={isActive ? 'page' : undefined}
                   style={{
                     fontFamily: 'var(--font-family-serif)',
                     fontSize: 'clamp(1.625rem, 5.5vw, 2.25rem)',
@@ -80,26 +78,17 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
         </ul>
 
         {/* CTA */}
-        <div
-          style={{
-            opacity: 0,
-            animation: `fadeUp 350ms ease-out ${NAV_LINKS.length * 75 + 60}ms forwards`,
-            marginTop: '2rem',
-            marginBottom: '2rem',
-          }}
-        >
+        <div className="mf-entrada my-8" style={{ ['--i' as string]: NAV_LINKS.length }}>
+          {/* Reservar empieza eligiendo el servicio (crear-cita sin servicio no se puede completar) */}
           <Link
-            href="/cliente/servicios-citas/crear-cita"
+            href="/cliente/servicios-citas"
             onClick={onClose}
-            className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-sm uppercase tracking-wider hover:shadow-lg"
+            className="mf-btn mf-btn-color inline-flex min-h-12 items-center justify-center px-8 py-4 rounded-full font-semibold text-sm uppercase tracking-wider"
             style={{
-              backgroundColor: 'var(--botones-principales)',
-              color: 'var(--texto-fondo-oscuro)',
-              minHeight: '44px',
-              transition: 'background-color 200ms ease',
+              ['--btn-bg' as string]: 'var(--botones-principales)',
+              ['--btn-bg-hover' as string]: 'var(--hover)',
+              ['--btn-texto' as string]: '#F2F1ED',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--botones-principales)'; }}
           >
             Agendar Cita
           </Link>

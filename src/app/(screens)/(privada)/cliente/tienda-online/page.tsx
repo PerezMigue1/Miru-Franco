@@ -7,10 +7,11 @@ import PageHeader from '../../../../components/ui/PageHeader';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
-import Badge from '../../../../components/ui/Badge';
-import { getProductos, urlsGaleriaProductoCatalogo, type Producto } from '../../../../services/productos';
+import { getProductos, type Producto } from '../../../../services/productos';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
-import { ProductoImagenCarruselTarjeta } from '../../../../components/tienda/ProductoImagenCarruselTarjeta';
+import TarjetaCatalogo from '../../../../components/tienda/TarjetaCatalogo';
+import FilaChipsDesplazable from '../../../../components/cliente/FilaChipsDesplazable';
+import { SearchX, SlidersHorizontal } from 'lucide-react';
 
 /** Parsea precio tipo "$350" o "350" a número */
 function precioANumero(precio: string | undefined): number {
@@ -46,6 +47,8 @@ export default function CatalogoProductosPage() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
+  // Móvil: filtros plegados para que el catálogo quede a la vista (en escritorio siempre visibles).
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorUrl, setErrorUrl] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
@@ -218,30 +221,49 @@ export default function CatalogoProductosPage() {
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <Input
           placeholder="Buscar producto..."
-          className="flex-1"
+          aria-label="Buscar producto"
+          className="md:w-72"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {categorias.map((cat) => {
-            const isActive = categoriaSeleccionada === cat;
-            return (
-              <Button
-                key={cat}
-                size="sm"
-                variant={isActive ? 'chip' : 'outline'}
-                onClick={() => setCategoriaSeleccionada(cat)}
-              >
-                {cat}
-              </Button>
-            );
-          })}
+        <div className="min-w-0 md:flex-1">
+          <FilaChipsDesplazable>
+            {categorias.map((cat) => {
+              const isActive = categoriaSeleccionada === cat;
+              return (
+                <Button
+                  key={cat}
+                  size="sm"
+                  variant={isActive ? 'chip' : 'outline'}
+                  className="shrink-0 whitespace-nowrap"
+                  onClick={() => setCategoriaSeleccionada(cat)}
+                >
+                  {cat}
+                </Button>
+              );
+            })}
+          </FilaChipsDesplazable>
         </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        <aside className="lg:w-72 flex-shrink-0">
-          <Card className="p-4 space-y-6" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
+        <aside className="lg:w-72 flex-shrink-0 lg:self-start lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:max-h-[calc(100dvh-var(--mf-header-offset,136px)-2rem)] lg:overflow-y-auto scrollbar-hide">
+          <Button
+            variant="outline"
+            fullWidth
+            className="lg:hidden inline-flex items-center justify-center gap-2"
+            aria-expanded={filtrosAbiertos}
+            aria-controls="panel-filtros-tienda"
+            onClick={() => setFiltrosAbiertos((v) => !v)}
+          >
+            <SlidersHorizontal size={16} aria-hidden />
+            {filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}
+          </Button>
+          <Card
+            id="panel-filtros-tienda"
+            className={`p-5 space-y-6 mt-3 lg:mt-0 ${filtrosAbiertos ? '' : 'hidden'} lg:block`}
+            style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
+          >
             <h3 className="text-subtitle font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
               Filtros {categoriaSeleccionada !== 'Todas' && <span className="text-sm font-normal" style={{ color: 'var(--encabezados-alterno)' }}>({categoriaSeleccionada})</span>}
             </h3>
@@ -512,19 +534,26 @@ export default function CatalogoProductosPage() {
         {/* Contenido principal: grid de productos */}
         <div className="flex-1 min-w-0">
       {loading && (
-        <Card className="text-center py-12">
-          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
-            Cargando productos...
-          </p>
-        </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" aria-busy="true" aria-label="Cargando productos">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="overflow-hidden" style={{ borderRadius: 'var(--mf-radio)', backgroundColor: 'var(--tarjetas-paneles)' }}>
+              <div className="mf-skeleton aspect-square" style={{ borderRadius: 0 }} />
+              <div className="p-5 space-y-3">
+                <div className="mf-skeleton h-3 w-1/3" />
+                <div className="mf-skeleton h-5 w-3/4" />
+                <div className="mf-skeleton h-4 w-1/4" />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {error && (
         <Card className="text-center py-12 max-w-xl mx-auto" style={{ borderColor: 'var(--danger)' }}>
-          <p className="text-lead mb-4" style={{ color: 'var(--danger)' }}>
+          <p className="text-lead mb-4" style={{ color: 'var(--danger-texto)' }}>
             {error}
           </p>
-          {error.includes('conectar') && (
+          {process.env.NODE_ENV === 'development' && error.includes('conectar') && (
             <div className="text-sm mb-4 text-left" style={{ color: 'var(--encabezados-alterno)' }}>
               <p className="mb-2">El frontend está intentando conectar a:</p>
               <code className="block mb-3 p-2 rounded break-all bg-black/10" title="Abre esta URL en otra pestaña para comprobar si el backend responde">
@@ -550,102 +579,18 @@ export default function CatalogoProductosPage() {
 
       {!loading && !error && (
         <div id="catalogo-productos-grid" className="space-y-6 scroll-mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {productosPagina.map((producto) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {productosPagina.map((producto, indice) => {
             const sinStock = (producto.stockCantidad ?? 0) === 0;
             const noDisponible = !producto.stock || sinStock;
             return (
-              <Card
+              <TarjetaCatalogo
                 key={producto.id}
-                className={`cursor-pointer transition-all relative overflow-hidden ${noDisponible ? 'opacity-50' : 'hover:scale-105'}`}
-                onClick={() => abrirDetalleProducto(producto.id)}
-              >
-                {noDisponible && (
-                  <>
-                    <div
-                      className="absolute inset-0 z-10 rounded-lg pointer-events-none"
-                      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-                    />
-                    <div
-                      className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none select-none"
-                      style={{
-                        color: 'rgba(255,255,255,0.95)',
-                        fontSize: 'clamp(4rem, 18vw, 9rem)',
-                        fontWeight: 800,
-                        textShadow: '0 0 30px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.8)',
-                      }}
-                    >
-                      ✕
-                    </div>
-                  </>
-                )}
-                <div className="relative mb-4">
-                  <div
-                    className="relative mb-4 h-64 w-full overflow-hidden rounded-lg"
-                    style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                  >
-                    <div className="relative z-0 h-full min-h-[16rem] w-full">
-                      <ProductoImagenCarruselTarjeta
-                        urls={urlsGaleriaProductoCatalogo(producto)}
-                        alt={producto.nombre}
-                      />
-                    </div>
-                    <div className="absolute top-2 right-2 z-30 flex flex-wrap justify-end gap-2">
-                      {producto.nuevo && (
-                        <Badge variant="success" size="sm">Nuevo</Badge>
-                      )}
-                      {(producto.descuento ?? 0) > 0 && (
-                        <Badge variant="warning" size="sm">-{producto.descuento}%</Badge>
-                      )}
-                      {noDisponible && (
-                        <Badge variant="danger" size="sm">No disponible</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="mb-2">
-                  <Badge variant="info" size="sm">{producto.categoria || 'Producto'}</Badge>
-                </div>
-                <h3
-                  className="text-subtitle mb-2"
-                  style={{ color: 'var(--menu-texto-principal)' }}
-                >
-                  {producto.nombre}
-                </h3>
-                <p
-                  className="text-sm mb-3"
-                  style={{ color: 'var(--encabezados-alterno)' }}
-                >
-                  {producto.descripcion}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    {producto.precioOriginal && (
-                      <p
-                        className="text-sm line-through"
-                        style={{ color: 'var(--encabezados-alterno)' }}
-                      >
-                        {producto.precioOriginal}
-                      </p>
-                    )}
-                    <p
-                      className="text-xl font-bold"
-                      style={{ color: 'var(--menu-texto-principal)' }}
-                    >
-                      {producto.precio}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      abrirDetalleProducto(producto.id);
-                    }}
-                  >
-                    Ver Detalles
-                  </Button>
-                </div>
-              </Card>
+                producto={producto}
+                noDisponible={noDisponible}
+                indice={indice}
+                onAbrir={() => abrirDetalleProducto(producto.id)}
+              />
             );
           })}
         </div>
@@ -655,7 +600,7 @@ export default function CatalogoProductosPage() {
             className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 pt-2 border-t"
             style={{ borderColor: 'var(--fondos-suaves)' }}
           >
-            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+            <p className="mf-cifras text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
               Mostrando {rangoDesde}–{rangoHasta} de {productosOrdenados.length} productos
             </p>
             <div className="flex items-center gap-2">
@@ -687,9 +632,13 @@ export default function CatalogoProductosPage() {
       )}
 
       {!loading && !error && productosFiltrados.length === 0 && (
-        <Card className="text-center py-12">
-          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
+        <Card className="text-center py-14 px-6">
+          <SearchX size={36} strokeWidth={1.5} className="mx-auto mb-4" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+          <p className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
             No se encontraron productos con los filtros seleccionados
+          </p>
+          <p className="mt-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+            Prueba con otra categoría o usa «Limpiar filtros».
           </p>
         </Card>
       )}

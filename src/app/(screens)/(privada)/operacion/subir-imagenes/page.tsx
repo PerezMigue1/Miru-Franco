@@ -109,7 +109,7 @@ export default function SubirImagenesPage() {
         </Card>
 
         {error && (
-          <Card variant="elevated" padding="md" className="mb-6 border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card variant="elevated" padding="md" className="mb-6" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
               Revisa que en tu .env tengas NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_PRODUCTOS (y _SERVICIOS si usas servicios). En Cloudinary el preset debe ser Unsigned.
@@ -139,7 +139,7 @@ export default function SubirImagenesPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm truncate flex-1 hover:underline"
-                      style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                      style={{ color: 'var(--texto-enlace-sobre-calido)' }}
                     >
                       {url}
                     </a>

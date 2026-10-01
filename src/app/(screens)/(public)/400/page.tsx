@@ -6,7 +6,7 @@ export default function Error400Page() {
       codigo={400}
       titulo="Solicitud incorrecta"
       mensaje="La petición no es válida. Revisa los datos que enviaste e intenta de nuevo."
-      icono="✕"
+      icono="solicitud"
     />
   );
 }

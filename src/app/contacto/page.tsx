@@ -1,6 +1,9 @@
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { MapPin, Mail, Phone, Clock } from 'lucide-react';
+import { metadataPublica } from '../utils/seo';
+import { TELEFONO_SALON } from '../utils/contactoSalon';
+import SuperficieCliente from '../components/cliente/SuperficieCliente';
 
 function IconInstagram({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
@@ -17,30 +20,32 @@ function IconFacebook({ className }: { className?: string }) {
   );
 }
 
-export const metadata = {
-  title: 'Contacto — Mirú Franco Beauty Salón',
-  description: 'Contáctanos para agendar una cita o resolver tus dudas.',
-};
+export const metadata = metadataPublica({
+  title: 'Contacto',
+  description:
+    'Contacta a Mirú Franco Beauty Salón en Huejutla de Reyes: dirección, teléfono, correo y horarios para agendar tu cita o resolver tus dudas.',
+  path: '/contacto',
+});
+
+/** Contenido público y no personalizado: HTML prerenderizado y cacheable en CDN (ver RUTAS_PUBLICAS_ESTATICAS en utils/rutasPublicasEstaticas.ts). */
+export const dynamic = 'force-static';
 
 export default function ContactoPage() {
   const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
   const fbUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
+    <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
       <main className="flex-1" style={{ marginTop: 'var(--mf-header-offset, 104px)' }}>
 
         {/* Hero */}
-        <section className="section-padding text-center" style={{ backgroundColor: 'var(--tarjetas-paneles)' }}>
-          <div className="container-max max-w-2xl mx-auto">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--iconografia)' }}>
-              Estamos para ti
-            </p>
-            <h1 className="text-elegant-hero hyphens-none mb-4" style={{ color: 'var(--texto-fondo-oscuro)' }}>
+        <section className="py-16 md:py-24 layout-gutter-x" style={{ backgroundColor: 'var(--mf-banda)' }}>
+          <div className="container-max mf-entrada">
+            <h1 className="text-elegant-hero hyphens-none mb-4" style={{ color: 'var(--texto-fondo-oscuro)', letterSpacing: '-0.02em' }}>
               Contacto
             </h1>
-            <p className="text-base leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            <p className="max-w-xl text-base md:text-lg leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
               Agenda una cita, resuelve tus dudas o simplemente escríbenos. Estaremos encantados de atenderte.
             </p>
           </div>
@@ -52,7 +57,7 @@ export default function ContactoPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
 
               {/* Datos de contacto */}
-              <div>
+              <div className="mf-revelar">
                 <h2 className="text-elegant-title mb-8 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }}>
                   Información de Contacto
                 </h2>
@@ -74,25 +79,26 @@ export default function ContactoPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                    >
-                      <Phone className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
-                      {/* TODO: Agregar número real */}
-                      <a
-                        href="tel:+521234567890"
-                        className="text-sm hover:opacity-80 transition-opacity"
-                        style={{ color: 'var(--botones-principales)' }}
+                  {TELEFONO_SALON && (
+                    <div className="flex items-start gap-4">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'var(--fondos-suaves)' }}
                       >
-                        +52 123 456 7890
-                      </a>
+                        <Phone className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
+                        <a
+                          href={TELEFONO_SALON.enlace}
+                          className="text-sm hover:opacity-80 transition-opacity"
+                          style={{ color: 'var(--menu-texto-principal)' }}
+                        >
+                          {TELEFONO_SALON.visible}
+                        </a>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex items-start gap-4">
                     <div
@@ -106,7 +112,7 @@ export default function ContactoPage() {
                       <a
                         href="mailto:contacto@mirufranco.com"
                         className="text-sm hover:opacity-80 transition-opacity"
-                        style={{ color: 'var(--botones-principales)' }}
+                        style={{ color: 'var(--menu-texto-principal)' }}
                       >
                         contacto@mirufranco.com
                       </a>
@@ -148,7 +154,7 @@ export default function ContactoPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
-                              style={{ color: 'var(--botones-principales)' }}
+                              style={{ color: 'var(--menu-texto-principal)' }}
                             >
                               <IconInstagram className="w-4 h-4" />
                               Instagram
@@ -160,7 +166,7 @@ export default function ContactoPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
-                              style={{ color: 'var(--botones-principales)' }}
+                              style={{ color: 'var(--menu-texto-principal)' }}
                             >
                               <IconFacebook className="w-4 h-4" />
                               Facebook
@@ -176,21 +182,18 @@ export default function ContactoPage() {
               {/* CTA agendar */}
               <div className="flex flex-col justify-center">
                 <div
-                  className="rounded-3xl p-8 sm:p-10 border text-center"
-                  style={{ borderColor: 'rgba(159,109,31,0.25)', backgroundColor: 'var(--fondos-suaves)' }}
+                  className="mf-revelar rounded-[14px] p-8 sm:p-10"
+                  style={{ backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-2)' }}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--logo-branding)' }}>
-                    La forma más fácil
-                  </p>
                   <h2 className="text-elegant-title mb-4 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }}>
                     Agenda en Línea
                   </h2>
-                  <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
+                  <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--encabezados-alterno)' }}>
                     Elige el servicio, la fecha y la hora que prefieras. Confirmación instantánea.
                   </p>
                   <a
-                    href="/cliente/servicios-citas/crear-cita"
-                    className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-semibold text-sm uppercase tracking-wider bg-[var(--botones-principales)] hover:bg-[var(--hover)] hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
+                    href="/cliente/servicios-citas"
+                    className="mf-btn inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-semibold text-sm uppercase tracking-wider bg-[var(--botones-principales)] hover:bg-[var(--hover)] w-full sm:w-auto"
                     style={{
                       color: 'var(--texto-fondo-oscuro)',
                       minHeight: '44px',
@@ -207,6 +210,6 @@ export default function ContactoPage() {
 
       </main>
       <Footer />
-    </div>
+    </SuperficieCliente>
   );
 }

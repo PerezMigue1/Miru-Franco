@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
-import { saveToken } from '../utils/security';
+import { markSessionStart } from '../utils/security';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../utils/userStorageSync';
 import {
@@ -118,21 +118,15 @@ export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
   return normalizarPerfilUsuario(obj);
 }
 
-// Helper para guardar datos de autenticacion (usando utilidades de seguridad)
-const saveAuthData = (data: { token?: string; user?: unknown; usuario?: unknown }) => {
+// Helper para guardar datos de sesión. El JWT llega como cookie httpOnly (el backend no lo
+// incluye en el cuerpo); aquí solo se guarda el usuario sin datos sensibles para la UI.
+const saveAuthData = (data: { success?: boolean; user?: unknown; usuario?: unknown }) => {
   if (typeof window !== 'undefined') {
-    if (data.token) {
-      // ✅ Usar utilidad de seguridad para guardar token
-      // ✅ Solo loguear en desarrollo y sin información sensible
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Auth] Guardando token...');
-      }
-      saveToken(data.token);
-      const userData = data.user ?? data.usuario;
-      if (userData) {
-        localStorage.setItem('user', JSON.stringify(normalizarUsuarioAlmacenado(userData)));
-        emitMiruUserStorageUpdated();
-      }
+    const userData = data.user ?? data.usuario;
+    if (data.success && userData) {
+      markSessionStart();
+      localStorage.setItem('user', JSON.stringify(normalizarUsuarioAlmacenado(userData)));
+      emitMiruUserStorageUpdated();
       // Perfil completo (foto, etc.): el login suele no traer `foto`; /api/auth/me sí.
       void (async () => {
         try {
@@ -144,7 +138,7 @@ const saveAuthData = (data: { token?: string; user?: unknown; usuario?: unknown 
       })();
     } else {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[Auth] No se recibió token en la respuesta');
+        console.warn('[Auth] La respuesta no trae una sesión válida');
       }
     }
   }
@@ -181,7 +175,6 @@ export const api = {
       if (process.env.NODE_ENV === 'development') {
         console.log('[Auth] Respuesta del backend:', { 
           success: data.success, 
-          hasToken: !!data.token, 
           hasUser: !!data.usuario,
           error: data.error 
           // ❌ NUNCA loguear: token, user completo, ni JSON.stringify de respuesta
@@ -201,14 +194,6 @@ export const api = {
       }
       
       saveAuthData(data);
-      
-      // ✅ NO verificar ni loguear tokens (información sensible)
-      // Solo verificar en desarrollo y sin mostrar el token
-      if (process.env.NODE_ENV === 'development') {
-        const tokenVerificado = localStorage.getItem('token') || localStorage.getItem('authToken');
-        console.log('[Auth] Token guardado:', tokenVerificado ? 'Sí' : 'No');
-        // ❌ NUNCA loguear el token mismo
-      }
       
       return data;
     } catch (error: unknown) {
@@ -404,9 +389,7 @@ export const api = {
         { email },
         BACKEND_BASE
       );
-      
-      console.log('Respuesta del backend para pregunta de seguridad:', data);
-      
+
       // Manejar diferentes formatos de respuesta del backend
       const pregunta = data.pregunta || data.question;
       const success = data.success !== false && !!pregunta;
@@ -615,19 +598,15 @@ export const api = {
     return this.logout(true);
   },
 
-  // ✅ Renovar token
-  async refreshToken(): Promise<{ success: boolean; token?: string; error?: string }> {
+  // ✅ Renovar sesión: el backend rota la cookie httpOnly (no devuelve el token en el cuerpo)
+  async refreshToken(): Promise<{ success: boolean; error?: string }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
-      const data = await apiClient.post<{ success: boolean; token?: string; error?: string }>(
+      return await apiClient.post<{ success: boolean; error?: string }>(
         '/api/auth/refresh',
         {},
         BACKEND_BASE
       );
-      if (data.success && data.token) {
-        saveToken(data.token);
-      }
-      return data;
     } catch (error) {
       console.error('Error renovando token:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al renovar token';

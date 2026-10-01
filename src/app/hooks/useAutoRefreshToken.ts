@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { getToken, clearAuthData } from '../utils/security';
+import { hasSession, clearAuthData } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 
@@ -16,9 +16,8 @@ export function useAutoRefreshToken() {
   useEffect(() => {
     // Función para verificar el estado del token
     const checkTokenStatus = async () => {
-      // Leer el token actual en cada ejecución: si el usuario cerró sesión, no hay token y no hacemos nada
-      const currentToken = getToken();
-      if (!currentToken) {
+      // Revisar la sesión en cada ejecución: si el usuario cerró sesión, no hacemos nada
+      if (!hasSession()) {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
@@ -49,7 +48,10 @@ export function useAutoRefreshToken() {
           lowerMessage.includes('cerrada desde otro dispositivo') ||
           lowerMessage.includes('nueva sesión en otro dispositivo') ||
           lowerMessage.includes('inactividad') ||
-          lowerMessage.includes('sesión expirada');
+          lowerMessage.includes('sesión expirada') ||
+          // Con la cookie httpOnly, un 401 genérico del refresh significa que la cookie ya no
+          // llega (expiró o se borró): el frontend no tiene otra forma de saberlo.
+          lowerMessage.trim() === 'unauthorized';
 
         if (!tokenRealmenteInvalido) {
           if (process.env.NODE_ENV === 'development') {
@@ -85,9 +87,8 @@ export function useAutoRefreshToken() {
       }
     };
 
-    // Solo activar el intervalo si hay token (evita usar un token antiguo tras cerrar sesión)
-    const token = getToken();
-    if (!token) return;
+    // Solo activar el intervalo si hay sesión (evita refrescar tras cerrar sesión)
+    if (!hasSession()) return;
 
     // Verificar cada 30 segundos para detectar rápidamente nuevas sesiones
     intervalRef.current = setInterval(checkTokenStatus, 30 * 1000);

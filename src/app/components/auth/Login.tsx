@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { handleSecurityError } from '../../utils/security';
+import { Eye, EyeOff, Timer } from 'lucide-react';
 import Notification from '../ui/Notification';
 import ActivateAccount from './ActivateAccount';
 
@@ -133,11 +134,10 @@ export default function Login({
       const emailInput = emailRef.current?.value || email;
       const passwordInput = passwordRef.current?.value || password;
       const emailLimpio = emailInput.trim().toLowerCase();
-      console.log('[Login] Intentando login con email:', emailLimpio);
-      console.log('[Login] Longitud de contraseña:', passwordInput.length);
+      // Sin console.log del correo ni de la contraseña: el diagnóstico seguro (solo en
+      // desarrollo, sin valores) ya lo hace api.login en services/auth.ts.
       const result = await api.login(emailLimpio, passwordInput);
-      console.log('[Login] Resultado del login:', { success: result.success, error: result.error, requiereVerificacion: result.requiereVerificacion });
-      
+
       if (!result.success) {
         const errorMessage = result.error || 'Error al iniciar sesión';
         console.error('[Login] Error en login:', errorMessage);
@@ -235,18 +235,9 @@ export default function Login({
         }
       }
       } else {
-        // Login exitoso
-        console.log('Login exitoso, token guardado:', result.token ? 'Sí' : 'No');
+        // Login exitoso: la sesión quedó en la cookie httpOnly que emite el backend
         setShowActivation(false); // Asegurar que no se muestre la pantalla de activación
-        
-        // Verificar que el token se guardó
-        const tokenGuardado = localStorage.getItem('token') || localStorage.getItem('authToken');
-        if (!tokenGuardado && result.token) {
-          console.warn('Token no se guardó correctamente, guardando manualmente...');
-          localStorage.setItem('token', result.token);
-          localStorage.setItem('authToken', result.token);
-        }
-        
+
         // Llamar callback y redirigir
         if (onLoginSuccess) {
           onLoginSuccess();
@@ -455,10 +446,13 @@ export default function Login({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
-        <h2 className="text-page-title text-center mb-6 text-texto-fondo-oscuro">
+      <div>
+        <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Iniciar Sesión
-        </h2>
+        </h1>
+        <p className="mb-7 text-[0.9375rem]" style={{ color: 'var(--encabezados-alterno)' }}>
+          Entra para reservar, comprar y ver tus pedidos.
+        </p>
         
         {/* Mensaje de éxito si se cambió la contraseña */}
         {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('passwordChanged') === 'true' && (
@@ -485,8 +479,8 @@ export default function Login({
                   type="button"
                   onClick={handleResendCode}
                   disabled={isResending || !email || countdown !== null}
-                  className="mt-2 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed block mx-auto"
-                  style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                  className="mt-2 flex min-h-11 items-center text-sm font-semibold underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
+                  style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   {isResending 
                     ? 'Enviando...' 
@@ -498,12 +492,13 @@ export default function Login({
                 
                 {/* Mostrar contador regresivo si hay rate limiting */}
                 {countdown !== null && countdown > 0 && (
-                  <div className="mt-3 p-3 rounded-lg border mx-auto max-w-md" style={{ 
-                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                    borderColor: 'var(--warning)'
-                  }}>
-                    <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
-                      ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+                  <div
+                    className="mt-3 p-3 rounded-[10px] mx-auto max-w-md"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 14%, transparent)' }}
+                  >
+                    <p className="flex items-center justify-center gap-1.5 text-sm" style={{ color: 'var(--warning-texto)' }}>
+                      <Timer size={16} aria-hidden />
+                      Puedes intentar nuevamente en: <strong className="mf-cifras">{countdown}</strong> segundos
                     </p>
                   </div>
                 )}
@@ -514,10 +509,7 @@ export default function Login({
         
         <div className="space-y-5">
           <div>
-            <label 
-              htmlFor="email" 
-              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
-            >
+            <label htmlFor="email" className="mf-etiqueta">
               Correo Electrónico
             </label>
             <input
@@ -535,25 +527,21 @@ export default function Login({
                   });
                 }
               }}
-              className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
-              style={{ 
-                borderColor: errors.email ? 'var(--danger)' : 'var(--borde-visible)'
-              }}
+              className="mf-campo w-full px-4 py-3"
+              aria-invalid={Boolean(errors.email)}
+              autoComplete="email"
               placeholder="tu@email.com"
               disabled={isLoading || formDisabled}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p role="alert" className="mt-1.5 text-sm" style={{ color: 'var(--danger-texto)' }}>
                 {errors.email}
               </p>
             )}
           </div>
 
           <div>
-            <label 
-              htmlFor="password" 
-              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
-            >
+            <label htmlFor="password" className="mf-etiqueta">
               Contraseña
             </label>
             <div className="relative">
@@ -574,43 +562,36 @@ export default function Login({
                     });
                   }
                 }}
-                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors pr-12 bg-texto-fondo-oscuro text-header-footer"
-              style={{ 
-                  borderColor: errors.password ? 'var(--danger)' : 'var(--borde-visible)'
-              }}
+                className="mf-campo w-full px-4 py-3 pr-12"
+                aria-invalid={Boolean(errors.password)}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 disabled={isLoading || formDisabled}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                className="absolute right-1 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-[10px]"
+                style={{ color: 'var(--campo-placeholder)' }}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 disabled={isLoading}
               >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
+                {showPassword ? <EyeOff size={19} aria-hidden /> : <Eye size={19} aria-hidden />}
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p role="alert" className="mt-1.5 text-sm" style={{ color: 'var(--danger-texto)' }}>
                 {errors.password}
               </p>
             )}
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-end -mt-2">
             <button
               type="button"
               onClick={handleSwitchToRecovery}
-              className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
+              className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading || formDisabled}
             >
               ¿Olvidaste tu contraseña?
@@ -627,22 +608,26 @@ export default function Login({
               handleSubmit();
             }}
             disabled={isLoading || isGoogleLoading || formDisabled}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
-            style={{ backgroundColor: 'var(--botones-principales)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
+            className="mf-btn mf-btn-color w-full min-h-12 py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              ['--btn-bg' as string]: 'var(--botones-principales)',
+              ['--btn-bg-hover' as string]: 'var(--hover)',
+              ['--btn-texto' as string]: '#F2F1ED',
+            }}
           >
-            {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            <span className="mf-feedback-contenido" data-cambiando={isLoading ? 'true' : 'false'}>
+              {isLoading ? 'Iniciando sesión…' : 'Iniciar Sesión'}
+            </span>
           </button>
         </div>
 
         {/* Divider */}
         <div className="my-6 flex items-center">
-          <div className="flex-1 border-t" style={{ borderColor: 'var(--borde-sutil)' }}></div>
-          <span className="px-4 text-sm text-texto-fondo-oscuro" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-            O
+          <div className="flex-1 border-t" style={{ borderColor: 'var(--mf-linea-fuerte)' }}></div>
+          <span className="px-4 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+            o
           </span>
-          <div className="flex-1 border-t" style={{ borderColor: 'var(--borde-sutil)' }}></div>
+          <div className="flex-1 border-t" style={{ borderColor: 'var(--mf-linea-fuerte)' }}></div>
         </div>
 
         {/* Google Login Button */}
@@ -650,16 +635,13 @@ export default function Login({
           type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading || isGoogleLoading}
-          className="w-full py-3 px-4 rounded-lg border font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 bg-texto-fondo-oscuro hover:opacity-90"
-          style={{ 
-            borderColor: 'var(--borde-visible)',
-            color: 'var(--header-footer)' 
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--borde-secundario)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--borde-visible)';
+          className="mf-btn mf-btn-color w-full min-h-12 py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          style={{
+            ['--btn-bg' as string]: 'var(--input-bg)',
+            ['--btn-bg-hover' as string]: 'color-mix(in srgb, var(--input-bg) 90%, var(--menu-texto-principal))',
+            ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+            ['--btn-borde' as string]: '1px solid var(--campo-borde)',
+            ['--btn-borde-hover' as string]: 'var(--campo-borde)',
           }}
         >
           {isGoogleLoading ? (
@@ -684,14 +666,13 @@ export default function Login({
         </button>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-texto-fondo-oscuro">
+          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
             ¿No tienes una cuenta?{' '}
             <button
+              type="button"
               onClick={handleSwitchToRegister}
-              className="font-medium hover:underline text-enlaces-textos-interactivos"
-              style={{ color: 'var(--enlaces-textos-interactivos)' }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--enlaces-textos-interactivos)'}
+              className="inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
               Regístrate

@@ -1,0 +1,1478 @@
+/* ==========================================================================
+   Portal de clientas (ver DESIGN.md)
+   Tokens y primitivas compartidas viven en sistema.css; aquí solo lo propio del portal:
+   elevación al hover de tarjetas, hero, catálogo 3D, lectura larga y sello de confirmación.
+   ========================================================================== */
+
+html:has(.superficie-cliente) {
+  scrollbar-color: var(--tarjetas-paneles) var(--fondo-general);
+}
+@media (hover: hover) and (pointer: fine) {
+  .superficie-cliente .mf-card--interactiva:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--mf-sombra-2) !important;
+  }
+}
+
+/* ---- Tarjeta con profundidad 3D (catálogo) ----
+   useInclinacion3D escribe el transform en la tarjeta y el brillo en su span, frame a frame, solo
+   mientras el puntero está encima (y will-change solo entonces). */
+.mf-inclinable {
+  position: relative;
+}
+.mf-inclinable__brillo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: soft-light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .superficie-cliente .mf-card--interactiva:hover {
+    transform: none;
+  }
+  .mf-inclinable {
+    transform: none !important;
+  }
+  .mf-inclinable__brillo {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Hero inmersivo de /home (HeroEscena.tsx)
+   ========================================================================== */
+.mf-hero {
+  min-height: calc(100dvh - var(--mf-header-offset, 136px));
+}
+.mf-hero-escena {
+  position: relative;
+  width: min(72vw, 21rem);
+  aspect-ratio: 1;
+  perspective: 1100px;
+}
+@media (min-width: 768px) {
+  .mf-hero-escena {
+    width: min(42vw, 34rem, calc(100dvh - var(--mf-header-offset, 136px) - 5rem));
+  }
+}
+.mf-hero-plano {
+  --px: 0;
+  --py: 0;
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(calc(var(--py) * -7deg)) rotateY(calc(var(--px) * 9deg));
+  animation: mf-hero-llegada 1100ms var(--mf-ease-out) both;
+}
+@keyframes mf-hero-llegada {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    scale: 0.94;
+  }
+}
+.mf-hero-capa {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(var(--z, 0px));
+}
+.mf-hero-halo {
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(159, 109, 31, 0.26), transparent 72%);
+  filter: blur(18px);
+}
+.dark .mf-hero-halo {
+  background:
+    radial-gradient(closest-side, rgba(159, 109, 31, 0.22), transparent 70%),
+    radial-gradient(closest-side at 62% 70%, rgba(113, 0, 20, 0.28), transparent 70%);
+}
+.mf-hero-anillo {
+  border-radius: 50%;
+  border: 1px solid rgba(159, 109, 31, 0.45);
+}
+.mf-hero-anillo--exterior {
+  inset: -4%;
+  border-color: rgba(159, 109, 31, 0.28);
+  animation: mf-orbitar 48s linear infinite;
+}
+.mf-hero-anillo--interior {
+  inset: 9%;
+  border-style: dashed;
+  border-color: rgba(159, 109, 31, 0.3);
+}
+.mf-hero-orbita {
+  position: absolute;
+  top: -4px;
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--logo-branding);
+  box-shadow: 0 0 0 4px rgba(159, 109, 31, 0.18);
+}
+@keyframes mf-orbitar {
+  to {
+    rotate: 360deg;
+  }
+}
+.mf-hero-monograma {
+  inset: 12%;
+  filter: drop-shadow(0 18px 24px rgba(58, 28, 10, 0.28));
+}
+.dark .mf-hero-monograma {
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.6));
+}
+.mf-hero-destello {
+  inset: auto;
+  color: var(--logo-branding);
+  opacity: 0.8;
+}
+
+/* Texto del hero: entra escalonado tras la escena */
+.mf-hero-texto > * {
+  animation: mf-entrada 700ms var(--mf-ease-out) both;
+  animation-delay: calc(240ms + var(--i, 0) * 90ms);
+}
+
+/* Scroll: la escena se aleja más lento que el texto (parallax real, no decorativo) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .mf-hero {
+      view-timeline-name: --mf-hero;
+    }
+    .mf-hero-escena {
+      animation: mf-hero-alejar linear both;
+      animation-timeline: --mf-hero;
+      animation-range: exit 0% exit 100%;
+    }
+    .mf-hero-texto {
+      animation: mf-hero-subir linear both;
+      animation-timeline: --mf-hero;
+      animation-range: exit 0% exit 70%;
+    }
+  }
+}
+@keyframes mf-hero-alejar {
+  to {
+    transform: translateY(22%) scale(0.9);
+    opacity: 0.25;
+  }
+}
+@keyframes mf-hero-subir {
+  to {
+    transform: translateY(-18%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf-hero-plano {
+    animation-name: mf-aparecer;
+    animation-duration: 300ms;
+    transform: none;
+  }
+  .mf-hero-anillo--exterior {
+    animation: none;
+  }
+  .mf-hero-texto > * {
+    animation-name: mf-aparecer;
+    animation-duration: 300ms;
+  }
+}
+
+/* ==========================================================================
+   Lectura larga (términos y políticas): medida, ritmo y títulos de marca
+   ========================================================================== */
+.mf-legal {
+  max-width: 68ch;
+  color: var(--encabezados-alterno);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+.mf-legal h2 {
+  font-family: var(--font-family-serif);
+  font-size: 1.125rem;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+  color: var(--menu-texto-principal);
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 1.5rem;
+}
+.mf-legal a {
+  color: var(--menu-texto-principal);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+.mf-legal a:hover {
+  text-decoration-color: currentColor;
+}
+.mf-indice a {
+  display: block;
+  padding: 0.3rem 0 0.3rem 0.75rem;
+  border-left: 1px solid var(--mf-linea);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--encabezados-alterno);
+  transition: color var(--mf-dur-hover) ease, border-color var(--mf-dur-hover) ease;
+}
+.mf-indice a:hover {
+  color: var(--menu-texto-principal);
+  border-left-color: var(--logo-branding);
+}
+
+/* ==========================================================================
+   Sello de confirmación (cita confirmada, pedido realizado): el único momento de
+   celebración del flujo. Anillo dorado que se traza y check que aparece con un leve rebote.
+   ========================================================================== */
+.mf-sello {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  display: inline-grid;
+  place-items: center;
+}
+.mf-sello svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.mf-sello circle {
+  fill: none;
+  stroke: var(--logo-branding);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 264;
+  stroke-dashoffset: 0;
+  animation: mf-trazo 800ms var(--mf-ease-out) both;
+}
+.mf-sello__icono {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--botones-principales);
+  color: var(--texto-fondo-oscuro);
+  animation: mf-sello-pop 360ms var(--mf-ease-out) 420ms both;
+}
+@keyframes mf-trazo {
+  from {
+    stroke-dashoffset: 264;
+  }
+}
+@keyframes mf-sello-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+/* Movimiento reducido: sin trazo ni escala; el sello solo aparece */
+@media (prefers-reduced-motion: reduce) {
+  .mf-sello circle {
+    animation: none;
+  }
+  .mf-sello {
+    animation: mf-aparecer 200ms var(--mf-ease-out) both;
+  }
+  .mf-sello__icono {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Galería de trabajo (GaleriaTrabajo.tsx): mosaico editorial + visor
+   ========================================================================== */
+.mf-galeria-mosaico {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: clamp(9rem, 38vw, 12rem);
+  grid-auto-flow: dense;
+  gap: 0.75rem;
+}
+@media (min-width: 768px) {
+  .mf-galeria-mosaico {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: clamp(11rem, 16vw, 15rem);
+    gap: 1rem;
+  }
+}
+.mf-galeria-celda[data-forma='grande'] {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.mf-galeria-celda[data-forma='alta'] {
+  grid-row: span 2;
+}
+.mf-galeria-celda[data-forma='ancha'] {
+  grid-column: span 2;
+}
+.mf-foto {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--mf-radio);
+  background-color: var(--header-footer);
+  box-shadow: var(--mf-sombra-1);
+  cursor: zoom-in;
+  transition: transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-foto:active {
+  transform: scale(0.985);
+}
+.mf-foto__imagen {
+  object-fit: cover;
+  transition: transform 300ms var(--mf-ease-out);
+}
+.mf-foto__pie {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 2.5rem 0.9rem 0.8rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: #f2f1ed;
+  background: linear-gradient(to top, rgba(22, 22, 22, 0.82), rgba(22, 22, 22, 0));
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-foto:hover .mf-foto__imagen {
+    transform: scale(1.03);
+  }
+}
+.mf-galeria-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  border-radius: var(--mf-radio);
+  border: 1px dashed color-mix(in srgb, var(--logo-branding) 55%, transparent);
+}
+.mf-galeria-vacia__marca {
+  position: relative;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Visor: carbón casi opaco; la foto entra desde el lado hacia el que se avanza */
+@keyframes mf-visor-siguiente {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.98);
+  }
+}
+@keyframes mf-visor-anterior {
+  from {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.98);
+  }
+}
+.mf-visor {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  /* Opaco: la galería de fondo no debe asomar bajo la foto ni su pie */
+  background-color: #121212;
+  color: #f2f1ed;
+  animation: mf-velo 200ms var(--mf-ease-out) both;
+}
+.mf-visor__escenario {
+  position: relative;
+  margin: 4.5rem 0.75rem 0;
+  touch-action: pan-y;
+}
+@media (min-width: 768px) {
+  .mf-visor__escenario {
+    margin: 4.5rem 5.5rem 0;
+  }
+}
+.mf-visor__foto {
+  position: absolute;
+  inset: 0;
+  animation: mf-visor-siguiente 240ms var(--mf-ease-out) both;
+}
+.mf-visor__foto[data-direccion='anterior'] {
+  animation-name: mf-visor-anterior;
+}
+/* Con flechas del teclado se navega rápido y repetido: la foto cambia sin animación */
+.mf-visor__foto[data-origen='teclado'] {
+  animation: none;
+}
+.mf-visor__boton {
+  position: absolute;
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #f2f1ed;
+  background-color: rgba(255, 255, 255, 0.08);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-visor__boton:active {
+  transform: scale(0.94);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-visor__boton:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+  }
+}
+.mf-visor__cerrar {
+  top: 1rem;
+  right: 1rem;
+}
+.mf-visor__anterior,
+.mf-visor__siguiente {
+  top: 50%;
+  translate: 0 -50%;
+}
+.mf-visor__anterior {
+  left: 1rem;
+}
+.mf-visor__siguiente {
+  right: 1rem;
+}
+@media (max-width: 767px) {
+  .mf-visor__anterior,
+  .mf-visor__siguiente {
+    top: auto;
+    bottom: 5.75rem;
+    translate: none;
+  }
+}
+.mf-visor__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+}
+.mf-visor__enlace {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: var(--botones-principales);
+  color: #f2f1ed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-foto__imagen,
+  .mf-foto:active {
+    transition: none;
+    transform: none !important;
+  }
+  .mf-visor__foto,
+  .mf-visor__foto[data-direccion='anterior'] {
+    animation-name: mf-aparecer;
+    animation-duration: 160ms;
+  }
+  .mf-visor {
+    animation-duration: 160ms;
+  }
+}
+
+/* ==========================================================================
+   Autenticación con panel de marca deslizante (AuthContainer.tsx)
+   Escritorio: dos lados de 50% y un panel carbón que cubre el que no se usa. Se mueve con
+   ease-in-out (es un desplazamiento en pantalla, no una entrada) y su contenido hace un leve
+   contra-movimiento para dar profundidad. Móvil: cabecera compacta + pestañas.
+   ========================================================================== */
+.mf-auth {
+  min-height: 100dvh;
+}
+.mf-auth__lienzo {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+.mf-auth__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem var(--layout-gutter-x);
+  background-color: var(--header-footer);
+}
+.mf-auth__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(242, 241, 237, 0.85);
+  transition: color var(--mf-dur-hover) ease;
+}
+.mf-auth__volver svg {
+  color: var(--logo-branding);
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-auth__volver:hover {
+    color: #f2f1ed;
+  }
+  .mf-auth__volver:hover svg {
+    transform: translateX(-3px);
+  }
+}
+.mf-auth__pestanas {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 1.25rem auto 0;
+  width: calc(100% - 2 * var(--layout-gutter-x));
+  max-width: 28rem;
+  padding: 4px;
+  border-radius: 999px;
+  background-color: var(--fondos-suaves);
+}
+.mf-auth__pestanas button {
+  position: relative;
+  z-index: 1;
+  min-height: 44px;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--encabezados-alterno);
+  transition: color var(--mf-dur-hover) ease;
+}
+.mf-auth__pestanas button[aria-selected='true'] {
+  color: #f2f1ed;
+}
+.mf-auth__pestanas-indicador {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background-color: var(--botones-principales);
+  box-shadow: 0 6px 14px -8px rgba(113, 0, 20, 0.6);
+  transition: transform 260ms var(--mf-ease-out);
+}
+.mf-auth__pestanas[data-lado='registro'] .mf-auth__pestanas-indicador {
+  transform: translateX(100%);
+}
+.mf-auth__lado {
+  display: flex;
+  justify-content: center;
+  padding: 2rem var(--layout-gutter-x) 3rem;
+}
+.mf-auth__lado[data-activo='false'] {
+  display: none;
+}
+@keyframes mf-auth-desde-derecha {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+@keyframes mf-auth-desde-izquierda {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+.mf-auth__lado--izquierdo[data-activo='true'] {
+  animation: mf-auth-desde-derecha 300ms var(--mf-ease-out) both;
+}
+.mf-auth__lado--derecho[data-activo='true'] {
+  animation: mf-auth-desde-izquierda 300ms var(--mf-ease-out) both;
+}
+.mf-auth__formulario {
+  width: 100%;
+  max-width: 28rem;
+}
+.mf-auth__cambio {
+  animation: mf-aparecer 200ms var(--mf-ease-out) both;
+}
+.mf-auth__panel {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .mf-auth__lienzo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+  .mf-auth__cabecera:not(.mf-auth__cabecera--fija),
+  .mf-auth__pestanas {
+    display: none;
+  }
+  .mf-auth__lado,
+  .mf-auth__lado[data-activo='false'] {
+    display: flex;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 3rem clamp(2rem, 5vw, 5rem);
+    animation: none;
+  }
+  /* El lado cubierto no alarga la página (el registro es más alto que el acceso) */
+  .mf-auth__lado[data-activo='false'] {
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .mf-auth__lado--izquierdo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .mf-auth__lado--derecho {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .mf-auth__panel {
+    display: block;
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 50%;
+    background-color: var(--header-footer);
+    transform: translateX(0);
+    transition: transform 500ms var(--mf-ease-in-out);
+    will-change: transform;
+  }
+  /* Filete dorado en el borde que avanza */
+  .mf-auth__panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    background: linear-gradient(transparent, rgba(159, 109, 31, 0.7) 30%, rgba(159, 109, 31, 0.7) 70%, transparent);
+    transition: right 0s linear 250ms;
+  }
+  .mf-auth__lienzo[data-lado='registro'] .mf-auth__panel {
+    transform: translateX(100%);
+  }
+  /* En oscuro la página ya es carbón: el panel se tiñe apenas de vino para separarse */
+  .dark .mf-auth__panel {
+    background-color: color-mix(in srgb, #161616 86%, #710014);
+  }
+  .mf-auth__lienzo[data-lado='registro'] .mf-auth__panel::after {
+    right: calc(100% - 1px);
+  }
+  .mf-auth__panel-contenido {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.5rem clamp(2rem, 4vw, 4rem);
+    transition: transform 500ms var(--mf-ease-in-out);
+  }
+  /* Contra-movimiento del contenido: se queda un poco atrás mientras el panel viaja */
+  .mf-auth__lienzo[data-animado='true'][data-lado='registro'] .mf-auth__panel-contenido {
+    animation: mf-auth-contra 500ms var(--mf-ease-in-out);
+  }
+  .mf-auth__lienzo[data-animado='true'][data-lado='acceso'] .mf-auth__panel-contenido {
+    animation: mf-auth-contra-vuelta 500ms var(--mf-ease-in-out);
+  }
+}
+@keyframes mf-auth-contra {
+  40% {
+    transform: translateX(-6%);
+  }
+}
+@keyframes mf-auth-contra-vuelta {
+  40% {
+    transform: translateX(6%);
+  }
+}
+.mf-auth__volver--panel {
+  align-self: flex-start;
+}
+.mf-auth__panel-invitacion {
+  margin-top: 2.5rem;
+  animation: mf-aparecer 240ms var(--mf-ease-out) 120ms both;
+}
+.mf-auth__panel-boton {
+  margin-top: 1.5rem;
+  min-height: 44px;
+  padding: 0 1.75rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #f2f1ed;
+  border: 1px solid rgba(242, 241, 237, 0.45);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    border-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-auth__panel-boton:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-auth__panel-boton:hover {
+    background-color: rgba(242, 241, 237, 0.08);
+    border-color: #f2f1ed;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-auth__panel,
+  .mf-auth__panel-contenido,
+  .mf-auth__pestanas-indicador {
+    transition: none;
+    animation: none !important;
+  }
+  .mf-auth__lado--izquierdo[data-activo='true'],
+  .mf-auth__lado--derecho[data-activo='true'] {
+    animation-name: mf-aparecer;
+    animation-duration: 180ms;
+  }
+  .mf-auth__panel-boton:active {
+    transform: none;
+  }
+}
+
+/* ---- Menú principal del sitio (MenuHorizontal): píldoras sobre la barra vino ---- */
+.mf-nav-pildora {
+  color: #f2f1ed;
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-nav-pildora:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-nav-pildora:hover {
+    background-color: rgba(242, 241, 237, 0.12);
+  }
+}
+.mf-nav-pildora[aria-current='page'] {
+  background-color: rgba(242, 241, 237, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(242, 241, 237, 0.28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-nav-pildora:active {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Cuenta de la clienta (UserProfile.tsx)
+   ========================================================================== */
+.mf-perfil {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+@media (min-width: 1024px) {
+  .mf-perfil {
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+}
+.mf-perfil-nav__lista {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--layout-gutter-x));
+  padding: 0.25rem var(--layout-gutter-x);
+  scrollbar-width: none;
+}
+.mf-perfil-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--texto-cuerpo);
+  background-color: var(--fondos-suaves);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-perfil-nav__item svg {
+  color: var(--encabezados-alterno);
+  flex-shrink: 0;
+}
+.mf-perfil-nav__item:active {
+  transform: scale(0.97);
+}
+.mf-perfil-nav__item[aria-current='page'] {
+  background-color: var(--botones-principales);
+  color: #f2f1ed;
+  font-weight: 600;
+}
+.mf-perfil-nav__item[aria-current='page'] svg {
+  color: #f2f1ed;
+}
+.mf-perfil-nav__item--peligro {
+  color: var(--danger-texto);
+  background-color: transparent;
+  width: 100%;
+}
+.mf-perfil-nav__item--peligro svg {
+  color: var(--danger-texto);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-perfil-nav__item:not([aria-current='page']):hover {
+    background-color: var(--nav-hover-bg);
+  }
+}
+@media (min-width: 1024px) {
+  .mf-perfil-nav {
+    position: sticky;
+    top: calc(var(--mf-header-offset, 136px) + 1.5rem);
+  }
+  .mf-perfil-nav__lista {
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .mf-perfil-nav__item {
+    width: 100%;
+    border-radius: var(--mf-radio-control);
+    background-color: transparent;
+  }
+  .mf-perfil-nav__separado {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--mf-linea);
+  }
+}
+.mf-perfil-fila {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 4.25rem;
+  padding: 0.85rem 1.25rem;
+  transition: background-color var(--mf-dur-hover) ease;
+}
+.mf-perfil-fila:active {
+  background-color: var(--nav-hover-bg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-perfil-fila:hover {
+    background-color: var(--nav-hover-bg);
+  }
+}
+.mf-perfil-fila__icono {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background-color: var(--fondo-general);
+  color: var(--oro-texto);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-perfil-nav__item:active {
+    transform: none;
+  }
+}
+
+/* ---- Carta de servicios de la home (sobre la banda carbón) ---- */
+.mf-carta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 3rem;
+  border-top: 1px solid rgba(242, 241, 237, 0.1);
+}
+@media (min-width: 1024px) {
+  .mf-carta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.mf-carta > li {
+  border-bottom: 1px solid rgba(242, 241, 237, 0.1);
+}
+.mf-carta-fila {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5.5rem;
+  padding: 0.75rem 0.25rem;
+  transition: background-color var(--mf-dur-hover) ease;
+}
+.mf-carta-fila__miniatura {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(196, 149, 77, 0.55);
+}
+.mf-carta-fila__flecha {
+  color: var(--oro-sobre-carbon);
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-carta-fila:hover {
+    background-color: rgba(242, 241, 237, 0.04);
+  }
+  .mf-carta-fila:hover .mf-carta-fila__flecha {
+    transform: translateX(3px);
+  }
+}
+
+/* ---- Logotipo del sitio: el mismo trazo que el hero ---- */
+.mf-logotipo {
+  font-family: var(--font-family-serif);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: var(--oro-sobre-carbon);
+}
+.mf-logotipo__franco {
+  font-family: var(--font-family-script);
+  font-weight: 400;
+  font-size: 1.3em;
+}
+.mf-logotipo__salon {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--oro-sobre-carbon);
+}
+@media (min-width: 768px) {
+  .mf-logotipo {
+    font-size: 1.45rem;
+  }
+}
+/* Cabecera compacta en móvil: logotipo en una fila con el monograma */
+@media (max-width: 639.98px) {
+  .mf-logotipo {
+    font-size: 0.95rem;
+  }
+  .mf-logotipo__salon {
+    font-size: 0.5625rem;
+    letter-spacing: 0.2em;
+  }
+}
+
+/* ---- Carrusel de productos de la home: la tarjeta parcial se desvanece en el borde ---- */
+.mf-carrusel-borde {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+}
+/* Flechas del carrusel de productos: fila de controles bajo la pista (no tapan fotos) */
+.mf-carrusel-flecha {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: var(--texto-fondo-oscuro);
+  background-color: var(--botones-principales);
+  box-shadow: var(--mf-sombra-1);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-carrusel-flecha:active {
+  transform: scale(0.97);
+}
+.mf-carrusel-flecha:focus-visible {
+  outline: 2px solid var(--mf-foco);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-carrusel-flecha:hover {
+    background-color: var(--hover);
+  }
+}
+
+/* ==========================================================================
+   Hero 2.5D de la home (HeroFluidos.tsx) + intro de grieta (IntroGrieta.tsx)
+   Con movimiento: escenario fijado (sticky) sobre su recorrido, el Goji viaja en <canvas> hasta el
+   destino. Con prefers-reduced-motion: composición estática y el destino como bloque normal.
+   ========================================================================== */
+.mf-fluidos {
+  position: relative;
+  --mf-gigante: var(--menu-texto-principal);
+}
+.dark .mf-fluidos {
+  --mf-gigante: #c9a585;
+}
+.mf-fluidos__escenario {
+  position: relative;
+  min-height: calc(100dvh - var(--mf-header-offset, 136px));
+  overflow: clip;
+}
+.mf-fluidos__rejilla {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  min-height: inherit;
+}
+@media (min-width: 768px) {
+  /* El texto y la leyenda comparten la columna izquierda; los frascos ocupan la derecha */
+  .mf-fluidos__rejilla {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    grid-template-areas: 'texto composicion' 'leyenda composicion';
+    align-content: center;
+    gap: 0 3rem;
+  }
+  .mf-fluidos__texto {
+    grid-area: texto;
+    align-self: end;
+  }
+  .mf-fluidos__leyenda {
+    grid-area: leyenda;
+    align-self: start;
+  }
+  .mf-fluidos__composicion {
+    grid-area: composicion;
+  }
+}
+/* Móvil: texto, frascos y leyenda en columna. Los frascos toman el alto que queda en la primera
+   pantalla (entre 14 y 24rem) para verse enteros, con el líquido y la etiqueta. */
+@media (max-width: 767.98px) {
+  .mf-fluidos__rejilla {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1rem;
+  }
+  .mf-fluidos .mf-fluidos__composicion {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 14rem;
+    max-height: 24rem;
+  }
+  .mf-fluidos .mf-fluidos__leyenda {
+    margin-top: 0;
+  }
+}
+.mf-fluidos__texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.mf-fluidos__leyenda {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1.25rem;
+  max-width: 34rem;
+}
+@media (min-width: 480px) {
+  .mf-fluidos__leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    width: auto;
+    margin-top: 1.75rem;
+  }
+}
+.mf-fluidos__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--texto-cuerpo);
+  background-color: color-mix(in srgb, var(--fondo-general) 70%, transparent);
+  box-shadow: inset 0 0 0 1px var(--mf-linea-fuerte);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-fluidos__chip:active {
+  transform: scale(0.97);
+}
+.mf-fluidos__chip-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Dos por fila en pantallas chicas: el nombre usa hasta dos líneas en lugar de cortarse */
+@media (max-width: 479.98px) {
+  .mf-fluidos__chip {
+    border-radius: 14px;
+    padding-block: 0.35rem;
+    line-height: 1.2;
+  }
+  .mf-fluidos__chip-nombre {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-fluidos__chip:hover {
+    background-color: var(--fondo-general);
+  }
+}
+.mf-fluidos__punto {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px rgba(246, 239, 230, 0.9);
+}
+.mf-fluidos__composicion {
+  position: relative;
+  width: 100%;
+  max-width: 34rem;
+  height: clamp(20rem, 92vw, 26rem);
+  margin: 0 auto;
+}
+@media (min-width: 768px) {
+  .mf-fluidos__composicion {
+    height: min(38rem, calc(100dvh - var(--mf-header-offset, 136px) - 5rem));
+  }
+}
+.mf-fluidos__capa {
+  position: absolute;
+  aspect-ratio: 422 / 1364;
+}
+/* Capas propias solo cuando llega el animador (no encarecen el primer frame) */
+.mf-fluidos[data-animado] .mf-fluidos__capa {
+  will-change: transform;
+}
+.mf-fluidos__frasco {
+  display: block;
+  height: 100%;
+  border-radius: 12px;
+  filter: drop-shadow(0 24px 22px rgba(58, 28, 10, 0.28));
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
+}
+.dark .mf-fluidos__frasco {
+  filter: drop-shadow(0 24px 26px rgba(0, 0, 0, 0.6));
+}
+/* Hover: el frasco sube un poco (transform); la sombra no se anima (el filtro repinta cada frame) */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__frasco:hover {
+    transform: translateY(-4px);
+  }
+}
+.mf-fluidos__frasco-img {
+  display: block;
+  width: auto;
+  height: 100%;
+}
+.mf-sticker-capa {
+  position: absolute;
+  z-index: 5;
+  left: var(--x, auto);
+  right: var(--x-der, auto);
+  top: var(--y, auto);
+  bottom: var(--y-abajo, auto);
+  width: var(--ancho);
+  rotate: var(--giro, 0deg);
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+@media (max-width: 767.98px) {
+  .mf-sticker-capa {
+    left: var(--x-m, var(--x, auto));
+    top: var(--y-m, var(--y, auto));
+    width: var(--ancho-m, var(--ancho));
+  }
+}
+.mf-sticker {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 8px rgba(58, 28, 10, 0.28));
+}
+@media (max-width: 767.98px) {
+  .mf-sticker-capa--escritorio {
+    display: none;
+  }
+}
+
+/* Destino: tipografía gigante en Playfair con el Goji al lado (texto PROVISIONAL). La frase se lee
+   entera: en escritorio va a la izquierda y el frasco termina en la columna derecha; en móvil el
+   frasco termina debajo de la frase. */
+.mf-fluidos__destino {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 3rem var(--layout-gutter-x);
+  text-align: center;
+}
+.mf-fluidos__gigante {
+  font-family: var(--font-family-serif);
+  font-weight: 700;
+  font-size: clamp(4.5rem, 25vw, 11.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  color: var(--mf-gigante);
+}
+.mf-fluidos__gigante span {
+  display: block;
+  font-family: var(--font-family-script);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--oro-grande);
+}
+/* Ancla invisible: marca dónde termina el Goji que viaja en el lienzo */
+.mf-fluidos__destino-marca {
+  display: none;
+}
+.mf-fluidos__destino-frasco {
+  display: grid;
+  place-items: center;
+}
+.mf-fluidos__destino-frasco picture,
+.mf-fluidos__destino-frasco img {
+  height: min(40vh, 18rem);
+  width: auto;
+  filter: drop-shadow(0 26px 24px rgba(58, 28, 10, 0.32));
+}
+@media (min-width: 768px) {
+  .mf-fluidos__destino {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+  }
+  .mf-fluidos__gigante {
+    font-size: clamp(4.5rem, 12vw, 11.5rem);
+  }
+  .mf-fluidos__destino-frasco {
+    justify-self: center;
+  }
+  .mf-fluidos__destino-frasco picture,
+  .mf-fluidos__destino-frasco img {
+    height: min(56vh, 28rem);
+  }
+}
+.mf-fluidos__giro {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 26px 24px rgba(58, 28, 10, 0.32));
+}
+
+/* Con movimiento: el escenario se fija bajo el cromo del sitio (sticky) mientras se recorre
+   .mf-fluidos__recorrido; el destino es una capa del escenario que aparece al hacer scroll */
+@media (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__escenario {
+    position: sticky;
+    top: var(--mf-header-offset, 136px);
+  }
+  .mf-fluidos__recorrido {
+    height: 70svh;
+  }
+  .mf-fluidos__destino {
+    position: absolute;
+    /* Solo el área visible bajo el cromo: en móvil el escenario es más alto que la pantalla */
+    inset: 0 0 auto 0;
+    height: min(100%, calc(100svh - var(--mf-header-offset, 136px)));
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    padding: 1.5rem var(--layout-gutter-x);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .mf-fluidos__gigante {
+    align-self: start;
+  }
+  .mf-fluidos__destino-marca {
+    display: block;
+    width: 100%;
+  }
+  .mf-fluidos__destino-frasco {
+    display: none;
+  }
+}
+/* Móvil: el escenario mide exactamente la pantalla visible bajo el cromo. Si fuera más alto, lo
+   que sobra nunca se ve mientras está fijo y, al soltarse, queda como hueco vacío tras el Goji.
+   El viaje del frasco dura poco scroll. */
+@media (max-width: 767.98px) and (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__escenario {
+    height: calc(100svh - var(--mf-header-offset, 136px));
+    min-height: 0;
+  }
+  .mf-fluidos__rejilla {
+    height: 100%;
+    min-height: 0;
+  }
+  .mf-fluidos__recorrido {
+    height: 40svh;
+  }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__recorrido {
+    height: 140svh;
+  }
+  .mf-fluidos__destino {
+    grid-template-rows: minmax(0, 1fr);
+    padding-block: 0;
+  }
+  .mf-fluidos__gigante {
+    align-self: center;
+  }
+}
+/* Sin movimiento: nada se fija ni gira; el destino es un bloque normal con el Goji estático */
+@media (prefers-reduced-motion: reduce) {
+  .mf-fluidos__giro {
+    display: none;
+  }
+  .mf-fluidos__destino {
+    min-height: min(80vh, 44rem);
+  }
+}
+
+/* Secciones del home bajo el hero: el navegador no las maqueta ni pinta hasta que se acercan a la
+   vista (aligera la primera tarea del documento). El alto estimado se sustituye por el real. */
+.mf-diferido {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56rem;
+}
+
+/* Los stickers esperan al chunk de animación para su pop (sin movimiento se ven de inmediato) */
+@media (prefers-reduced-motion: no-preference) {
+  .mf-sticker-capa .mf-sticker {
+    opacity: 0;
+  }
+}
+
+/* ---- Intro: el monograma se parte por una grieta de papel rasgado ---- */
+.mf-intro {
+  display: none;
+}
+html[data-intro='si'] .mf-intro {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  cursor: pointer;
+  /* Coreografía en CSS: corre fuera del hilo principal durante la carga y termina sola */
+  animation: mf-intro-salida 0.18s ease-out 1.1s forwards;
+}
+html[data-intro='si'] .mf-intro__pieza--izq {
+  animation: mf-intro-izq 0.85s var(--mf-ease-in-out) 0.34s forwards;
+}
+html[data-intro='si'] .mf-intro__pieza--der {
+  animation: mf-intro-der 0.85s var(--mf-ease-in-out) 0.34s forwards;
+}
+html[data-intro='si'] .mf-intro__trazo {
+  animation:
+    mf-intro-trazo 0.38s var(--mf-ease-out) forwards,
+    mf-intro-apagar 0.2s ease-out 0.4s forwards;
+}
+@keyframes mf-intro-trazo {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mf-intro-apagar {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes mf-intro-izq {
+  to {
+    transform: translateX(-62%) rotate(-5deg);
+  }
+}
+@keyframes mf-intro-der {
+  to {
+    transform: translateX(62%) rotate(5deg);
+  }
+}
+@keyframes mf-intro-salida {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+.mf-intro__pieza {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background-color: var(--header-footer);
+}
+.mf-intro__monograma {
+  position: relative;
+  width: 11rem;
+  height: 11rem;
+}
+.mf-intro__grieta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.mf-intro__trazo {
+  fill: none;
+  stroke: #c4954d;
+  stroke-width: 2;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  vector-effect: non-scaling-stroke;
+}
+.mf-intro__saltar {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f2f1ed;
+  border: 1px solid rgba(242, 241, 237, 0.35);
+}

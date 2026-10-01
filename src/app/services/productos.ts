@@ -3,7 +3,7 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
-import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
+import { imagenProductoMostrable, normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
 
 /** Producto normalizado para la UI (catálogo y detalle) */
 export interface Producto {
@@ -57,25 +57,16 @@ export interface Producto {
 }
 
 /** Descarta URLs de relleno tipo "https://url.jpg/" (host = nombre de archivo): fallan en la CSP y generan errores en consola. */
-function esUrlImagenValida(u: string): boolean {
-  if (u.startsWith('/') || u.startsWith('data:')) return true;
-  try {
-    const { protocol, hostname } = new URL(u);
-    return (protocol === 'https:' || protocol === 'http:') && !/\.(jpe?g|png|webp|gif|svg|avif)$/i.test(hostname);
-  } catch {
-    return false;
-  }
-}
-
 /**
- * URLs únicas para galería en catálogo: imágenes del producto + todas las presentaciones.
+ * URLs únicas para galería en catálogo: imágenes del producto + todas las presentaciones. Solo las
+ * que pasan imagenProductoMostrable (Cloudinary); sin ninguna, la pantalla usa el placeholder de marca.
  */
 export function urlsGaleriaProductoCatalogo(p: Producto): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   const push = (u: string | undefined) => {
-    const s = String(u ?? '').trim();
-    if (s && !seen.has(s) && esUrlImagenValida(s)) {
+    const s = imagenProductoMostrable(u);
+    if (s && !seen.has(s)) {
       seen.add(s);
       out.push(s);
     }
@@ -95,11 +86,10 @@ export function urlsGaleriaProductoCatalogo(p: Producto): string[] {
 export function urlsGaleriaProductoDetalle(p: Producto, tamanoPresentacion: string): string[] {
   const pres = p.presentaciones?.find((x) => x.tamaño === tamanoPresentacion);
   if (pres) {
-    if (pres.imagenes?.length) {
-      const u = pres.imagenes.map((x) => String(x).trim()).filter(Boolean);
-      if (u.length) return u;
-    }
-    if (pres.imagen?.trim()) return [pres.imagen.trim()];
+    const u = [...(pres.imagenes ?? []), pres.imagen]
+      .map((x) => imagenProductoMostrable(x))
+      .filter((x): x is string => !!x);
+    if (u.length) return [...new Set(u)];
   }
   return urlsGaleriaProductoCatalogo(p);
 }

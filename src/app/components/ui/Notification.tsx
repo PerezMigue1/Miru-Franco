@@ -75,10 +75,12 @@ export default function Notification({
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-lg ${className}`}
+      className={`flex items-start gap-3 p-4 rounded-[10px] ${className}`}
+      role={type === 'error' ? 'alert' : 'status'}
       style={{
-        backgroundColor: 'var(--fondo-general)',
-        borderLeft: `4px solid ${style.borderColor}`,
+        // Tinte + anillo de 1px del color del tipo (sin borde lateral de color)
+        backgroundColor: `color-mix(in srgb, ${style.borderColor} 12%, var(--fondo-general))`,
+        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${style.borderColor} 35%, transparent)`,
       }}
     >
       <div
@@ -100,7 +102,8 @@ export default function Notification({
       {onClose && (
         <button
           onClick={onClose}
-          className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex-shrink-0 ml-2 grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-[var(--nav-hover-bg)]"
+          style={{ color: 'var(--campo-placeholder)' }}
           aria-label="Cerrar notificación"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

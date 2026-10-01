@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Sistema compartido (cliente, operación, admin) y extras del portal de clientas — ver DESIGN.md */
+@import "./sistema.css";
+@import "./cliente.css";
 
 /* Modo oscuro controlado por clase .dark en <html> */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -9,7 +12,8 @@
   --logo-branding: #9f6d1f;
   --tarjetas-paneles: #B38E6F;
   --header-footer: #161616;
-  --menu-texto-principal: #710014;
+  /* Vino como texto: un paso más profundo que el de botones para cumplir AA sobre terracota (4.7:1) */
+  --menu-texto-principal: #600011;
   --warning: #D98E04;
   --danger: #710014;
   --success: #6E7D57;
@@ -24,8 +28,10 @@
      como texto pequeño/número sobre --tarjetas-paneles y --fondo-general. --logo-branding,
      --warning y --danger NO se tocan (identidad de marca / fondos sólidos, ya cumplen ahí). */
   --oro-texto: #37280b;
-  --warning-texto: #4b3002;
-  --danger-texto: var(--danger);
+  /* Aviso como texto pequeño: el ámbar oscuro de marca (--oro-texto). El #4b3002 anterior daba 4.07:1
+     sobre --tarjetas-paneles; este da 4.77:1 ahí y 8.8:1 sobre --fondo-general. */
+  --warning-texto: var(--oro-texto);
+  --danger-texto: #600011;
   --success-texto: #242d1b;
   --boton-acento-bg: #758764;
   --texto-sobre-acento: var(--header-footer);
@@ -61,6 +67,8 @@
   --menu-lateral-bg: #FFFFFF;
   /* Margen horizontal respecto al borde del viewport */
   --layout-gutter-x: 1rem;
+  /* Oro para cifras y títulos grandes sobre lino (3.7:1); el de marca daba 2.8:1 */
+  --oro-grande: #865a17;
 
   /* ========== SISTEMA TIPOGRÁFICO ========== */
   
@@ -118,7 +126,8 @@
   --menu-lateral-bg: #710014;
   --superficie-elevada: #2a2a2a;
   --checkout-entrega-borde-seleccion: #a64b63;
-  --checkout-entrega-enlace: #4a7ba7;
+  /* Enlaces sobre oscuro: el azul claro del sistema (#4a7ba7 daba 4.0:1 sobre #161616) */
+  --checkout-entrega-enlace: var(--info-texto);
   --enlaces-textos-interactivos: #4a7ba7;
   --hero-brand-color: var(--texto-fondo-oscuro);
   --hero-tagline-color: rgba(242, 241, 237, 0.85);
@@ -127,6 +136,9 @@
      aquí porque ya cumplen en superficies oscuras; --danger sí, porque el vino oscuro
      como texto/acento sobre una Card oscura cae a ~1.17:1 (prácticamente invisible). */
   --oro-texto: #c4954d;
+  /* sistema.css ya lo redefine en .dark, pero se importa antes que este :root y perdía:
+     sin esto el oro grande (y --oro-sobre-carbon) quedaba en #865a17, ~3:1 sobre oscuro */
+  --oro-grande: #c4954d;
   --warning-texto: var(--warning);
   --danger-texto: #e0748f;
   --success-texto: #82a163;
@@ -138,10 +150,22 @@
   --texto-acento-dark: #689bc0;
   /* En dark, --tarjetas-paneles/--fondo-general son grises neutros, no cálidos: el azul
      original ya funciona ahí (no se toca, per instrucción). */
-  --texto-enlace-sobre-calido: var(--enlaces-textos-interactivos);
+  --texto-enlace-sobre-calido: var(--info-texto);
 }
 
 /* Más ancho útil que el `container` por defecto de Tailwind (mejor en monitores comunes) */
+/* Margen lateral que crece con la pantalla (16px en móvil, hasta 48px en escritorio) */
+@media (min-width: 768px) {
+  :root {
+    --layout-gutter-x: 2rem;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --layout-gutter-x: 3rem;
+  }
+}
+
 .layout-page {
   margin-left: auto;
   margin-right: auto;
@@ -217,11 +241,17 @@ body {
 }
 
 /* Placeholder determinista (no depender de la opacidad por defecto del navegador, que
-   lava vino/oro sobre fondos claros). Auditoría de contraste: ver globals.css tokens arriba. */
+   lava vino/oro sobre fondos claros). --campo-placeholder (sistema.css) cumple 4.5:1 sobre
+   --input-bg en claro y en oscuro. */
 input::placeholder,
 textarea::placeholder {
-  color: var(--encabezados-alterno);
-  opacity: 0.85;
+  color: var(--campo-placeholder);
+  opacity: 1;
+}
+/* En los campos del sistema (fondo --input-bg) el ejemplo va más tenue, sin bajar de 4.5:1, para no
+   confundirse con texto ya escrito. Fuera de capa, como la regla de arriba, para poder ganarle. */
+.mf-campo::placeholder {
+  color: var(--campo-placeholder-texto);
 }
 
 /* Scrollbars ocultos en toda la app: el contenido sigue siendo desplazable,
@@ -245,20 +275,23 @@ textarea::placeholder {
   display: none;
 }
 
-/* Animación para notificaciones */
+/* Animación para notificaciones. Solo eje Y: el -50% horizontal lo pone -translate-x-1/2 (propiedad
+   translate); repetirlo en transform duplicaba el desplazamiento y la notificación saltaba al final. */
 @keyframes slide-down {
   from {
     opacity: 0;
-    transform: translate(-50%, -100%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(-12px);
   }
 }
 
 .animate-slide-down {
-  animation: slide-down 0.3s ease-out;
+  animation: slide-down 240ms var(--mf-ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-down {
+    animation-name: mf-aparecer;
+    animation-duration: 160ms;
+  }
 }
 
 @keyframes toast-enter {
@@ -490,12 +523,14 @@ p {
 }
 .hero-bg-gradient {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(191, 161, 129, 0.25), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(163, 107, 31, 0.12), transparent 50%),
-    linear-gradient(180deg, var(--fondo-general) 0%, var(--fondos-suaves) 100%);
+    /* El brillo cálido de abajo se centra por encima del borde y se apaga antes de él */
+    radial-gradient(ellipse 60% 35% at 50% 70%, rgba(163, 107, 31, 0.12), transparent 60%),
+    /* Vuelve al lino antes del borde inferior: sin línea dura contra la sección siguiente */
+    linear-gradient(180deg, var(--fondo-general) 0%, var(--fondos-suaves) 55%, var(--fondo-general) 100%);
 }
 .dark .hero-bg-gradient {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(113, 0, 20, 0.2), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(113, 0, 20, 0.15), transparent 50%),
+    radial-gradient(ellipse 60% 35% at 50% 70%, rgba(113, 0, 20, 0.15), transparent 60%),
     var(--fondo-general);
 }
 
@@ -553,6 +588,13 @@ html { scroll-behavior: smooth; }
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+/* Se usa en style inline (18 sitios): con movimiento reducido la misma keyframe solo aparece */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fadeUp {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
 }
 @keyframes fadeIn {
   from { opacity: 0; }

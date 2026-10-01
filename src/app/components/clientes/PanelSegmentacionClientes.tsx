@@ -405,8 +405,10 @@ export default function PanelSegmentacionClientes({
       {error && (
         <Card
           padding="md"
-          className="border-l-4"
-          style={{ borderLeftColor: 'var(--danger)' }}
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))',
+            boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)',
+          }}
         >
           <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>
             {error}

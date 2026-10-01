@@ -2,7 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Timer } from 'lucide-react';
 import Notification from '../ui/Notification';
+
+const SECUNDARIO = {
+  ['--btn-bg' as string]: 'transparent',
+  ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+  ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+  ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+  ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
+} as React.CSSProperties;
 
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
@@ -116,11 +125,11 @@ export default function ForgotPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
-        <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
+      <div>
+        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Recuperar Contraseña
         </h2>
-        <p className="text-center mb-6 text-sm text-texto-fondo-oscuro">
+        <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
         </p>
         
@@ -137,7 +146,8 @@ export default function ForgotPassword({
           <div>
             <label 
               htmlFor="email" 
-              className="block text-sm font-medium mb-2 text-texto-fondo-oscuro"
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Correo Electrónico
             </label>
@@ -155,15 +165,13 @@ export default function ForgotPassword({
                   });
                 }
               }}
-              className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
-              style={{ 
-                borderColor: errors.email ? 'var(--danger)' : 'var(--borde-visible)'
-              }}
+              className="mf-campo w-full px-4 py-3"
+              aria-invalid={Boolean(errors.email)}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {errors.email}
               </p>
             )}
@@ -172,10 +180,12 @@ export default function ForgotPassword({
           <button
             type="submit"
             disabled={isLoading || countdown !== null}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-botones-principales"
-            style={{ backgroundColor: 'var(--botones-principales)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
+            className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              ['--btn-bg' as string]: 'var(--botones-principales)',
+              ['--btn-bg-hover' as string]: 'var(--hover)',
+              ['--btn-texto' as string]: '#F2F1ED',
+            }}
           >
             {isLoading 
               ? 'Enviando enlace...'
@@ -187,20 +197,21 @@ export default function ForgotPassword({
           
           {/* Mostrar contador regresivo si hay rate limiting */}
           {countdown !== null && countdown > 0 && (
-            <div className="mt-4 p-3 rounded-lg border" style={{ 
-              backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            <div className="mt-4 p-3 rounded-[10px] border" style={{ 
+              backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)',
               borderColor: 'var(--warning)'
             }}>
-              <p className="text-sm text-center" style={{ color: 'var(--warning)' }}>
-                ⏱️ Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos
+              <p className="flex items-center justify-center gap-2 text-sm text-center" style={{ color: 'var(--warning-texto)' }}>
+                <Timer size={16} aria-hidden className="shrink-0" />
+                <span>Puedes intentar nuevamente en: <strong>{countdown}</strong> segundos</span>
               </p>
             </div>
           )}
         </form>
 
         {(onSwitchToSecurityQuestions || onSwitchToSMS) && (
-          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--borde-sutil)' }}>
-            <p className="text-center text-sm mb-4 text-texto-fondo-oscuro">
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+            <p className="text-center text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2">
@@ -208,8 +219,8 @@ export default function ForgotPassword({
                 <button
                   type="button"
                   onClick={onSwitchToSMS}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
-                  style={{ borderColor: 'var(--borde-secundario)' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por SMS
@@ -219,8 +230,8 @@ export default function ForgotPassword({
                 <button
                   type="button"
                   onClick={onSwitchToSecurityQuestions}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm text-texto-fondo-oscuro"
-                  style={{ borderColor: 'var(--borde-secundario)' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad
@@ -233,14 +244,15 @@ export default function ForgotPassword({
         <div className="mt-6 text-center">
           <button
             onClick={handleSwitchToLogin}
-            className="text-sm transition-colors text-texto-fondo-oscuro hover:opacity-80"
+            className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+            style={{ color: 'var(--menu-texto-principal)' }}
             disabled={isLoading}
           >
-            ← Volver a Iniciar Sesión
+            <ArrowLeft size={16} aria-hidden />
+            Volver a Iniciar Sesión
           </button>
         </div>
       </div>
     </div>
   );
 }
-

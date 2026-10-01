@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../../components/ui/PageHeader';
 import Button from '../../../../../../components/ui/Button';
@@ -75,8 +76,10 @@ export default function CancelarCitaPage() {
   if (cargando) {
     return (
       <ModuleLayout>
-        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        <div className="max-w-3xl mx-auto space-y-4 py-4" aria-busy="true" aria-label="Cargando">
+          <div className="mf-skeleton h-9 w-2/5" />
+          <div className="mf-skeleton h-4 w-3/5" />
+          <div className="mf-skeleton h-56 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     );
@@ -114,18 +117,16 @@ export default function CancelarCitaPage() {
     return (
       <ModuleLayout>
         <div className="max-w-2xl mx-auto">
-          <Card className="text-center">
+          <Card className="text-center mf-entrada" padding="lg">
             <div className="mb-6">
               <div
-                className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
+                className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4"
                 style={{ backgroundColor: 'var(--danger)' }}
               >
-                <span className="text-4xl" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                  ⚠
-                </span>
+                <TriangleAlert size={30} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />
               </div>
               <h1
-                className="text-hero mb-2"
+                className="mf-titulo-pagina mb-2"
                 style={{ color: 'var(--menu-texto-principal)' }}
               >
                 ¿Confirmar Cancelación?
@@ -139,7 +140,7 @@ export default function CancelarCitaPage() {
             </div>
 
             <div
-              className="bg-white rounded-lg p-6 mb-6 text-left"
+              className="rounded-[12px] p-6 mb-6 text-left"
               style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
               <div className="space-y-2">
@@ -233,16 +234,11 @@ export default function CancelarCitaPage() {
                 <select
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  style={{
-                    backgroundColor: 'var(--texto-fondo-oscuro)',
-                    borderColor: 'var(--fondos-suaves)',
-                    color: 'var(--menu-texto-principal)',
-                  }}
+                  className="mf-campo w-full px-4 py-2.5"
                 >
                   <option value="">Selecciona un motivo</option>
                   {motivos.map((m) => (
-                    <option key={m} value={m} style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'var(--texto-fondo-oscuro)' }}>
+                    <option key={m} value={m} style={{ color: 'var(--menu-texto-principal)', backgroundColor: 'var(--input-bg)' }}>
                       {m}
                     </option>
                   ))}

@@ -96,7 +96,7 @@ miru-franco-web/
 │   │   │   │   ├── ForgotPasswordSecurityQuestions.tsx  # Preguntas de seguridad
 │   │   │   │   └── ResetPassword.tsx        # Restablecer contraseña
 │   │   │   └── ui/
-│   │   │       └── Carousel.tsx             # Componente de carrusel
+│   │   │       └── Button.tsx, Card.tsx…    # Primitivas compartidas (ver CLAUDE.md)
 │   │   ├── layouts/
 │   │   │   ├── Header.tsx                   # Encabezado de la aplicación
 │   │   │   ├── Footer.tsx                   # Pie de página

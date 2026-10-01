@@ -1,90 +1,108 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
-import Card from '../../../../components/ui/Card';
-import Badge from '../../../../components/ui/Badge';
-import Modal from '../../../../components/ui/Modal';
-import { getCategoryColor } from '../../../../utils/categoryColors';
+import PageHeader from '../../../../components/ui/PageHeader';
+import Button from '../../../../components/ui/Button';
+import FilaChipsDesplazable from '../../../../components/cliente/FilaChipsDesplazable';
+import GaleriaTrabajo from '../../../../components/galeria/GaleriaTrabajo';
+import GaleriaVacia from '../../../../components/galeria/GaleriaVacia';
+import { getServicios } from '../../../../services/servicios';
+import { fotosDeServicios, type FotoGaleria } from '../../../../utils/galeria';
 
+const TODAS = 'Todas';
+
+/**
+ * Galería del salón: fotos reales de los servicios (las que el equipo sube desde
+ * /operacion/subir-imagenes y asigna a cada servicio). Sin fotos, estado vacío; sin relleno.
+ */
 export default function GaleriaPage() {
-  const [trabajoSeleccionado, setTrabajoSeleccionado] = useState<number | null>(null);
-  
-  const trabajos = [
-    { id: 1, categoria: 'Corte', descripcion: 'Corte moderno y elegante' },
-    { id: 2, categoria: 'Coloración', descripcion: 'Coloración profesional' },
-    { id: 3, categoria: 'Alaciado', descripcion: 'Alaciado perfecto' },
-    { id: 4, categoria: 'Nanoplastía', descripcion: 'Tratamiento de nanoplastía' },
-    { id: 5, categoria: 'Peinado', descripcion: 'Peinado para evento especial' },
-    { id: 6, categoria: 'Tratamiento', descripcion: 'Tratamiento reparador' },
-    { id: 7, categoria: 'Corte', descripcion: 'Corte clásico' },
-    { id: 8, categoria: 'Coloración', descripcion: 'Mechas profesionales' },
-  ];
+  const [fotos, setFotos] = useState<FotoGaleria[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [categoria, setCategoria] = useState(TODAS);
+
+  useEffect(() => {
+    let vigente = true;
+    getServicios().then(({ data, error: err }) => {
+      if (!vigente) return;
+      setFotos(fotosDeServicios(data));
+      setError(err);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  const categorias = useMemo(() => {
+    const set = new Set((fotos ?? []).map((f) => f.categoria).filter((c): c is string => !!c));
+    return [TODAS, ...[...set].sort((a, b) => a.localeCompare(b, 'es'))];
+  }, [fotos]);
+
+  const visibles = useMemo(
+    () => (fotos ?? []).filter((f) => categoria === TODAS || f.categoria === categoria),
+    [fotos, categoria]
+  );
 
   return (
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
-        <div className="text-center mb-12">
-          <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-            Galería de Trabajos
-          </h1>
-          <p className="text-lead max-w-2xl mx-auto" style={{ color: 'var(--encabezados-alterno)' }}>
-            Conoce algunos de nuestros trabajos realizados. Todos son trabajos reales de clientas satisfechas.
-          </p>
-        </div>
+        <PageHeader
+          title="Galería de Trabajos"
+          subtitle={
+            fotos && fotos.length === 0
+              ? 'Aquí verás fotos de servicios hechos en Mirú Franco.'
+              : 'Fotos de servicios hechos en Mirú Franco. Toca cualquiera para verla en grande.'
+          }
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {trabajos.map((trabajo) => (
-            <Card 
-              key={trabajo.id} 
-              variant="elevated" 
-              className="overflow-hidden cursor-pointer transition-transform hover:scale-105"
-              onClick={() => setTrabajoSeleccionado(trabajo.id)}
-            >
+        {fotos === null ? (
+          <div className="mf-galeria-mosaico" aria-busy="true" aria-label="Cargando galería">
+            {Array.from({ length: 7 }, (_, i) => (
               <div
-                className="aspect-square flex items-center justify-center"
-                style={{ backgroundColor: 'var(--fondos-suaves)' }}
-              >
-                <p className="text-4xl">📸</p>
-              </div>
-              <div className="p-4">
-                <div className="mb-2">
-                  <Badge variant={getCategoryColor(trabajo.categoria)} size="sm">
-                    {trabajo.categoria}
-                  </Badge>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                  {trabajo.descripcion}
-                </p>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {trabajoSeleccionado && (
-          <Modal
-            isOpen={true}
-            onClose={() => setTrabajoSeleccionado(null)}
-            title={trabajos.find(t => t.id === trabajoSeleccionado)?.categoria || 'Trabajo'}
-          >
-            <div className="text-center">
-              <div
-                className="aspect-square flex items-center justify-center mb-4 rounded-lg"
-                style={{ backgroundColor: 'var(--fondos-suaves)' }}
-              >
-                <p className="text-9xl">📸</p>
-              </div>
-              <p className="text-lg mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                {trabajos.find(t => t.id === trabajoSeleccionado)?.categoria}
+                key={i}
+                className="mf-skeleton mf-galeria-celda"
+                data-forma={i === 0 ? 'grande' : i === 4 ? 'alta' : i === 6 ? 'ancha' : 'normal'}
+                style={{ borderRadius: 'var(--mf-radio)' }}
+              />
+            ))}
+          </div>
+        ) : fotos.length === 0 ? (
+          <>
+            {error && (
+              <p role="alert" className="mb-4 text-sm" style={{ color: 'var(--danger-texto)' }}>
+                No pudimos cargar las fotos en este momento. Intenta de nuevo más tarde.
               </p>
-              <p style={{ color: 'var(--encabezados-alterno)' }}>
-                {trabajos.find(t => t.id === trabajoSeleccionado)?.descripcion}
-              </p>
-            </div>
-          </Modal>
+            )}
+            <GaleriaVacia />
+          </>
+        ) : (
+          <>
+            {categorias.length > 2 && (
+              <div className="mb-6">
+                <FilaChipsDesplazable etiqueta="Filtrar por categoría">
+                  {categorias.map((cat) => (
+                    <Button
+                      key={cat}
+                      size="sm"
+                      variant={categoria === cat ? 'chip' : 'outline'}
+                      className="shrink-0 whitespace-nowrap"
+                      aria-pressed={categoria === cat}
+                      onClick={() => setCategoria(cat)}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </FilaChipsDesplazable>
+              </div>
+            )}
+            <GaleriaTrabajo
+              key={categoria}
+              fotos={visibles}
+              etiqueta={categoria === TODAS ? 'Todas las fotos' : `Fotos de ${categoria}`}
+            />
+          </>
         )}
       </div>
     </ModuleLayout>
   );
 }
-

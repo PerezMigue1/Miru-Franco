@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useId } from 'react';
+import { X } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ export default function Modal({
   size = 'md',
   footer,
 }: ModalProps) {
+  const idTitulo = useId();
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -30,6 +33,15 @@ export default function Modal({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const sizes = {
@@ -39,51 +51,54 @@ export default function Modal({
     xl: 'max-w-4xl',
   };
 
+  // Superficie del sistema (--superficie-modal): lino en claro, carbón en oscuro. La terracota
+  // anterior con texto claro daba 2.3:1 en modo claro.
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      className="mf-velo fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4"
       onClick={onClose}
     >
       <div
-        className={`${sizes[size]} w-full max-h-[92vh] rounded-lg shadow-xl flex flex-col`}
-        style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? idTitulo : undefined}
+        className={`mf-dialogo ${sizes[size]} w-full max-h-[92dvh] flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         {title && (
           <div
-            className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0"
-            style={{ borderColor: 'var(--borde-visible)' }}
+            className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0"
+            style={{ borderColor: 'var(--mf-linea-fuerte)' }}
           >
             <h2
+              id={idTitulo}
               className="text-lg sm:text-xl font-bold"
-              style={{ color: 'var(--texto-fondo-oscuro)' }}
+              style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
             >
               {title}
             </h2>
             <button
+              type="button"
               onClick={onClose}
-              className="p-1 rounded-full hover:opacity-80 transition-opacity shrink-0"
-              style={{ color: 'var(--texto-fondo-oscuro)' }}
+              aria-label="Cerrar"
+              className="mf-btn mf-btn-color -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-[10px]"
+              style={{
+                ['--btn-bg' as string]: 'transparent',
+                ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+                ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+              }}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={20} aria-hidden />
             </button>
           </div>
         )}
 
-        {/* Body */}
-        <div className="px-4 sm:px-6 py-4 overflow-y-auto grow" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-          {children}
-        </div>
+        <div className="px-4 sm:px-6 py-4 overflow-y-auto grow">{children}</div>
 
-        {/* Footer */}
         {footer && (
           <div
             className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t shrink-0 flex-wrap"
-            style={{ borderColor: 'var(--borde-visible)' }}
+            style={{ borderColor: 'var(--mf-linea-fuerte)' }}
           >
             {footer}
           </div>
@@ -92,4 +107,3 @@ export default function Modal({
     </div>
   );
 }
-

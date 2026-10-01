@@ -73,11 +73,3 @@ export const getApiBaseUrl = () => `${getBackendBase()}/api/auth`;
 export const BACKEND_BASE = getBackendBase();
 export const API_BASE = `${BACKEND_BASE}/api/auth`;
 
-// Log para debugging (en desarrollo y producción para verificar)
-if (typeof window !== 'undefined') {
-  console.log('[API Config] BACKEND_BASE:', BACKEND_BASE);
-  console.log('[API Config] API_BASE:', API_BASE);
-  console.log('[API Config] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-  console.log('[API Config] URLs construidas correctamente');
-}
-
