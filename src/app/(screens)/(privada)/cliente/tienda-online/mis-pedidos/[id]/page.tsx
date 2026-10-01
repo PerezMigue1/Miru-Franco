@@ -90,10 +90,19 @@ export default function DetallePedidoPage() {
   }, [pedidoId]);
 
   if (loading) {
+    // Skeleton con la forma del detalle (encabezado + productos | envío), como los demás detalles
     return (
       <ModuleLayout>
-        <div className="w-full max-w-none py-12 text-center">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando pedido…</p>
+        <div className="w-full max-w-none" aria-busy="true" aria-label="Cargando pedido">
+          <div className="mb-6 space-y-3">
+            <div className="mf-skeleton h-8 w-32" />
+            <div className="mf-skeleton h-9 w-2/5" />
+            <div className="mf-skeleton h-5 w-24" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="mf-skeleton h-72 lg:col-span-2" style={{ borderRadius: 'var(--mf-radio)' }} />
+            <div className="mf-skeleton h-48" style={{ borderRadius: 'var(--mf-radio)' }} />
+          </div>
         </div>
       </ModuleLayout>
     );
