@@ -248,6 +248,11 @@ textarea::placeholder {
   color: var(--campo-placeholder);
   opacity: 1;
 }
+/* En los campos del sistema (fondo --input-bg) el ejemplo va más tenue, sin bajar de 4.5:1, para no
+   confundirse con texto ya escrito. Fuera de capa, como la regla de arriba, para poder ganarle. */
+.mf-campo::placeholder {
+  color: var(--campo-placeholder-texto);
+}
 
 /* Scrollbars ocultos en toda la app: el contenido sigue siendo desplazable,
    solo se oculta la barra visual (Firefox, IE/Edge legacy y WebKit/Chromium). */

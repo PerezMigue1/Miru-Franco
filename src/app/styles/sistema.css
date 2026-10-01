@@ -43,6 +43,9 @@
   /* Campos de formulario: borde ≥3:1 y placeholder ≥4.5:1 sobre --input-bg */
   --campo-borde: #8a7667;
   --campo-placeholder: #6b5a4e;
+  /* Texto de ejemplo dentro de .mf-campo: gris neutro, el más tenue que sigue en AA (4.73:1 sobre
+     #f2f1ed), para no confundirse con lo escrito (vino, 12.3:1) */
+  --campo-placeholder-texto: #6f6a66;
 
   /* Navegación de paneles */
   --nav-activo-bg: rgba(113, 0, 20, 0.1);
@@ -74,6 +77,8 @@
   --superficie-lateral: #1b1b1b;
   --campo-borde: #6e6e6e;
   --campo-placeholder: #b8a597;
+  /* 4.69:1 sobre #1f1f1f; lo escrito es blanco (16.5:1) */
+  --campo-placeholder-texto: #8c8885;
   --nav-activo-bg: rgba(255, 255, 255, 0.08);
   --nav-activo-texto: #ffffff;
   --nav-activo-icono: #c4954d;
@@ -200,7 +205,7 @@ table td {
   caret-color: var(--mf-foco);
 }
 .mf-campo::placeholder {
-  color: var(--campo-placeholder);
+  color: var(--campo-placeholder-texto);
   opacity: 1;
 }
 .mf-campo:focus {
