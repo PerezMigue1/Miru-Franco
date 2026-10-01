@@ -1322,6 +1322,22 @@ html:has(.superficie-cliente) {
     display: none;
   }
 }
+/* Móvil: el escenario mide exactamente la pantalla visible bajo el cromo. Si fuera más alto, lo
+   que sobra nunca se ve mientras está fijo y, al soltarse, queda como hueco vacío tras el Goji.
+   El viaje del frasco dura poco scroll. */
+@media (max-width: 767.98px) and (prefers-reduced-motion: no-preference) {
+  .mf-fluidos__escenario {
+    height: calc(100svh - var(--mf-header-offset, 136px));
+    min-height: 0;
+  }
+  .mf-fluidos__rejilla {
+    height: 100%;
+    min-height: 0;
+  }
+  .mf-fluidos__recorrido {
+    height: 40svh;
+  }
+}
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
   .mf-fluidos__recorrido {
     height: 140svh;
