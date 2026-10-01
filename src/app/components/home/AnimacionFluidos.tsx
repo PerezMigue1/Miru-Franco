@@ -159,7 +159,7 @@ export default function AnimacionFluidos({ idSeccion }: { idSeccion: string }) {
             y: gigante.offsetTop + marca.offsetTop + marca.offsetHeight / 2 - escenario.clientHeight / 2,
           });
           const aSalir = gsap.utils.toArray<HTMLElement>(
-            '.mf-fluidos__texto, .mf-fluidos__capa:not([data-clave="goji"]), .mf-sticker-capa',
+            '.mf-fluidos__texto, .mf-fluidos__leyenda, .mf-fluidos__capa:not([data-clave="goji"]), .mf-sticker-capa',
             raiz
           );
           const tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
