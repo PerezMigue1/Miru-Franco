@@ -970,6 +970,16 @@ html:has(.superficie-cliente) {
     font-size: 1.45rem;
   }
 }
+/* Cabecera compacta en móvil: logotipo en una fila con el monograma */
+@media (max-width: 639.98px) {
+  .mf-logotipo {
+    font-size: 0.95rem;
+  }
+  .mf-logotipo__salon {
+    font-size: 0.5625rem;
+    letter-spacing: 0.2em;
+  }
+}
 
 /* ---- Carrusel de productos de la home: la tarjeta parcial se desvanece en el borde ---- */
 .mf-carrusel-borde {
