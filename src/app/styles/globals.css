@@ -584,6 +584,13 @@ html { scroll-behavior: smooth; }
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* Se usa en style inline (18 sitios): con movimiento reducido la misma keyframe solo aparece */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fadeUp {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
