@@ -138,9 +138,9 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
 
   return (
     <>
-      {/* ── Productos ── */}
+      {/* ── Productos ── (en móvil arranca más cerca: el destino del Goji ya deja aire) */}
       <Suspense fallback={null}>
-        <section className="mf-diferido py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
+        <section className="mf-diferido pt-10 pb-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
           <div className="container-max">
             <EncabezadoSeccion
               titulo="Nuestros Productos"
