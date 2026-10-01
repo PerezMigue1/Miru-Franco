@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface BadgeProps {
   children: ReactNode;
@@ -9,53 +9,32 @@ interface BadgeProps {
   className?: string;
 }
 
-export default function Badge({
-  children,
-  variant = 'default',
-  size = 'md',
-  className = '',
-}: BadgeProps) {
-  const variants = {
-    default: {
-      bg: 'var(--logo-branding)',
-      text: 'var(--texto-fondo-oscuro)',
-    },
-    success: {
-      bg: 'var(--success)',
-      text: 'var(--texto-fondo-oscuro)',
-    },
-    warning: {
-      bg: 'var(--warning)',
-      text: 'var(--texto-fondo-oscuro)',
-    },
-    danger: {
-      bg: 'var(--danger)',
-      text: 'var(--texto-fondo-oscuro)',
-    },
-    info: {
-      bg: 'var(--enlaces-textos-interactivos)',
-      text: 'var(--texto-fondo-oscuro)',
-    },
-  };
+/**
+ * Insignia del sistema (`.mf-badge`, sistema.css): base clara opaca teñida del color de estado y
+ * texto oscuro de la misma familia. Los rellenos sólidos anteriores (oro, verde, ámbar, azul con
+ * texto claro) quedaban entre 2.3:1 y 3.9:1.
+ */
+const VARIANTES: Record<NonNullable<BadgeProps['variant']>, Record<string, string>> = {
+  default: { '--badge-color': 'var(--logo-branding)', '--badge-texto': 'var(--oro-texto)' },
+  success: { '--badge-color': 'var(--success)', '--badge-texto': 'var(--success-texto)' },
+  warning: { '--badge-color': 'var(--warning)', '--badge-texto': 'var(--warning-texto)' },
+  danger: { '--badge-color': 'var(--danger)', '--badge-texto': 'var(--danger-texto)' },
+  info: { '--badge-color': 'var(--enlaces-textos-interactivos)', '--badge-texto': 'var(--info-texto)' },
+};
 
-  const sizes = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-    lg: 'px-4 py-1.5 text-base',
-  };
+const TAMANOS = {
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-2.5 py-1 text-sm',
+  lg: 'px-3.5 py-1.5 text-base',
+};
 
-  const variantStyle = variants[variant];
-
+export default function Badge({ children, variant = 'default', size = 'md', className = '' }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium ${sizes[size]} ${className}`}
-      style={{
-        backgroundColor: variantStyle.bg,
-        color: variantStyle.text,
-      }}
+      className={`mf-badge inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap ${TAMANOS[size]} ${className}`}
+      style={VARIANTES[variant] as CSSProperties}
     >
       {children}
     </span>
   );
 }
-

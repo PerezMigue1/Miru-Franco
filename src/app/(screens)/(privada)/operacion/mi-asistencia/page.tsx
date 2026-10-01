@@ -97,7 +97,7 @@ export default function MiAsistenciaPage() {
         </div>
 
         {error && (
-          <div className="bg-red-600 border border-red-700 text-white px-4 py-3 rounded text-xs font-bold shadow-md">
+          <div role="alert" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--danger)', color: '#F2F1ED', boxShadow: 'var(--mf-sombra-1)' }}>
             {error}
           </div>
         )}

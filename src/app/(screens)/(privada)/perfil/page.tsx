@@ -1,20 +1,26 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { hasValidToken } from '../../../utils/security';
 import ModuleLayout from '../../../components/layouts/ModuleLayout';
 import UserProfile from '../../../components/perfil/UserProfile';
 
+function sinSuscripcion() {
+  return () => {};
+}
+
 export default function PerfilPage() {
   const router = useRouter();
-  const isAuthed = typeof window !== 'undefined' && hasValidToken();
+  // En el servidor no hay sesión que leer: el primer render del cliente coincide con el del servidor
+  // (sin error de hidratación) y luego muestra el perfil si hay sesión.
+  const isAuthed = useSyncExternalStore(sinSuscripcion, hasValidToken, () => false);
 
   useEffect(() => {
-    if (!isAuthed) {
+    if (!hasValidToken()) {
       router.replace('/login?returnUrl=/perfil');
     }
-  }, [isAuthed, router]);
+  }, [router]);
 
   if (!isAuthed) {
     return (
@@ -22,7 +28,9 @@ export default function PerfilPage() {
         className="min-h-screen flex flex-col items-center justify-center"
         style={{ backgroundColor: 'var(--fondo-general)' }}
       >
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-menu-texto-principal" />
+        <p role="status" className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+          Redirigiendo a inicio de sesión…
+        </p>
       </div>
     );
   }

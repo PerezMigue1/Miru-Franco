@@ -1,11 +1,13 @@
 'use client';
 
-import type { ReactNode, SyntheticEvent } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
 
 interface CatalogoCardProps {
   imagenUrl?: string | null;
   imagenFallback: string;
   imagenAlt?: string;
+  /** Si se pasa, se muestra en lugar de `imagenFallback` cuando no hay imagen o no carga. */
+  placeholder?: ReactNode;
   titulo: string;
   /** Badge de estado, se muestra a la derecha del título (ej. Activo/Inactivo, Disponible/No disponible). */
   estadoBadge?: ReactNode;
@@ -23,26 +25,34 @@ export default function CatalogoCard({
   imagenUrl,
   imagenFallback,
   imagenAlt = '',
+  placeholder,
   titulo,
   estadoBadge,
   children,
   acciones,
 }: CatalogoCardProps) {
+  const [fallo, setFallo] = useState(false);
+  const sinImagen = !imagenUrl?.trim() || fallo;
   return (
     <div
       className="rounded-xl overflow-hidden flex flex-col"
       style={{ backgroundColor: 'var(--fondo-general)', border: '1px solid var(--fondos-suaves)' }}
     >
-      <div className="w-full aspect-[4/3] overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-        <img
-          src={imagenUrl?.trim() ? imagenUrl : imagenFallback}
-          alt={imagenAlt}
-          className="w-full h-full object-cover"
-          onError={(e: SyntheticEvent<HTMLImageElement>) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = imagenFallback;
-          }}
-        />
+      <div className="relative w-full aspect-[4/3] overflow-hidden" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+        {placeholder && sinImagen ? (
+          placeholder
+        ) : (
+          <img
+            src={imagenUrl?.trim() ? imagenUrl : imagenFallback}
+            alt={imagenAlt}
+            className="w-full h-full object-cover"
+            onError={(e: SyntheticEvent<HTMLImageElement>) => {
+              if (placeholder) return setFallo(true);
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = imagenFallback;
+            }}
+          />
+        )}
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-start justify-between gap-2 mb-3">

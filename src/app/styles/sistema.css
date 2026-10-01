@@ -1,0 +1,708 @@
+/* ==========================================================================
+   Sistema compartido — "Atelier cálido" (ver DESIGN.md)
+   Tokens y primitivas que usan por igual cliente, /operacion y /admin.
+   Lo exclusivo del portal de clientas (hero, catálogo 3D, lectura larga) vive en cliente.css.
+   ========================================================================== */
+
+:root {
+  /* Movimiento */
+  --mf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --mf-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --mf-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --mf-dur-press: 140ms;
+  --mf-dur-hover: 200ms;
+  --mf-dur-panel: 240ms;
+  --mf-dur-entrada: 300ms;
+
+  /* Elevación: sombras tintadas de café, nunca gris */
+  --mf-sombra-1: 0 1px 2px rgba(58, 28, 10, 0.1), 0 6px 16px -6px rgba(58, 28, 10, 0.22);
+  --mf-sombra-2: 0 2px 4px rgba(58, 28, 10, 0.1), 0 22px 40px -16px rgba(58, 28, 10, 0.42);
+  --mf-sombra-modal: 0 4px 10px rgba(58, 28, 10, 0.12), 0 32px 64px -20px rgba(58, 28, 10, 0.5);
+  --mf-linea: rgba(113, 0, 20, 0.14);
+  --mf-linea-fuerte: rgba(42, 42, 42, 0.22);
+
+  /* Forma */
+  --mf-radio: 14px;
+  --mf-radio-panel: 12px;
+  --mf-radio-control: 10px;
+
+  /* Banda oscura de contraste */
+  --mf-banda: #161616;
+
+  /* Oro para texto pequeño sobre carbón (cromo del sitio): 4.9:1; el oro de marca da 4.0:1 */
+  --oro-sobre-carbon: #b07a28;
+
+  /* Foco: vino sobre superficies cálidas claras (7.5:1 sobre lino, 4:1 sobre terracota) */
+  --mf-foco: #710014;
+
+  /* Texto de cuerpo neutro y superficies de capa */
+  --texto-cuerpo: #2a2a2a;
+  --superficie-modal: var(--fondo-general);
+  --superficie-lateral: color-mix(in srgb, var(--fondo-general) 62%, var(--fondos-suaves));
+
+  /* Campos de formulario: borde ≥3:1 y placeholder ≥4.5:1 sobre --input-bg */
+  --campo-borde: #8a7667;
+  --campo-placeholder: #6b5a4e;
+  /* Texto de ejemplo dentro de .mf-campo: gris neutro, el más tenue que sigue en AA (4.73:1 sobre
+     #f2f1ed), para no confundirse con lo escrito (vino, 12.3:1) */
+  --campo-placeholder-texto: #6f6a66;
+
+  /* Navegación de paneles */
+  --nav-activo-bg: rgba(113, 0, 20, 0.1);
+  --nav-activo-texto: #710014;
+  --nav-activo-icono: #710014;
+  --nav-hover-bg: rgba(113, 0, 20, 0.05);
+
+  /* Insignias: base clara opaca + texto oscuro de la familia del color (AA en cualquier superficie) */
+  --badge-base: #f2f1ed;
+  --info-texto: #1f4466;
+
+  /* Botón secundario sobre terracota */
+  --btn-secundario-texto: #2a2a2a;
+}
+
+.dark {
+  --mf-sombra-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 20px -8px rgba(0, 0, 0, 0.55);
+  --mf-sombra-2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 24px 44px -16px rgba(0, 0, 0, 0.75);
+  --mf-sombra-modal: 0 4px 10px rgba(0, 0, 0, 0.4), 0 32px 64px -20px rgba(0, 0, 0, 0.85);
+  --mf-linea: rgba(255, 255, 255, 0.08);
+  --mf-linea-fuerte: rgba(255, 255, 255, 0.16);
+  --mf-banda: #1f1f1f;
+  --mf-foco: #c4954d;
+  --oro-grande: #c4954d;
+  /* En oscuro la banda es #1f1f1f: el oro de #b07a28 quedaba en 4.44:1; el oro claro da 6.1:1 */
+  --oro-sobre-carbon: var(--oro-grande);
+  --texto-cuerpo: rgba(242, 241, 237, 0.88);
+  --superficie-modal: var(--tarjetas-paneles);
+  --superficie-lateral: #1b1b1b;
+  --campo-borde: #6e6e6e;
+  --campo-placeholder: #b8a597;
+  /* 4.69:1 sobre #1f1f1f; lo escrito es blanco (16.5:1) */
+  --campo-placeholder-texto: #8c8885;
+  --nav-activo-bg: rgba(255, 255, 255, 0.08);
+  --nav-activo-texto: #ffffff;
+  --nav-activo-icono: #c4954d;
+  --nav-hover-bg: rgba(255, 255, 255, 0.04);
+  --badge-base: #1f1f1f;
+  --info-texto: #8fb6d9;
+  --btn-secundario-texto: #f2f1ed;
+}
+
+/* next/font declara --font-playfair-display y --font-great-vibes en <body>: resolverlas aquí
+   (y no en :root) es lo que hace que Playfair y Great Vibes se vean en todo el sitio. */
+body {
+  --font-family-serif: var(--font-playfair-display), 'Times New Roman', serif;
+  --font-family-script: var(--font-great-vibes), cursive;
+  caret-color: var(--mf-foco);
+}
+
+/* ---- Superficies del navegador ---- */
+@layer base {
+::selection {
+  background: var(--botones-principales);
+  color: #f2f1ed;
+}
+:is(a, button, input, select, textarea, summary, [role='button'], [tabindex]):focus-visible {
+  outline: 2px solid var(--mf-foco);
+  outline-offset: 2px;
+}
+a {
+  text-underline-offset: 0.2em;
+}
+:is(h1, h2, h3) {
+  text-wrap: balance;
+}
+.mf-cifras,
+table td {
+  font-variant-numeric: tabular-nums;
+}
+}
+
+/* Primitivas en la capa de componentes: las utilidades de Tailwind que pase quien las usa
+   (rounded-*, min-h-*, p-*) siguen ganando, igual que antes. */
+@layer components {
+/* ---- Títulos de página ---- */
+.mf-titulo-pagina {
+  font-family: var(--font-family-serif);
+  font-size: clamp(1.875rem, 1.4rem + 1.6vw, 2.5rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Tarjetas ---- */
+.mf-card {
+  border-radius: var(--mf-radio);
+  transition:
+    transform var(--mf-dur-hover) var(--mf-ease-out),
+    box-shadow var(--mf-dur-hover) var(--mf-ease-out);
+}
+.mf-card--panel {
+  border-radius: var(--mf-radio-panel);
+}
+.mf-card--interactiva {
+  cursor: pointer;
+}
+.mf-card--interactiva:active {
+  transform: scale(0.99);
+  transition-duration: var(--mf-dur-press);
+}
+}
+
+/* ---- Botones ----
+   .mf-btn: transiciones y presión (cualquier elemento pulsable).
+   .mf-btn-color: colores por variables (--btn-*) para que el hover sea CSS y no se quede "pegado"
+   al tocar. Fuera de capa, igual que antes el estilo inline de Button: la variante manda. */
+.mf-btn {
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    color var(--mf-dur-hover) ease,
+    border-color var(--mf-dur-hover) ease,
+    box-shadow var(--mf-dur-hover) var(--mf-ease-out),
+    transform var(--mf-dur-press) var(--mf-ease-out);
+  touch-action: manipulation;
+}
+.mf-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.mf-btn-color {
+  background-color: var(--btn-bg);
+  color: var(--btn-texto);
+  border: var(--btn-borde, none);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-btn-color:not(:disabled):hover {
+    background-color: var(--btn-bg-hover);
+    color: var(--btn-texto-hover, var(--btn-texto));
+    /* Sin --btn-borde-hover el borde toma el color del texto (no desaparece el contorno) */
+    border-color: var(--btn-borde-hover, currentColor);
+  }
+}
+@media (pointer: coarse) {
+  .mf-btn-color {
+    min-height: 44px;
+  }
+}
+
+@layer components {
+/* ---- Campos de formulario ---- */
+.mf-campo {
+  background-color: var(--input-bg);
+  color: var(--menu-texto-principal);
+  border: 1px solid var(--campo-borde);
+  border-radius: var(--mf-radio-control);
+  min-height: 44px;
+  transition:
+    border-color var(--mf-dur-hover) ease,
+    box-shadow var(--mf-dur-hover) var(--mf-ease-out);
+}
+/* Autocompletado del navegador: sin el azul de Chrome/Edge, con la superficie del campo */
+.mf-campo:-webkit-autofill,
+.mf-campo:-webkit-autofill:hover,
+.mf-campo:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--input-bg) inset;
+  -webkit-text-fill-color: var(--menu-texto-principal);
+  caret-color: var(--mf-foco);
+}
+.mf-campo::placeholder {
+  color: var(--campo-placeholder-texto);
+  opacity: 1;
+}
+.mf-campo:focus {
+  outline: none;
+  border-color: var(--mf-foco);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mf-foco) 22%, transparent);
+}
+.mf-campo[aria-invalid='true'] {
+  border-color: var(--danger-texto);
+}
+.mf-campo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.mf-etiqueta {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--menu-texto-principal);
+}
+
+/* ---- Insignias ---- */
+.mf-badge {
+  --badge-color: var(--logo-branding);
+  background-color: color-mix(in srgb, var(--badge-color) 16%, var(--badge-base));
+  color: var(--badge-texto, var(--oro-texto));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--badge-color) 30%, transparent);
+}
+
+/* ---- KPI de paneles (TarjetaKpi) ---- */
+.mf-kpi {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  container-type: inline-size;
+}
+.mf-kpi__etiqueta {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--encabezados-alterno);
+  overflow-wrap: anywhere;
+}
+.mf-kpi__icono {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background-color: var(--fondo-general);
+  color: var(--encabezados-alterno);
+}
+.mf-kpi__valor {
+  margin-top: 0.5rem;
+  font-size: clamp(1.05rem, 13cqi, 1.75rem);
+  line-height: 1.15;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Tablas ---- */
+.mf-tabla-marco {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: var(--mf-radio-panel);
+  border: 1px solid var(--mf-linea-fuerte);
+  background-color: var(--fondo-general);
+  scrollbar-width: thin;
+  scrollbar-color: var(--campo-borde) transparent;
+}
+.mf-tabla-marco::-webkit-scrollbar {
+  display: block;
+  height: 8px;
+}
+.mf-tabla-marco::-webkit-scrollbar-thumb {
+  background: var(--campo-borde);
+  border-radius: 999px;
+}
+.mf-tabla th {
+  color: var(--encabezados-alterno);
+  background-color: var(--fondo-general);
+  border-bottom: 1px solid var(--mf-linea-fuerte);
+}
+.mf-tabla tbody tr + tr {
+  border-top: 1px solid var(--mf-linea);
+}
+.mf-tabla tbody tr[data-clicable='true'] {
+  cursor: pointer;
+  transition: background-color var(--mf-dur-hover) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-tabla tbody tr[data-clicable='true']:hover {
+    background-color: var(--nav-hover-bg);
+  }
+}
+}
+
+/* ---- Diálogos ---- */
+@keyframes mf-velo {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mf-dialogo {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+.mf-velo {
+  background-color: rgba(22, 22, 22, 0.55);
+  animation: mf-velo 200ms ease both;
+}
+/* Menú móvil del sitio (Header.tsx): entra desde el borde izquierdo, donde vive */
+@keyframes mf-menu-movil {
+  from {
+    transform: translateX(-100%);
+  }
+}
+.mf-menu-movil {
+  animation: mf-menu-movil var(--mf-dur-panel) var(--mf-ease-drawer) both;
+}
+.mf-dialogo {
+  background-color: var(--superficie-modal);
+  color: var(--texto-cuerpo);
+  border-radius: var(--mf-radio);
+  box-shadow: var(--mf-sombra-modal);
+  animation: mf-dialogo 240ms var(--mf-ease-out) both;
+}
+
+/* Aviso flotante (toast): entra desde arriba, de donde vive, y no roba el foco. Transición con
+   @starting-style (no keyframes): si llegan varios seguidos, cada uno parte de donde va. Al salir,
+   ToastContext marca data-saliendo y lo quita 160ms después. */
+.mf-aviso {
+  background-color: var(--superficie-modal);
+  border-radius: var(--mf-radio-panel);
+  box-shadow: var(--mf-sombra-modal);
+  border: 1px solid var(--mf-linea);
+  transition:
+    opacity 260ms var(--mf-ease-out),
+    transform 260ms var(--mf-ease-out);
+}
+@starting-style {
+  .mf-aviso {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+.mf-aviso[data-saliendo='true'] {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transition-duration: 160ms;
+}
+
+/* ---- Entradas ----
+   .mf-entrada: al montar, escalonada con --i (50ms por elemento).
+   .mf-revelar: al entrar en viewport con scroll-driven animations; sin soporte, ya está visible. */
+@keyframes mf-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes mf-aparecer {
+  from {
+    opacity: 0;
+  }
+}
+.mf-entrada {
+  animation: mf-entrada var(--mf-dur-entrada) var(--mf-ease-out) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+@supports (animation-timeline: view()) {
+  .mf-revelar {
+    animation: mf-entrada linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 70%;
+  }
+}
+
+/* ---- Carga ----
+   El brillo es un ::after que se desplaza con transform (compositor), no background-position
+   (repintaba cada frame). En capa components para que rounded-full y demás utilidades ganen. */
+@keyframes mf-brillo {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes mf-pulso-carga {
+  to {
+    opacity: 0.6;
+  }
+}
+@layer components {
+  .mf-skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    background-color: var(--fondos-suaves);
+  }
+  .mf-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
+    transform: translateX(-100%);
+    animation: mf-brillo 1.6s linear infinite;
+  }
+  .dark .mf-skeleton {
+    background-color: #262626;
+  }
+  .dark .mf-skeleton::after {
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.05) 50%, transparent 80%);
+  }
+}
+
+/* ---- Feedback de acción (agregar, confirmar, guardar) ---- */
+.mf-feedback-contenido {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    opacity 200ms ease,
+    filter 200ms ease,
+    transform 200ms var(--mf-ease-out);
+}
+.mf-feedback-contenido[data-cambiando='true'] {
+  opacity: 0.4;
+  filter: blur(2px);
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   Cascarón de paneles (/admin y /operacion): PanelShell.tsx
+   Modo "operar": denso, predecible y sin coreografías; la marca vive en los detalles.
+   ========================================================================== */
+@layer components {
+.superficie-panel {
+  --panel-barra: 56px;
+  --panel-lateral: 248px;
+  --panel-lateral-colapsado: 68px;
+  min-height: 100dvh;
+  background-color: var(--fondo-general);
+  color: var(--texto-cuerpo);
+}
+.mf-saltar {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.5rem;
+  z-index: 80;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--mf-radio-control);
+  background: var(--botones-principales);
+  color: #f2f1ed;
+  font-weight: 600;
+  transform: translateY(-3.5rem);
+  transition: transform var(--mf-dur-hover) var(--mf-ease-out);
+}
+.mf-saltar:focus-visible {
+  transform: none;
+}
+.mf-panel-barra {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: var(--panel-barra);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
+  background-color: var(--header-footer);
+  color: #f2f1ed;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+@media (min-width: 768px) {
+  .mf-panel-barra {
+    padding: 0 1.25rem;
+  }
+}
+.mf-panel-icono-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--mf-radio-control);
+  color: #f2f1ed;
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    transform var(--mf-dur-press) var(--mf-ease-out);
+}
+.mf-panel-icono-btn:active {
+  transform: scale(0.95);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-panel-icono-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+.mf-panel-etiqueta {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c4954d;
+  border: 1px solid rgba(196, 149, 77, 0.45);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+.mf-panel-cuerpo {
+  display: flex;
+  padding-top: var(--panel-barra);
+}
+.mf-panel-lateral {
+  position: fixed;
+  z-index: 55;
+  top: var(--panel-barra);
+  bottom: 0;
+  left: 0;
+  width: min(var(--panel-lateral), 86vw);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--superficie-lateral);
+  border-right: 1px solid var(--mf-linea-fuerte);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform var(--mf-dur-panel) var(--mf-ease-drawer),
+    visibility 0s linear var(--mf-dur-panel);
+}
+.mf-panel-lateral[data-abierto='true'] {
+  transform: translateX(0);
+  visibility: visible;
+  box-shadow: var(--mf-sombra-modal);
+  transition:
+    transform var(--mf-dur-panel) var(--mf-ease-drawer),
+    visibility 0s;
+}
+.mf-panel-velo {
+  position: fixed;
+  inset: var(--panel-barra) 0 0 0;
+  z-index: 50;
+  background-color: rgba(22, 22, 22, 0.5);
+  animation: mf-velo 200ms ease both;
+}
+@media (min-width: 1024px) {
+  .mf-panel-lateral {
+    position: sticky;
+    height: calc(100dvh - var(--panel-barra));
+    width: var(--panel-lateral);
+    transform: none;
+    visibility: visible;
+    flex-shrink: 0;
+    /* Colapsar es instantáneo: animar el ancho reacomoda todo el contenido (layout) */
+  }
+  .mf-panel-lateral[data-colapsado='true'] {
+    width: var(--panel-lateral-colapsado);
+  }
+  .mf-panel-velo {
+    display: none;
+  }
+}
+.mf-panel-grupo + .mf-panel-grupo {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mf-linea);
+}
+.mf-panel-grupo-titulo {
+  padding: 0 0.625rem;
+  margin-bottom: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encabezados-alterno);
+}
+.mf-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 40px;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--mf-radio-control);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--texto-cuerpo);
+  transition:
+    background-color var(--mf-dur-hover) ease,
+    color var(--mf-dur-hover) ease;
+}
+.mf-panel-item svg {
+  flex-shrink: 0;
+  color: var(--encabezados-alterno);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mf-panel-item:hover {
+    background-color: var(--nav-hover-bg);
+  }
+}
+.mf-panel-item[aria-current='page'] {
+  background-color: var(--nav-activo-bg);
+  color: var(--nav-activo-texto);
+  font-weight: 600;
+}
+.mf-panel-item[aria-current='page'] svg {
+  color: var(--nav-activo-icono);
+}
+@media (pointer: coarse) {
+  .mf-panel-item {
+    min-height: 44px;
+  }
+}
+.mf-panel-contenido {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem var(--layout-gutter-x) 2rem;
+}
+@media (min-width: 768px) {
+  .mf-panel-contenido {
+    --layout-gutter-x: 1.5rem;
+    padding-bottom: 2.5rem;
+  }
+}
+@media (min-width: 1280px) {
+  .mf-panel-contenido {
+    --layout-gutter-x: 2rem;
+  }
+}
+.mf-panel-contenido > .mf-panel-ancho {
+  max-width: 96rem;
+  margin: 0 auto;
+}
+}
+
+/* ---- Movimiento reducido: se conserva la opacidad, se elimina el desplazamiento ---- */
+@media (prefers-reduced-motion: reduce) {
+  .mf-entrada,
+  .mf-revelar {
+    animation-name: mf-aparecer;
+    animation-duration: 200ms;
+  }
+  .mf-dialogo,
+  .mf-menu-movil {
+    animation-name: mf-aparecer;
+    animation-duration: 160ms;
+  }
+  .mf-saltar {
+    transition: none;
+  }
+  .mf-aviso,
+  .mf-aviso[data-saliendo='true'] {
+    transform: none;
+  }
+  @starting-style {
+    .mf-aviso {
+      transform: none;
+    }
+  }
+  .mf-card--interactiva:active,
+  .mf-btn:not(:disabled):active,
+  .mf-panel-icono-btn:active {
+    transform: none;
+  }
+  /* Sin barrido: un pulso de opacidad lento */
+  .mf-skeleton::after {
+    display: none;
+  }
+  .mf-skeleton {
+    animation: mf-pulso-carga 1.2s ease-in-out infinite alternate;
+  }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 1023.98px) {
+  .mf-panel-lateral {
+    transform: none;
+    opacity: 0;
+    transition:
+      opacity 160ms var(--mf-ease-out),
+      visibility 0s linear 160ms;
+  }
+  .mf-panel-lateral[data-abierto='true'] {
+    opacity: 1;
+    transition:
+      opacity 160ms var(--mf-ease-out),
+      visibility 0s;
+  }
+}
+
+/* Leyendas de gráficas (recharts): el texto va en tinta del tema; el color de la serie se queda en
+   el icono. Recharts pinta el texto con el color de la serie (naranja/oro sobre terracota ≈ 1.1–3:1). */
+.recharts-legend-item-text {
+  color: var(--encabezados-alterno) !important;
+}

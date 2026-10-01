@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
@@ -18,6 +18,8 @@ import {
 } from '../../../../../services/ecommerce';
 import type { PedidoApi, PedidoItemApi, PagoApi } from '../../../../../services/ecommerce';
 import { hasValidToken } from '../../../../../utils/security';
+import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
+import SelloConfirmacion from '../../../../../components/cliente/SelloConfirmacion';
 
 function formatFechaPedido(iso?: string): { fecha: string; hora: string } {
   if (!iso?.trim()) {
@@ -84,7 +86,7 @@ function ConfirmacionCompraContent() {
         setPedido(p);
         setItems(lineas);
         setPagos(pays);
-        if (!p) setError('No encontramos ese pedido o no tenés permiso para verlo.');
+        if (!p) setError('No encontramos ese pedido o no tienes permiso para verlo.');
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Error al cargar el pedido');
@@ -108,7 +110,7 @@ function ConfirmacionCompraContent() {
               Sin número de pedido
             </h1>
             <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
-              Abrí esta página desde el checkout al finalizar la compra, o revisá tus pedidos en la cuenta.
+              Esta página se abre al finalizar una compra. Puedes consultar tus compras en Mis pedidos.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button onClick={() => router.push('/cliente/tienda-online/mis-pedidos')}>
@@ -127,8 +129,10 @@ function ConfirmacionCompraContent() {
   if (loading) {
     return (
       <ModuleLayout>
-        <div className="max-w-3xl mx-auto py-12 text-center">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando confirmación…</p>
+        <div className="max-w-3xl mx-auto space-y-4 py-8" aria-busy="true" aria-label="Cargando confirmación">
+          <div className="mf-skeleton h-20 w-20 mx-auto" style={{ borderRadius: 999 }} />
+          <div className="mf-skeleton h-8 w-1/2 mx-auto" />
+          <div className="mf-skeleton h-64 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     );
@@ -139,7 +143,7 @@ function ConfirmacionCompraContent() {
       <ModuleLayout>
         <div className="max-w-3xl mx-auto">
           <Card className="p-8 text-center">
-            <p className="mb-4" style={{ color: 'var(--danger)' }}>
+            <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>
               {error ?? 'No se pudo mostrar el pedido'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -164,29 +168,31 @@ function ConfirmacionCompraContent() {
   return (
     <ModuleLayout>
       <div className="max-w-3xl mx-auto">
-        <Card className="text-center" style={{ animation: 'fadeUp 400ms ease-out both' }}>
-          <div className="mb-6">
-            <div
-              className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: esCancelado ? 'var(--danger)' : 'var(--success)' }}
-            >
-              {esCancelado
-                ? <X size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />
-                : <Check size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />
-              }
-            </div>
-            <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        <Card className="text-center mf-entrada" padding="lg">
+          <div className="mb-8">
+            {esCancelado ? (
+              <div
+                className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5"
+                style={{ backgroundColor: 'var(--danger)' }}
+              >
+                <X size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />
+              </div>
+            ) : (
+              <div className="mb-5 flex justify-center">
+                <SelloConfirmacion />
+              </div>
+            )}
+            <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               {esCancelado ? 'Pedido cancelado' : '¡Gracias por tu compra!'}
             </h1>
-            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
+            <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
               {esCancelado
-                ? 'Este pedido figura como cancelado en el sistema.'
-                : 'Tu pedido quedó registrado. Los importes y líneas abajo son los que devolvió el servidor.'}
+                ? 'Este pedido está cancelado.'
+                : 'Tu pedido quedó registrado. Abajo tienes el resumen de tu compra.'}
             </p>
             {pagoTarjetaHint && !esCancelado && (
               <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }}>
-                Elegiste pago con tarjeta: el registro en base de datos queda en estado pendiente hasta que exista
-                cobro real con pasarela (cuando esté integrada).
+                Elegiste pago con tarjeta: el pago aparecerá como pendiente hasta que se procese el cobro.
               </p>
             )}
           </div>
@@ -249,7 +255,7 @@ function ConfirmacionCompraContent() {
                             {linea.cantidad}× {nombre}
                           </span>
                           <span className="shrink-0" style={{ color: 'var(--menu-texto-principal)' }}>
-                            ${linea.subtotal.toLocaleString('es-MX')} {pedido.moneda}
+                            {formatearPrecioMXN(linea.subtotal)} {pedido.moneda}
                           </span>
                         </div>
                       );
@@ -262,20 +268,20 @@ function ConfirmacionCompraContent() {
                 <div className="flex justify-between mb-1">
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal</span>
                   <span style={{ color: 'var(--menu-texto-principal)' }}>
-                    ${pedido.subtotal.toLocaleString('es-MX')} {pedido.moneda}
+                    {formatearPrecioMXN(pedido.subtotal)} {pedido.moneda}
                   </span>
                 </div>
                 <div className="flex justify-between mb-1">
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Envío</span>
                   <span style={{ color: 'var(--menu-texto-principal)' }}>
-                    ${pedido.costoEnvio.toLocaleString('es-MX')} {pedido.moneda}
+                    {formatearPrecioMXN(pedido.costoEnvio)} {pedido.moneda}
                   </span>
                 </div>
                 {pedido.impuestos > 0 && (
                   <div className="flex justify-between mb-1">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Impuestos</span>
                     <span style={{ color: 'var(--menu-texto-principal)' }}>
-                      ${pedido.impuestos.toLocaleString('es-MX')} {pedido.moneda}
+                      {formatearPrecioMXN(pedido.impuestos)} {pedido.moneda}
                     </span>
                   </div>
                 )}
@@ -283,7 +289,7 @@ function ConfirmacionCompraContent() {
                   <div className="flex justify-between mb-1">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Descuento</span>
                     <span style={{ color: 'var(--menu-texto-principal)' }}>
-                      −${pedido.descuento.toLocaleString('es-MX')} {pedido.moneda}
+                      −{formatearPrecioMXN(pedido.descuento)} {pedido.moneda}
                     </span>
                   </div>
                 )}
@@ -292,7 +298,7 @@ function ConfirmacionCompraContent() {
                     Total
                   </span>
                   <span className="text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
-                    ${pedido.total.toLocaleString('es-MX')} {pedido.moneda}
+                    {formatearPrecioMXN(pedido.total)} {pedido.moneda}
                   </span>
                 </div>
               </div>
@@ -338,8 +344,7 @@ function ConfirmacionCompraContent() {
           <div className="space-y-4">
             <div className="p-4 rounded-xl text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                Podés ver el detalle completo, envíos e historial en &quot;Mis pedidos&quot;. Si el backend envía
-                correos de confirmación, los recibirás según la configuración del servidor.
+                Puedes ver el detalle completo, el envío y el historial de tu compra en &quot;Mis pedidos&quot;.
               </p>
             </div>
 

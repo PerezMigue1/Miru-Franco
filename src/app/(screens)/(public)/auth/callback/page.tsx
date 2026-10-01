@@ -1,10 +1,14 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import Image from 'next/image';
+import { CircleX } from 'lucide-react';
+import SuperficieCliente from '../../../../components/cliente/SuperficieCliente';
+import SelloConfirmacion from '../../../../components/cliente/SelloConfirmacion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '../../../../services/client';
 import { getBackendBaseUrl } from '../../../../services/config';
-import { saveToken } from '../../../../utils/security';
+import { markSessionStart } from '../../../../utils/security';
 import { normalizarUsuarioAlmacenado } from '../../../../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../../../../utils/userStorageSync';
 import { api } from '../../../../services/auth';
@@ -78,10 +82,10 @@ function AuthCallbackContent() {
             error?: string;
           }>('/api/auth/exchange-code', { code }, BACKEND_BASE);
           
-          if (data.success && data.token) {
-            // Guardar token usando utilidad de seguridad
-            saveToken(data.token);
-            
+          // El backend entrega la sesión como cookie httpOnly (sin token en el cuerpo).
+          if (data.success) {
+            markSessionStart();
+
             // Opcional: Guardar información del usuario si viene en la respuesta (user o usuario)
             const userData = (data as { user?: unknown; usuario?: unknown }).user ?? (data as { user?: unknown; usuario?: unknown }).usuario;
             if (userData) {
@@ -133,67 +137,76 @@ function AuthCallbackContent() {
     handleCallback();
   }, [searchParams, router]);
 
+  // Espera: la pantalla de carga de marca (loading.tsx); resultado: ícono + mensaje sobre el tema.
+  if (status === 'loading') {
+    return <PantallaCargaMarca mensaje={message} />;
+  }
+
+  const exito = status === 'success';
   return (
-    <div className="min-h-screen flex items-center justify-center bg-fondo-general px-4">
-      <div className="text-center max-w-md w-full">
-        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
-          {status === 'loading' && (
-            <>
-              <div className="mx-auto w-16 h-16 mb-4">
-                <svg className="animate-spin h-16 w-16 text-menu-texto-principal" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-              <h2 className="text-page-title mb-2 text-texto-fondo-oscuro">
-                {message}
-              </h2>
-              <p className="text-sm text-texto-fondo-oscuro" style={{ color: 'var(--texto-fondo-oscuro)' }}>
-                Por favor espera...
-              </p>
-            </>
-          )}
+    <SuperficieCliente
+      className="min-h-dvh flex items-center justify-center px-6"
+      style={{ backgroundColor: 'var(--fondo-general)' }}
+    >
+      <div className="mf-entrada w-full max-w-md text-center" role={exito ? 'status' : 'alert'}>
+        {exito ? (
+          <div className="mb-5 flex justify-center">
+            <SelloConfirmacion />
+          </div>
+        ) : (
+          <span
+            className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 14%, transparent)', color: 'var(--danger-texto)' }}
+          >
+            <CircleX size={32} strokeWidth={1.75} aria-hidden />
+          </span>
+        )}
+        <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>
+          {exito ? '¡Autenticación exitosa!' : 'No pudimos iniciar sesión con Google'}
+        </h1>
+        <p className="mt-3 text-base" style={{ color: 'var(--encabezados-alterno)' }}>
+          {message}
+        </p>
+        {!exito && (
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="mf-btn mf-btn-color mt-7 inline-flex min-h-12 items-center justify-center rounded-full px-7 text-sm font-semibold"
+            style={{
+              ['--btn-bg' as string]: 'var(--botones-principales)',
+              ['--btn-bg-hover' as string]: 'var(--hover)',
+              ['--btn-texto' as string]: '#F2F1ED',
+            }}
+          >
+            Volver al inicio
+          </button>
+        )}
+      </div>
+    </SuperficieCliente>
+  );
+}
 
-          {status === 'success' && (
-            <>
-              <div className="mx-auto w-16 h-16 bg-success rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-texto-fondo-oscuro" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold mb-2 text-texto-fondo-oscuro">
-                ¡Autenticación Exitosa!
-              </h2>
-              <p className="text-sm" style={{ color: 'rgba(242,241,237,0.7)' }}>
-                {message}
-              </p>
-            </>
-          )}
-
-          {status === 'error' && (
-            <>
-              <div className="mx-auto w-16 h-16 bg-danger rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-texto-fondo-oscuro" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold mb-2 text-texto-fondo-oscuro">
-                Error de Autenticación
-              </h2>
-              <p className="text-sm mb-4" style={{ color: 'rgba(242,241,237,0.7)' }}>
-                {message}
-              </p>
-              <button
-                onClick={() => router.push('/')}
-                className="mt-4 px-6 py-2 rounded-lg font-medium transition-colors bg-botones-principales text-texto-fondo-oscuro hover:opacity-90"
-                style={{ backgroundColor: 'var(--botones-principales)' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
-              >
-                Volver al Login
-              </button>
-            </>
-          )}
+/** Misma pantalla de carga del sitio (loading.tsx) con el mensaje del paso actual. */
+function PantallaCargaMarca({ mensaje }: { mensaje: string }) {
+  return (
+    <div className="loading-screen" role="status">
+      <div className="loading-screen__stage">
+        <div className="loading-screen__mark">
+          <div className="loading-screen__glow" />
+          <div className="loading-screen__ripple" />
+          <div className="loading-screen__ripple" />
+          <div className="loading-screen__ripple" />
+          <div className="loading-screen__logo">
+            <Image src="/logo-miru.jpg" alt="Mirú Franco" fill sizes="148px" priority />
+          </div>
+        </div>
+        <div className="loading-screen__word">
+          <div className="loading-screen__status">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+            <span>{mensaje || 'Conectando con Google'}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -202,14 +215,7 @@ function AuthCallbackContent() {
 
 export default function AuthCallback() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-fondo-general">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-menu-texto-principal mx-auto mb-4"></div>
-          <p className="text-texto-fondo-oscuro">Cargando...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<PantallaCargaMarca mensaje="Conectando con Google" />}>
       <AuthCallbackContent />
     </Suspense>
   );

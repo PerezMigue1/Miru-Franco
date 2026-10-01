@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import TarjetaKpi from '../../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
@@ -102,40 +103,10 @@ export default function SeguimientoPostServicioPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="elevated" padding="lg" style={requierenAccion > 0 ? { boxShadow: '0 0 0 2px var(--danger)' } : undefined}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <AlertTriangle size={20} style={{ color: 'var(--danger-texto)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Requieren acción</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--danger-texto)' }}>{loading ? '…' : requierenAccion}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ClipboardCheck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total en vista</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : seguimientos.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ThumbsUp size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Bien evaluados</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : bienEvaluados}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <TarjetaKpi icono={AlertTriangle} etiqueta="Requieren acción" cargando={loading} valor={requierenAccion} tono="peligro" alerta={requierenAccion > 0} />
+          <TarjetaKpi icono={ClipboardCheck} etiqueta="Total en vista" cargando={loading} valor={seguimientos.length} />
+          <TarjetaKpi icono={ThumbsUp} etiqueta="Bien evaluados" cargando={loading} valor={bienEvaluados} />
         </div>
 
         {/* Filtro toggle */}

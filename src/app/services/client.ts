@@ -1,7 +1,7 @@
 // Cliente API centralizado con manejo de errores y tokens
 
 import { getApiBaseUrl } from './config';
-import { getToken, saveToken, clearAuthData } from '../utils/security';
+import { hasSession, clearAuthData, msSinceSessionRefresh } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 
@@ -43,52 +43,28 @@ class ApiClient {
     } else {
       url = `${apiBase}${endpoint}`;
     }
-    
-    // Log detallado para debugging en producción
-    console.log(`[API Client] ${fetchOptions.method || 'GET'} ${url}`);
-    console.log(`[API Client] Endpoint: ${endpoint}`);
-    if (customEndpoint) {
-      console.log(`[API Client] Using customEndpoint: ${customEndpoint}`);
-    } else {
-      console.log(`[API Client] Using API_BASE (runtime): ${apiBase}`);
-    }
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      // La sesión viaja en la cookie httpOnly: el backend no devuelve el JWT en el cuerpo
+      // de login/exchange-code (contrato en backend-miru src/auth/auth-cookie.ts).
+      'X-Auth-Mode': 'cookie',
       ...(fetchOptions.headers as Record<string, string> || {}),
     };
 
-    // Agregar token si existe y no se omite
-    let token: string | null = null;
-    if (!skipAuth) {
-      token = getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        
-        // Verificar si necesita renovación (cada 10 minutos)
-        try {
-          const tokenData = JSON.parse(atob(token.split('.')[1]));
-          const now = Math.floor(Date.now() / 1000);
-          const lastActivity = tokenData.lastActivity || tokenData.iat;
-          const timeSinceActivity = now - lastActivity;
-          
-          // Si han pasado más de 10 minutos, renovar token (compartido: evita carreras / "Token revocado")
-          if (timeSinceActivity > 10 * 60) {
-            try {
-              const refreshed = await runSharedAccessTokenRefresh();
-              if (refreshed.kind === 'ok') {
-                token = refreshed.token;
-                headers['Authorization'] = `Bearer ${token}`;
-              }
-            } catch (refreshError) {
-              console.warn('Error renovando token:', refreshError);
-            }
-          }
-        } catch {
-          // Ignorar errores de decodificación del token
-        }
+    // Sin header Authorization: el JWT es una cookie httpOnly que JS no puede leer.
+    const sesion = !skipAuth && hasSession();
+    // Si el último token emitido tiene más de 10 minutos, renovarlo antes (compartido: evita
+    // carreras / "Token revocado"). Antes se calculaba con `lastActivity` del JWT.
+    if (sesion && msSinceSessionRefresh() > 10 * 60 * 1000) {
+      try {
+        await runSharedAccessTokenRefresh();
+      } catch (refreshError) {
+        console.warn('Error renovando token:', refreshError);
       }
     }
+    // skipAuth = petición pública: no enviar la cookie de sesión.
+    const credentials: RequestCredentials = skipAuth ? 'omit' : 'include';
 
     try {
       // En el navegador, usar URL relativa cuando sea mismo origen para que el proxy de Next.js aplique
@@ -99,7 +75,7 @@ class ApiClient {
       const response = await fetch(fetchUrl, {
         ...fetchOptions,
         headers,
-        credentials: 'include', // ⚠️ OBLIGATORIO: El backend tiene credentials: true
+        credentials,
       });
 
       // Manejar errores HTTP
@@ -126,12 +102,12 @@ class ApiClient {
           );
 
           // ✅ Intentar renovar token y reintentar la petición UNA vez antes de echar al usuario (evita "acceso denegado" al admin tras un cambio)
-          if (typeof window !== 'undefined' && !isLoginPage && token) {
+          if (typeof window !== 'undefined' && !isLoginPage && sesion) {
             try {
               const refreshed = await runSharedAccessTokenRefresh();
               if (refreshed.kind === 'ok') {
-                const newHeaders = { ...headers, 'Authorization': `Bearer ${refreshed.token}` };
-                const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers: newHeaders, credentials: 'include' });
+                // El refresh ya rotó la cookie: el reintento la envía sola.
+                const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers, credentials: 'include' });
                 if (retryRes.ok) {
                   const retryBody = await retryRes.text();
                   if (!retryBody?.trim()) return {} as T;
@@ -221,10 +197,9 @@ class ApiClient {
               }
             }
           } else if (typeof window !== 'undefined' && isLoginPage) {
-            // Si estamos en la página de login, solo limpiar el token si existe
+            // Si estamos en la página de login, solo limpiar la sesión local si existe
             // pero NO redirigir - dejar que el componente Login maneje el error
-            const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-            if (token) {
+            if (hasSession()) {
               clearAuthData();
             }
           }
@@ -447,7 +422,6 @@ class ApiClient {
       skip403Redirect = Boolean(customBaseOrOptions.skip403Redirect);
     }
     const url = customBase ? `${customBase}${endpoint}` : undefined;
-    console.log(`[API Client] GET - endpoint: ${endpoint}, customBase: ${customBase}, constructed url: ${url}`);
     return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect, skip403Redirect });
   }
 

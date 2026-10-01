@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import { useSuperficie } from '../cliente/SuperficieCliente';
 
 interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'style'> {
   children: ReactNode;
@@ -25,32 +26,26 @@ export default function Card({
   };
 
   const variants = {
-    default: {
-      bg: 'var(--tarjetas-paneles)',
-      border: 'none',
-      shadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    },
-    elevated: {
-      bg: 'var(--tarjetas-paneles)',
-      border: 'none',
-      shadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    },
-    outlined: {
-      bg: 'transparent',
-      border: '1px solid var(--encabezados-alterno)',
-      shadow: 'none',
-    },
+    default: { bg: 'var(--tarjetas-paneles)', border: 'none' },
+    elevated: { bg: 'var(--tarjetas-paneles)', border: 'none' },
+    outlined: { bg: 'transparent', border: '1px solid var(--mf-linea-fuerte)' },
   };
 
   const variantStyle = variants[variant];
+  // Mismo sistema en cliente, /operacion y /admin (DESIGN.md): sombra tintada y radio de marca.
+  // Solo cambia la escala: 14px en el portal de clientas, 12px en los paneles (más densos), y la
+  // elevación al hover de las tarjetas clicables, que existe solo en el portal (cliente.css).
+  const cliente = useSuperficie() === 'cliente';
+  const forma = `mf-card${cliente ? '' : ' mf-card--panel'}${props.onClick ? ' mf-card--interactiva' : ''}`;
+  const sombra = variant === 'outlined' ? 'none' : 'var(--mf-sombra-1)';
 
   return (
     <div
-      className={`rounded-lg ${paddingStyles[padding]} ${className}`}
+      className={`${forma} ${paddingStyles[padding]} ${className}`}
       style={{
         backgroundColor: variantStyle.bg,
         border: variantStyle.border,
-        boxShadow: variantStyle.shadow,
+        boxShadow: sombra,
         ...style,
       }}
       {...props}

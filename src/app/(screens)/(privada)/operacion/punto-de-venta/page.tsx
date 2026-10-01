@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import TarjetaKpi from '../../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
 import Modal from '../../../../components/ui/Modal';
@@ -298,29 +299,9 @@ export default function PuntoDeVentaPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ShoppingCart size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas de hoy</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loadingVentas ? '…' : ventasHoy.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total del día</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(totalDia)}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <TarjetaKpi icono={ShoppingCart} etiqueta="Ventas de hoy" cargando={loadingVentas} valor={ventasHoy.length} />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total del día" valor={fmtMoneda(totalDia)} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
@@ -457,7 +438,8 @@ export default function PuntoDeVentaPage() {
                       value={busquedaCliente}
                       onChange={(e) => { setBusquedaCliente(e.target.value); setMostrarResultadosCliente(true); }}
                       onFocus={() => setMostrarResultadosCliente(true)}
-                      placeholder="Buscar por nombre o teléfono... (vacío = Público en general)"
+                      placeholder="Buscar por nombre o teléfono…"
+                      helperText="Déjalo vacío para vender a Público en general."
                       fullWidth
                     />
                     {mostrarResultadosCliente && busquedaCliente.trim().length >= 2 && (

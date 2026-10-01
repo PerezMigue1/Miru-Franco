@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -21,14 +22,7 @@ export default function GarantiasClientePage() {
   return (
     <ModuleLayout>
       <div className="max-w-4xl mx-auto py-4">
-          <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Garantías y Soporte
-            </h1>
-            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
-              Todos nuestros servicios tienen garantía de satisfacción. Estamos aquí para ayudarte.
-            </p>
-          </div>
+          <PageHeader title="Garantías y Soporte" subtitle="Todos nuestros servicios tienen garantía de satisfacción. Estamos aquí para ayudarte." />
 
           <Card className="mb-6">
             <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>

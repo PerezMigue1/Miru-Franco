@@ -3,7 +3,30 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  BarChart3,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  CreditCard,
+  IdCard,
+  LockKeyhole,
+  LogOut,
+  MapPin,
+  MessageSquare,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  Tag,
+  UserRound,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import Button from '../ui/Button';
+import Badge from '../ui/Badge';
+import Card from '../ui/Card';
 import { clearAuthData } from '../../utils/security';
 import { showAlert } from '../../utils/toast';
 import { api } from '../../services/auth';
@@ -45,9 +68,6 @@ function roleLabel(role: NormalizedRole): string {
   }
 }
 
-// Siempre usar variables CSS para respetar light/dark mode
-const LINK_BLUE = 'var(--enlaces-textos-interactivos)';
-
 type SidebarItem = 'perfil' | 'pedidos' | 'citas' | 'tienda' | 'seguridad';
 type ActiveSection = 'informacion-personal' | 'datos-cuenta' | null;
 
@@ -55,16 +75,22 @@ interface ProfileCard {
   id: string;
   title: string;
   subtitle: string;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   href?: string;
   section?: ActiveSection;
   alert?: boolean;
 }
 
+/** Grupos del hub de la cuenta (listas de filas en vez de tarjetas iguales). */
+const GRUPOS_TARJETAS: { titulo: string; ids: string[] }[] = [
+  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'direcciones', 'tarjetas', 'comunicaciones'] },
+  { titulo: 'Citas y beneficios', ids: ['citas', 'promociones'] },
+  { titulo: 'Paneles del salón', ids: ['admin', 'operacion'] },
+];
+
 export default function UserProfile() {
   const router = useRouter();
   const [logoutAllLoading, setLogoutAllLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dismissBanner, setDismissBanner] = useState(false);
   const [activeSection, setActiveSection] = useState<ActiveSection>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
@@ -202,44 +228,28 @@ export default function UserProfile() {
       id: 'info',
       title: 'Información personal',
       subtitle: 'Foto de perfil, nombre, teléfono y datos capilares.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-        </svg>
-      ),
+      icon: IdCard,
       section: 'informacion-personal',
     },
     {
       id: 'cuenta',
       title: 'Datos de tu cuenta',
       subtitle: `Rol: ${roleLabel(normalizedRole)}. ${user.desde ? `Cliente desde ${user.desde}.` : ''}`,
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
+      icon: UserRound,
       section: 'datos-cuenta',
     },
     {
       id: 'citas',
       title: 'Mis citas',
       subtitle: 'Consulta, reprograma o cancela tus citas agendadas.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
+      icon: CalendarDays,
       href: '/cliente/servicios-citas/mis-citas',
     },
     {
       id: 'seguridad',
       title: 'Seguridad',
       subtitle: 'Modifica tu contraseña y mantén tu cuenta segura.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-      ),
+      icon: LockKeyhole,
       href: '/forgot-password',
       alert: true,
     },
@@ -247,66 +257,42 @@ export default function UserProfile() {
       id: 'tarjetas',
       title: 'Tarjetas',
       subtitle: 'Métodos de pago guardados para tus compras.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M5 7h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2zm2 8h3" />
-        </svg>
-      ),
+      icon: CreditCard,
       href: '/cliente/tarjetas',
     },
     {
       id: 'direcciones',
       title: 'Direcciones',
       subtitle: 'Direcciones guardadas para tus envíos.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 22s7-4.35 7-11a7 7 0 10-14 0c0 6.65 7 11 7 11zm0-9a2 2 0 100-4 2 2 0 000 4z" />
-        </svg>
-      ),
+      icon: MapPin,
       href: '/cliente/direcciones',
     },
     {
       id: 'comunicaciones',
       title: 'Comunicaciones',
       subtitle: 'Elige qué tipo de información quieres recibir.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16v10H5.5L4 15.5V4zm4 13h8m-6 3h4" />
-        </svg>
-      ),
+      icon: MessageSquare,
       href: '/cliente/comunicaciones',
     },
     {
       id: 'admin',
       title: 'Panel de administración',
       subtitle: 'Gestiona el salón y reportes.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      ),
+      icon: BarChart3,
       href: '/admin',
     },
     {
       id: 'operacion',
       title: 'Panel de operación',
       subtitle: 'Agenda, citas y servicios.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      ),
+      icon: ClipboardList,
       href: '/operacion',
     },
     {
       id: 'promociones',
       title: 'Promociones',
       subtitle: 'Ofertas y descuentos disponibles.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-        </svg>
-      ),
+      icon: Tag,
       href: '/cliente/promociones',
     },
   ];
@@ -317,176 +303,147 @@ export default function UserProfile() {
     // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
     // Sin pasarela real, "Tarjetas" no tiene nada verificable que gestionar — se paga en el salón.
     if (c.id === 'tarjetas') return false;
+    // Oculto: la ruta /cliente/comunicaciones todavía no existe (llevaba a un 404). No borrar.
+    if (c.id === 'comunicaciones') return false;
     return true;
   });
 
-  const sidebarItems: { id: SidebarItem; label: string; href?: string; icon: React.ReactNode }[] = [
-    { id: 'perfil', label: 'Mi perfil', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /> },
-    { id: 'pedidos', label: 'Mis pedidos', href: '/cliente/tienda-online/mis-pedidos', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /> },
-    { id: 'citas', label: 'Mis citas', href: '/cliente/servicios-citas/mis-citas', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
-    { id: 'tienda', label: 'Tienda', href: '/cliente/tienda-online', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /> },
-    { id: 'seguridad', label: 'Seguridad', href: '/forgot-password', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /> },
+  const sidebarItems: { id: SidebarItem; label: string; href?: string; icon: LucideIcon }[] = [
+    { id: 'perfil', label: 'Mi perfil', icon: UserRound },
+    { id: 'pedidos', label: 'Mis pedidos', href: '/cliente/tienda-online/mis-pedidos', icon: ShoppingBag },
+    { id: 'citas', label: 'Mis citas', href: '/cliente/servicios-citas/mis-citas', icon: CalendarDays },
+    { id: 'tienda', label: 'Tienda', href: '/cliente/tienda-online', icon: Store },
+    { id: 'seguridad', label: 'Seguridad', href: '/forgot-password', icon: LockKeyhole },
   ];
 
-  return (
-    <div className="flex min-h-[60vh]">
-      {/* Sidebar */}
-      <aside
-        className={`shrink-0 border-r transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}
-        style={{ backgroundColor: 'var(--fondos-suaves)', borderColor: 'var(--tarjetas-paneles)' }}
-      >
-        <div className="sticky top-36 p-4">
-          <div className="flex items-center gap-2 mb-6">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--encabezados-alterno)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; e.currentTarget.style.color = 'var(--texto-fondo-oscuro)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--encabezados-alterno)'; }}
-              aria-label={sidebarOpen ? 'Colapsar menú' : 'Expandir menú'}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            {sidebarOpen && (
-              <h2 className="text-base font-bold tracking-wide"
-                style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--encabezados-alterno)' }}>
-                Mi cuenta
-              </h2>
-            )}
-          </div>
-          <nav className="space-y-1">
-            {sidebarItems.map((item) => {
-              const isActive = item.id === 'perfil';
-              const content = (
-                <>
-                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {item.icon}
-                  </svg>
-                  {sidebarOpen && <span>{item.label}</span>}
-                  {item.href && sidebarOpen && (
-                    <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  )}
-                </>
-              );
-              const itemStyle = {
-                backgroundColor: isActive ? 'var(--hover)' : 'transparent',
-                color: isActive ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
-                borderLeft: isActive ? '3px solid var(--logo-branding)' : '3px solid transparent',
-              };
-              return item.href ? (
-                <a
-                  key={item.id}
-                  href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
-                  style={itemStyle}
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'rgba(166,75,99,0.1)'; } }}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; } }}
-                >
-                  {content}
-                </a>
-              ) : (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                  style={itemStyle}
-                >
-                  {content}
-                </div>
-              );
-            })}
-          </nav>
-          {sidebarOpen && (
-            <div className="mt-6 pt-4 border-t border-[var(--tarjetas-paneles)]">
-              <button
-                onClick={handleLogoutAllSessions}
-                disabled={logoutAllLoading}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors"
-                style={{ color: 'var(--danger)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--hover)'; e.currentTarget.style.color = 'var(--texto-fondo-oscuro)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--danger)'; }}
-              >
-                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                {logoutAllLoading ? 'Cerrando...' : 'Cerrar sesión'}
-              </button>
-            </div>
-          )}
-        </div>
-      </aside>
+  const abrirTarjeta = (card: ProfileCard) => {
+    if (card.href) router.push(card.href);
+    else if (card.section) setActiveSection(card.section);
+  };
 
-      {/* Contenido principal */}
-      <main className="flex-1 min-w-0 p-6 lg:p-8 bg-[var(--fondo-general)]">
-        {/* Cabecera usuario */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
-            <input
-              ref={avatarFileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="sr-only"
-              tabIndex={-1}
+  const volver = (
+    <button
+      type="button"
+      onClick={() => setActiveSection(null)}
+      className="mb-5 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline"
+      style={{ color: 'var(--menu-texto-principal)' }}
+    >
+      <ChevronLeft size={16} aria-hidden />
+      Volver a mi cuenta
+    </button>
+  );
+
+  const cerrarSesion = (
+    <button
+      type="button"
+      onClick={handleLogoutAllSessions}
+      disabled={logoutAllLoading}
+      className="mf-perfil-nav__item mf-perfil-nav__item--peligro"
+    >
+      <LogOut size={18} aria-hidden />
+      <span>{logoutAllLoading ? 'Cerrando…' : 'Cerrar sesión'}</span>
+    </button>
+  );
+
+  return (
+    <div className="mf-perfil">
+      {/* Navegación de la cuenta: fila desplazable en móvil, columna fija en escritorio */}
+      <nav aria-label="Mi cuenta" className="mf-perfil-nav">
+        <ul className="mf-perfil-nav__lista">
+          {sidebarItems.map((item) => {
+            const Icono = item.icon;
+            const activo = item.id === 'perfil';
+            return (
+              <li key={item.id}>
+                {item.href ? (
+                  <Link href={item.href} className="mf-perfil-nav__item">
+                    <Icono size={18} aria-hidden />
+                    <span>{item.label}</span>
+                  </Link>
+                ) : (
+                  <span className="mf-perfil-nav__item" aria-current={activo ? 'page' : undefined}>
+                    <Icono size={18} aria-hidden />
+                    <span>{item.label}</span>
+                  </span>
+                )}
+              </li>
+            );
+          })}
+          <li className="hidden lg:block mf-perfil-nav__separado">{cerrarSesion}</li>
+        </ul>
+      </nav>
+
+      <div className="min-w-0">
+        {/* Cabecera de la cuenta */}
+        <header className="mf-entrada mb-8 flex flex-col gap-5 sm:flex-row sm:items-center">
+          <input
+            ref={avatarFileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            disabled={avatarFotoUploading}
+            onChange={(e) => void handleAvatarFotoSelected(e.target.files?.[0] ?? null)}
+          />
+          <button
+            type="button"
+            onClick={openAvatarFotoPicker}
+            disabled={avatarFotoUploading}
+            className="group relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-full disabled:cursor-wait disabled:opacity-60"
+            style={{
+              backgroundColor: 'var(--tarjetas-paneles)',
+              boxShadow: '0 0 0 2px var(--logo-branding), 0 0 0 6px var(--fondos-suaves)',
+            }}
+            title={fotoPerfilSrc ? 'Cambiar foto (elegir archivo)' : 'Elegir foto de perfil'}
+            aria-label={fotoPerfilSrc ? 'Cambiar foto de perfil, elegir archivo' : 'Elegir foto de perfil'}
+          >
+            {fotoPerfilSrc ? (
+              <Image
+                src={fotoPerfilSrc}
+                alt={user.nombre ? `Foto de ${user.nombre}` : 'Foto de perfil'}
+                fill
+                className="object-cover"
+                sizes="96px"
+                unoptimized={
+                  fotoPerfilSrc.includes('http') && !fotoPerfilSrc.includes('res.cloudinary.com')
+                }
+              />
+            ) : (
+              <span
+                className="flex h-full w-full items-center justify-center text-2xl font-bold"
+                style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
+              >
+                {initials}
+              </span>
+            )}
+            <span
+              className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/45"
               aria-hidden
-              disabled={avatarFotoUploading}
-              onChange={(e) => void handleAvatarFotoSelected(e.target.files?.[0] ?? null)}
-            />
-            <button
-              type="button"
-              onClick={openAvatarFotoPicker}
-              disabled={avatarFotoUploading}
-              className="relative w-24 h-24 rounded-full overflow-hidden shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--enlaces-textos-interactivos)] ring-offset-2 ring-offset-[var(--fondo-general)] bg-[var(--tarjetas-paneles)] group disabled:opacity-60 disabled:cursor-wait"
-              style={{ border: '2px solid var(--logo-branding)', boxShadow: '0 0 0 4px var(--fondos-suaves)' }}
-              title={fotoPerfilSrc ? 'Cambiar foto (elegir archivo)' : 'Elegir foto de perfil'}
-              aria-label={fotoPerfilSrc ? 'Cambiar foto de perfil, elegir archivo' : 'Elegir foto de perfil'}
             >
-              {fotoPerfilSrc ? (
-                <Image
-                  src={fotoPerfilSrc}
-                  alt={user.nombre ? `Foto de ${user.nombre}` : 'Foto de perfil'}
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                  unoptimized={
-                    fotoPerfilSrc.includes('http') && !fotoPerfilSrc.includes('res.cloudinary.com')
-                  }
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[var(--texto-fondo-oscuro)]">
-                  {initials}
-                </div>
-              )}
-              <span
-                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors pointer-events-none"
-                aria-hidden
-              >
-                <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-semibold px-1 text-center leading-tight">
-                  {avatarFotoUploading ? '…' : 'Elegir'}
-                </span>
+              <span className="px-1 text-center text-xs font-semibold leading-tight text-[#f2f1ed] opacity-0 group-hover:opacity-100">
+                {avatarFotoUploading ? '…' : 'Cambiar'}
               </span>
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--encabezados-alterno)' }}>
-                {user.nombre || '—'}
-              </h1>
-              <p className="text-sm text-[var(--encabezados-alterno)]">
-                {user.email || '—'}
-              </p>
-              <span
-                className="inline-flex items-center mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider"
-                style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--logo-branding)', border: '1px solid var(--logo-branding)', opacity: 0.85 }}
-              >
+            </span>
+          </button>
+          <div className="min-w-0">
+            <h1 className="mf-titulo-pagina break-words" style={{ color: 'var(--menu-texto-principal)' }}>
+              {user.nombre || 'Mi cuenta'}
+            </h1>
+            <p className="mt-1 break-all text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              {user.email || '—'}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <Badge variant="default" size="sm">
                 {roleLabel(normalizedRole)}
-              </span>
+                {user.desde ? ` · desde ${user.desde}` : ''}
+              </Badge>
               <button
                 type="button"
                 onClick={openAvatarFotoPicker}
                 disabled={avatarFotoUploading}
-                className="mt-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
-                style={{ color: LINK_BLUE }}
+                className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-4 hover:underline disabled:opacity-60"
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 {avatarFotoUploading
                   ? 'Subiendo foto…'
@@ -494,297 +451,159 @@ export default function UserProfile() {
                     ? 'Cambiar foto de perfil'
                     : 'Elegir foto de perfil'}
               </button>
-              <p className="text-xs mt-1 text-[var(--encabezados-alterno)]">
-                Pulsa el círculo o el enlace de arriba para elegir una imagen (no abre otra pantalla).
+            </div>
+            {avatarFotoError && (
+              <p className="mt-2 text-sm" style={{ color: 'var(--danger-texto)' }} role="alert">
+                {avatarFotoError}
               </p>
-              {avatarFotoError && (
-                <p className="text-xs mt-2" style={{ color: 'var(--danger)' }} role="alert">
-                  {avatarFotoError}
+            )}
+          </div>
+        </header>
+
+        {/* Recordatorio de contraseña (se puede cerrar) */}
+        {!dismissBanner && !activeSection && (
+          <div
+            className="mf-entrada mb-8 flex flex-col gap-4 rounded-[14px] p-5 sm:flex-row sm:items-center sm:justify-between"
+            style={{
+              ['--i' as string]: 1,
+              backgroundColor: 'color-mix(in srgb, var(--logo-branding) 12%, var(--fondos-suaves))',
+            }}
+          >
+            <div className="flex items-start gap-4">
+              <span
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                style={{ backgroundColor: 'var(--fondo-general)', color: 'var(--oro-texto)' }}
+              >
+                <ShieldCheck size={22} aria-hidden />
+              </span>
+              <div>
+                <h2 className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Modifica tu contraseña y mantén tu cuenta segura
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Te recomendamos cambiar tu contraseña periódicamente.
                 </p>
-              )}
+              </div>
+            </div>
+            <div className="flex w-full items-center gap-1 sm:w-auto">
+              <Button size="sm" onClick={() => router.push('/forgot-password')}>
+                Modificar
+              </Button>
+              <button
+                type="button"
+                onClick={() => setDismissBanner(true)}
+                className="grid h-11 w-11 place-items-center rounded-[10px] hover:bg-[var(--nav-hover-bg)]"
+                style={{ color: 'var(--encabezados-alterno)' }}
+                aria-label="Cerrar recordatorio"
+              >
+                <X size={18} aria-hidden />
+              </button>
             </div>
           </div>
-
-          {/* Banner de contraseña */}
-          {!dismissBanner && (
-            <div
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-2xl shadow-sm"
-              style={{
-                backgroundColor: 'var(--fondos-suaves)',
-                border: '1px solid var(--tarjetas-paneles)',
-                borderLeftWidth: '4px',
-                borderLeftColor: 'var(--logo-branding)',
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: 'var(--tarjetas-paneles)' }}
-                >
-                  <svg className="w-6 h-6" style={{ color: 'var(--logo-branding)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-0.5 text-[var(--menu-texto-principal)]">
-                    Modifica tu contraseña y mantén tu cuenta segura
-                  </h3>
-                  <p className="text-sm text-[var(--encabezados-alterno)]">
-                    Te recomendamos cambiar tu contraseña periódicamente.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  onClick={() => router.push('/forgot-password')}
-                >
-                  Modificar
-                </Button>
-                <button
-                  onClick={() => setDismissBanner(true)}
-                  className="p-2 rounded hover:opacity-80 text-[var(--encabezados-alterno)]"
-                  aria-label="Cerrar"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Editar datos personales y perfil capilar */}
         {activeSection === 'informacion-personal' && (
-          <div className="mb-8">
-            <button
-              type="button"
-              onClick={() => setActiveSection(null)}
-              className="flex items-center gap-2 mb-6 text-sm font-medium hover:opacity-80 transition-opacity"
-              style={{ color: LINK_BLUE }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Volver
-            </button>
-            <h2 className="text-2xl font-bold mb-6 text-[var(--menu-texto-principal)]">
+          <section className="mb-8">
+            {volver}
+            <h2 className="mb-6 text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
               Información personal
             </h2>
             <PerfilDatosForm onSaved={() => void refreshUserFromApi()} />
-          </div>
+          </section>
         )}
 
         {/* Sub-vista: Datos de tu cuenta */}
         {activeSection === 'datos-cuenta' && (
-          <div className="mb-8">
-            <button
-              onClick={() => setActiveSection(null)}
-              className="flex items-center gap-2 mb-6 text-sm font-medium hover:opacity-80 transition-opacity"
-              style={{ color: LINK_BLUE }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Volver
-            </button>
-            <h2 className="text-2xl font-bold mb-6 text-[var(--menu-texto-principal)]">
+          <section className="mb-8">
+            {volver}
+            <h2 className="mb-6 text-2xl font-bold" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
               Datos de tu cuenta
             </h2>
-
-            <div className="space-y-4">
-              {/* Email */}
-              <div
-                className="rounded-xl border px-5 py-4"
-                style={{ backgroundColor: 'var(--tarjetas-paneles)', borderColor: 'var(--fondos-suaves)' }}
-              >
-                <div className="flex items-center justify-between mb-3">
+            <Card padding="sm" className="!p-0">
+              <dl>
+                {[
+                  { etiqueta: 'E-mail', valor: user.email || '—', accion: () => router.push('/forgot-password'), romper: true },
+                  { etiqueta: 'Teléfono', valor: user.telefono?.trim() ? user.telefono : '—', accion: () => setActiveSection('informacion-personal') },
+                  { etiqueta: 'ID de cuenta', valor: user.id || '—', accion: () => setActiveSection('informacion-personal'), romper: true },
+                ].map((fila, i) => (
                   <div
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--success)', color: 'var(--texto-fondo-oscuro)', opacity: 0.85 }}
+                    key={fila.etiqueta}
+                    className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    style={i > 0 ? { borderTop: '1px solid var(--mf-linea)' } : undefined}
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Validado
+                    <div className="min-w-0">
+                      <dt className="flex items-center gap-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                        {fila.etiqueta}
+                        <Badge variant="success" size="sm">Validado</Badge>
+                      </dt>
+                      <dd
+                        className={`mt-0.5 text-base font-semibold ${fila.romper ? 'break-all' : ''}`}
+                        style={{ color: 'var(--menu-texto-principal)' }}
+                      >
+                        {fila.valor}
+                      </dd>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={fila.accion} className="self-start sm:self-auto">
+                      Modificar
+                    </Button>
                   </div>
-                </div>
-                <div className="mb-3">
-                  <p className="text-sm text-[var(--encabezados-alterno)]">E-mail</p>
-                  <p className="text-base font-semibold text-[var(--menu-texto-principal)] break-all">
-                    {user.email || '—'}
-                  </p>
-                </div>
-                <hr className="border-t border-[var(--fondos-suaves)] mb-3" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => router.push('/forgot-password')}
-                  className="px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    borderColor: LINK_BLUE,
-                    color: LINK_BLUE,
-                    backgroundColor: 'transparent',
-                  }}
-                >
-                  Modificar
-                </Button>
-              </div>
+                ))}
+              </dl>
+            </Card>
+          </section>
+        )}
 
-              {/* Teléfono */}
-              <div
-                className="rounded-xl border px-5 py-4"
-                style={{ backgroundColor: 'var(--tarjetas-paneles)', borderColor: 'var(--fondos-suaves)' }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--success)', color: 'var(--texto-fondo-oscuro)', opacity: 0.85 }}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Validado
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <p className="text-sm text-[var(--encabezados-alterno)]">Teléfono</p>
-                  <p className="text-base font-semibold text-[var(--menu-texto-principal)]">
-                    {user.telefono?.trim() ? user.telefono : '—'}
-                  </p>
-                </div>
-                <hr className="border-t border-[var(--fondos-suaves)] mb-3" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setActiveSection('informacion-personal')}
-                  className="px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    borderColor: LINK_BLUE,
-                    color: LINK_BLUE,
-                    backgroundColor: 'transparent',
-                  }}
-                >
-                  Modificar
-                </Button>
-              </div>
-
-              {/* Nombre de usuario */}
-              <div
-                className="rounded-xl border px-5 py-4"
-                style={{ backgroundColor: 'var(--tarjetas-paneles)', borderColor: 'var(--fondos-suaves)' }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--success)', color: 'var(--texto-fondo-oscuro)', opacity: 0.85 }}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Validado
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <p className="text-sm text-[var(--encabezados-alterno)]">ID de cuenta</p>
-                  <p className="text-base font-semibold text-[var(--menu-texto-principal)] break-all text-sm">
-                    {user.id || '—'}
-                  </p>
-                </div>
-                <hr className="border-t border-[var(--fondos-suaves)] mb-3" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setActiveSection('informacion-personal')}
-                  className="px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    borderColor: LINK_BLUE,
-                    color: LINK_BLUE,
-                    backgroundColor: 'transparent',
-                  }}
-                >
-                  Modificar
-                </Button>
-              </div>
-            </div>
+        {/* Hub de la cuenta: grupos de filas */}
+        {!activeSection && (
+          <div className="space-y-8">
+            {GRUPOS_TARJETAS.map((grupo, gi) => {
+              const filas = grupo.ids
+                .map((id) => visibleCards.find((c) => c.id === id))
+                .filter((c): c is ProfileCard => !!c);
+              if (filas.length === 0) return null;
+              return (
+                <section key={grupo.titulo} className="mf-entrada" style={{ ['--i' as string]: gi + 2 }}>
+                  <h2 className="mb-3 text-sm font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {grupo.titulo}
+                  </h2>
+                  <Card padding="sm" className="!p-0 overflow-hidden">
+                    <ul>
+                      {filas.map((card, i) => {
+                        const Icono = card.icon;
+                        return (
+                          <li key={card.id} style={i > 0 ? { borderTop: '1px solid var(--mf-linea)' } : undefined}>
+                            <button type="button" className="mf-perfil-fila" onClick={() => abrirTarjeta(card)}>
+                              <span className="mf-perfil-fila__icono">
+                                <Icono size={20} aria-hidden />
+                              </span>
+                              <span className="min-w-0 flex-1 text-left">
+                                <span className="flex items-center gap-2 font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                                  {card.title}
+                                  {card.alert && (
+                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--warning)' }}>
+                                      <span className="sr-only">(pendiente)</span>
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="block text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                                  {card.subtitle}
+                                </span>
+                              </span>
+                              <ChevronRight size={18} aria-hidden className="shrink-0" style={{ color: 'var(--campo-placeholder)' }} />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Card>
+                </section>
+              );
+            })}
+            <div className="lg:hidden">{cerrarSesion}</div>
           </div>
         )}
-
-        {/* Grid de tarjetas */}
-        {!activeSection && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleCards.map((card, index) => {
-            const isInteractive = !!(card.href || card.section);
-            const cardContent = (
-              <button
-                type="button"
-                className="p-6 rounded-2xl h-full border text-left w-full transition-all duration-200"
-                style={{
-                  backgroundColor: 'var(--tarjetas-paneles)',
-                  borderColor: 'var(--fondos-suaves)',
-                  cursor: isInteractive ? 'pointer' : 'default',
-                }}
-                onMouseEnter={(e) => {
-                  if (isInteractive) {
-                    e.currentTarget.style.borderColor = 'var(--logo-branding)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(159,109,31,0.15)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (isInteractive) {
-                    e.currentTarget.style.borderColor = 'var(--borde-visible)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                }}
-                onClick={
-                  card.href
-                    ? () => router.push(card.href!)
-                    : card.section
-                    ? () => setActiveSection(card.section!)
-                    : undefined
-                }
-              >
-                <div className="relative mb-4">
-                  {card.alert && (
-                    <span
-                      className="absolute top-0 right-0 w-3 h-3 rounded-full"
-                      style={{ backgroundColor: 'var(--warning)' }}
-                      title="Pendiente"
-                    />
-                  )}
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--logo-branding)' }}
-                  >
-                    {card.icon}
-                  </div>
-                </div>
-                <h3 className="text-base font-bold mb-1.5" style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--encabezados-alterno)' }}>
-                  {card.title}
-                </h3>
-                <p className="text-sm" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
-                  {card.subtitle}
-                </p>
-                {isInteractive && (
-                  <div className="mt-4 flex items-center gap-1 text-sm font-medium" style={{ color: LINK_BLUE }}>
-                    Ver más
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            );
-            return (
-              <div key={card.id} style={{ animation: `fadeUp 500ms ease-out ${index * 60}ms both` }}>
-                {cardContent}
-              </div>
-            );
-          })}
-        </div>
-        )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -86,17 +86,17 @@ export default function RastreoPedidosPage() {
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
         <div className="text-center mb-8">
-          <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          <h1 className="mf-titulo-pagina mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Rastreo de pedidos
           </h1>
-          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
+          <p className="text-base md:text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
             Estado de envío e historial según los datos del sistema
           </p>
         </div>
 
         {error && (
           <Card className="mb-6 p-6 text-center">
-            <p className="mb-4" style={{ color: 'var(--danger)' }}>
+            <p className="mb-4" style={{ color: 'var(--danger-texto)' }}>
               {error}
             </p>
             <Button variant="outline" onClick={() => router.push('/login')}>

@@ -112,7 +112,7 @@ export default function ClienteNotificacionesPage() {
       <div className="max-w-3xl mx-auto py-4">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-hero mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
+            <h1 className="mf-titulo-pagina mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
               Notificaciones
             </h1>
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -128,9 +128,9 @@ export default function ClienteNotificacionesPage() {
 
         {error && (
           <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
-            <p className="mb-2" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="mb-2" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             {!hasValidToken() && (
-              <Link href="/login" className="text-sm font-semibold underline" style={{ color: 'var(--botones-principales)' }}>
+              <Link href="/login" className="text-sm font-semibold underline" style={{ color: 'var(--menu-texto-principal)' }}>
                 Iniciar sesión
               </Link>
             )}

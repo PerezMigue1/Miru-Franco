@@ -92,7 +92,7 @@ export default function FotoUsuarioUploader({ value, onChange, disabled }: Props
         </div>
       </div>
       {error && (
-        <p role="alert" className="text-xs font-medium" style={{ color: 'var(--danger)' }}>
+        <p role="alert" className="text-xs font-medium" style={{ color: 'var(--danger-texto)' }}>
           {error}
         </p>
       )}

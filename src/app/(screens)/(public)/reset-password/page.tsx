@@ -2,6 +2,10 @@
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import SuperficieCliente from '../../../components/cliente/SuperficieCliente';
 import ResetPassword from '../../../components/auth/ResetPassword';
 
 function sleep(ms: number): Promise<void> {
@@ -47,17 +51,35 @@ function ResetPasswordContent() {
   );
 }
 
+/** Llega desde el enlace del correo: misma cabecera de marca que el acceso, formulario centrado. */
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p style={{ color: '#F2F1ED' }}>Cargando...</p>
+    <SuperficieCliente className="mf-auth" style={{ backgroundColor: 'var(--fondo-general)' }}>
+      <header className="mf-auth__cabecera mf-auth__cabecera--fija">
+        <Link href="/home" className="mf-auth__volver">
+          <ArrowLeft size={16} aria-hidden />
+          Volver al inicio
+        </Link>
+        <span className="relative h-10 w-10">
+          <Image src="/logo-miru.jpg" alt="Mirú Franco" fill className="object-contain" sizes="40px" priority />
+        </span>
+      </header>
+      <main className="flex justify-center px-4 py-10 sm:py-16">
+        <div className="w-full max-w-md">
+          <Suspense
+            fallback={
+              <div className="space-y-4" aria-busy="true" aria-label="Cargando">
+                <div className="mf-skeleton h-9 w-3/4" />
+                <div className="mf-skeleton h-11 w-full" />
+                <div className="mf-skeleton h-11 w-full" />
+                <div className="mf-skeleton h-12 w-full" />
+              </div>
+            }
+          >
+            <ResetPasswordContent />
+          </Suspense>
         </div>
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
+      </main>
+    </SuperficieCliente>
   );
 }

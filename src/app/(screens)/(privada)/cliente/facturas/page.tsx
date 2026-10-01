@@ -89,19 +89,19 @@ export default function FacturasPage() {
     <ModuleLayout>
       <div className="max-w-5xl mx-auto py-4">
         <div className="text-center mb-8">
-          <h1 className="text-hero mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Mis facturas
           </h1>
-          <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
+          <p className="text-base md:text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
             Documentos fiscales asociados a tus pedidos en línea
           </p>
         </div>
 
         {error && (
           <Card className="mb-4 p-4" style={{ borderColor: 'var(--danger)' }}>
-            <p className="mb-2" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="mb-2" style={{ color: 'var(--danger-texto)' }}>{error}</p>
             {!hasValidToken() && (
-              <Link href="/login" className="text-sm font-semibold underline" style={{ color: 'var(--botones-principales)' }}>
+              <Link href="/login" className="text-sm font-semibold underline" style={{ color: 'var(--menu-texto-principal)' }}>
                 Iniciar sesión
               </Link>
             )}

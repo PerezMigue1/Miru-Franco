@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
 
 type Props = {
   urls: string[];
@@ -27,9 +28,9 @@ export function ProductoGaleriaDetalle({ urls, nombreProducto }: Props) {
 
   if (!n) {
     return (
-      <span className="text-sm sm:text-base" style={{ color: 'var(--menu-texto-principal)' }}>
-        Imagen del producto
-      </span>
+      <div className="relative h-full w-full min-h-[12rem]">
+        <ServicioImagenPlaceholder />
+      </div>
     );
   }
 

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
+import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
@@ -18,14 +19,7 @@ export default function SeguimientosClientePage() {
   return (
     <ModuleLayout>
       <div className="max-w-4xl mx-auto py-4">
-          <div className="text-center mb-8">
-            <h1 className="text-hero mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-              Seguimientos Post-Servicio
-            </h1>
-            <p className="text-lead" style={{ color: 'var(--encabezados-alterno)' }}>
-              Aquí puedes ver el seguimiento que realizamos después de tus servicios
-            </p>
-          </div>
+          <PageHeader title="Seguimientos Post-Servicio" subtitle="Aquí puedes ver el seguimiento que realizamos después de tus servicios" />
 
           <Card>
             <Table headers={['Servicio', 'Fecha', 'Estado', 'Mensaje']}>

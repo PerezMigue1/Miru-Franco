@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
@@ -399,55 +400,15 @@ export default function VentaOnlinePage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Clock3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Pendientes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.pendiente}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Package size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Preparando</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.preparando}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Truck size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Enviados</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.enviado}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Entregados</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{stats.entregado}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={Clock3} etiqueta="Pendientes" valor={stats.pendiente} />
+          <TarjetaKpi icono={Package} etiqueta="Preparando" valor={stats.preparando} />
+          <TarjetaKpi icono={Truck} etiqueta="Enviados" valor={stats.enviado} />
+          <TarjetaKpi icono={CheckCircle2} etiqueta="Entregados" valor={stats.entregado} />
         </div>
 
         {error && (
-          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}

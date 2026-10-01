@@ -84,7 +84,7 @@ export default function BaseDatosSchemasPage() {
             <Button type="button" variant="outline" onClick={cargarTablas} disabled={loadingTablas}>
               {loadingTablas ? 'Cargando tablas…' : 'Cargar tablas de la BD'}
             </Button>
-            <div className="flex-1 min-w-[220px]">
+            <div className="flex-1 min-w-0 sm:min-w-[220px]">
               <label className="block mb-1 text-xs font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                 Tabla
               </label>
@@ -103,8 +103,8 @@ export default function BaseDatosSchemasPage() {
 
           {tablaSeleccionada && (
             <p className="text-sm mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-              Mostrando columnas de la tabla <code className="text-xs bg-black/10 px-1 rounded">{tablaSeleccionada}</code>
-              {' '}del schema <code className="text-xs bg-black/10 px-1 rounded">public</code>.
+              Mostrando columnas de la tabla <code className="text-xs bg-[var(--badge-base)] px-1 rounded">{tablaSeleccionada}</code>
+              {' '}del schema <code className="text-xs bg-[var(--badge-base)] px-1 rounded">public</code>.
             </p>
           )}
 
@@ -122,7 +122,7 @@ export default function BaseDatosSchemasPage() {
               style={{ borderColor: 'var(--encabezados-alterno)' }}
             >
               <table className="w-full text-sm">
-                <thead style={{ backgroundColor: 'var(--encabezados-alterno)' }}>
+                <thead style={{ backgroundColor: 'var(--header-footer)' }}>
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>
                       Columna
@@ -177,7 +177,7 @@ export default function BaseDatosSchemasPage() {
           )}
 
           {error && (
-            <p className="mt-4 text-sm" style={{ color: 'var(--danger)' }}>
+            <p className="mt-4 text-sm" style={{ color: 'var(--danger-texto)' }}>
               {error}
             </p>
           )}

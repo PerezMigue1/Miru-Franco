@@ -1,6 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import { ArrowLeft, Check } from 'lucide-react';
+
+const PRIMARIO = {
+  ['--btn-bg' as string]: 'var(--botones-principales)',
+  ['--btn-bg-hover' as string]: 'var(--hover)',
+  ['--btn-texto' as string]: '#F2F1ED',
+} as React.CSSProperties;
+
+const SECUNDARIO = {
+  ['--btn-bg' as string]: 'transparent',
+  ['--btn-texto' as string]: 'var(--menu-texto-principal)',
+  ['--btn-borde' as string]: '1.5px solid var(--mf-linea-fuerte)',
+  ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
+  ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
+} as React.CSSProperties;
 
 interface ForgotPasswordProps {
   onSwitchToLogin?: () => void;
@@ -59,36 +74,35 @@ export default function ForgotPassword({
   if (isSent) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
+        <div>
           <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <div
+              className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--success) 18%, transparent)', color: 'var(--success-texto)' }}
+            >
+              <Check size={30} aria-hidden />
             </div>
-            <h2 className="text-page-title mb-2 text-texto-fondo-oscuro">
+            <h2 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               Email Enviado
             </h2>
-            <p className="mb-6 text-texto-fondo-oscuro">
-              Hemos enviado un enlace de recuperación a <strong>{email}</strong>
+            <p className="mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
+              Hemos enviado un enlace de recuperación a <strong className="break-all" style={{ color: 'var(--menu-texto-principal)' }}>{email}</strong>
             </p>
-            <p className="text-sm mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+            <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
               Por favor revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.
             </p>
             <div className="space-y-3">
               <button
                 onClick={handleBackToLogin}
-                className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors"
-                style={{ backgroundColor: 'var(--botones-principales)' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
+                className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                style={PRIMARIO}
               >
                 Volver a Iniciar Sesión
               </button>
               <button
                 onClick={handleResendEmail}
-                className="w-full py-3 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-texto-fondo-oscuro"
-                style={{ borderColor: 'var(--borde-secundario)' }}
+                className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                style={SECUNDARIO}
               >
                 Reenviar Email
               </button>
@@ -101,16 +115,16 @@ export default function ForgotPassword({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg shadow-lg p-8 border bg-header-footer" style={{ borderColor: 'var(--borde-sutil)' }}>
-        <h2 className="text-page-title text-center mb-2 text-texto-fondo-oscuro">
+      <div>
+        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Recuperar Contraseña
         </h2>
-        <p className="text-center mb-6 text-sm text-texto-fondo-oscuro">
+        <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
         </p>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2 text-texto-fondo-oscuro">
+            <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
               Correo Electrónico
             </label>
             <input
@@ -127,13 +141,13 @@ export default function ForgotPassword({
                   });
                 }
               }}
-              className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition-colors bg-texto-fondo-oscuro text-header-footer"
-              style={{ borderColor: errors.email ? 'var(--danger)' : 'var(--borde-visible)' }}
+              className="mf-campo w-full px-4 py-3"
+              aria-invalid={Boolean(errors.email)}
               placeholder="tu@email.com"
               disabled={isLoading}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                 {errors.email}
               </p>
             )}
@@ -142,26 +156,24 @@ export default function ForgotPassword({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: 'var(--botones-principales)' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--botones-principales)'}
+            className="mf-btn mf-btn-color w-full py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            style={PRIMARIO}
           >
             {isLoading ? 'Enviando...' : 'Enviar Enlace'}
           </button>
         </form>
 
         {onSwitchToSecurityQuestions && (
-          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--borde-sutil)' }}>
-            <p className="text-center text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+            <p className="text-center text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
               Otras opciones de recuperación:
             </p>
             <div className="space-y-2 mt-4">
               {onSwitchToSecurityQuestions && (
                 <button
                   onClick={onSwitchToSecurityQuestions}
-                  className="w-full py-2 px-4 rounded-lg border font-medium hover:opacity-80 transition-colors text-sm"
-                  style={{ borderColor: 'var(--borde-secundario)', color: 'var(--texto-fondo-oscuro)' }}
+                  className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={SECUNDARIO}
                   disabled={isLoading}
                 >
                   Recuperar por Preguntas de Seguridad
@@ -175,11 +187,12 @@ export default function ForgotPassword({
           <div className="mt-6 text-center">
             <button
               onClick={onSwitchToLogin}
-              className="text-sm transition-colors"
-              style={{ color: 'var(--texto-fondo-oscuro)' }}
+              className="inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold underline-offset-4 hover:underline"
+              style={{ color: 'var(--menu-texto-principal)' }}
               disabled={isLoading}
             >
-              ← Volver a Iniciar Sesión
+              <ArrowLeft size={16} aria-hidden />
+              Volver a Iniciar Sesión
             </button>
           </div>
         )}

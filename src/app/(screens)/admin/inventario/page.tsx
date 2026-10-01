@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
 import CatalogoCard from '../../../components/admin/CatalogoCard';
 import { IMG_SERVICIO_PLACEHOLDER } from '../../../utils/serviceImagePlaceholder';
+import { imagenProductoMostrable } from '../../../utils/normalizarUrlImagen';
+import { ServicioImagenPlaceholder } from '../../../components/servicios/ServicioImagen';
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -341,66 +344,22 @@ export default function InventarioPage() {
         </div>
 
         {/* KPIs con jerarquía */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Package size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total productos</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{totalProductos}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={Package} etiqueta="Total productos" valor={totalProductos} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Valor total</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>${valorTotal.toLocaleString('es-MX')}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Valor total" valor={<>${valorTotal.toLocaleString('es-MX')}</>} />
 
-          <Card
-            variant="elevated"
-            padding="lg"
-            style={{ boxShadow: '0 0 0 1.5px var(--warning), 0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(217, 142, 4, 0.2)' }}>
-                <AlertTriangle size={22} style={{ color: 'var(--warning)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Stock bajo (≤5)</p>
-                <p className="text-3xl font-bold mt-0.5" style={{ color: 'var(--warning-texto)' }}>{stockBajo}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={AlertTriangle} etiqueta="Stock bajo (≤5)" valor={stockBajo} tono="aviso" alerta={stockBajo > 0} />
 
-          <Card
-            variant="elevated"
-            padding="lg"
-            style={{ boxShadow: '0 0 0 1.5px var(--danger), 0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(113, 0, 20, 0.15)' }}>
-                <CircleX size={24} style={{ color: 'var(--danger)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Sin stock</p>
-                <p className="text-4xl font-bold mt-0.5" style={{ color: 'var(--danger-texto)' }}>{sinStock}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={CircleX} etiqueta="Sin stock" valor={sinStock} tono="peligro" alerta={sinStock > 0} />
         </div>
 
         {error && (
-          <Card className="border-l-4" padding="md" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card
+            padding="md"
+            role="alert"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}
+          >
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
@@ -479,8 +438,9 @@ export default function InventarioPage() {
                 return (
                   <CatalogoCard
                     key={producto.id}
-                    imagenUrl={producto.imagen}
+                    imagenUrl={imagenProductoMostrable(producto.imagenes?.[0] ?? producto.imagen)}
                     imagenFallback={IMG_SERVICIO_PLACEHOLDER}
+                    placeholder={<ServicioImagenPlaceholder />}
                     titulo={producto.nombre}
                     estadoBadge={
                       <Badge variant={getEstadoColor(!!producto.disponible)} size="sm">
@@ -581,7 +541,7 @@ export default function InventarioPage() {
         {aplicandoDescuento && (
           <div
             className="flex items-center gap-3 mb-4 p-3 rounded-lg"
-            style={{ backgroundColor: 'rgba(217, 142, 4, 0.15)', borderLeft: `4px solid ${'var(--warning)'}` }}
+            style={{ backgroundColor: 'rgba(217, 142, 4, 0.15)', boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${'var(--warning)'} 45%, transparent)` }}
           >
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-current shrink-0" style={{ color: 'var(--warning)' }} />
             <div>

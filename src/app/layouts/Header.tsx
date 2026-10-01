@@ -7,7 +7,7 @@ import Image from 'next/image';
 import MenuHorizontal from './MenuHorizontal';
 import MenuHamburguesa from './MenuHamburguesa';
 import ThemeToggle from '../components/ui/ThemeToggle';
-import { clearAuthData, getToken } from '../utils/security';
+import { clearAuthData, hasSession } from '../utils/security';
 import { useCart } from '../context/CartContext';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
@@ -46,8 +46,7 @@ export default function Header() {
   }, []);
 
   const syncUserFromStorage = () => {
-    const token = getToken();
-    const logged = !!(token && token.trim());
+    const logged = hasSession();
     setIsLoggedIn(logged);
     if (typeof window === 'undefined' || !logged) {
       setUserName('Usuario');
@@ -92,7 +91,7 @@ export default function Header() {
   const cargarNotificacionesReqId = useRef(0);
   const cargarNotificaciones = useCallback(async (): Promise<void> => {
     const reqId = ++cargarNotificacionesReqId.current;
-    if (!getToken()) {
+    if (!hasSession()) {
       if (cargarNotificacionesReqId.current === reqId) setNotificationsCount(0);
       return;
     }
@@ -208,15 +207,15 @@ export default function Header() {
           tamaño de fuente, o el idioma). */}
       <div
         ref={fixedBarRef}
-        className={`fixed top-0 left-0 right-0 z-50 flex flex-col transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex flex-col transition-shadow duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}
       >
         {/* Barra Superior - Top Header */}
         <header
-          className={`relative z-20 transition-all duration-300 ${scrolled ? 'backdrop-blur-sm' : ''}`}
+          className={`relative z-20 ${scrolled ? 'backdrop-blur-sm' : ''}`}
           style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
         >
         <div className="layout-page">
-          <div className="flex items-center gap-2 sm:gap-3 py-2">
+          <div className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2">
             {/* Izquierda: Menu + Logo (apilado: imagen arriba, nombre abajo) */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
@@ -234,10 +233,10 @@ export default function Header() {
                 </svg>
               </button>
 
-              {/* Apilado (imagen arriba, texto abajo, centrado) solo en móvil; de sm: en
-                  adelante vuelve a ser lado a lado como en escritorio de toda la vida. */}
-              <div className="flex flex-col sm:flex-row items-center gap-0 sm:gap-3 shrink-0 min-w-0 overflow-hidden">
-                <div className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16">
+              {/* Monograma al lado del nombre también en móvil (apilado ocupaba casi un tercio de
+                  la pantalla). Bajo 384px no cabe junto a los iconos: queda el logotipo solo. */}
+              <div className="flex flex-row items-center gap-1.5 sm:gap-3 min-w-0 overflow-hidden">
+                <div className="relative shrink-0 hidden min-[384px]:block w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16">
                   <Image
                     src="/logo-miru.jpg"
                     alt="Mirú Franco Logo"
@@ -247,27 +246,13 @@ export default function Header() {
                     priority
                   />
                 </div>
-                <div className="flex flex-col items-center sm:items-start min-w-0 leading-tight">
-                  <h1
-                    className="text-logo text-logo-branding truncate max-w-full"
-                    style={{
-                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                      margin: 0,
-                      padding: 0
-                    }}
-                  >
-                    MIRÚ <span className="italic">FRANCO</span>
-                  </h1>
-                  <h2
-                    className="text-logo-small text-logo-branding truncate max-w-full"
-                    style={{
-                      textShadow: '0 2px 4px rgba(159, 109, 31, 0.3)',
-                      margin: 0,
-                      padding: 0,
-                    }}
-                  >
-                    BEAUTY SALÓN
-                  </h2>
+                <div className="flex flex-col items-start min-w-0 leading-tight">
+                  {/* Logo textual, no encabezado: el Header se repite en todas las páginas y cada
+                      página ya tiene su propio <h1> (la home tenía dos: "MIRÚ FRANCO" y "MIRÚ"). */}
+                  <p className="mf-logotipo truncate max-w-full">
+                    Mirú <span className="mf-logotipo__franco">Franco</span>
+                  </p>
+                  <p className="mf-logotipo__salon truncate max-w-full">Beauty Salón</p>
                 </div>
               </div>
             </div>
@@ -388,7 +373,7 @@ export default function Header() {
                                 router.push('/perfil');
                               }}
                               className="text-sm font-medium hover:underline flex items-center gap-1"
-                              style={{ color: 'var(--enlaces-textos-interactivos)' }}
+                              style={{ color: 'var(--texto-enlace-sobre-calido)' }}
                             >
                               Mi perfil
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,7 +476,7 @@ export default function Header() {
             arriba, así que siempre queda pegada al header sin importar su altura real. */}
         <nav style={{ backgroundColor: 'var(--botones-principales)' }}>
           <div className="layout-page">
-            <div className="flex items-center justify-center h-14">
+            <div className="flex items-center justify-center h-11 sm:h-14">
               <MenuHorizontal />
             </div>
           </div>
@@ -502,13 +487,13 @@ export default function Header() {
       {isMenuOpen && (
         <>
           <div
-            className="fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide"
+            className="mf-menu-movil fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide"
             style={{ backgroundColor: 'var(--header-footer)' }}
           >
             <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
           </div>
           <div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="mf-velo fixed inset-0 z-40"
             onClick={() => setIsMenuOpen(false)}
           />
         </>

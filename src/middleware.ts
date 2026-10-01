@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { RUTAS_PUBLICAS_ESTATICAS } from './app/utils/rutasPublicasEstaticas';
 
 function randomNonceBase64(): string {
   const bytes = new Uint8Array(16);
@@ -61,25 +62,16 @@ function imgSrcOrigins(): string[] {
   return [...out];
 }
 
-/**
- * CSP en producción: nonce + strict-dynamic para scripts de Next sin 'unsafe-inline' en script-src.
- * img-src sin esquema comodín (https:) ni *.host (reduce alertas ZAP "CSP: Wildcard").
- * style-src mantiene 'unsafe-inline' por uso de style={{}} en la app (ZAP puede seguir avisando ahí).
- */
-export function middleware(request: NextRequest) {
-  if (process.env.NODE_ENV === 'development') {
-    return NextResponse.next();
-  }
+const rutasPublicasEstaticas = new Set(RUTAS_PUBLICAS_ESTATICAS);
 
-  const nonce = randomNonceBase64();
-
-  const csp = [
+function buildCsp(scriptSrc: string): string {
+  return [
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://vercel.live`,
+    scriptSrc,
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "style-src-attr 'unsafe-inline'",
@@ -89,6 +81,35 @@ export function middleware(request: NextRequest) {
     "frame-src 'self' https://vercel.live",
     'upgrade-insecure-requests',
   ].join('; ');
+}
+
+/**
+ * CSP en producción: 'self' + nonce para scripts de Next sin 'unsafe-inline' en script-src.
+ * img-src sin esquema comodín (https:) ni *.host (reduce alertas ZAP "CSP: Wildcard").
+ * style-src mantiene 'unsafe-inline' por uso de style={{}} en la app (ZAP puede seguir avisando ahí).
+ */
+export function middleware(request: NextRequest) {
+  if (process.env.NODE_ENV === 'development') {
+    return NextResponse.next();
+  }
+
+  if (rutasPublicasEstaticas.has(request.nextUrl.pathname)) {
+    // HTML estático (sin nonce): los scripts inline de Next solo pueden permitirse con 'unsafe-inline'.
+    // Estas páginas no reflejan entrada del usuario (contenido fijo + catálogo escapado por React).
+    const response = NextResponse.next();
+    response.headers.set(
+      'Content-Security-Policy',
+      buildCsp("script-src 'self' 'unsafe-inline' https://vercel.live")
+    );
+    return response;
+  }
+
+  const nonce = randomNonceBase64();
+  // Sin 'strict-dynamic': con él el navegador ignora 'self' y exige nonce a todo <script src>.
+  // Next 16 emite los chunks de loading/error/not-found (create-component-styles-and-scripts)
+  // sin atributo nonce, y quedaban bloqueados. 'self' solo cubre /_next/static (el origen no
+  // sirve JS subido por usuarios ni JSONP); los scripts inline siguen exigiendo el nonce.
+  const csp = buildCsp(`script-src 'self' 'nonce-${nonce}' https://vercel.live`);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);

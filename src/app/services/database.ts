@@ -4,7 +4,7 @@
  */
 
 import { getBackendBaseUrl } from './config';
-import { getToken } from '../utils/security';
+import { hasSession } from '../utils/security';
 
 /** Ruta base para endpoints de base de datos (import, export). */
 const DB_API_PREFIX = '/api/db';
@@ -63,8 +63,7 @@ export async function importarDatos(
   modo: ModoImportacion = 'missing_only'
 ): Promise<ResultadoImportacion> {
   const base = getBackendBaseUrl();
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
 
@@ -76,9 +75,6 @@ export async function importarDatos(
   try {
     const res = await fetch(`${base}${DB_API_PREFIX}/import`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       credentials: 'include',
       body: formData,
     });
@@ -123,16 +119,12 @@ export async function obtenerTablasImportables(): Promise<
   { success: true; tablas: TablaImportable[] } | { success: false; error: string }
 > {
   const base = getBackendBaseUrl();
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
   try {
     const res = await fetch(`${base}${DB_API_PREFIX}/import/tables`, {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
@@ -174,8 +166,7 @@ export async function truncarTabla(
   opciones?: { restartIdentity?: boolean; cascade?: boolean }
 ): Promise<ResultadoTruncate> {
   const base = getBackendBaseUrl();
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
 
@@ -184,7 +175,6 @@ export async function truncarTabla(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       credentials: 'include',
       body: JSON.stringify({
@@ -221,8 +211,7 @@ export async function exportarDatos(
   formato: 'csv' | 'json'
 ): Promise<{ success: true; blob: Blob; filename: string } | { success: false; error: string }> {
   const base = getBackendBaseUrl();
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
 
@@ -230,9 +219,6 @@ export async function exportarDatos(
     const url = `${base}${DB_API_PREFIX}/export?tabla=${encodeURIComponent(tabla)}&formato=${encodeURIComponent(formato)}`;
     const res = await fetch(url, {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       credentials: 'include',
     });
 
@@ -280,8 +266,7 @@ export async function obtenerDiagrama(
   formato: FormatoDiagrama
 ): Promise<{ success: true; blob: Blob; filename: string } | { success: false; error: string }> {
   const base = getBackendBaseUrl();
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
 
@@ -293,9 +278,6 @@ export async function obtenerDiagrama(
         : `${base}${DIAGRAM_ENDPOINT}?formato=${encodeURIComponent(formato)}`;
     const res = await fetch(url, {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       credentials: 'include',
     });
 
@@ -354,14 +336,13 @@ const getExportDirectBase = () => `${getBackendBaseUrl()}${EXPORT_DIRECT_PREFIX}
 export async function listarTablasDirectas(): Promise<
   { success: true; tablas: string[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
   try {
     const res = await fetch(getExportDirectBase(), {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -390,14 +371,13 @@ export type OpcionesExportDirecto = {
 export async function obtenerColumnasDirectas(tabla: string): Promise<
   { success: true; columnas: string[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
   try {
     const res = await fetch(
       `${getExportDirectBase()}?tabla=${encodeURIComponent(tabla)}&meta=1`,
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+      { method: 'GET', credentials: 'include' }
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -516,14 +496,13 @@ export type IndexStatDirecta = {
 export async function obtenerSchemaDirecto(
   tabla: string
 ): Promise<{ success: true; columnas: ColumnaSchemaDirecta[] } | { success: false; error: string }> {
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
   try {
     const res = await fetch(
       `${getExportDirectBase()}?tabla=${encodeURIComponent(tabla)}&meta=schema`,
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+      { method: 'GET', credentials: 'include' }
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -544,12 +523,11 @@ export async function obtenerSchemaDirecto(
 export async function obtenerActividadDirecta(): Promise<
   { success: true; rows: ActivityRowDirecta[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=activity`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -566,12 +544,11 @@ export async function obtenerActividadDirecta(): Promise<
 export async function obtenerLocksDirectos(): Promise<
   { success: true; rows: LockRowDirecta[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=locks`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -584,12 +561,11 @@ export async function obtenerLocksDirectos(): Promise<
 export async function obtenerResumenBdDirecto(): Promise<
   { success: true; data: DbSummaryDirecta } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=db_summary`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -602,12 +578,11 @@ export async function obtenerResumenBdDirecto(): Promise<
 export async function obtenerTableStatsDirecto(): Promise<
   { success: true; rows: TableStatDirecta[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=table_stats`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -620,12 +595,11 @@ export async function obtenerTableStatsDirecto(): Promise<
 export async function obtenerIndexStatsDirecto(): Promise<
   { success: true; rows: IndexStatDirecta[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=index_stats`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -638,12 +612,11 @@ export async function obtenerIndexStatsDirecto(): Promise<
 export async function obtenerTableSizesDirecto(): Promise<
   { success: true; rows: TableSizeDirecta[] } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=table_size`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -656,12 +629,11 @@ export async function obtenerTableSizesDirecto(): Promise<
 export async function obtenerRealtimeMetricsDirecto(): Promise<
   { success: true; data: RealtimeMetricsDirecta } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=realtime_metrics`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -679,12 +651,11 @@ export async function obtenerQueryInsightsDirecto(): Promise<
     pgStatStatementsEnabled: boolean;
   } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const res = await fetch(`${getExportDirectBase()}?meta=query_insights`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -710,8 +681,7 @@ export async function obtenerExplainDirecto(
 ): Promise<
   { success: true; plan: unknown; query: string } | { success: false; error: string }
 > {
-  const token = getToken();
-  if (!token) return { success: false, error: 'Debes iniciar sesión' };
+  if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
   try {
     const params = new URLSearchParams({ meta: 'explain', tabla });
     if (columna && valor) {
@@ -720,7 +690,7 @@ export async function obtenerExplainDirecto(
     }
     const res = await fetch(`${getExportDirectBase()}?${params.toString()}`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
@@ -740,8 +710,7 @@ export async function exportarDirecto(
   formato: 'csv' | 'json',
   opciones?: OpcionesExportDirecto
 ): Promise<{ success: true; blob: Blob; filename: string } | { success: false; error: string }> {
-  const token = getToken();
-  if (!token) {
+  if (!hasSession()) {
     return { success: false, error: 'Debes iniciar sesión' };
   }
   try {
@@ -758,7 +727,7 @@ export async function exportarDirecto(
     const url = `${getExportDirectBase()}?${params.toString()}`;
     const res = await fetch(url, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

@@ -61,8 +61,10 @@ export default function DetalleMiCitaPage() {
   if (cargando) {
     return (
       <ModuleLayout>
-        <div className="max-w-5xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        <div className="max-w-5xl mx-auto space-y-4 py-4" aria-busy="true" aria-label="Cargando">
+          <div className="mf-skeleton h-9 w-2/5" />
+          <div className="mf-skeleton h-4 w-3/5" />
+          <div className="mf-skeleton h-56 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     );
@@ -88,10 +90,10 @@ export default function DetalleMiCitaPage() {
   return (
     <ModuleLayout>
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="min-w-0">
             <h1
-              className="text-hero mb-2"
+              className="mf-titulo-pagina mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
               Detalle de la Cita
@@ -101,7 +103,7 @@ export default function DetalleMiCitaPage() {
             </Badge>
           </div>
           {puedeGestionar && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={() => router.push(`/cliente/servicios-citas/reprogramar/${cita.id}`)}

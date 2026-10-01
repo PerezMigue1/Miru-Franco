@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
@@ -159,51 +160,11 @@ export default function ReportesPage() {
         </div>
 
         {/* KPIs (mes en curso) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BarChart3 size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Ventas del Mes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--oro-texto)' }}>{loadingKpis ? '…' : fmtMoneda(kpiVentasMonto)}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <Scissors size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Servicios del Mes</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loadingKpis ? '…' : kpiServiciosCompletados}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <UserPlus size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Clientes Nuevos</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loadingKpis ? '…' : kpiClientesNuevos}</p>
-              </div>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ShoppingBag size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Productos Vendidos</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loadingKpis ? '…' : kpiUnidadesVendidas}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <TarjetaKpi icono={BarChart3} etiqueta="Ventas del Mes" cargando={loadingKpis} valor={fmtMoneda(kpiVentasMonto)} tono="oro" />
+          <TarjetaKpi icono={Scissors} etiqueta="Servicios del Mes" cargando={loadingKpis} valor={kpiServiciosCompletados} />
+          <TarjetaKpi icono={UserPlus} etiqueta="Clientes Nuevos" cargando={loadingKpis} valor={kpiClientesNuevos} />
+          <TarjetaKpi icono={ShoppingBag} etiqueta="Productos Vendidos" cargando={loadingKpis} valor={kpiUnidadesVendidas} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

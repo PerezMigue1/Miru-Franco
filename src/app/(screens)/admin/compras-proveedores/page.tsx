@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
+import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -133,36 +134,16 @@ export default function ComprasProveedoresPage() {
         </div>
 
         {error && (
-          <Card variant="elevated" padding="md" className="border-l-4" style={{ borderLeftColor: 'var(--danger)' }}>
+          <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
           </Card>
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <ShoppingCart size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Total compras</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : compras.length}</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <TarjetaKpi icono={ShoppingCart} etiqueta="Total compras" cargando={loading} valor={compras.length} />
 
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <BadgeDollarSign size={20} style={{ color: 'var(--encabezados-alterno)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--encabezados-alterno)' }}>Monto total</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--menu-texto-principal)' }}>{loading ? '…' : fmtMoneda(montoTotal)}</p>
-              </div>
-            </div>
-          </Card>
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto total" cargando={loading} valor={fmtMoneda(montoTotal)} />
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

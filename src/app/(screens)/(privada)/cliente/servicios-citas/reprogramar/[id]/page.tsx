@@ -98,8 +98,10 @@ export default function ReprogramarCitaPage() {
   if (cargando) {
     return (
       <ModuleLayout>
-        <div className="max-w-3xl mx-auto flex items-center justify-center min-h-[200px]">
-          <p style={{ color: 'var(--encabezados-alterno)' }}>Cargando...</p>
+        <div className="max-w-3xl mx-auto space-y-4 py-4" aria-busy="true" aria-label="Cargando">
+          <div className="mf-skeleton h-9 w-2/5" />
+          <div className="mf-skeleton h-4 w-3/5" />
+          <div className="mf-skeleton h-56 w-full" style={{ borderRadius: 'var(--mf-radio)' }} />
         </div>
       </ModuleLayout>
     );
@@ -203,12 +205,7 @@ export default function ReprogramarCitaPage() {
                       type="date"
                       value={nuevaFecha}
                       onChange={(e) => setNuevaFecha(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                      style={{
-                        backgroundColor: 'var(--texto-fondo-oscuro)',
-                        borderColor: 'var(--fondos-suaves)',
-                        color: 'var(--menu-texto-principal)',
-                      }}
+                      className="mf-campo w-full px-4 py-2.5"
                     />
                   </div>
 

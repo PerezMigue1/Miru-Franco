@@ -1,13 +1,13 @@
 import { getBackendBaseUrl } from '../services/config';
-import { getToken, persistAccessTokenOnly } from './security';
+import { hasSession, markSessionRefreshed } from './security';
 
 export type SharedRefreshResult =
-  | { kind: 'ok'; token: string }
+  | { kind: 'ok' }
   | { kind: 'unauthorized'; message: string }
   | { kind: 'failed' };
 
 /**
- * El backend puede invalidar el access token anterior al emitir uno nuevo.
+ * El backend invalida el access token anterior al emitir uno nuevo (rota la cookie httpOnly).
  * Si varias peticiones llaman a /api/auth/refresh a la vez, una puede recibir
  * "Token revocado" aunque la sesión sea válida. Una sola promesa en vuelo evita esa carrera.
  */
@@ -16,45 +16,36 @@ let refreshInFlight: Promise<SharedRefreshResult> | null = null;
 export async function runSharedAccessTokenRefresh(): Promise<SharedRefreshResult> {
   if (refreshInFlight) return refreshInFlight;
 
-  const tokenInicial = getToken();
-  if (!tokenInicial) {
+  if (!hasSession()) {
     return { kind: 'failed' };
   }
 
   refreshInFlight = (async (): Promise<SharedRefreshResult> => {
     try {
       const BACKEND_BASE = getBackendBaseUrl();
-      const bearer = getToken() ?? tokenInicial;
+      // Sin Authorization: la cookie de sesión viaja con credentials. El backend responde con
+      // Set-Cookie (token nuevo) y sin token en el cuerpo.
       const refreshResponse = await fetch(`${BACKEND_BASE}/api/auth/refresh`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${bearer}`,
           'Content-Type': 'application/json',
         },
         credentials: 'include',
       });
 
-      const errorText = await refreshResponse.text();
-      let errorData: { message?: string; error?: string } = {};
+      const responseText = await refreshResponse.text();
+      let data: { success?: boolean; message?: string; error?: string } = {};
       try {
-        errorData = errorText ? JSON.parse(errorText) : {};
+        data = responseText ? JSON.parse(responseText) : {};
       } catch {
-        errorData = { message: errorText };
+        data = { message: responseText };
       }
-      const message = errorData.message || errorData.error || '';
+      const message = data.message || data.error || '';
 
       if (refreshResponse.ok) {
-        let data: { token?: string } = {};
-        try {
-          data = errorText ? JSON.parse(errorText) : {};
-        } catch {
-          data = {};
-        }
-        if (data.token) {
-          persistAccessTokenOnly(data.token);
-          return { kind: 'ok', token: data.token };
-        }
-        return { kind: 'failed' };
+        if (data.success === false) return { kind: 'failed' };
+        markSessionRefreshed();
+        return { kind: 'ok' };
       }
 
       if (refreshResponse.status === 401 && message.trim()) {
