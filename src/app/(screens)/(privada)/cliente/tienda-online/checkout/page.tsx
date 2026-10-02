@@ -966,7 +966,7 @@ export default function CheckoutPage() {
           <div>
             {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
             {MOSTRAR_ENTREGA_DOMICILIO && paso === 1 && (
-              <div style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <div style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
                   Elige la forma de entrega
                 </h2>
@@ -1074,7 +1074,7 @@ export default function CheckoutPage() {
 
             {/* Sin pasarela no hay envíos — solo recoger en el salón, fijo. */}
             {paso === 1 && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Cómo recoges tu pedido
                 </h2>
@@ -1093,7 +1093,7 @@ export default function CheckoutPage() {
             )}
 
             {paso === 2 && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Cuándo llegará?
                 </h2>
@@ -1113,7 +1113,7 @@ export default function CheckoutPage() {
 
             {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
             {false && paso === 3 && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Cómo quieres pagar?
                 </h2>
@@ -1217,7 +1217,7 @@ export default function CheckoutPage() {
 
             {/* Pago en el salón — sin pasarela integrada, el pedido se paga al recogerlo. */}
             {paso === 3 && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   ¿Cómo se paga tu pedido?
                 </h2>
@@ -1237,7 +1237,7 @@ export default function CheckoutPage() {
             )}
 
             {paso === 5 && esTarjetaCredito && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Mensualidad a pagar
                 </h2>
@@ -1273,7 +1273,7 @@ export default function CheckoutPage() {
             )}
 
             {esTarjeta && paso === pasoDatosTarjeta && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   {esTarjetaCredito ? 'Tarjeta de crédito' : 'Tarjeta de débito'}
                 </h2>
@@ -1413,7 +1413,7 @@ export default function CheckoutPage() {
             )}
 
             {paso === pasoRevision && (
-              <Card style={{ animation: 'fadeUp 350ms ease-out both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
                   Revisa y confirma
                 </h2>

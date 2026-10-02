@@ -150,7 +150,7 @@ export default function DetallePedidoPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card style={{ animation: 'fadeUp 450ms ease-out both' }}>
+            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Productos
               </h2>
@@ -187,7 +187,7 @@ export default function DetallePedidoPage() {
               </div>
             </Card>
 
-            <Card style={{ animation: 'fadeUp 450ms ease-out 80ms both' }}>
+            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 80ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Dirección de envío
               </h2>
@@ -201,7 +201,7 @@ export default function DetallePedidoPage() {
             </Card>
 
             {envio && (
-              <Card style={{ animation: 'fadeUp 450ms ease-out 160ms both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 160ms both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Envío
                 </h2>
@@ -231,7 +231,7 @@ export default function DetallePedidoPage() {
             )}
 
             {historial.length > 0 && (
-              <Card style={{ animation: 'fadeUp 450ms ease-out 240ms both' }}>
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 240ms both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Historial de estados
                 </h2>
@@ -258,7 +258,7 @@ export default function DetallePedidoPage() {
               </Card>
             )}
 
-            <Card style={{ animation: 'fadeUp 450ms ease-out 320ms both' }}>
+            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 320ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Facturas
               </h2>
@@ -292,7 +292,7 @@ export default function DetallePedidoPage() {
               )}
             </Card>
 
-            <Card style={{ animation: 'fadeUp 450ms ease-out 400ms both' }}>
+            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 400ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Valoraciones de este pedido
               </h2>
@@ -326,7 +326,7 @@ export default function DetallePedidoPage() {
               )}
             </Card>
 
-            <Card style={{ animation: 'fadeUp 450ms ease-out 480ms both' }}>
+            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 480ms both' }}>
               <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Devoluciones / cambios
               </h2>
@@ -356,7 +356,7 @@ export default function DetallePedidoPage() {
           </div>
 
           <div>
-            <Card style={{ animation: 'fadeUp 450ms ease-out 80ms both' }}>
+            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 80ms both' }}>
               <h3 className="text-subtitle mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                 Información del pedido
               </h3>
