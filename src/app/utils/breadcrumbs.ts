@@ -1,5 +1,81 @@
 import type { BreadcrumbItem } from '../components/ui/Breadcrumb';
 
+/** Una pantalla del portal: su etiqueta, la pantalla de la que depende (si depende de otra) y si es global del usuario. */
+interface RutaPortal {
+  etiqueta: string;
+  padre?: string;
+  /** Pantalla propia del usuario a la que se llega desde cualquier parte: lleva el botón "Volver". */
+  global?: boolean;
+}
+
+/**
+ * Ubicación real de cada pantalla del portal de clientas: la cadena de migas sale de aquí, no de las
+ * carpetas de la URL (el carrito vive en /cliente/tienda-online/carrito, pero no depende de la tienda).
+ * Los segmentos dinámicos se escriben como `[id]`.
+ */
+export const RUTAS_PORTAL: Record<string, RutaPortal> = {
+  // Secciones del sitio
+  '/cliente/tienda-online': { etiqueta: 'Tienda' },
+  '/cliente/servicios-citas': { etiqueta: 'Servicios y citas' },
+  '/cliente/galeria': { etiqueta: 'Galería' },
+  '/cliente/promociones': { etiqueta: 'Promociones' },
+
+  // Pantallas globales del usuario
+  '/cliente/tienda-online/carrito': { etiqueta: 'Carrito', global: true },
+  '/cliente/carrito': { etiqueta: 'Carrito', global: true },
+  '/perfil': { etiqueta: 'Mi perfil', global: true },
+  '/cliente/mi-perfil': { etiqueta: 'Mi perfil', global: true },
+  '/cliente/servicios-citas/mis-citas': { etiqueta: 'Mis citas', global: true },
+  '/cliente/tienda-online/mis-pedidos': { etiqueta: 'Mis pedidos', global: true },
+  '/cliente/tienda-online/rastreo-pedidos': { etiqueta: 'Rastreo de pedidos', global: true },
+  '/cliente/cotizaciones': { etiqueta: 'Mis cotizaciones', global: true },
+  '/cliente/notificaciones': { etiqueta: 'Notificaciones', global: true },
+  '/cliente/devoluciones': { etiqueta: 'Devoluciones', global: true },
+  '/cliente/facturas': { etiqueta: 'Facturas', global: true },
+  '/cliente/garantias': { etiqueta: 'Garantías', global: true },
+  '/cliente/seguimientos': { etiqueta: 'Seguimientos', global: true },
+
+  // Pantallas que dependen de otra
+  '/cliente/tienda-online/productos/[id]': { etiqueta: 'Producto', padre: '/cliente/tienda-online' },
+  '/cliente/tienda-online/checkout': { etiqueta: 'Checkout', padre: '/cliente/tienda-online/carrito' },
+  '/cliente/tienda-online/checkout/elegir-domicilio': { etiqueta: 'Elegir domicilio', padre: '/cliente/tienda-online/checkout' },
+  '/cliente/tienda-online/confirmacion': { etiqueta: 'Confirmación de compra', padre: '/cliente/tienda-online' },
+  '/cliente/tienda-online/mis-pedidos/[id]': { etiqueta: 'Detalle de pedido', padre: '/cliente/tienda-online/mis-pedidos' },
+  '/cliente/servicios-citas/servicios/[id]': { etiqueta: 'Servicio', padre: '/cliente/servicios-citas' },
+  '/cliente/servicios-citas/crear-cita': { etiqueta: 'Crear cita', padre: '/cliente/servicios-citas' },
+  '/cliente/servicios-citas/calendario': { etiqueta: 'Calendario', padre: '/cliente/servicios-citas' },
+  '/cliente/servicios-citas/confirmacion': { etiqueta: 'Confirmación', padre: '/cliente/servicios-citas' },
+  '/cliente/servicios-citas/mis-citas/[id]': { etiqueta: 'Detalle de cita', padre: '/cliente/servicios-citas/mis-citas' },
+  '/cliente/servicios-citas/reprogramar/[id]': { etiqueta: 'Reprogramar cita', padre: '/cliente/servicios-citas/mis-citas' },
+  '/cliente/servicios-citas/cancelar/[id]': { etiqueta: 'Cancelar cita', padre: '/cliente/servicios-citas/mis-citas' },
+  '/cliente/direcciones': { etiqueta: 'Mis direcciones', padre: '/perfil' },
+  '/cliente/tarjetas': { etiqueta: 'Tarjetas', padre: '/perfil' },
+};
+
+function patronPortal(pathname: string): string | null {
+  if (RUTAS_PORTAL[pathname]) return pathname;
+  const segmentos = pathname.split('/');
+  return (
+    Object.keys(RUTAS_PORTAL).find((patron) => {
+      const partes = patron.split('/');
+      return partes.length === segmentos.length && partes.every((p, i) => p.startsWith('[') || p === segmentos[i]);
+    }) ?? null
+  );
+}
+
+/**
+ * Migas de una pantalla del portal: Inicio, las pantallas de las que depende y la actual. `actual`
+ * sustituye la etiqueta de la pantalla actual (p. ej. el nombre del producto). null si no es del portal.
+ */
+export function getMigasPortal(pathname: string, actual?: string): { items: BreadcrumbItem[]; global: boolean } | null {
+  const patron = patronPortal(pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname);
+  if (!patron) return null;
+  const ruta = RUTAS_PORTAL[patron];
+  const padres: BreadcrumbItem[] = [];
+  for (let p = ruta.padre; p; p = RUTAS_PORTAL[p]?.padre) padres.unshift({ label: RUTAS_PORTAL[p].etiqueta, href: p });
+  return { items: [{ label: 'Inicio', href: '/home' }, ...padres, { label: actual || ruta.etiqueta }], global: Boolean(ruta.global) };
+}
+
 /**
  * Genera la migaja de pan jerárquica completa desde "Inicio" para cualquier pathname.
  * Así, aunque se abra un enlace directo a una pantalla interna, siempre se muestra el camino completo.
@@ -7,6 +83,9 @@ import type { BreadcrumbItem } from '../components/ui/Breadcrumb';
 export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
   const base: BreadcrumbItem[] = [{ label: 'Inicio', href: '/' }];
   if (!pathname || pathname === '/') return base;
+
+  const portal = getMigasPortal(pathname);
+  if (portal) return portal.items;
 
   const segments = pathname.split('/').filter(Boolean);
   if (segments.length === 0) return base;
@@ -76,83 +155,6 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     return admin;
   }
 
-  // Navegación por secciones reales del sitio (sin niveles inventados)
-  // Rutas /cliente/* → Inicio / [Sección] / [Subsección]
-  if (first === 'cliente') {
-    if (segments.length === 1) return [...base, { label: 'Área de cliente' }];
-
-    const section = segments[1];
-
-    const sectionLabels: Record<string, { label: string; href: string }> = {
-      'tienda-online': { label: 'Tienda online', href: '/cliente/tienda-online' },
-      galeria: { label: 'Galería', href: '/cliente/galeria' },
-      'mi-perfil': { label: 'Mi perfil', href: '/perfil' },
-      direcciones: { label: 'Mis direcciones', href: '/cliente/direcciones' },
-      tarjetas: { label: 'Tarjetas', href: '/cliente/tarjetas' },
-      carrito: { label: 'Carrito', href: '/cliente/carrito' },
-      cotizaciones: { label: 'Cotizaciones', href: '/cliente/cotizaciones' },
-      devoluciones: { label: 'Devoluciones', href: '/cliente/devoluciones' },
-      facturas: { label: 'Facturas', href: '/cliente/facturas' },
-      notificaciones: { label: 'Notificaciones', href: '/cliente/notificaciones' },
-      garantias: { label: 'Garantías', href: '/cliente/garantias' },
-      promociones: { label: 'Promociones', href: '/cliente/promociones' },
-      seguimientos: { label: 'Seguimientos', href: '/cliente/seguimientos' },
-      'servicios-citas': { label: 'Servicios y citas', href: '/cliente/servicios-citas' },
-      'rastreo-pedidos': { label: 'Rastreo de pedidos', href: '/cliente/tienda-online/rastreo-pedidos' },
-      'mis-pedidos': { label: 'Mis pedidos', href: '/cliente/tienda-online/mis-pedidos' },
-    };
-
-    const sectionInfo = sectionLabels[section];
-    if (!sectionInfo) return [...base];
-
-    // Direcciones: Inicio → Mi perfil (/perfil) → Mis direcciones
-    if (section === 'direcciones') {
-      return [...base, { label: 'Mi perfil', href: '/perfil' }, { label: 'Mis direcciones' }];
-    }
-
-    if (section === 'tarjetas') {
-      return [...base, { label: 'Mi perfil', href: '/perfil' }, { label: 'Tarjetas' }];
-    }
-
-    // Nivel 2 = sección real del sitio (Tienda online, Galería, Servicios y citas, etc.)
-    const items: BreadcrumbItem[] = [...base, { label: sectionInfo.label, href: sectionInfo.href }];
-
-    if (section === 'tienda-online') {
-      const third = segments[2];
-      if (!third) return items; // Inicio / Tienda online
-      if (third === 'productos') {
-        items.push({ label: 'Productos', href: '/cliente/tienda-online' });
-        if (segments[3]) items.push({ label: 'Detalle de producto' });
-      } else if (third === 'carrito') items.push({ label: 'Carrito' });
-      else if (third === 'checkout') items.push({ label: 'Checkout' });
-      else if (third === 'confirmacion') items.push({ label: 'Confirmación' });
-      else if (third === 'mis-pedidos') {
-        items.push({ label: 'Mis pedidos', href: '/cliente/tienda-online/mis-pedidos' });
-        if (segments[3]) items.push({ label: 'Detalle de pedido' });
-      } else if (third === 'rastreo-pedidos') items.push({ label: 'Rastreo de pedidos' });
-      return items;
-    }
-
-    if (section === 'servicios-citas') {
-      const third = segments[2];
-      if (!third) return items; // Inicio / Servicios y citas
-      if (third === 'crear-cita') items.push({ label: 'Crear cita' });
-      else if (third === 'calendario') items.push({ label: 'Calendario' });
-      else if (third === 'confirmacion') items.push({ label: 'Confirmación' });
-      else if (third === 'mis-citas') {
-        items.push({ label: 'Mis citas', href: '/cliente/servicios-citas/mis-citas' });
-        if (segments[3]) items.push({ label: 'Detalle de cita' });
-      } else if (third === 'servicios') {
-        items.push({ label: 'Servicios' });
-        if (segments[3]) items.push({ label: 'Detalle' });
-      } else if (third === 'reprogramar' && segments[3]) items.push({ label: 'Reprogramar' });
-      else if (third === 'cancelar' && segments[3]) items.push({ label: 'Cancelar cita' });
-      return items;
-    }
-
-    return items;
-  }
-
   // Panel de operación (staff): Inicio / Panel de operación / [Módulo]
   if (first === 'operacion') {
     const operacion: BreadcrumbItem[] = [...base, { label: 'Panel de operación', href: '/operacion' }];
@@ -175,22 +177,6 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
     };
     operacion.push({ label: modulos[segments[1]] ?? segments[1] });
     return operacion;
-  }
-
-  // Perfil (pantalla única de cuenta)
-  if (first === 'perfil') {
-    const perfil: BreadcrumbItem[] = [...base, { label: 'Mi perfil', href: '/perfil' }];
-    if (segments[1]) {
-      const rolLabels: Record<string, string> = {
-        administrador: 'Administrador',
-        becario: 'Becario',
-        cliente: 'Cliente',
-        empleado: 'Empleado',
-        estilista: 'Estilista',
-      };
-      perfil.push({ label: rolLabels[segments[1]] ?? segments[1] });
-    }
-    return perfil;
   }
 
   return [...base, { label: segments[segments.length - 1] || pathname }];

@@ -8,14 +8,16 @@ import SuperficieCliente from '../cliente/SuperficieCliente';
 
 interface ModuleLayoutProps {
   children: ReactNode;
+  /** Etiqueta de la miga actual cuando depende de los datos (p. ej. el nombre del producto). */
+  migaActual?: string;
 }
 
-export default function ModuleLayout({ children }: ModuleLayoutProps) {
+export default function ModuleLayout({ children, migaActual }: ModuleLayoutProps) {
   return (
     <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
       <main className="flex-1 layout-page pt-1.5 pb-10 md:pt-2 md:pb-16" style={{ marginTop: 'var(--mf-header-offset, 136px)' }}>
-        <GlobalBreadcrumb />
+        <GlobalBreadcrumb actual={migaActual} />
         <div className="pt-3 md:pt-4">
           {children}
         </div>

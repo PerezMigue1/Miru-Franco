@@ -233,7 +233,7 @@ export default function DetalleProductoClient({ id }: Props) {
   const descuentoValido = (producto.descuento ?? 0) > 0 && (producto.descuento ?? 0) < 100;
 
   return (
-    <ModuleLayout>
+    <ModuleLayout migaActual={producto.nombre}>
       <div className="mf-entrada">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 lg:gap-12 mb-14">
           {/* Galería fija en escritorio mientras se decide la compra */}

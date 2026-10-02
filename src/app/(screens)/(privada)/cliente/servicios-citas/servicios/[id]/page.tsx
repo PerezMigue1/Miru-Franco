@@ -73,7 +73,7 @@ export default function DetalleServicioPage() {
   }
 
   return (
-    <ModuleLayout>
+    <ModuleLayout migaActual={servicio.nombre}>
       <div className="max-w-6xl mx-auto">
         <PasosFlujo pasos={PASOS_RESERVA} actual={0} etiqueta="Pasos para reservar" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-10">
