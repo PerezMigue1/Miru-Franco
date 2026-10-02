@@ -119,23 +119,9 @@ export default function ForgotPasswordSecurityQuestions({
         setUserAnswers({});
         setErrors({}); // Limpiar errores
       } else {
-        // ❌ Por seguridad, no revelar si el email existe o no
-        // Solo mostrar mensaje genérico
-        const errorMessage = result.message || result.error || '';
-        console.warn('No se pudo obtener la pregunta de seguridad:', errorMessage);
-        
-        // Verificar si es un usuario de Google (este caso sí se puede revelar porque es específico)
-        if (errorMessage && (errorMessage.toLowerCase().includes('google') || errorMessage.toLowerCase().includes('cuenta de google'))) {
-          setErrors({ 
-            email: `${errorMessage}. Por favor, usa "Continuar con Google" para iniciar sesión.` 
-          });
-        } else {
-          // Mensaje genérico que no revela si el email existe
-          // Si el email existe y tiene pregunta, se mostrará. Si no, no se muestra nada (por seguridad)
-          setErrors({ 
-            email: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.' 
-          });
-        }
+        // Mensaje genérico del backend (no revela si la cuenta existe); remite a la recuperación por
+        // correo, cuyo botón sigue debajo en "Otras opciones de recuperación"
+        setErrors({ email: result.message || 'No pudimos continuar con la recuperación por pregunta de seguridad. Intenta recuperar tu cuenta por correo.' });
       }
     } catch (error: unknown) {
       // ✅ Manejar error 429 (Rate Limiting)
@@ -148,11 +134,7 @@ export default function ForgotPasswordSecurityQuestions({
         });
       } else {
         console.error('Error cargando pregunta de seguridad:', error);
-        // Por seguridad, no revelar detalles del error
-        // Mensaje genérico que no revela si el email existe
-        setErrors({ 
-          email: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.' 
-        });
+        setErrors({ email: 'No pudimos continuar con la recuperación por pregunta de seguridad. Intenta recuperar tu cuenta por correo.' });
       }
     } finally {
       setIsLoading(false);
@@ -317,22 +299,6 @@ export default function ForgotPasswordSecurityQuestions({
                 <p className="text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>
                   {errors.email}
                 </p>
-                {errors.email.toLowerCase().includes('google') && (
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        // Redirigir a login con Google
-                        const { api } = await import('../../services');
-                        api.loginWithGoogle();
-                      }}
-                      className="mf-btn mf-btn-color w-full min-h-11 py-2 px-4 rounded-[10px] font-medium text-sm"
-                      style={SECUNDARIO}
-                    >
-                      Continuar con Google
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
