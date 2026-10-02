@@ -1,7 +1,7 @@
 // Cliente API centralizado con manejo de errores y tokens
 
 import { getApiBaseUrl } from './config';
-import { hasSession, clearAuthData, msSinceSessionRefresh } from '../utils/security';
+import { hasSession, clearAuthData, sesionPorRenovar } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 import { rutaLogin } from '../utils/rutasConSesion';
@@ -55,9 +55,9 @@ class ApiClient {
 
     // Sin header Authorization: el JWT es una cookie httpOnly que JS no puede leer.
     const sesion = !skipAuth && hasSession();
-    // Si el último token emitido tiene más de 10 minutos, renovarlo antes (compartido: evita
-    // carreras / "Token revocado"). Antes se calculaba con `lastActivity` del JWT.
-    if (sesion && msSinceSessionRefresh() > 10 * 60 * 1000) {
+    // Si al token le quedan menos de 5 min para poder renovarse, renovarlo antes (compartido: evita
+    // carreras / "Token revocado"). Misma regla que useAutoRefreshToken: sesionPorRenovar.
+    if (sesion && sesionPorRenovar()) {
       try {
         await runSharedAccessTokenRefresh();
       } catch (refreshError) {

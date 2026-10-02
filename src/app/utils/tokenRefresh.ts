@@ -34,7 +34,7 @@ export async function runSharedAccessTokenRefresh(): Promise<SharedRefreshResult
       });
 
       const responseText = await refreshResponse.text();
-      let data: { success?: boolean; message?: string; error?: string } = {};
+      let data: { success?: boolean; message?: string; error?: string; renovarEnSegundos?: number } = {};
       try {
         data = responseText ? JSON.parse(responseText) : {};
       } catch {
@@ -44,7 +44,7 @@ export async function runSharedAccessTokenRefresh(): Promise<SharedRefreshResult
 
       if (refreshResponse.ok) {
         if (data.success === false) return { kind: 'failed' };
-        markSessionRefreshed();
+        markSessionRefreshed(data.renovarEnSegundos);
         return { kind: 'ok' };
       }
 

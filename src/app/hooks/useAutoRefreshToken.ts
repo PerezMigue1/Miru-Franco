@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { hasSession, clearAuthData } from '../utils/security';
+import { hasSession, clearAuthData, sesionPorRenovar } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 import { rutaLogin } from '../utils/rutasConSesion';
 
 /**
- * Hook para renovar automáticamente el token y detectar cuando se inicia sesión en otro dispositivo
- * Verifica cada 30 segundos si el token sigue siendo válido
- * Si se detecta una nueva sesión en otro dispositivo, cierra automáticamente esta sesión
+ * Renueva el token antes de que el backend deje de aceptar el refresh (ver sesionPorRenovar):
+ * comprueba al cargar y cada 30 s, pero solo llama a /auth/refresh cuando faltan menos de 5 min.
+ * Antes refrescaba en cada carga y cada 30 s: cada refresh rota la cookie, y una recarga que
+ * cortaba esa respuesta dejaba al navegador con el token viejo, que caía pasados 30 s de gracia.
+ * Si el backend rechaza el refresh (sesión vencida o cerrada en otro dispositivo), cierra la sesión.
  */
 export function useAutoRefreshToken() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -25,6 +27,8 @@ export function useAutoRefreshToken() {
         }
         return;
       }
+
+      if (!sesionPorRenovar()) return;
 
       try {
         const result = await runSharedAccessTokenRefresh();
@@ -92,12 +96,13 @@ export function useAutoRefreshToken() {
     // Solo activar el intervalo si hay sesión (evita refrescar tras cerrar sesión)
     if (!hasSession()) return;
 
-    // Verificar cada 30 segundos para detectar rápidamente nuevas sesiones
+    // El margen es de 5 min: comprobar cada 30 s basta aunque el navegador frene los timers.
     intervalRef.current = setInterval(checkTokenStatus, 30 * 1000);
-    // No llamar refresh en el mismo tick que la carga: evita 401/condiciones de carrera al recargar la página
+    // Primera comprobación casi al cargar: si una recarga cortó un refresh, el siguiente sale
+    // enseguida, con el token viejo aún dentro de sus 30 s de gracia.
     const firstCheck = window.setTimeout(() => {
       void checkTokenStatus();
-    }, 4000);
+    }, 1000);
 
     return () => {
       window.clearTimeout(firstCheck);
