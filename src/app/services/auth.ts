@@ -380,7 +380,8 @@ export const api = {
   },
 
   // ✅ NUEVO: Obtener pregunta de seguridad del usuario para recuperación de contraseña
-  // Usa POST /api/auth/pregunta-seguridad
+  // Usa POST /api/auth/pregunta-seguridad. Si no hay pregunta (o la cuenta no existe, o es de Google)
+  // el backend responde 400 con un mensaje genérico que no revela la cuenta; aquí se usa el mismo.
   async getUserSecurityQuestion(email: string): Promise<{ success: boolean; pregunta?: string; message?: string; error?: string }> {
     const BACKEND_BASE = getBackendBaseUrl();
     try {
@@ -405,7 +406,7 @@ export const api = {
         const errorMsg = data.error || data.message;
         return {
           success: false,
-          message: errorMsg || 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
+          message: errorMsg || 'No pudimos continuar con la recuperación por pregunta de seguridad. Intenta recuperar tu cuenta por correo.',
           error: errorMsg,
         };
       }
@@ -414,13 +415,7 @@ export const api = {
       
       // Manejar errores HTTP específicos
       const err = error as Error & { status?: number; response?: { data?: { message?: string } } };
-      if (err.status === 404) {
-        return {
-          success: false,
-          message: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
-          error: 'Usuario no encontrado o sin pregunta de seguridad',
-        };
-      } else if (err.status === 400) {
+      if (err.status === 400) {
         const errorMessage = err.response?.data?.message || err.message || 'Error al obtener la pregunta de seguridad';
         return {
           success: false,
@@ -432,7 +427,7 @@ export const api = {
       const errorMessage = error instanceof Error ? error.message : 'Error al obtener la pregunta de seguridad';
       return {
         success: false,
-        message: 'Si el email existe y tiene pregunta de seguridad configurada, se mostrará la pregunta.',
+        message: 'No pudimos continuar con la recuperación por pregunta de seguridad. Intenta recuperar tu cuenta por correo.',
         error: errorMessage,
       };
     }
