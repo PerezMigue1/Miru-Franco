@@ -79,8 +79,8 @@ export default async function Home() {
       </Suspense>
 
       <main className="flex-1">
-        {/* Intro de la primera visita (grieta en el monograma). El script decide antes del primer
-            pintado (layout raíz) si se muestra, así no parpadea en visitas siguientes. */}
+        {/* Intro de cada carga completa (grieta en el monograma). El script decide antes del primer
+            pintado (layout raíz) si se muestra; la navegación interna no la repite. */}
         <Suspense fallback={null}>
           <IntroGrieta />
         </Suspense>
