@@ -113,7 +113,7 @@ export default function MisCitasPage() {
           )}
         </Card>
       ) : (
-        <Card style={{ animation: 'fadeUp 400ms ease-out both' }}>
+        <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
           <Table headers={['ID', 'Servicio', 'Fecha', 'Hora', 'Especialista', 'Estado', 'Acciones']}>
             {citasFiltradas.map((cita) => (
               <TableRow key={cita.id}>

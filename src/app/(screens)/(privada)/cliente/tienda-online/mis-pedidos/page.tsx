@@ -93,7 +93,7 @@ export default function MisPedidosPage() {
           <Button onClick={() => router.push('/cliente/tienda-online')}>Explorar productos</Button>
         </Card>
       ) : (
-        <Card style={{ animation: 'fadeUp 400ms ease-out both' }}>
+        <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
           <Table
             headers={['Número', 'Fecha', 'Total', 'Método de pago', 'Estado', 'Acciones']}
           >
