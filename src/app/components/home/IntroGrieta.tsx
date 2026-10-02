@@ -21,7 +21,7 @@ const DERECHA = poligono([[1, 0], ...GRIETA, [1, 1]]);
 const TRAZO = GRIETA.map(([x, y], i) => `${i ? 'L' : 'M'}${x * 100} ${y * 100}`).join(' ');
 
 /**
- * Intro de la primera visita de la sesión: el monograma MF se parte por una grieta de papel
+ * Intro de cada carga completa de /home: el monograma MF se parte por una grieta de papel
  * rasgado (clip-path poligonal) que se abre y revela el hero. ≤1.3 s, se salta con clic, Escape o el
  * botón; se omite con prefers-reduced-motion (ver introScript.ts). La coreografía es CSS pura
  * (corre fuera del hilo principal mientras la página termina de cargar y se retira sola aunque el
