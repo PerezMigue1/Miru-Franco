@@ -75,6 +75,14 @@ La imagen de "Nanoplastia Flopactive" existe hoy (Cloudinary responde 200). El b
 5. **CSP de las páginas estáticas** (home, contacto, sobre-nosotros, terminos): su HTML se cachea en el CDN y no puede llevar un nonce por request, así que usan `script-src 'self' 'unsafe-inline'`. No reflejan entrada del usuario (contenido fijo y catálogo escapado por React). El resto del sitio conserva el nonce. Si se agrega una página a `force-static`, debe añadirse a `RUTAS_PUBLICAS_ESTATICAS` (un test lo verifica).
 6. **Variable nueva (opcional)**: `NEXT_PUBLIC_SITE_URL` (dominio público para canonical, og:url y sitemap; por defecto `https://www.mirufranco.com`). Documentada en `.env.example`.
 
+## Dependencias con riesgo aceptado
+
+**`xlsx` 0.18.5 (SheetJS de npm)**, alta en `npm audit` sin arreglo publicado en npm: prototype pollution ([GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6)) y ReDoS ([GHSA-5pgg-2g8v-p4x9](https://github.com/advisories/GHSA-5pgg-2g8v-p4x9)). Revisado el 2026-10-02.
+
+- **Uso**: solo `exportarReporteExcel` en `src/app/utils/exportReportes.ts`, llamada desde `/admin/reportes`. Arma la hoja en el navegador con `aoa_to_sheet` + `writeFile` a partir de datos que ya devolvió el backend.
+- **Por qué se acepta**: los dos fallos están en el *parser* (`XLSX.read` / `readFile` sobre un archivo manipulado). La app nunca lee hojas de cálculo: el único importador (`/admin/base-datos`) acepta `.csv` y `.json` y no usa `xlsx`.
+- **Revisar de nuevo si** se agrega cualquier lectura de `.xlsx`/`.xls` subidos por usuarios. En ese caso, cambiar a la build oficial de SheetJS (`https://cdn.sheetjs.com`, ≥ 0.20.2) o a `exceljs`.
+
 ## Observaciones fuera del alcance de esta tarea (no se modificaron)
 
 - CORS abierto, datos personales en consola y TTL del JWT: resueltos en la segunda ronda (hallazgos 15-17, arriba).
