@@ -11,9 +11,6 @@ export const metadata = metadataPublica({
   path: '/sobre-nosotros',
 });
 
-/** Contenido público y no personalizado: HTML prerenderizado y cacheable en CDN (ver RUTAS_PUBLICAS_ESTATICAS en utils/rutasPublicasEstaticas.ts). */
-export const dynamic = 'force-static';
-
 const STATS = [
   { num: '5+', label: 'Años de experiencia' },
   { num: '500+', label: 'Clientes satisfechos' },
