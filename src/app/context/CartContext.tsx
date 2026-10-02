@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  startTransition,
   ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
@@ -140,11 +141,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Las actualizaciones de la carga van en transición: corren al montar, mientras el Suspense de la
+  // página (loading.tsx) puede seguir sin hidratar. Una actualización urgente de este contexto (Header
+  // lo consume) obligaría a React a descartar el HTML del servidor y pintarlo de nuevo en el cliente;
+  // una transición espera a que el boundary hidrate.
   const refreshCart = useCallback(async () => {
     if (typeof window === 'undefined') return;
     const conSesion = hasSession();
     if (conSesion) {
-      setLoading(true);
+      startTransition(() => setLoading(true));
       try {
         const localGuest = loadFromStorage().filter((i) => String(i.id).startsWith('local-'));
         let rows = await listarCarrito();
@@ -163,22 +168,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }
           rows = await listarCarrito();
         }
-        setItems(rows.map(apiItemToCartItem));
+        startTransition(() => setItems(rows.map(apiItemToCartItem)));
         saveToStorage([]);
       } catch {
-        setItems([]);
+        startTransition(() => setItems([]));
       } finally {
-        setLoading(false);
+        startTransition(() => setLoading(false));
       }
     } else {
-      setItems(loadFromStorage());
+      startTransition(() => setItems(loadFromStorage()));
     }
   }, []);
 
   useEffect(() => {
     queueMicrotask(() => {
       void refreshCart();
-      setMounted(true);
+      startTransition(() => setMounted(true));
     });
   }, [refreshCart]);
 
