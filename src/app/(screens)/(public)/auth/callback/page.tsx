@@ -80,11 +80,12 @@ function AuthCallbackContent() {
             user?: unknown;
             message?: string;
             error?: string;
+            renovarEnSegundos?: number;
           }>('/api/auth/exchange-code', { code }, BACKEND_BASE);
-          
+
           // El backend entrega la sesión como cookie httpOnly (sin token en el cuerpo).
           if (data.success) {
-            markSessionStart();
+            markSessionStart(data.renovarEnSegundos);
 
             // Opcional: Guardar información del usuario si viene en la respuesta (user o usuario)
             const userData = (data as { user?: unknown; usuario?: unknown }).user ?? (data as { user?: unknown; usuario?: unknown }).usuario;

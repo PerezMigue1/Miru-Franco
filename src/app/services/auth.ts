@@ -120,11 +120,11 @@ export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
 
 // Helper para guardar datos de sesión. El JWT llega como cookie httpOnly (el backend no lo
 // incluye en el cuerpo); aquí solo se guarda el usuario sin datos sensibles para la UI.
-const saveAuthData = (data: { success?: boolean; user?: unknown; usuario?: unknown }) => {
+const saveAuthData = (data: { success?: boolean; user?: unknown; usuario?: unknown; renovarEnSegundos?: number }) => {
   if (typeof window !== 'undefined') {
     const userData = data.user ?? data.usuario;
     if (data.success && userData) {
-      markSessionStart();
+      markSessionStart(data.renovarEnSegundos);
       localStorage.setItem('user', JSON.stringify(normalizarUsuarioAlmacenado(userData)));
       emitMiruUserStorageUpdated();
       // Perfil completo (foto, etc.): el login suele no traer `foto`; /api/auth/me sí.

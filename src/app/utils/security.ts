@@ -291,31 +291,57 @@ export const handleSecurityError = (error: unknown, response?: Response): {
 /** Claves donde versiones anteriores guardaban el JWT en claro. */
 const LEGACY_TOKEN_KEYS = ['token', 'authToken'] as const;
 
-/** Momento del último token emitido (login o refresh); sustituye a leer `lastActivity` del JWT. */
+/** Clave de versiones anteriores (momento del último token); ya no se usa, solo se limpia. */
 const SESSION_REFRESHED_AT_KEY = 'sessionRefreshedAt';
 
-/** Registra que el backend acaba de emitir un token nuevo (cookie rotada). */
-export const markSessionRefreshed = (): void => {
+/**
+ * Hasta cuándo (epoch ms del reloj local) acepta el backend renovar el token actual. Sale de
+ * `renovarEnSegundos` de login/exchange-code/refresh: el JWT es una cookie httpOnly y no se puede leer.
+ */
+const RENOVAR_ANTES_DE_KEY = 'sessionRenovarAntesDe';
+
+/** Se renueva cuando faltan menos de esto para `renovarAntesDe`. */
+export const MARGEN_RENOVACION_MS = 5 * 60 * 1000;
+
+/**
+ * Registra que el backend acaba de emitir un token nuevo (cookie rotada) y, si lo informa, cuánto
+ * le queda para poder renovarlo.
+ */
+export const markSessionRefreshed = (renovarEnSegundos?: unknown): void => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(SESSION_REFRESHED_AT_KEY, String(Date.now()));
+    const ahora = Date.now();
+    localStorage.removeItem(SESSION_REFRESHED_AT_KEY);
+    if (typeof renovarEnSegundos === 'number' && Number.isFinite(renovarEnSegundos)) {
+      localStorage.setItem(RENOVAR_ANTES_DE_KEY, String(ahora + renovarEnSegundos * 1000));
+    } else {
+      localStorage.removeItem(RENOVAR_ANTES_DE_KEY);
+    }
   }
 };
 
-/** Milisegundos desde el último token emitido (Infinity si no hay registro). */
-export const msSinceSessionRefresh = (): number => {
-  if (typeof window === 'undefined') return Infinity;
-  const t = Number(localStorage.getItem(SESSION_REFRESHED_AT_KEY));
-  return Number.isFinite(t) && t > 0 ? Date.now() - t : Infinity;
+/**
+ * true solo cuando faltan menos de 5 min para que el backend deje de aceptar el refresh. No se
+ * renueva en cada carga: cada refresh rota la cookie, y una recarga que corta la respuesta deja
+ * al navegador con el token viejo. Si el plazo ya pasó (pestaña dormida) o no se conoce (sesión
+ * anterior a este cambio), tampoco: el backend lo rechazaría, y el token sigue sirviendo hasta su
+ * `exp` mientras haya actividad.
+ */
+export const sesionPorRenovar = (ahora: number = Date.now()): boolean => {
+  if (typeof window === 'undefined') return false;
+  const limite = Number(localStorage.getItem(RENOVAR_ANTES_DE_KEY));
+  if (!Number.isFinite(limite) || limite <= 0) return false;
+  const resta = limite - ahora;
+  return resta > 0 && resta < MARGEN_RENOVACION_MS;
 };
 
 /**
  * Marca el inicio de sesión (login / OAuth): el apiClient usa `lastLoginTime` para no tratar
  * como "sesión expirada" un 401 que llega justo después de entrar.
  */
-export const markSessionStart = (): void => {
+export const markSessionStart = (renovarEnSegundos?: unknown): void => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('lastLoginTime', String(Date.now()));
-    markSessionRefreshed();
+    markSessionRefreshed(renovarEnSegundos);
   }
 };
 
@@ -339,6 +365,7 @@ export const clearAuthData = (): void => {
     localStorage.removeItem('user');
     localStorage.removeItem('lastLoginTime');
     localStorage.removeItem(SESSION_REFRESHED_AT_KEY);
+    localStorage.removeItem(RENOVAR_ANTES_DE_KEY);
   }
 };
 
