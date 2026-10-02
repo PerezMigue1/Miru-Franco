@@ -1,6 +1,5 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { RUTAS_PUBLICAS_ESTATICAS } from './app/utils/rutasPublicasEstaticas';
 
 function randomNonceBase64(): string {
   const bytes = new Uint8Array(16);
@@ -62,8 +61,6 @@ function imgSrcOrigins(): string[] {
   return [...out];
 }
 
-const rutasPublicasEstaticas = new Set(RUTAS_PUBLICAS_ESTATICAS);
-
 function buildCsp(scriptSrc: string): string {
   return [
     "default-src 'self'",
@@ -91,17 +88,6 @@ function buildCsp(scriptSrc: string): string {
 export function middleware(request: NextRequest) {
   if (process.env.NODE_ENV === 'development') {
     return NextResponse.next();
-  }
-
-  if (rutasPublicasEstaticas.has(request.nextUrl.pathname)) {
-    // HTML estático (sin nonce): los scripts inline de Next solo pueden permitirse con 'unsafe-inline'.
-    // Estas páginas no reflejan entrada del usuario (contenido fijo + catálogo escapado por React).
-    const response = NextResponse.next();
-    response.headers.set(
-      'Content-Security-Policy',
-      buildCsp("script-src 'self' 'unsafe-inline' https://vercel.live")
-    );
-    return response;
   }
 
   const nonce = randomNonceBase64();
