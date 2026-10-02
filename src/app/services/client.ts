@@ -4,6 +4,7 @@ import { getApiBaseUrl } from './config';
 import { hasSession, clearAuthData, msSinceSessionRefresh } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
+import { rutaLogin } from '../utils/rutasConSesion';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -101,10 +102,15 @@ class ApiClient {
             window.location.pathname.includes('/auth')
           );
 
+          // El backend rechazó el refresh (401): la sesión venció aunque el mensaje sea genérico.
+          // Un fallo de red o un 5xx en el refresh ('failed') no cuenta: no se echa a nadie por eso.
+          let refreshRechazado = false;
+
           // ✅ Intentar renovar token y reintentar la petición UNA vez antes de echar al usuario (evita "acceso denegado" al admin tras un cambio)
           if (typeof window !== 'undefined' && !isLoginPage && sesion) {
             try {
               const refreshed = await runSharedAccessTokenRefresh();
+              refreshRechazado = refreshed.kind === 'unauthorized';
               if (refreshed.kind === 'ok') {
                 // El refresh ya rotó la cookie: el reintento la envía sola.
                 const retryRes = await fetch(fetchUrl, { ...fetchOptions, headers, credentials: 'include' });
@@ -137,6 +143,8 @@ class ApiClient {
             localStorage.getItem('manualLogout') === 'true';
 
           if (typeof window !== 'undefined' && !isLoginPage && !skip401Redirect) {
+            // replace para que "atrás" lleve a la página anterior, no a la protegida; al entrar vuelve aquí.
+            const loginConRetorno = rutaLogin(window.location.pathname + window.location.search);
             // ✅ Manejar error 401 según GUIA_FRONTEND_EXPIRACION_INACTIVIDAD.md
             // Verificar si es por inactividad
             // NO mostrar mensaje de inactividad si el login fue reciente (menos de 10 segundos)
@@ -155,8 +163,7 @@ class ApiClient {
                 await showAlert('Tu sesión ha expirado por inactividad. Por favor inicia sesión nuevamente.');
               }
               
-              // replace para que "atrás" lleve a la página anterior, no a la protegida
-              window.location.replace('/login');
+              window.location.replace(loginConRetorno);
             } else if (
               lowerMessage.includes('otro dispositivo') ||
               lowerMessage.includes('cerrada desde otro dispositivo') ||
@@ -165,7 +172,7 @@ class ApiClient {
               // Solo cuando el backend indica EXPLÍCITAMENTE sesión en otro dispositivo (evitar confundir con token expirado)
               clearAuthData();
               await showAlert('Se inició sesión en otro dispositivo. Tu sesión actual ha sido cerrada. Por favor inicia sesión nuevamente si deseas continuar.');
-              window.location.replace('/login');
+              window.location.replace(loginConRetorno);
             } else if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmado')) {
               // Usuario no ha verificado correo
               const email = errorData.email || '';
@@ -191,9 +198,9 @@ class ApiClient {
                   msg.includes('malformed') ||
                   msg.includes('token expirado'));
 
-              if (sesionInvalidaExplicita && !isRecentLogin) {
+              if ((sesionInvalidaExplicita || refreshRechazado) && !isRecentLogin) {
                 clearAuthData();
-                window.location.replace('/login');
+                window.location.replace(loginConRetorno);
               }
             }
           } else if (typeof window !== 'undefined' && isLoginPage) {
