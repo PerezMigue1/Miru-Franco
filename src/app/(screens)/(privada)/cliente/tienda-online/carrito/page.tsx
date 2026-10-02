@@ -13,7 +13,7 @@ import { useCart, type CartItem } from '../../../../../context/CartContext';
 import { hasValidToken } from '../../../../../utils/security';
 import { calcularResumenCarritoVistaPrevia } from '../../../../../utils/ventaDesdeCarrito';
 import Link from 'next/link';
-import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { ServicioImagenPlaceholder } from '../../../../../components/servicios/ServicioImagen';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 
@@ -46,15 +46,6 @@ export default function CarritoComprasPage() {
   return (
     <ModuleLayout>
       <div className="w-full max-w-none">
-        <Link
-          href="/cliente/tienda-online"
-          className="group mb-4 inline-flex items-center gap-2 text-sm font-semibold"
-          style={{ color: 'var(--menu-texto-principal)', minHeight: 44 }}
-        >
-          <ArrowLeft size={16} aria-hidden className="transition-transform duration-200 group-hover:-translate-x-1" />
-          Seguir comprando
-        </Link>
-
         <PageHeader
           title="Carrito de Compras"
           subtitle="Revisa tus productos antes de finalizar la compra"
@@ -214,6 +205,17 @@ export default function CarritoComprasPage() {
               >
                 {!enCliente ? 'Continuar' : haySesion ? 'Continuar compra' : 'Iniciar sesión y continuar'}
               </Button>
+              {/* Acción secundaria: ir a la tienda (la vuelta atrás ya es "Volver", junto a las migas).
+                  Con el carrito vacío la tarjeta de la izquierda ya lleva "Explorar Productos". */}
+              {items.length > 0 && (
+                <Link
+                  href="/cliente/tienda-online"
+                  className="mt-3 flex min-h-11 w-full items-center justify-center rounded-[10px] text-sm font-semibold underline-offset-4 hover:underline"
+                  style={{ color: 'var(--menu-texto-principal)' }}
+                >
+                  Seguir comprando
+                </Link>
+              )}
             </Card>
           </div>
         </div>
