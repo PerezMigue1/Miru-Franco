@@ -77,6 +77,33 @@ export function getMigasPortal(pathname: string, actual?: string): { items: Brea
 }
 
 /**
+ * Sección del sitio (raíz de la cadena de RUTAS_PORTAL) a la que pertenece una pantalla del portal.
+ * null si la pantalla es global o depende de una global (carrito, checkout, perfil, mis citas…):
+ * no pertenece a ninguna sección. undefined si la ruta no es del portal.
+ */
+export function seccionPortal(pathname: string): string | null | undefined {
+  const patron = patronPortal(pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname);
+  if (!patron) return undefined;
+  let actual = patron;
+  for (;;) {
+    const ruta = RUTAS_PORTAL[actual];
+    if (ruta.global) return null;
+    if (!ruta.padre) return actual;
+    actual = ruta.padre;
+  }
+}
+
+/**
+ * ¿La pestaña de la cabecera que lleva a `destino` va marcada en `pathname`? En el portal manda el
+ * mismo mapa de las migas; fuera de él, el prefijo de la ruta.
+ */
+export function esSeccionActiva(pathname: string, destino: string): boolean {
+  const seccion = seccionPortal(pathname);
+  if (seccion !== undefined) return seccion === destino;
+  return pathname === destino || pathname.startsWith(`${destino}/`);
+}
+
+/**
  * Genera la migaja de pan jerárquica completa desde "Inicio" para cualquier pathname.
  * Así, aunque se abra un enlace directo a una pantalla interna, siempre se muestra el camino completo.
  */

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { MOSTRAR_MARCAS, MARCAS_ROTAS } from './marcasRotas';
+import { esSeccionActiva } from '../utils/breadcrumbs';
 
 interface ItemMenu {
   name: string;
@@ -49,7 +50,8 @@ export default function MenuHorizontal() {
     <div className="flex items-center justify-center w-full">
       <ul className="flex items-center space-x-1 overflow-x-auto scrollbar-hide relative">
         {menuPrincipal.map((item) => {
-          const isActive = pathname?.startsWith(item.activeMatch ?? item.href);
+          // Mismo mapa que las migas: las pantallas globales (carrito, perfil…) no marcan sección
+          const isActive = esSeccionActiva(pathname ?? '', item.activeMatch ?? item.href);
           return (
             <li key={item.name} className="relative shrink-0">
               <Link

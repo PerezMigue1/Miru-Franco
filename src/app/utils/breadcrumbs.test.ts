@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RUTAS_PORTAL, getBreadcrumbsForPath, getMigasPortal } from './breadcrumbs';
+import { RUTAS_PORTAL, esSeccionActiva, getBreadcrumbsForPath, getMigasPortal, seccionPortal } from './breadcrumbs';
 
 const cadena = (pathname: string, actual?: string) => getMigasPortal(pathname, actual)?.items.map((i) => i.label).join(' > ');
 
@@ -37,5 +37,37 @@ describe('Migas del portal: ubicación real, no carpetas de la URL', () => {
   it('las rutas fuera del portal siguen con sus reglas (admin)', () => {
     expect(getMigasPortal('/admin/inventario')).toBeNull();
     expect(getBreadcrumbsForPath('/admin/inventario').map((i) => i.label)).toEqual(['Inicio', 'Panel de administración', 'Inventario']);
+  });
+});
+
+describe('Pestaña activa de la cabecera con el mismo mapa', () => {
+  it('las pantallas globales y las que dependen de ellas no marcan sección', () => {
+    for (const ruta of [
+      '/cliente/tienda-online/carrito',
+      '/cliente/tienda-online/checkout',
+      '/cliente/tienda-online/mis-pedidos/12',
+      '/cliente/servicios-citas/mis-citas',
+      '/cliente/servicios-citas/reprogramar/4022',
+      '/perfil',
+      '/cliente/direcciones',
+      '/cliente/cotizaciones',
+    ]) {
+      expect(seccionPortal(ruta)).toBeNull();
+      expect(esSeccionActiva(ruta, '/cliente/tienda-online')).toBe(false);
+      expect(esSeccionActiva(ruta, '/cliente/servicios-citas')).toBe(false);
+    }
+  });
+
+  it('las pantallas de una sección la marcan', () => {
+    expect(esSeccionActiva('/cliente/tienda-online', '/cliente/tienda-online')).toBe(true);
+    expect(esSeccionActiva('/cliente/tienda-online/productos/33', '/cliente/tienda-online')).toBe(true);
+    expect(esSeccionActiva('/cliente/servicios-citas/crear-cita', '/cliente/servicios-citas')).toBe(true);
+    expect(esSeccionActiva('/cliente/servicios-citas/crear-cita', '/cliente/tienda-online')).toBe(false);
+  });
+
+  it('fuera del portal sigue por prefijo', () => {
+    expect(seccionPortal('/home')).toBeUndefined();
+    expect(esSeccionActiva('/home', '/home')).toBe(true);
+    expect(esSeccionActiva('/contacto', '/home')).toBe(false);
   });
 });
