@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { MOSTRAR_MARCAS, MARCAS_ROTAS } from './marcasRotas';
+import { esSeccionActiva } from '../utils/breadcrumbs';
 
 interface MenuHamburguesaProps {
   onClose: () => void;
 }
 
-const NAV_LINKS = [
+const NAV_LINKS: { label: string; href: string; activeMatch?: string }[] = [
   { label: 'Inicio',         href: '/home' },
-  { label: 'Servicios',      href: '/servicios' },
+  // /servicios redirige a /cliente/servicios-citas: el activo se compara con el destino real
+  { label: 'Servicios',      href: '/servicios', activeMatch: '/cliente/servicios-citas' },
   { label: 'Tienda',         href: '/cliente/tienda-online' },
   { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
   { label: 'Contacto',       href: '/contacto' },
@@ -48,9 +50,8 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
       <nav className="px-6 pt-2 flex-1">
         <ul>
           {NAV_LINKS.map((item, i) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== '/home' && pathname?.startsWith(item.href));
+            // Mismo mapa que las migas: las pantallas globales (carrito, perfil…) no marcan sección
+            const isActive = esSeccionActiva(pathname ?? '', item.activeMatch ?? item.href);
             return (
               <li
                 key={item.href}
