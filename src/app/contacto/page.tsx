@@ -27,9 +27,6 @@ export const metadata = metadataPublica({
   path: '/contacto',
 });
 
-/** Contenido público y no personalizado: HTML prerenderizado y cacheable en CDN (ver RUTAS_PUBLICAS_ESTATICAS en utils/rutasPublicasEstaticas.ts). */
-export const dynamic = 'force-static';
-
 export default function ContactoPage() {
   const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
   const fbUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;

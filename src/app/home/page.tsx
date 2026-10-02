@@ -19,15 +19,6 @@ export const metadata = metadataPublica({
   absoluteTitle: true,
 });
 
-/**
- * Página pública y no personalizada: se prerenderiza y se regenera por ISR (los fetch de
- * productos/servicios ya usan `revalidate: 60`), para que el CDN pueda cachear el HTML.
- * `force-static` hace que el `headers()` del layout raíz devuelva vacío aquí (sin nonce):
- * esta ruta figura en RUTAS_PUBLICAS_ESTATICAS (utils/rutasPublicasEstaticas.ts), que le aplica una CSP sin nonce.
- */
-export const dynamic = 'force-static';
-export const revalidate = 300;
-
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -57,6 +48,11 @@ async function HomeDataSections() {
   );
 }
 
+/**
+ * Se renderiza por request (el `headers()` del layout raíz lee el nonce de la CSP), así sus
+ * scripts inline llevan nonce y la CSP no necesita 'unsafe-inline'. Los datos siguen en la caché
+ * de fetch (`revalidate: 60` en productos/servicios).
+ */
 export default async function Home() {
   // El Goji del hero es el LCP: su preload sale como hint al inicio del stream, antes que los
   // preloads automáticos de imágenes (mismo srcset/sizes que su <source> AVIF: una sola descarga).
