@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { hasSession, clearAuthData } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
+import { rutaLogin } from '../utils/rutasConSesion';
 
 /**
  * Hook para renovar automáticamente el token y detectar cuando se inicia sesión en otro dispositivo
@@ -79,7 +80,8 @@ export function useAutoRefreshToken() {
           } else {
             await showAlert('Tu sesión ha expirado o ya no es válida. Por favor inicia sesión nuevamente.');
           }
-          window.location.href = '/login';
+          // Al entrar vuelve a la página donde venció la sesión; replace para que "atrás" no regrese aquí.
+          window.location.replace(rutaLogin(window.location.pathname + window.location.search));
         }
       } catch (error) {
         console.error('Error verificando token:', error);

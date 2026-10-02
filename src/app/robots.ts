@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from './utils/seo';
+import { RUTAS_CON_SESION } from './utils/rutasConSesion';
 
 /**
  * /robots.txt — el catálogo (tienda, servicios) y las páginas informativas son públicas;
@@ -13,7 +14,6 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         '/admin',
         '/operacion',
-        '/perfil',
         '/api/',
         '/auth/',
         '/oauth/',
@@ -23,27 +23,11 @@ export default function robots(): MetadataRoute.Robots {
         '/test-errores-http',
         '/forgot-password',
         '/reset-password',
+        // Carritos de invitado y el alias /cliente/mi-perfil: públicos, pero no se indexan.
         '/cliente/carrito',
-        '/cliente/cotizaciones',
-        '/cliente/devoluciones',
-        '/cliente/direcciones',
-        '/cliente/facturas',
-        '/cliente/garantias',
         '/cliente/mi-perfil',
-        '/cliente/notificaciones',
-        '/cliente/seguimientos',
-        '/cliente/tarjetas',
         '/cliente/tienda-online/carrito',
-        '/cliente/tienda-online/checkout',
-        '/cliente/tienda-online/confirmacion',
-        '/cliente/tienda-online/mis-pedidos',
-        '/cliente/tienda-online/rastreo-pedidos',
-        '/cliente/servicios-citas/calendario',
-        '/cliente/servicios-citas/cancelar',
-        '/cliente/servicios-citas/confirmacion',
-        '/cliente/servicios-citas/crear-cita',
-        '/cliente/servicios-citas/mis-citas',
-        '/cliente/servicios-citas/reprogramar',
+        ...RUTAS_CON_SESION,
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
