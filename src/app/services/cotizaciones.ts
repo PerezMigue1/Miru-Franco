@@ -85,6 +85,20 @@ export async function listarCotizaciones(): Promise<{ data: CotizacionApi[]; tot
   return { data, total: Number(res?.count ?? data.length) };
 }
 
+/**
+ * Cotizaciones de la clienta en sesión (GET /api/cotizaciones/mias): el backend filtra por el
+ * usuario del token. Un 500 no redirige a /500: la pantalla muestra el error y deja reintentar.
+ */
+export async function listarMisCotizaciones(): Promise<CotizacionApi[]> {
+  const res = await apiClient.get<ListadoCotizacionesResp>('/api/cotizaciones/mias', {
+    customBase: getBackendBaseUrl(),
+    skip500Redirect: true,
+  });
+  return Array.isArray(res?.data)
+    ? res.data.map(normalizarCotizacion).filter((c): c is CotizacionApi => Boolean(c))
+    : [];
+}
+
 export async function crearCotizacion(payload: CrearCotizacionPayload): Promise<CotizacionApi> {
   const res = await apiClient.post<unknown>('/api/cotizaciones', payload, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
