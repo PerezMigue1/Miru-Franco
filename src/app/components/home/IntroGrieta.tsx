@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import Image from 'next/image';
 
 /**
@@ -20,22 +20,48 @@ const IZQUIERDA = poligono([[0, 0], ...GRIETA, [0, 1]]);
 const DERECHA = poligono([[1, 0], ...GRIETA, [1, 1]]);
 const TRAZO = GRIETA.map(([x, y], i) => `${i ? 'L' : 'M'}${x * 100} ${y * 100}`).join(' ');
 
+declare global {
+  interface Window {
+    /** Inicio (tiempo del documento) de la animación de la intro en esta carga; lo pone introScript. */
+    __mfIntroInicio?: number;
+  }
+}
+
 /**
  * Intro de cada carga completa de /home: el monograma MF se parte por una grieta de papel
  * rasgado (clip-path poligonal) que se abre y revela el hero. ≤1.3 s, se salta con clic, Escape o el
  * botón; se omite con prefers-reduced-motion (ver introScript.ts). La coreografía es CSS pura
  * (corre fuera del hilo principal mientras la página termina de cargar y se retira sola aunque el
  * JS no haya llegado); aquí solo se escucha el salto y el final.
+ *
+ * Una sola reproducción por carga de documento: si React recrea este nodo mientras la intro corre
+ * (al renderizar en el cliente el Suspense de la página en lugar de hidratarlo), sus animaciones CSS
+ * empezarían de cero. Se adelantan al punto donde iba la intro, con el arranque que guardó el script
+ * del <head>; si ya debía haber terminado, se da por hecha.
  */
 export default function IntroGrieta() {
   const raiz = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Antes del pintado, para que el nodo recreado no muestre ni un cuadro desde el principio
+  useLayoutEffect(() => {
     const el = raiz.current;
     const html = document.documentElement;
     if (!el || html.getAttribute('data-intro') !== 'si') return;
 
     const terminar = () => html.setAttribute('data-intro', 'hecha');
+
+    const inicio = window.__mfIntroInicio;
+    if (typeof inicio === 'number') {
+      // startTime (no currentTime): una animación recién creada queda pendiente hasta el siguiente
+      // cuadro, y así se alinea con el arranque original sin importar cuándo empiece a correr
+      const animaciones = el.getAnimations({ subtree: true });
+      for (const a of animaciones) a.startTime = inicio;
+      if (animaciones.every((a) => a.playState === 'finished')) {
+        terminar();
+        return;
+      }
+    }
+
     const alTerminar = (e: AnimationEvent) => e.target === el && e.animationName === 'mf-intro-salida' && terminar();
     const alTeclear = (e: KeyboardEvent) => e.key === 'Escape' && terminar();
     el.addEventListener('animationend', alTerminar);
@@ -45,7 +71,6 @@ export default function IntroGrieta() {
       el.removeEventListener('animationend', alTerminar);
       el.removeEventListener('click', terminar);
       window.removeEventListener('keydown', alTeclear);
-      if (html.getAttribute('data-intro') === 'si') terminar();
     };
   }, []);
 
