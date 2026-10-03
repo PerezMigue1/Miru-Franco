@@ -3,28 +3,21 @@
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import PanelPedidosOnline from '../../../../components/pedidos/PanelPedidosOnline';
 
-/**
- * Cobro de pedidos online para la jefa (estilista): ver pedidos, cobrar
- * (aprueba el Pago + avanza el Pedido) y avanzar el estado. Sin pasarela
- * ni envíos: todo se recoge en el salón (pago en línea o al recoger). admin/venta-online
- * conserva la versión completa (pedido manual, montos) para el admin técnico.
- */
-export default function PedidosOnlinePage() {
+/** Pedidos por recoger en el salón para el personal con permiso de caja (mismo panel que admin). */
+export default function PedidosPorRecogerOperacionPage() {
   return (
     <OperacionLayout permisoRequerido="caja:escritura">
       <div className="w-full max-w-none space-y-8">
-
-        {/* Encabezado */}
         <div>
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-            Pedidos online
+            Pedidos por recoger
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            Cobra y marca los pedidos que las clientas recogen en el salón
+            Marca los pedidos listos, entrégalos en el mostrador y cobra los que se pagan al recoger
           </p>
         </div>
 
-        <PanelPedidosOnline />
+        <PanelPedidosOnline vista="recoger" />
       </div>
     </OperacionLayout>
   );

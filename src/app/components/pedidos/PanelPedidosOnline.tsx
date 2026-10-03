@@ -8,7 +8,18 @@ import Badge from '../ui/Badge';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-import { Package, CheckCircle2, XCircle, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Package,
+  PackageCheck,
+  CheckCircle2,
+  HandCoins,
+  XCircle,
+  ShoppingBag,
+  Store,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   listarPedidosPaginado,
   obtenerPedido,
@@ -17,29 +28,44 @@ import {
   listarPagosPorPedido,
   actualizarPagoParcial,
   crearPago,
+  esPagoEnSalon,
   etiquetaEstadoPedido,
+  etiquetaMetodoPagoPedido,
   varianteBadgeEstadoPedido,
   type PedidoApi,
   type PedidoItemApi,
   type EstadoPedidoUi,
 } from '../../services/ecommerce';
-import { showAlert, showToast } from '../../utils/toast';
+import { showAlert, showConfirm, showToast } from '../../utils/toast';
+import { accionesPedido, siguientesEstadosSinCobro, type AccionPedido } from '../../utils/flujoPedido';
 import { mensajeUsuarioDesdeErrorApi } from '../../utils/apiErrorMessage';
 
-const OPCIONES_ESTADO: { value: EstadoPedidoUi; label: string }[] = [
-  { value: 'borrador', label: 'Borrador' },
-  { value: 'pendiente_pago', label: 'Pendiente de pago' },
-  { value: 'pagado', label: 'Pagado' },
-  { value: 'preparando', label: 'Preparando' },
-  { value: 'enviado', label: 'Enviado' },
-  { value: 'entregado', label: 'Entregado' },
-  { value: 'cancelado', label: 'Cancelado' },
-];
+export type VistaPedidos = 'cobro' | 'recoger';
 
-/** Lo que la jefa necesita a diario: pendiente de cobro o en preparación. No incluye
- * el histórico (entregado/cancelado/enviado/borrador) — eso se ve con "Ver todo". */
-const ESTADOS_TRABAJO_DIARIO: EstadoPedidoUi[] = ['pendiente_pago', 'pagado', 'preparando'];
+/** Lista de trabajo de cada vista. "cobro": todo lo activo (por cobrar, por preparar o por entregar).
+ * "recoger": lo que ya se prepara o espera a la clienta en el mostrador. El histórico
+ * (entregado/cancelado/enviado/borrador) se ve con "Ver todo". */
+const ESTADOS_POR_VISTA: Record<VistaPedidos, EstadoPedidoUi[]> = {
+  cobro: ['pendiente_pago', 'pagado', 'preparando', 'listo_recoger'],
+  recoger: ['preparando', 'listo_recoger'],
+};
 const TAMANO_PAGINA = 20;
+
+/** Botón rápido de cada paso del flujo (utils/flujoPedido.ts decide cuáles aplican). */
+const BOTON_ACCION: Record<AccionPedido, { etiqueta: string; icono: LucideIcon; principal?: boolean }> = {
+  cobrar: { etiqueta: 'Cobrar', icono: CheckCircle2, principal: true },
+  preparar: { etiqueta: 'Preparar', icono: Package, principal: true },
+  listo: { etiqueta: 'Marcar listo para recoger', icono: PackageCheck, principal: true },
+  entregar: { etiqueta: 'Marcar entregado', icono: Store, principal: true },
+  cobrarEntregar: { etiqueta: 'Cobrar y entregar', icono: HandCoins, principal: true },
+  cancelar: { etiqueta: 'Cancelar', icono: XCircle },
+};
+
+/** Cómo se paga, en corto, para la columna de la lista. */
+function textoPago(p: PedidoApi): string {
+  if (!esPagoEnSalon(p.metodoPago)) return etiquetaMetodoPagoPedido(p.metodoPago);
+  return p.estado === 'entregado' ? 'Cobrado en el salón' : 'Paga al recoger';
+}
 
 function fmtMoneda(n: number, moneda = 'MXN') {
   return `${new Intl.NumberFormat('es-MX').format(n)} ${moneda}`;
@@ -75,14 +101,16 @@ async function fetchTodosPorEstado(estado: EstadoPedidoUi): Promise<PedidoApi[]>
 }
 
 /**
- * Cobro y seguimiento de pedidos online para operación (la jefa). Autocontenido: hace
+ * Cobro y seguimiento de pedidos online (todo se recoge en el salón). Autocontenido: hace
  * su propio fetch y maneja su propio estado — igual patrón que PanelAsistencia.tsx.
- * Alcance mínimo a propósito: sin envíos, sin crear pedido manual, sin editar montos
- * (costoEnvio/impuestos/descuento siguen solo-admin en el backend). admin/venta-online
+ * Alcance mínimo a propósito: sin crear pedido manual, sin editar montos
+ * (impuestos/descuento siguen solo-admin en el backend). admin/venta-online
  * conserva la versión completa; esto no la reemplaza.
  *
+ * `vista="recoger"` es "Pedidos por recoger": solo en preparación o listos para recoger.
+ *
  * Dos modos de lista:
- * - "trabajo" (default): los 3 estados del día a día, traídos completos y paginados del
+ * - "trabajo" (default): los estados activos de la vista, traídos completos y paginados del
  *   lado del cliente — con paginación real de verdad (page/limit del backend) porque el
  *   backend no filtra por una lista de estados en una sola llamada.
  * - "todos": paginación real contra el backend (page/limit/count/totalPages), sin filtro
@@ -91,7 +119,8 @@ async function fetchTodosPorEstado(estado: EstadoPedidoUi): Promise<PedidoApi[]>
  * 3010 pedidos completos) — sería otra llamada al backend con soporte de búsqueda que
  * no existe hoy; queda anotado, no es un descarte silencioso nuevo.
  */
-export default function PanelPedidosOnline() {
+export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaPedidos }) {
+  const estadosTrabajo = ESTADOS_POR_VISTA[vista];
   const [modo, setModo] = useState<'trabajo' | 'todos'>('trabajo');
   const [pedidosTrabajo, setPedidosTrabajo] = useState<PedidoApi[]>([]);
   const [pedidosTodos, setPedidosTodos] = useState<PedidoApi[]>([]);
@@ -113,7 +142,7 @@ export default function PanelPedidosOnline() {
     setLoading(true);
     setError(null);
     try {
-      const listas = await Promise.all(ESTADOS_TRABAJO_DIARIO.map((estado) => fetchTodosPorEstado(estado)));
+      const listas = await Promise.all(estadosTrabajo.map((estado) => fetchTodosPorEstado(estado)));
       const combinados = listas.flat().sort((a, b) => (b.creadoEn ?? '').localeCompare(a.creadoEn ?? ''));
       setPedidosTrabajo(combinados);
     } catch (e) {
@@ -225,7 +254,9 @@ export default function PanelPedidosOnline() {
     }
   }
 
-  async function cobrarYMarcarPagado(id: number) {
+  /** Registra el cobro y avanza el pedido: a 'pagado' (pago en línea pendiente) o, en el pago al
+   *  recoger, directo a 'entregado' ("Cobrar y entregar" en el mostrador). */
+  async function cobrarPedido(id: number, estadoFinal: 'pagado' | 'entregado') {
     setGuardando(true);
     try {
       const pedido = pedidosTrabajo.find((p) => p.id === id) ?? pedidosTodos.find((p) => p.id === id) ?? detallePedido;
@@ -235,23 +266,27 @@ export default function PanelPedidosOnline() {
         const ultimo = pagos[pagos.length - 1];
         await actualizarPagoParcial(ultimo.id, { estado: 'aprobado', monto: pedido?.total });
       } else {
-        // Caso normal hoy: sin pasarela, el checkout ya no crea ningún Pago — la jefa
-        // cobra físicamente al recoger y registra el pago ya aprobado en ese momento.
+        // Sin pasarela, el checkout no crea ningún Pago: quien cobra lo registra ya aprobado.
+        // Pago en línea: con el método que eligió la clienta. Al recoger: efectivo, como antes.
+        const metodo = pedido && !esPagoEnSalon(pedido.metodoPago) && pedido.metodoPago ? pedido.metodoPago : 'efectivo';
         await crearPago({
           pedidoId: id,
           monto: pedido?.total ?? 0,
-          metodo: 'efectivo',
+          metodo,
           estado: 'aprobado',
           intentoNumero: 1,
         });
       }
-      await actualizarPedido(id, { estado: 'pagado' });
+      await actualizarPedido(id, { estado: estadoFinal });
       await recargar();
       if (detalleId === id) {
         const actualizado = await obtenerPedido(id);
         setDetallePedido(actualizado);
       }
-      showToast(`Pedido #${id} cobrado y marcado como pagado.`, 'success');
+      showToast(
+        estadoFinal === 'entregado' ? `Pedido #${id} cobrado y entregado en el salón.` : `Pedido #${id} cobrado y marcado como pagado.`,
+        'success'
+      );
     } catch (e) {
       void showAlert(mensajeUsuarioDesdeErrorApi(e));
     } finally {
@@ -259,12 +294,45 @@ export default function PanelPedidosOnline() {
     }
   }
 
+  async function ejecutarAccion(p: PedidoApi, accion: AccionPedido) {
+    if (accion === 'cobrar') return cobrarPedido(p.id, 'pagado');
+    if (accion === 'cobrarEntregar') return cobrarPedido(p.id, 'entregado');
+    if (accion === 'preparar') return cambiarEstado(p.id, 'preparando');
+    if (accion === 'listo') return cambiarEstado(p.id, 'listo_recoger');
+    if (accion === 'entregar') return cambiarEstado(p.id, 'entregado');
+    const ok = await showConfirm('Los productos vuelven al inventario y la clienta recibe el aviso. No se puede deshacer.', {
+      title: `¿Cancelar el pedido #${p.id}?`,
+      confirmText: 'Sí, cancelar pedido',
+      cancelText: 'No',
+    });
+    if (ok) await cambiarEstado(p.id, 'cancelado');
+  }
+
+  /** Opciones del selector del detalle: el estado actual y los siguientes válidos que no implican cobrar. */
+  const opcionesEstado = detallePedido
+    ? [detallePedido.estado, ...siguientesEstadosSinCobro(detallePedido.estado, detallePedido.metodoPago)].map((estado) => ({
+        value: estado,
+        label: etiquetaEstadoPedido(estado, detallePedido.metodoPago),
+      }))
+    : [];
+  const accionPrincipalDetalle = detallePedido
+    ? accionesPedido(detallePedido.estado, detallePedido.metodoPago).find((a) => a !== 'cancelar')
+    : undefined;
+
   return (
     <>
       <Card variant="elevated" padding="lg">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
           <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-            <ShoppingBag size={18} /> Pedidos online
+            {vista === 'recoger' ? (
+              <>
+                <Store size={18} aria-hidden /> Pedidos por recoger
+              </>
+            ) : (
+              <>
+                <ShoppingBag size={18} aria-hidden /> Pedidos online
+              </>
+            )}
           </h2>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Input
@@ -279,15 +347,17 @@ export default function PanelPedidosOnline() {
               onClick={() => setModo(modo === 'trabajo' ? 'todos' : 'trabajo')}
               disabled={loading}
             >
-              {modo === 'trabajo' ? 'Ver todo' : 'Volver a pendientes de cobro'}
+              {modo === 'trabajo' ? 'Ver todo' : vista === 'recoger' ? 'Volver a por recoger' : 'Volver a pendientes'}
             </Button>
           </div>
         </div>
 
         <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-          {modo === 'trabajo'
-            ? 'Mostrando pedidos pendientes de pago, pagados o en preparación — el histórico completo (entregados, cancelados) está en "Ver todo".'
-            : 'Mostrando todos los pedidos, cualquier estado.'}
+          {modo === 'todos'
+            ? 'Mostrando todos los pedidos, cualquier estado.'
+            : vista === 'recoger'
+              ? 'Pedidos en preparación o listos para recoger en el salón. Al marcarlo listo, la clienta recibe el aviso en la app y por correo.'
+              : 'Pedidos por cobrar, por preparar o listos para recoger — el histórico completo (entregados, cancelados) está en "Ver todo".'}
           {modo === 'todos' && busqueda.trim() && ' La búsqueda solo filtra dentro de la página actual, no en los pedidos de otras páginas.'}
         </p>
 
@@ -301,37 +371,40 @@ export default function PanelPedidosOnline() {
           </p>
         ) : (
           <>
-            <Table headers={['Pedido', 'Clienta', 'Fecha', 'Total', 'Estado', 'Acciones']} headerSutil>
+            <Table headers={['Pedido', 'Clienta', 'Total', 'Estado', 'Acciones']} headerSutil>
               {pedidosPagina.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell rowPadding="lg">#{p.id}</TableCell>
-                  <TableCell rowPadding="lg">{nombreCliente(p)}</TableCell>
-                  <TableCell rowPadding="lg">{formatearFecha(p.creadoEn)}</TableCell>
-                  <TableCell rowPadding="lg" className="font-semibold">{fmtMoneda(p.total, p.moneda)}</TableCell>
                   <TableCell rowPadding="lg">
-                    <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado)}</Badge>
+                    <span className="font-semibold">#{p.id}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'var(--encabezados-alterno)' }}>{formatearFecha(p.creadoEn)}</span>
+                  </TableCell>
+                  <TableCell rowPadding="lg" className="!whitespace-normal min-w-[9rem] max-w-[14rem]">{nombreCliente(p)}</TableCell>
+                  <TableCell rowPadding="lg">
+                    <span className="font-semibold">{fmtMoneda(p.total, p.moneda)}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'var(--encabezados-alterno)' }}>{textoPago(p)}</span>
                   </TableCell>
                   <TableCell rowPadding="lg">
-                    <div className="flex flex-wrap gap-2">
+                    <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado, p.metodoPago)}</Badge>
+                  </TableCell>
+                  <TableCell rowPadding="lg">
+                    {/* Cancelar, por ser destructiva, vive en el detalle ("Ver"), lejos de los botones del flujo. */}
+                    <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => void abrirDetalle(p.id)}>Ver</Button>
-                      {p.estado !== 'pagado' && p.estado !== 'entregado' && p.estado !== 'cancelado' && (
-                        <Button size="sm" className="inline-flex items-center gap-1" onClick={() => void cobrarYMarcarPagado(p.id)} disabled={guardando}>
-                          <CheckCircle2 size={14} /> Cobrar
-                        </Button>
-                      )}
-                      {p.estado !== 'preparando' && p.estado !== 'entregado' && p.estado !== 'cancelado' && (
-                        <Button size="sm" variant="outline" className="inline-flex items-center gap-1" onClick={() => void cambiarEstado(p.id, 'preparando')} disabled={guardando}>
-                          <Package size={14} /> Listo para recoger
-                        </Button>
-                      )}
-                      {p.estado !== 'entregado' && p.estado !== 'cancelado' && (
-                        <Button size="sm" variant="outline" onClick={() => void cambiarEstado(p.id, 'entregado')} disabled={guardando}>Entregado</Button>
-                      )}
-                      {p.estado !== 'cancelado' && p.estado !== 'entregado' && (
-                        <Button size="sm" variant="outline" className="inline-flex items-center gap-1" onClick={() => void cambiarEstado(p.id, 'cancelado')} disabled={guardando}>
-                          <XCircle size={14} /> Cancelar
-                        </Button>
-                      )}
+                      {accionesPedido(p.estado, p.metodoPago).filter((a) => a !== 'cancelar').map((accion) => {
+                        const { etiqueta, icono: Icono, principal } = BOTON_ACCION[accion];
+                        return (
+                          <Button
+                            key={accion}
+                            size="sm"
+                            variant={principal ? 'primary' : 'outline'}
+                            className="inline-flex items-center gap-1"
+                            onClick={() => void ejecutarAccion(p, accion)}
+                            disabled={guardando}
+                          >
+                            <Icono size={14} aria-hidden /> {etiqueta}
+                          </Button>
+                        );
+                      })}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -377,10 +450,20 @@ export default function PanelPedidosOnline() {
         size="lg"
         footer={
           <>
+            {detallePedido && accionesPedido(detallePedido.estado, detallePedido.metodoPago).includes('cancelar') && (
+              <Button
+                variant="danger"
+                className="sm:mr-auto inline-flex items-center gap-1"
+                onClick={() => void ejecutarAccion(detallePedido, 'cancelar')}
+                disabled={guardando}
+              >
+                <XCircle size={14} aria-hidden /> Cancelar pedido
+              </Button>
+            )}
             <Button variant="outline" onClick={cerrarDetalle} disabled={guardando}>Cerrar</Button>
-            {detallePedido && detallePedido.estado !== 'pagado' && detallePedido.estado !== 'entregado' && detallePedido.estado !== 'cancelado' && (
-              <Button onClick={() => void cobrarYMarcarPagado(detallePedido.id)} disabled={guardando}>
-                {guardando ? 'Procesando…' : 'Cobrar y marcar pagado'}
+            {detallePedido && accionPrincipalDetalle && (
+              <Button onClick={() => void ejecutarAccion(detallePedido, accionPrincipalDetalle)} disabled={guardando}>
+                {guardando ? 'Procesando…' : BOTON_ACCION[accionPrincipalDetalle].etiqueta}
               </Button>
             )}
           </>
@@ -397,8 +480,13 @@ export default function PanelPedidosOnline() {
                 <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{nombreCliente(detallePedido)}</p>
                 <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{formatearFecha(detallePedido.creadoEn)}</p>
               </div>
-              <Badge variant={varianteBadgeEstadoPedido(detallePedido.estado)}>{etiquetaEstadoPedido(detallePedido.estado)}</Badge>
+              <Badge variant={varianteBadgeEstadoPedido(detallePedido.estado)}>
+                {etiquetaEstadoPedido(detallePedido.estado, detallePedido.metodoPago)}
+              </Badge>
             </div>
+            <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              <strong style={{ color: 'var(--menu-texto-principal)' }}>Pago:</strong> {etiquetaMetodoPagoPedido(detallePedido.metodoPago)}
+            </p>
 
             <div>
               <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Productos</h3>
@@ -437,8 +525,9 @@ export default function PanelPedidosOnline() {
                 <Select
                   value={estadoSeleccionado}
                   onChange={(e) => setEstadoSeleccionado(e.target.value as EstadoPedidoUi)}
-                  options={OPCIONES_ESTADO}
+                  options={opcionesEstado}
                   fullWidth
+                  disabled={opcionesEstado.length <= 1}
                 />
                 <Button
                   onClick={() => void cambiarEstado(detallePedido.id, estadoSeleccionado)}
@@ -448,7 +537,9 @@ export default function PanelPedidosOnline() {
                 </Button>
               </div>
               <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                Los botones rápidos de la lista cubren los casos comunes; usa esto para cualquier otro valor.
+                {opcionesEstado.length <= 1
+                  ? 'Este pedido ya terminó: no tiene más pasos.'
+                  : 'Solo aparecen los pasos que siguen. Para cobrar, usa el botón de cobro: registra el pago.'}
               </p>
             </div>
           </div>

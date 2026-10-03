@@ -82,6 +82,7 @@ export default function PuntoDeVentaPage() {
   // Corte de caja (solo caja:escritura)
   const [isModalCorteOpen, setIsModalCorteOpen] = useState(false);
   const [formCorteEfectivo, setFormCorteEfectivo] = useState('0');
+  const [formCorteEfectivoFinal, setFormCorteEfectivoFinal] = useState('');
   const [formCorteNotas, setFormCorteNotas] = useState('');
   const [savingCorte, setSavingCorte] = useState(false);
   const [corteError, setCorteError] = useState<string | null>(null);
@@ -248,10 +249,18 @@ export default function PuntoDeVentaPage() {
   const handleAbrirCorte = async () => {
     setSavingCorte(true); setCorteError(null);
     try {
-      await abrirCorte({ efectivoInicial: Number(formCorteEfectivo) || 0, notas: formCorteNotas.trim() || undefined });
-      setIsModalCorteOpen(false); setFormCorteEfectivo('0'); setFormCorteNotas('');
+      if (formCorteEfectivoFinal.trim() === '' || !(Number(formCorteEfectivoFinal) >= 0)) {
+        setCorteError('Indica el efectivo contado en caja al cierre.');
+        return;
+      }
+      await abrirCorte({
+        efectivoInicial: Number(formCorteEfectivo) || 0,
+        efectivoFinal: Number(formCorteEfectivoFinal),
+        notas: formCorteNotas.trim() || undefined,
+      });
+      setIsModalCorteOpen(false); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas('');
     } catch (e) {
-      setCorteError(e instanceof Error ? e.message : 'Error al abrir corte');
+      setCorteError(e instanceof Error ? e.message : 'No se pudo registrar el corte');
     } finally {
       setSavingCorte(false);
     }
@@ -292,9 +301,9 @@ export default function PuntoDeVentaPage() {
           {puedeCorte && (
             <Button
               variant="outline"
-              onClick={() => { setCorteError(null); setFormCorteEfectivo('0'); setFormCorteNotas(''); setIsModalCorteOpen(true); }}
+              onClick={() => { setCorteError(null); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas(''); setIsModalCorteOpen(true); }}
             >
-              Abrir Corte de Caja
+              Corte de caja
             </Button>
           )}
         </div>
@@ -599,22 +608,24 @@ export default function PuntoDeVentaPage() {
         </Card>
       </div>
 
-      {/* Modal: Abrir Corte de Caja */}
+      {/* Modal: Corte de caja */}
       <Modal
         isOpen={isModalCorteOpen}
         onClose={() => { if (!savingCorte) setIsModalCorteOpen(false); }}
-        title="Abrir Corte de Caja"
+        title="Corte de caja"
         size="sm"
         footer={
           <>
             <Button variant="outline" onClick={() => setIsModalCorteOpen(false)} disabled={savingCorte}>Cancelar</Button>
-            <Button onClick={handleAbrirCorte} disabled={savingCorte}>{savingCorte ? 'Abriendo...' : 'Abrir corte'}</Button>
+            <Button onClick={handleAbrirCorte} disabled={savingCorte}>{savingCorte ? 'Registrando…' : 'Registrar corte'}</Button>
           </>
         }
       >
         {corteError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{corteError}</p>}
         <div className="space-y-3">
+          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Corte de hoy: suma las ventas pagadas del día y compara el efectivo esperado con el que cuentas en caja.</p>
           <Input label="Efectivo inicial ($)" type="number" min={0} step={0.01} value={formCorteEfectivo} onChange={(e) => setFormCorteEfectivo(e.target.value)} fullWidth />
+          <Input label="Efectivo contado al cierre ($)" type="number" min={0} step={0.01} inputMode="decimal" required value={formCorteEfectivoFinal} onChange={(e) => setFormCorteEfectivoFinal(e.target.value)} fullWidth />
           <Textarea label="Notas" value={formCorteNotas} onChange={(e) => setFormCorteNotas(e.target.value)} placeholder="Observaciones del turno..." rows={2} fullWidth />
         </div>
       </Modal>

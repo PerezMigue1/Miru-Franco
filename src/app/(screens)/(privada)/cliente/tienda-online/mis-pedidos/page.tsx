@@ -9,7 +9,7 @@ import Card from '../../../../../components/ui/Card';
 import Badge from '../../../../../components/ui/Badge';
 import Input from '../../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../../components/ui/Table';
-import { listarPedidos, etiquetaEstadoPedido, varianteBadgeEstadoPedido } from '../../../../../services/ecommerce';
+import { listarPedidos, etiquetaEstadoPedido, etiquetaMetodoPagoPedido, varianteBadgeEstadoPedido } from '../../../../../services/ecommerce';
 import type { PedidoApi } from '../../../../../services/ecommerce';
 
 export default function MisPedidosPage() {
@@ -104,10 +104,10 @@ export default function MisPedidosPage() {
                 <TableCell className="font-semibold">
                   ${pedido.total.toLocaleString()} {pedido.moneda}
                 </TableCell>
-                <TableCell>{pedido.metodoPago ?? '—'}</TableCell>
+                <TableCell>{pedido.metodoPago ? etiquetaMetodoPagoPedido(pedido.metodoPago) : '—'}</TableCell>
                 <TableCell>
                   <Badge variant={varianteBadgeEstadoPedido(pedido.estado)}>
-                    {etiquetaEstadoPedido(pedido.estado)}
+                    {etiquetaEstadoPedido(pedido.estado, pedido.metodoPago)}
                   </Badge>
                 </TableCell>
                 <TableCell>

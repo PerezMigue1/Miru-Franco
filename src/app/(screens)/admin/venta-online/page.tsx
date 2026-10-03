@@ -10,28 +10,27 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { CheckCircle2, Clock3, CreditCard, Package, RotateCcw, Truck } from 'lucide-react';
+import { CheckCircle2, Clock3, CreditCard, Package, PackageCheck, RotateCcw } from 'lucide-react';
 import {
   listarPedidos,
   actualizarPedido,
   listarEnviosPorPedido,
-  crearEnvio,
-  actualizarEnvio,
   listarPagosPorPedido,
   actualizarPagoParcial,
   crearPedido,
   etiquetaEstadoPedido,
+  etiquetaMetodoPagoPedido,
   varianteBadgeEstadoPedido,
+  METODO_PAGO_EN_SALON,
   type PedidoApi,
   type EnvioApi,
+  type EstadoPedidoUi,
 } from '../../../services/ecommerce';
 import { getUsuarios, type Usuario } from '../../../services/usuarios';
-import { listarDireccionesUsuario, type DireccionUsuarioDTO } from '../../../services/perfil';
-import { showAlert, showToast } from '../../../utils/toast';
+import { showAlert, showConfirm, showToast } from '../../../utils/toast';
 import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
 import { emitCatalogStockChanged } from '../../../utils/catalogStockSync';
-
-type EstadoEnvioUi = 'preparando' | 'en_transito' | 'entregado' | 'fallido';
+import { accionesPedido, siguientesEstadosSinCobro, type AccionPedido } from '../../../utils/flujoPedido';
 
 type LineaManual = {
   id: string;
@@ -40,22 +39,35 @@ type LineaManual = {
   cantidad: string;
 };
 
-const OPCIONES_ESTADO_PEDIDO = [
+/** Estados con los que se puede registrar un pedido nuevo (todo se recoge en el salón: nunca 'enviado'). */
+const OPCIONES_ESTADO_INICIAL: { value: EstadoPedidoUi; label: string }[] = [
   { value: 'borrador', label: 'Borrador' },
   { value: 'pendiente_pago', label: 'Pendiente de pago' },
   { value: 'pagado', label: 'Pagado' },
-  { value: 'preparando', label: 'Preparando' },
-  { value: 'enviado', label: 'Enviado' },
-  { value: 'entregado', label: 'Entregado' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'preparando', label: 'En preparación' },
+  { value: 'listo_recoger', label: 'Listo para recoger' },
+  { value: 'entregado', label: 'Entregado en el salón' },
 ];
 
-const OPCIONES_ESTADO_ENVIO: { value: EstadoEnvioUi; label: string }[] = [
-  { value: 'preparando', label: 'Preparando' },
-  { value: 'en_transito', label: 'En tránsito' },
-  { value: 'entregado', label: 'Entregado' },
-  { value: 'fallido', label: 'Fallido' },
+const OPCIONES_METODO_PAGO = [
+  { value: '', label: 'Sin especificar' },
+  { value: METODO_PAGO_EN_SALON, label: 'Pago al recoger en el salón' },
+  { value: 'tarjeta_credito', label: 'Tarjeta de crédito' },
+  { value: 'tarjeta_debito', label: 'Tarjeta de débito' },
+  { value: 'efectivo', label: 'Efectivo' },
+  { value: 'transferencia', label: 'Transferencia' },
 ];
+
+/** Botones rápidos de la tabla según el siguiente paso válido (utils/flujoPedido.ts). Solo cambian
+ *  el estado: el cobro con registro de pago está en "Pedidos por recoger". */
+const ACCION_RAPIDA: Record<AccionPedido, { etiqueta: string; estado: EstadoPedidoUi }> = {
+  cobrar: { etiqueta: 'Marcar pagado', estado: 'pagado' },
+  preparar: { etiqueta: 'Preparar', estado: 'preparando' },
+  listo: { etiqueta: 'Listo para recoger', estado: 'listo_recoger' },
+  entregar: { etiqueta: 'Entregar', estado: 'entregado' },
+  cobrarEntregar: { etiqueta: 'Entregar', estado: 'entregado' },
+  cancelar: { etiqueta: 'Cancelar', estado: 'cancelado' },
+};
 
 function variantEstadoEnvio(estado?: string): 'default' | 'warning' | 'success' | 'danger' | 'info' {
   switch (estado) {
@@ -102,31 +114,21 @@ export default function VentaOnlinePage() {
 
   const [formPedido, setFormPedido] = useState({
     estado: '',
-    costoEnvio: '0',
     impuestos: '0',
     descuento: '0',
     metodoPago: '',
     referenciaPago: '',
   });
 
+  /** Envío registrado de un pedido anterior (solo lectura: ya no hay envío a domicilio). */
   const [envioActual, setEnvioActual] = useState<EnvioApi | null>(null);
-  const [formEnvio, setFormEnvio] = useState({
-    empresaEnvio: '',
-    numeroGuia: '',
-    estadoEnvio: 'preparando' as EstadoEnvioUi,
-    fechaEnvio: '',
-    fechaEntrega: '',
-    notas: '',
-  });
 
   const [formNuevoPedido, setFormNuevoPedido] = useState({
     usuarioId: '',
-    direccionEnvioId: '',
     estado: 'pendiente_pago',
     metodoPago: '',
     notasCliente: '',
   });
-  const [direccionesUsuario, setDireccionesUsuario] = useState<DireccionUsuarioDTO[]>([]);
   const [lineasManual, setLineasManual] = useState<LineaManual[]>([
     { id: crypto.randomUUID(), productoId: '', presentacionId: '', cantidad: '1' },
   ]);
@@ -143,11 +145,11 @@ export default function VentaOnlinePage() {
   }, [pedidos, filtroUsuarioId]);
 
   const stats = useMemo(() => {
-    const s = { pendiente: 0, preparando: 0, enviado: 0, entregado: 0 };
+    const s = { pendiente: 0, preparando: 0, listo: 0, entregado: 0 };
     for (const p of pedidosFiltrados) {
       if (p.estado === 'pendiente_pago' || p.estado === 'borrador') s.pendiente += 1;
       else if (p.estado === 'preparando') s.preparando += 1;
-      else if (p.estado === 'enviado') s.enviado += 1;
+      else if (p.estado === 'listo_recoger') s.listo += 1;
       else if (p.estado === 'entregado') s.entregado += 1;
     }
     return s;
@@ -183,7 +185,6 @@ export default function VentaOnlinePage() {
     }
     setFormPedido({
       estado: selectedPedido.estado || 'pendiente_pago',
-      costoEnvio: String(selectedPedido.costoEnvio ?? 0),
       impuestos: String(selectedPedido.impuestos ?? 0),
       descuento: String(selectedPedido.descuento ?? 0),
       metodoPago: selectedPedido.metodoPago ?? '',
@@ -192,40 +193,22 @@ export default function VentaOnlinePage() {
     void (async () => {
       try {
         const envs = await listarEnviosPorPedido(selectedPedido.id);
-        const e = envs[0] ?? null;
-        setEnvioActual(e);
-        setFormEnvio({
-          empresaEnvio: e?.empresaEnvio ?? '',
-          numeroGuia: e?.numeroGuia ?? '',
-          estadoEnvio: (e?.estadoEnvio as EstadoEnvioUi) || 'preparando',
-          fechaEnvio: e?.fechaEnvio ? String(e.fechaEnvio).slice(0, 10) : '',
-          fechaEntrega: e?.fechaEntrega ? String(e.fechaEntrega).slice(0, 10) : '',
-          notas: e?.notas ?? '',
-        });
+        setEnvioActual(envs[0] ?? null);
       } catch {
         setEnvioActual(null);
       }
     })();
   }, [selectedPedido]);
 
-  useEffect(() => {
-    const uid = formNuevoPedido.usuarioId;
-    if (!uid) {
-      setDireccionesUsuario([]);
-      setFormNuevoPedido((p) => ({ ...p, direccionEnvioId: '' }));
-      return;
-    }
-    void (async () => {
-      try {
-        const dirs = await listarDireccionesUsuario({ usuarioId: uid });
-        setDireccionesUsuario(dirs);
-      } catch {
-        setDireccionesUsuario([]);
-      }
-    })();
-  }, [formNuevoPedido.usuarioId]);
-
   async function accionEstadoRapida(id: number, estado: string) {
+    if (estado === 'cancelado') {
+      const ok = await showConfirm('Los productos vuelven al inventario y la clienta recibe el aviso. No se puede deshacer.', {
+        title: `¿Cancelar el pedido #${id}?`,
+        confirmText: 'Sí, cancelar pedido',
+        cancelText: 'No',
+      });
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       await actualizarPedido(id, { estado: estado as PedidoApi['estado'] });
@@ -245,7 +228,6 @@ export default function VentaOnlinePage() {
     try {
       await actualizarPedido(selectedPedido.id, {
         estado: formPedido.estado as PedidoApi['estado'],
-        costoEnvio: Number(formPedido.costoEnvio || 0),
         impuestos: Number(formPedido.impuestos || 0),
         descuento: Number(formPedido.descuento || 0),
         metodoPago: formPedido.metodoPago || undefined,
@@ -256,34 +238,6 @@ export default function VentaOnlinePage() {
       showToast('Pedido actualizado.', 'success');
     } catch (e) {
       void showAlert(mensajeUsuarioDesdeErrorApi(e));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function guardarEnvio() {
-    if (!selectedPedido) return;
-    setSaving(true);
-    try {
-      const payload = {
-        pedidoId: selectedPedido.id,
-        empresaEnvio: formEnvio.empresaEnvio || undefined,
-        numeroGuia: formEnvio.numeroGuia || undefined,
-        estadoEnvio: formEnvio.estadoEnvio,
-        fechaEnvio: formEnvio.fechaEnvio || undefined,
-        fechaEntrega: formEnvio.fechaEntrega || undefined,
-        notas: formEnvio.notas || undefined,
-      };
-      if (envioActual) {
-        await actualizarEnvio(envioActual.id, payload);
-      } else {
-        await crearEnvio(payload);
-      }
-      const envs = await listarEnviosPorPedido(selectedPedido.id);
-      setEnvioActual(envs[0] ?? null);
-      showToast('Envío guardado.', 'success');
-    } catch (e) {
-      void showAlert(e instanceof Error ? e.message : 'No se pudo guardar el envío');
     } finally {
       setSaving(false);
     }
@@ -355,7 +309,6 @@ export default function VentaOnlinePage() {
         estado: formNuevoPedido.estado as PedidoApi['estado'],
         metodoPago: formNuevoPedido.metodoPago || undefined,
         notasCliente: formNuevoPedido.notasCliente || undefined,
-        direccionEnvioId: formNuevoPedido.direccionEnvioId || null,
         items: lineas,
       });
       emitCatalogStockChanged();
@@ -380,7 +333,7 @@ export default function VentaOnlinePage() {
               Venta Online
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {pedidos.length} pedido{pedidos.length === 1 ? '' : 's'} · conectado a pedidos, pagos y envíos
+              {pedidos.length} pedido{pedidos.length === 1 ? '' : 's'} · todo se recoge en el salón
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -392,9 +345,9 @@ export default function VentaOnlinePage() {
               <RotateCcw size={14} />
               Devoluciones
             </Button>
-            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/entregas-envios')}>
-              <Truck size={14} />
-              Envíos
+            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/pedidos-por-recoger')}>
+              <PackageCheck size={14} />
+              Pedidos por recoger
             </Button>
           </div>
         </div>
@@ -402,8 +355,8 @@ export default function VentaOnlinePage() {
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <TarjetaKpi icono={Clock3} etiqueta="Pendientes" valor={stats.pendiente} />
-          <TarjetaKpi icono={Package} etiqueta="Preparando" valor={stats.preparando} />
-          <TarjetaKpi icono={Truck} etiqueta="Enviados" valor={stats.enviado} />
+          <TarjetaKpi icono={Package} etiqueta="En preparación" valor={stats.preparando} />
+          <TarjetaKpi icono={PackageCheck} etiqueta="Listos para recoger" valor={stats.listo} />
           <TarjetaKpi icono={CheckCircle2} etiqueta="Entregados" valor={stats.entregado} />
         </div>
 
@@ -445,18 +398,26 @@ export default function VentaOnlinePage() {
                 {usersMap.get(p.usuarioId ?? '')?.nombre ?? p.usuarioId ?? '—'}
               </TableCell>
               <TableCell className="font-semibold" rowPadding="lg">{fmtMoneda(p.total, p.moneda)}</TableCell>
-              <TableCell rowPadding="lg">{p.metodoPago || '—'}</TableCell>
+              <TableCell rowPadding="lg">{p.metodoPago ? etiquetaMetodoPagoPedido(p.metodoPago) : '—'}</TableCell>
               <TableCell rowPadding="lg">
-                <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado)}</Badge>
+                <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado, p.metodoPago)}</Badge>
               </TableCell>
               <TableCell rowPadding="lg">{formatearFecha(p.creadoEn)}</TableCell>
               <TableCell rowPadding="lg">
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => setSelectedPedidoId(p.id)}>Editar</Button>
-                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'preparando')} disabled={saving}>Preparar</Button>
-                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'enviado')} disabled={saving}>Enviar</Button>
-                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'entregado')} disabled={saving}>Entregar</Button>
-                  <Button size="sm" variant="outline" onClick={() => void accionEstadoRapida(p.id, 'cancelado')} disabled={saving}>Cancelar</Button>
+                  {/* Cobrar va por "Aprobar pago" o por Pedidos por recoger, que registran el pago. */}
+                  {accionesPedido(p.estado, p.metodoPago).filter((a) => a !== 'cobrar' && a !== 'cobrarEntregar').map((accion) => (
+                    <Button
+                      key={accion}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void accionEstadoRapida(p.id, ACCION_RAPIDA[accion].estado)}
+                      disabled={saving}
+                    >
+                      {ACCION_RAPIDA[accion].etiqueta}
+                    </Button>
+                  ))}
                 </div>
               </TableCell>
             </TableRow>
@@ -470,12 +431,20 @@ export default function VentaOnlinePage() {
             Editar pedido #{selectedPedido.id}
           </h2>
           <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            Al marcar el pedido como cancelado, el backend devuelve stock al inventario y las vistas de productos se recargan al guardar.
-            Si cambias de cancelado a otro estado, el servidor vuelve a reservar stock según las líneas del pedido y puede responder con error si no hay existencias.
+            El estado solo avanza al siguiente paso del pedido. Al cancelarlo, el inventario recupera los productos y las vistas de
+            productos se recargan al guardar; un pedido cancelado o entregado ya no cambia.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select label="Estado pedido" value={formPedido.estado} onChange={(e) => setFormPedido((p) => ({ ...p, estado: e.target.value }))} options={OPCIONES_ESTADO_PEDIDO} fullWidth />
-            <Input label="Costo envío" type="number" value={formPedido.costoEnvio} onChange={(e) => setFormPedido((p) => ({ ...p, costoEnvio: e.target.value }))} fullWidth />
+            <Select
+              label="Estado pedido"
+              value={formPedido.estado}
+              onChange={(e) => setFormPedido((p) => ({ ...p, estado: e.target.value }))}
+              options={[
+                selectedPedido.estado,
+                ...siguientesEstadosSinCobro(selectedPedido.estado, selectedPedido.metodoPago),
+              ].map((estado) => ({ value: estado, label: etiquetaEstadoPedido(estado, selectedPedido.metodoPago) }))}
+              fullWidth
+            />
             <Input label="Impuestos" type="number" value={formPedido.impuestos} onChange={(e) => setFormPedido((p) => ({ ...p, impuestos: e.target.value }))} fullWidth />
             <Input label="Descuento" type="number" value={formPedido.descuento} onChange={(e) => setFormPedido((p) => ({ ...p, descuento: e.target.value }))} fullWidth />
             <Input label="Método pago" value={formPedido.metodoPago} onChange={(e) => setFormPedido((p) => ({ ...p, metodoPago: e.target.value }))} fullWidth />
@@ -483,30 +452,41 @@ export default function VentaOnlinePage() {
           </div>
           <div className="flex flex-wrap gap-3 mt-4">
             <Button onClick={() => void guardarPedidoSeleccionado()} disabled={saving}>Guardar pedido</Button>
-            <Button variant="outline" onClick={() => void aprobarPagoYMarcarPagado()} disabled={saving}>Aprobar pago + marcar pagado</Button>
-          </div>
-
-          <h3 className="text-subtitle mt-6 mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
-            Envío
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input label="Empresa envío" value={formEnvio.empresaEnvio} onChange={(e) => setFormEnvio((x) => ({ ...x, empresaEnvio: e.target.value }))} fullWidth />
-            <Input label="Número guía" value={formEnvio.numeroGuia} onChange={(e) => setFormEnvio((x) => ({ ...x, numeroGuia: e.target.value }))} fullWidth />
-            <Select label="Estado envío" value={formEnvio.estadoEnvio} onChange={(e) => setFormEnvio((x) => ({ ...x, estadoEnvio: e.target.value as EstadoEnvioUi }))} options={OPCIONES_ESTADO_ENVIO} fullWidth />
-            <Input label="Fecha envío" type="date" value={formEnvio.fechaEnvio} onChange={(e) => setFormEnvio((x) => ({ ...x, fechaEnvio: e.target.value }))} fullWidth />
-            <Input label="Fecha entrega" type="date" value={formEnvio.fechaEntrega} onChange={(e) => setFormEnvio((x) => ({ ...x, fechaEntrega: e.target.value }))} fullWidth />
-            <Input label="Notas" value={formEnvio.notas} onChange={(e) => setFormEnvio((x) => ({ ...x, notas: e.target.value }))} fullWidth />
-          </div>
-          <div className="flex items-center gap-3 mt-3">
-            <Button onClick={() => void guardarEnvio()} disabled={saving}>
-              {envioActual ? 'Actualizar envío' : 'Crear envío'}
-            </Button>
-            {envioActual && (
-              <Badge variant={variantEstadoEnvio(envioActual.estadoEnvio)}>
-                {envioActual.estadoEnvio}
-              </Badge>
+            {accionesPedido(selectedPedido.estado, selectedPedido.metodoPago).includes('cobrar') && (
+              <Button variant="outline" onClick={() => void aprobarPagoYMarcarPagado()} disabled={saving}>Aprobar pago + marcar pagado</Button>
             )}
           </div>
+
+          {/* Pedidos anteriores: el envío y su costo quedan como historial, de solo lectura. */}
+          {(envioActual || selectedPedido.costoEnvio > 0) && (
+            <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+              <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                Envío registrado (pedido anterior)
+              </h3>
+              <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                {selectedPedido.costoEnvio > 0 && (
+                  <div>
+                    <dt className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Costo de envío</dt>
+                    <dd className="mf-cifras">{fmtMoneda(selectedPedido.costoEnvio, selectedPedido.moneda)}</dd>
+                  </div>
+                )}
+                {envioActual && (
+                  <>
+                    <div>
+                      <dt className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Empresa y guía</dt>
+                      <dd>{[envioActual.empresaEnvio, envioActual.numeroGuia].filter(Boolean).join(' · ') || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Estado del envío</dt>
+                      <dd>
+                        <Badge variant={variantEstadoEnvio(envioActual.estadoEnvio)}>{envioActual.estadoEnvio}</Badge>
+                      </dd>
+                    </div>
+                  </>
+                )}
+              </dl>
+            </div>
+          )}
         </Card>
       )}
 
@@ -526,29 +506,17 @@ export default function VentaOnlinePage() {
             fullWidth
           />
           <Select
-            label="Dirección (opcional)"
-            value={formNuevoPedido.direccionEnvioId}
-            onChange={(e) => setFormNuevoPedido((p) => ({ ...p, direccionEnvioId: e.target.value }))}
-            options={[
-              { value: '', label: 'Sin dirección (retiro)' },
-              ...direccionesUsuario.map((d) => ({
-                value: d.id,
-                label: `${d.calle} ${d.numeroInterior ?? ''} — ${d.coloniaBarrio}`.trim(),
-              })),
-            ]}
-            fullWidth
-          />
-          <Select
             label="Estado inicial"
             value={formNuevoPedido.estado}
             onChange={(e) => setFormNuevoPedido((p) => ({ ...p, estado: e.target.value }))}
-            options={OPCIONES_ESTADO_PEDIDO}
+            options={OPCIONES_ESTADO_INICIAL}
             fullWidth
           />
-          <Input
+          <Select
             label="Método pago"
             value={formNuevoPedido.metodoPago}
             onChange={(e) => setFormNuevoPedido((p) => ({ ...p, metodoPago: e.target.value }))}
+            options={OPCIONES_METODO_PAGO}
             fullWidth
           />
           <div className="md:col-span-2">

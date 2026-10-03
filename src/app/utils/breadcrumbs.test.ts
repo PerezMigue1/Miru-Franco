@@ -20,7 +20,7 @@ describe('Migas del portal: ubicación real, no carpetas de la URL', () => {
 
   it('las que dependen de otra muestran a su padre, con el nombre real si lo hay', () => {
     expect(cadena('/cliente/tienda-online/productos/33', 'Fluido Di Goji')).toBe('Inicio > Tienda > Fluido Di Goji');
-    expect(cadena('/cliente/tienda-online/checkout/elegir-domicilio')).toBe('Inicio > Carrito > Checkout > Elegir domicilio');
+    expect(cadena('/cliente/tienda-online/mis-pedidos/12')).toBe('Inicio > Mis pedidos > Detalle de pedido');
     expect(cadena('/cliente/servicios-citas/reprogramar/4022')).toBe('Inicio > Mis citas > Reprogramar cita');
     expect(getMigasPortal('/cliente/tienda-online/productos/33')?.global).toBe(false);
   });
@@ -49,7 +49,7 @@ describe('Pestaña activa de la cabecera con el mismo mapa', () => {
       '/cliente/servicios-citas/mis-citas',
       '/cliente/servicios-citas/reprogramar/4022',
       '/perfil',
-      '/cliente/direcciones',
+      '/cliente/tarjetas',
       '/cliente/cotizaciones',
     ]) {
       expect(seccionPortal(ruta)).toBeNull();

@@ -21,6 +21,7 @@ import {
   Scissors,
   ShieldCheck,
   ShoppingCart,
+  PackageCheck,
   Store,
   Truck,
   User,
@@ -68,8 +69,9 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     items: [
       { label: 'Venta local', href: '/admin/venta-local', icon: Store },
       { label: 'Venta online', href: '/admin/venta-online', icon: ShoppingCart },
+      { label: 'Pedidos por recoger', href: '/admin/pedidos-por-recoger', icon: PackageCheck },
       { label: 'Facturación', href: '/admin/facturacion', icon: Receipt },
-      // Pagos, Devoluciones, Entregas y envíos → acceso desde Venta online
+      // Pagos y Devoluciones → acceso desde Venta online
     ],
   },
   {

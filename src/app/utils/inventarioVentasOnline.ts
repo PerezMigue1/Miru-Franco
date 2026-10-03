@@ -10,6 +10,7 @@ import { diaEnMexico } from './fechaSoloDia';
 export const ESTADOS_PEDIDO_CONTABLES_VENTA: EstadoPedidoUi[] = [
   'pagado',
   'preparando',
+  'listo_recoger',
   'enviado',
   'entregado',
 ];

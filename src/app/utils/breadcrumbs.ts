@@ -27,7 +27,6 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   '/cliente/mi-perfil': { etiqueta: 'Mi perfil', global: true },
   '/cliente/servicios-citas/mis-citas': { etiqueta: 'Mis citas', global: true },
   '/cliente/tienda-online/mis-pedidos': { etiqueta: 'Mis pedidos', global: true },
-  '/cliente/tienda-online/rastreo-pedidos': { etiqueta: 'Rastreo de pedidos', global: true },
   '/cliente/cotizaciones': { etiqueta: 'Mis cotizaciones', global: true },
   '/cliente/notificaciones': { etiqueta: 'Notificaciones', global: true },
   '/cliente/devoluciones': { etiqueta: 'Devoluciones', global: true },
@@ -38,7 +37,6 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   // Pantallas que dependen de otra
   '/cliente/tienda-online/productos/[id]': { etiqueta: 'Producto', padre: '/cliente/tienda-online' },
   '/cliente/tienda-online/checkout': { etiqueta: 'Checkout', padre: '/cliente/tienda-online/carrito' },
-  '/cliente/tienda-online/checkout/elegir-domicilio': { etiqueta: 'Elegir domicilio', padre: '/cliente/tienda-online/checkout' },
   '/cliente/tienda-online/confirmacion': { etiqueta: 'Confirmación de compra', padre: '/cliente/tienda-online' },
   '/cliente/tienda-online/mis-pedidos/[id]': { etiqueta: 'Detalle de pedido', padre: '/cliente/tienda-online/mis-pedidos' },
   '/cliente/servicios-citas/servicios/[id]': { etiqueta: 'Servicio', padre: '/cliente/servicios-citas' },
@@ -48,7 +46,6 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   '/cliente/servicios-citas/mis-citas/[id]': { etiqueta: 'Detalle de cita', padre: '/cliente/servicios-citas/mis-citas' },
   '/cliente/servicios-citas/reprogramar/[id]': { etiqueta: 'Reprogramar cita', padre: '/cliente/servicios-citas/mis-citas' },
   '/cliente/servicios-citas/cancelar/[id]': { etiqueta: 'Cancelar cita', padre: '/cliente/servicios-citas/mis-citas' },
-  '/cliente/direcciones': { etiqueta: 'Mis direcciones', padre: '/perfil' },
   '/cliente/tarjetas': { etiqueta: 'Tarjetas', padre: '/perfil' },
 };
 
@@ -158,7 +155,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'control-caducidad': { label: 'Control de caducidad', href: '/admin/control-caducidad' },
       'cotizaciones-eventos': { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos' },
       'devoluciones-cambios': { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios' },
-      'entregas-envios': { label: 'Entregas y envíos', href: '/admin/entregas-envios' },
+      'pedidos-por-recoger': { label: 'Pedidos por recoger', href: '/admin/pedidos-por-recoger' },
       'quejas-garantias': { label: 'Quejas y garantías', href: '/admin/quejas-garantias' },
       'base-datos': { label: 'Base de datos', href: '/admin/base-datos' },
     };
@@ -197,6 +194,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'mi-asistencia': 'Mi asistencia',
       'mis-solicitudes': 'Mis solicitudes',
       'pedidos-online': 'Pedidos online',
+      'pedidos-por-recoger': 'Pedidos por recoger',
       'punto-de-venta': 'Punto de venta',
       'segmentacion-clientes': 'Segmentación de clientes',
       'seguimiento-post-servicio': 'Seguimiento posterior al servicio',

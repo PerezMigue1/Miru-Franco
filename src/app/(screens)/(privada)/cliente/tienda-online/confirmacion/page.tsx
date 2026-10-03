@@ -12,6 +12,8 @@ import {
   listarPedidoItems,
   listarPagosPorPedido,
   etiquetaEstadoPedido,
+  etiquetaMetodoPagoPedido,
+  esPagoEnSalon,
   varianteBadgeEstadoPedido,
   etiquetaEstadoPago,
   varianteBadgeEstadoPago,
@@ -188,7 +190,9 @@ function ConfirmacionCompraContent() {
             <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
               {esCancelado
                 ? 'Este pedido está cancelado.'
-                : 'Tu pedido quedó registrado. Abajo tienes el resumen de tu compra.'}
+                : esPagoEnSalon(pedido.metodoPago)
+                  ? 'Te apartamos tu pedido. Te avisamos en la app y por correo cuando esté listo para recogerlo y pagarlo en el salón.'
+                  : 'Tu pedido quedó registrado. Te avisamos en la app y por correo cuando esté listo para recoger en el salón.'}
             </p>
             {pagoTarjetaHint && !esCancelado && (
               <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -212,7 +216,7 @@ function ConfirmacionCompraContent() {
                   Estado del pedido
                 </span>
                 <Badge variant={varianteBadgeEstadoPedido(estadoPedido)} size="lg">
-                  {etiquetaEstadoPedido(estadoPedido)}
+                  {etiquetaEstadoPedido(estadoPedido, pedido.metodoPago)}
                 </Badge>
               </div>
               {ultimoPago && (
@@ -271,12 +275,15 @@ function ConfirmacionCompraContent() {
                     {formatearPrecioMXN(pedido.subtotal)} {pedido.moneda}
                   </span>
                 </div>
-                <div className="flex justify-between mb-1">
-                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>
-                    {formatearPrecioMXN(pedido.costoEnvio)} {pedido.moneda}
-                  </span>
-                </div>
+                {/* Solo pedidos anteriores: hoy todo se recoge en el salón, sin costo de envío. */}
+                {pedido.costoEnvio > 0 && (
+                  <div className="flex justify-between mb-1">
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Envío</span>
+                    <span style={{ color: 'var(--menu-texto-principal)' }}>
+                      {formatearPrecioMXN(pedido.costoEnvio)} {pedido.moneda}
+                    </span>
+                  </div>
+                )}
                 {pedido.impuestos > 0 && (
                   <div className="flex justify-between mb-1">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Impuestos</span>
@@ -334,7 +341,7 @@ function ConfirmacionCompraContent() {
                     Método de pago (registrado)
                   </p>
                   <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {pedido.metodoPago}
+                    {etiquetaMetodoPagoPedido(pedido.metodoPago)}
                   </p>
                 </div>
               ) : null}
@@ -344,7 +351,7 @@ function ConfirmacionCompraContent() {
           <div className="space-y-4">
             <div className="p-4 rounded-xl text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                Puedes ver el detalle completo, el envío y el historial de tu compra en &quot;Mis pedidos&quot;.
+                Puedes ver el detalle completo y el historial de tu compra en &quot;Mis pedidos&quot;.
               </p>
             </div>
 

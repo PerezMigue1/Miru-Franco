@@ -10,7 +10,7 @@ export const RUTAS_CON_SESION = [
   '/perfil',
   '/cliente/cotizaciones',
   '/cliente/devoluciones',
-  '/cliente/direcciones',
+  '/cliente/direcciones', // solo redirige a /perfil (sin envíos no hay direcciones)
   '/cliente/facturas',
   '/cliente/garantias',
   '/cliente/notificaciones',
@@ -19,7 +19,7 @@ export const RUTAS_CON_SESION = [
   '/cliente/tienda-online/checkout',
   '/cliente/tienda-online/confirmacion',
   '/cliente/tienda-online/mis-pedidos',
-  '/cliente/tienda-online/rastreo-pedidos',
+  '/cliente/tienda-online/rastreo-pedidos', // solo redirige a mis-pedidos
   '/cliente/servicios-citas/calendario',
   '/cliente/servicios-citas/cancelar',
   '/cliente/servicios-citas/confirmacion',

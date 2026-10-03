@@ -1,9 +1,8 @@
 /**
- * Reglas de negocio del flujo carrito → pedido (totales, envío, notas, validación de líneas).
+ * Reglas de negocio del flujo carrito → pedido (totales, notas, validación de líneas).
+ * Todo pedido se recoge en el salón: no hay costo de envío.
  * Mantener aquí la fuente única de verdad para que checkout y carrito no diverjan.
  */
-
-export type TipoEntregaVenta = 'domicilio' | 'retiro';
 
 /** Mínima forma de línea para cálculos y validación (compatible con CartItem). */
 export interface LineaCarritoVenta {
@@ -15,17 +14,8 @@ export interface LineaCarritoVenta {
   presentacion?: string;
 }
 
-function costoEnvioDomicilioConfig(): number {
-  if (typeof process === 'undefined') return 50;
-  const raw = process.env.NEXT_PUBLIC_COSTO_ENVIO_DOMICILIO;
-  if (raw == null || String(raw).trim() === '') return 50;
-  const n = parseFloat(String(raw));
-  return Number.isFinite(n) && n >= 0 ? n : 50;
-}
-
 export interface ResumenVentaCarrito {
   subtotal: number;
-  costoEnvio: number;
   impuestos: number;
   descuento: number;
   total: number;
@@ -34,32 +24,27 @@ export interface ResumenVentaCarrito {
 
 /**
  * Subtotal = Σ precio × cantidad.
- * Envío: 0 en retiro o carrito vacío; en domicilio, costo fijo configurable (def. 50 MXN).
- * Total = subtotal + envío + impuestos − descuento.
+ * Total = subtotal + impuestos − descuento (sin envío: se recoge en el salón).
  */
 export function calcularResumenVentaCarrito(
   lineas: LineaCarritoVenta[],
-  tipoEntrega: TipoEntregaVenta,
   opciones?: { impuestos?: number; descuento?: number }
 ): ResumenVentaCarrito {
   const subtotal = lineas.reduce((s, i) => s + i.precio * i.cantidad, 0);
-  const costoEnvio =
-    tipoEntrega === 'retiro' || lineas.length === 0 ? 0 : costoEnvioDomicilioConfig();
   const impuestos = opciones?.impuestos ?? 0;
   const descuento = opciones?.descuento ?? 0;
   return {
     subtotal,
-    costoEnvio,
     impuestos,
     descuento,
-    total: subtotal + costoEnvio + impuestos - descuento,
+    total: subtotal + impuestos - descuento,
     moneda: 'MXN',
   };
 }
 
-/** Vista previa en carrito: mismo costo de envío a domicilio que en checkout si el cliente elige domicilio. */
+/** Vista previa en carrito: el mismo cálculo que el checkout. */
 export function calcularResumenCarritoVistaPrevia(lineas: LineaCarritoVenta[]): ResumenVentaCarrito {
-  return calcularResumenVentaCarrito(lineas, 'domicilio');
+  return calcularResumenVentaCarrito(lineas);
 }
 
 /** Devuelve mensaje de error o null si las líneas pueden convertirse en ítems de pedido. */
@@ -82,7 +67,6 @@ export interface NotasCheckoutVentaInput {
   telefono?: string;
   nombreContacto: string;
   apellidosContacto: string;
-  tipoEntrega: TipoEntregaVenta;
   esTarjeta: boolean;
   mesesMSI: string;
   solicitaFactura: boolean;
@@ -95,9 +79,6 @@ export function construirNotasClienteVenta(input: NotasCheckoutVentaInput): stri
   if (tel) partes.push(`Tel: ${tel}`);
   const contacto = `${input.nombreContacto} ${input.apellidosContacto}`.trim();
   if (contacto) partes.push(`Contacto: ${contacto}`);
-  partes.push(
-    input.tipoEntrega === 'retiro' ? 'Entrega: retiro en estética' : 'Entrega: domicilio'
-  );
   if (input.esTarjeta && input.mesesMSI !== '1') {
     partes.push(`MSI: ${input.mesesMSI} meses`);
   }

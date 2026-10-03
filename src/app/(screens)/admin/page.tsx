@@ -718,7 +718,7 @@ export default function AdminDashboardPage() {
                         : p.estado === 'pendiente_pago' ? 'warning'
                         : 'info'
                       }>
-                        {etiquetaEstadoPedido(p.estado)}
+                        {etiquetaEstadoPedido(p.estado, p.metodoPago)}
                       </Badge>
                     </div>
                   ))}
