@@ -55,6 +55,11 @@ export interface CorteApi {
   efectivoInicial: number;
   efectivoFinal?: number | null;
   totalVentas?: number | null;
+  totalEfectivo?: number | null;
+  totalTarjeta?: number | null;
+  totalTransferencia?: number | null;
+  /** efectivo contado − (efectivo inicial + efectivo esperado) */
+  diferencia?: number | null;
   estado: string;
   notas?: string | null;
   creadoEn?: string;
@@ -147,11 +152,26 @@ function normalizarCorte(x: unknown): CorteApi | null {
     efectivoInicial: Number(n(r.efectivoInicial ?? r.efectivo_inicial, 0) ?? 0),
     efectivoFinal: n(r.efectivoFinal ?? r.efectivo_final),
     totalVentas: n(r.totalVentas ?? r.total_ventas),
+    totalEfectivo: n(r.totalEfectivo ?? r.total_efectivo),
+    totalTarjeta: n(r.totalTarjeta ?? r.total_tarjeta),
+    totalTransferencia: n(r.totalTransferencia ?? r.total_transferencia),
+    diferencia: n(r.diferencia),
     estado: s(r.estado) || 'abierto',
     notas: s(r.notas) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
     cerradoEn: s(r.cerradoEn ?? r.cerrado_en) || null,
   };
+}
+
+/** Dinero de caja: siempre con dos decimales y el signo delante (-$10.00). */
+function pesos(valor: number | null | undefined): string {
+  const v = Number(valor ?? 0);
+  return `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Lo que se le muestra a quien registra el corte: cada método por separado y la diferencia. */
+export function resumenCorteTexto(corte: CorteApi): string {
+  return `Corte registrado · Efectivo ${pesos(corte.totalEfectivo)} · Tarjeta ${pesos(corte.totalTarjeta)} · Transferencia ${pesos(corte.totalTransferencia)} · Diferencia ${pesos(corte.diferencia)}`;
 }
 
 export interface ListarVentasParams {

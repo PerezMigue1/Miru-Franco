@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  CreditCard,
   IdCard,
   LockKeyhole,
   LogOut,
@@ -82,7 +81,7 @@ interface ProfileCard {
 
 /** Grupos del hub de la cuenta (listas de filas en vez de tarjetas iguales). */
 const GRUPOS_TARJETAS: { titulo: string; ids: string[] }[] = [
-  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'tarjetas', 'comunicaciones'] },
+  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'comunicaciones'] },
   { titulo: 'Citas y beneficios', ids: ['citas', 'promociones'] },
   { titulo: 'Paneles del salón', ids: ['admin', 'operacion'] },
 ];
@@ -253,13 +252,6 @@ export default function UserProfile() {
       alert: true,
     },
     {
-      id: 'tarjetas',
-      title: 'Tarjetas',
-      subtitle: 'Métodos de pago guardados para tus compras.',
-      icon: CreditCard,
-      href: '/cliente/tarjetas',
-    },
-    {
       id: 'comunicaciones',
       title: 'Comunicaciones',
       subtitle: 'Elige qué tipo de información quieres recibir.',
@@ -292,9 +284,6 @@ export default function UserProfile() {
   const visibleCards = cards.filter((c) => {
     if (c.id === 'admin') return normalizedRole === 'admin';
     if (c.id === 'operacion') return ['estilista', 'empleado', 'becario'].includes(normalizedRole);
-    // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
-    // Sin pasarela real, "Tarjetas" no tiene nada verificable que gestionar — se paga en el salón.
-    if (c.id === 'tarjetas') return false;
     // Oculto: la ruta /cliente/comunicaciones todavía no existe (llevaba a un 404). No borrar.
     if (c.id === 'comunicaciones') return false;
     return true;

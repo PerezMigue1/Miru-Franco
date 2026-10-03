@@ -53,6 +53,8 @@ interface CartContextType {
   items: CartItem[];
   totalItems: number;
   loading: boolean;
+  /** true tras la primera carga (servidor o localStorage): antes, "vacío" no significa vacío. */
+  listo: boolean;
   isServerCart: boolean;
   addItem: (item: AddCartItemInput) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
@@ -150,6 +152,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [listo, setListo] = useState(false);
   /** Si ya se cargó el carrito (servidor o localStorage), con qué estado de sesión y cuándo. */
   const cargadoRef = useRef(false);
   const sesionCargadaRef = useRef<boolean | null>(null);
@@ -185,15 +188,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }
           rows = await listarCarrito();
         }
-        startTransition(() => setItems(rows.map(apiItemToCartItem)));
+        startTransition(() => {
+          setItems(rows.map(apiItemToCartItem));
+          setListo(true);
+        });
         saveToStorage([]);
       } catch {
-        startTransition(() => setItems([]));
+        startTransition(() => {
+          setItems([]);
+          setListo(true);
+        });
       } finally {
         startTransition(() => setLoading(false));
       }
     } else {
-      startTransition(() => setItems(loadFromStorage()));
+      startTransition(() => {
+        setItems(loadFromStorage());
+        setListo(true);
+      });
     }
   }, []);
 
@@ -350,6 +362,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         items,
         totalItems,
         loading,
+        listo,
         isServerCart: Boolean(typeof window !== 'undefined' && hasSession()),
         addItem,
         removeItem,

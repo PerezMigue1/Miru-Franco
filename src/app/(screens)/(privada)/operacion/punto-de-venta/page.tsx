@@ -11,7 +11,8 @@ import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
-import { listarVentas, crearVenta, cancelarVenta, abrirCorte, type VentaLocalApi } from '../../../../services/pos';
+import { listarVentas, crearVenta, cancelarVenta, abrirCorte, resumenCorteTexto, type VentaLocalApi } from '../../../../services/pos';
+import { showToast } from '../../../../utils/toast';
 import { getProductosSinRedirigir, type Producto } from '../../../../services/productos';
 import { getServicios, type Servicio } from '../../../../services/servicios';
 import { listarClientes, type ClienteApi } from '../../../../services/clientes';
@@ -253,12 +254,13 @@ export default function PuntoDeVentaPage() {
         setCorteError('Indica el efectivo contado en caja al cierre.');
         return;
       }
-      await abrirCorte({
+      const corte = await abrirCorte({
         efectivoInicial: Number(formCorteEfectivo) || 0,
         efectivoFinal: Number(formCorteEfectivoFinal),
         notas: formCorteNotas.trim() || undefined,
       });
       setIsModalCorteOpen(false); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas('');
+      showToast(resumenCorteTexto(corte), 'success', 10000);
     } catch (e) {
       setCorteError(e instanceof Error ? e.message : 'No se pudo registrar el corte');
     } finally {

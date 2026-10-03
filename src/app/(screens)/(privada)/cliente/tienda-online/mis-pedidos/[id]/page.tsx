@@ -23,6 +23,7 @@ import {
   listarDevolucionesPedido,
   actualizarPedido,
   esPagoEnSalon,
+  METODO_PAGO_MERCADOPAGO,
   etiquetaEstadoPedido,
   etiquetaMetodoPagoPedido,
   varianteBadgeEstadoPedido,
@@ -45,7 +46,9 @@ function textoRecoger(pedido: PedidoApi): string | null {
     case 'pendiente_pago':
       return enSalon
         ? 'Tu pedido está apartado. Lo preparamos y te avisamos cuando puedas pasar a pagarlo y recogerlo.'
-        : 'Estamos confirmando tu pago. Después lo preparamos y te avisamos.';
+        : pedido.metodoPago === METODO_PAGO_MERCADOPAGO
+          ? 'Falta completar tu pago en Mercado Pago. Tienes 24 horas desde que hiciste el pedido.'
+          : 'Estamos confirmando tu pago. Después lo preparamos y te avisamos.';
     case 'pagado':
       return 'Pago recibido. Lo preparamos y te avisamos cuando esté listo para recoger.';
     case 'preparando':
@@ -197,11 +200,18 @@ export default function DetallePedidoPage() {
               {etiquetaEstadoPedido(pedido.estado, pedido.metodoPago)}
             </Badge>
           </div>
-          {ESTADOS_CANCELABLES.has(pedido.estado) && (
-            <Button variant="outline" onClick={() => void cancelarPedido()} disabled={cancelando}>
-              {cancelando ? 'Cancelando…' : 'Cancelar pedido'}
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-3">
+            {pedido.estado === 'pendiente_pago' && pedido.metodoPago === METODO_PAGO_MERCADOPAGO && (
+              <Button onClick={() => router.push(`/cliente/tienda-online/confirmacion?pedidoId=${pedido.id}`)}>
+                Completar el pago
+              </Button>
+            )}
+            {ESTADOS_CANCELABLES.has(pedido.estado) && (
+              <Button variant="outline" onClick={() => void cancelarPedido()} disabled={cancelando}>
+                {cancelando ? 'Cancelando…' : 'Cancelar pedido'}
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

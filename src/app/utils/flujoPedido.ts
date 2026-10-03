@@ -1,4 +1,4 @@
-import { esPagoEnSalon, type EstadoPedidoUi } from '../services/ecommerce';
+import { esPagoEnSalon, METODO_PAGO_MERCADOPAGO, type EstadoPedidoUi } from '../services/ecommerce';
 
 /**
  * Las mismas reglas que valida el backend (backend-miru/src/ecommerce/pedidos/flujo-pedido.ts):
@@ -39,13 +39,26 @@ export type AccionPedido = 'cobrar' | 'preparar' | 'listo' | 'entregar' | 'cobra
 /** Botones rápidos para el personal: el siguiente paso del flujo y cancelar. */
 export function accionesPedido(estado: EstadoPedidoUi, metodoPago: string | null | undefined): AccionPedido[] {
   const enSalon = esPagoEnSalon(metodoPago);
+  // Un pago en línea lo confirma Mercado Pago (webhook); cobrarlo en caja lo cobraría dos veces.
+  const enLinea = (metodoPago ?? '').trim().toLowerCase() === METODO_PAGO_MERCADOPAGO;
   const acciones: AccionPedido[] = [];
   for (const siguiente of siguientesEstados(estado, metodoPago)) {
-    if (siguiente === 'pagado') acciones.push('cobrar');
-    else if (siguiente === 'preparando') acciones.push('preparar');
+    if (siguiente === 'pagado') {
+      if (!enLinea) acciones.push('cobrar');
+    } else if (siguiente === 'preparando') acciones.push('preparar');
     else if (siguiente === 'listo_recoger') acciones.push('listo');
     else if (siguiente === 'entregado') acciones.push(enSalon && estado === 'listo_recoger' ? 'cobrarEntregar' : 'entregar');
     else if (siguiente === 'cancelado') acciones.push('cancelar');
   }
   return acciones;
+}
+
+/** Permiso que exige el servidor para cada botón: marcar listo y entregar son de entregas; lo demás, de caja. */
+export function permisoDeAccion(accion: AccionPedido): 'pedidos:entregar' | 'caja:escritura' {
+  return accion === 'listo' || accion === 'entregar' || accion === 'cobrarEntregar' ? 'pedidos:entregar' : 'caja:escritura';
+}
+
+/** Lo mismo para un estado elegido en el selector del detalle. */
+export function permisoDeEstado(estado: EstadoPedidoUi): 'pedidos:entregar' | 'caja:escritura' {
+  return estado === 'listo_recoger' || estado === 'entregado' ? 'pedidos:entregar' : 'caja:escritura';
 }

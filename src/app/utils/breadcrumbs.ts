@@ -46,7 +46,6 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   '/cliente/servicios-citas/mis-citas/[id]': { etiqueta: 'Detalle de cita', padre: '/cliente/servicios-citas/mis-citas' },
   '/cliente/servicios-citas/reprogramar/[id]': { etiqueta: 'Reprogramar cita', padre: '/cliente/servicios-citas/mis-citas' },
   '/cliente/servicios-citas/cancelar/[id]': { etiqueta: 'Cancelar cita', padre: '/cliente/servicios-citas/mis-citas' },
-  '/cliente/tarjetas': { etiqueta: 'Tarjetas', padre: '/perfil' },
 };
 
 function patronPortal(pathname: string): string | null {

@@ -67,8 +67,6 @@ export interface NotasCheckoutVentaInput {
   telefono?: string;
   nombreContacto: string;
   apellidosContacto: string;
-  esTarjeta: boolean;
-  mesesMSI: string;
   solicitaFactura: boolean;
   rfcFactura?: string;
 }
@@ -79,9 +77,6 @@ export function construirNotasClienteVenta(input: NotasCheckoutVentaInput): stri
   if (tel) partes.push(`Tel: ${tel}`);
   const contacto = `${input.nombreContacto} ${input.apellidosContacto}`.trim();
   if (contacto) partes.push(`Contacto: ${contacto}`);
-  if (input.esTarjeta && input.mesesMSI !== '1') {
-    partes.push(`MSI: ${input.mesesMSI} meses`);
-  }
   if (input.solicitaFactura && input.rfcFactura?.trim()) {
     partes.push(`Factura: RFC ${input.rfcFactura.trim()}`);
   }

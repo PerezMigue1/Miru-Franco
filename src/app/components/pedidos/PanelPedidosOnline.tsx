@@ -13,6 +13,9 @@ import {
   PackageCheck,
   CheckCircle2,
   HandCoins,
+  Banknote,
+  CreditCard,
+  ArrowLeftRight,
   XCircle,
   ShoppingBag,
   Store,
@@ -28,6 +31,9 @@ import {
   listarPagosPorPedido,
   actualizarPagoParcial,
   crearPago,
+  marcarPedidoListo,
+  entregarPedido,
+  type MetodoCobroSalon,
   esPagoEnSalon,
   etiquetaEstadoPedido,
   etiquetaMetodoPagoPedido,
@@ -37,7 +43,14 @@ import {
   type EstadoPedidoUi,
 } from '../../services/ecommerce';
 import { showAlert, showConfirm, showToast } from '../../utils/toast';
-import { accionesPedido, siguientesEstadosSinCobro, type AccionPedido } from '../../utils/flujoPedido';
+import {
+  accionesPedido,
+  permisoDeAccion,
+  permisoDeEstado,
+  siguientesEstadosSinCobro,
+  type AccionPedido,
+} from '../../utils/flujoPedido';
+import { usePermisos } from '../../utils/permisos';
 import { mensajeUsuarioDesdeErrorApi } from '../../utils/apiErrorMessage';
 
 export type VistaPedidos = 'cobro' | 'recoger';
@@ -60,6 +73,13 @@ const BOTON_ACCION: Record<AccionPedido, { etiqueta: string; icono: LucideIcon; 
   cobrarEntregar: { etiqueta: 'Cobrar y entregar', icono: HandCoins, principal: true },
   cancelar: { etiqueta: 'Cancelar', icono: XCircle },
 };
+
+/** Cómo se cobra en el mostrador; el corte de caja suma cada uno en su total. */
+const METODOS_COBRO: { value: MetodoCobroSalon; etiqueta: string; icono: LucideIcon }[] = [
+  { value: 'efectivo', etiqueta: 'Efectivo', icono: Banknote },
+  { value: 'tarjeta_terminal', etiqueta: 'Tarjeta en terminal', icono: CreditCard },
+  { value: 'transferencia', etiqueta: 'Transferencia', icono: ArrowLeftRight },
+];
 
 /** Cómo se paga, en corto, para la columna de la lista. */
 function textoPago(p: PedidoApi): string {
@@ -120,6 +140,10 @@ async function fetchTodosPorEstado(estado: EstadoPedidoUi): Promise<PedidoApi[]>
  * no existe hoy; queda anotado, no es un descarte silencioso nuevo.
  */
 export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaPedidos }) {
+  // Solo los botones que el permiso de esta persona permite (el servidor respondería 403 a los demás).
+  const { tienePermiso } = usePermisos();
+  const accionesPermitidas = (p: PedidoApi) =>
+    accionesPedido(p.estado, p.metodoPago).filter((a) => tienePermiso(permisoDeAccion(a)));
   const estadosTrabajo = ESTADOS_POR_VISTA[vista];
   const [modo, setModo] = useState<'trabajo' | 'todos'>('trabajo');
   const [pedidosTrabajo, setPedidosTrabajo] = useState<PedidoApi[]>([]);
@@ -137,6 +161,9 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<EstadoPedidoUi>('pendiente_pago');
   const [guardando, setGuardando] = useState(false);
+  /** Cobro en el mostrador: pedido y si además se entrega (apartado listo para recoger). */
+  const [cobro, setCobro] = useState<{ pedido: PedidoApi; entregar: boolean } | null>(null);
+  const [metodoCobro, setMetodoCobro] = useState<MetodoCobroSalon>('efectivo');
 
   const cargarTrabajo = async () => {
     setLoading(true);
@@ -240,7 +267,10 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
   async function cambiarEstado(id: number, estado: EstadoPedidoUi) {
     setGuardando(true);
     try {
-      await actualizarPedido(id, { estado });
+      // Marcar listo y entregar van por sus rutas (permiso pedidos:entregar); el resto, por el cambio general.
+      if (estado === 'listo_recoger') await marcarPedidoListo(id);
+      else if (estado === 'entregado') await entregarPedido(id);
+      else await actualizarPedido(id, { estado });
       await recargar();
       if (detalleId === id) {
         const actualizado = await obtenerPedido(id);
@@ -254,37 +284,33 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
     }
   }
 
-  /** Registra el cobro y avanza el pedido: a 'pagado' (pago en línea pendiente) o, en el pago al
-   *  recoger, directo a 'entregado' ("Cobrar y entregar" en el mostrador). */
-  async function cobrarPedido(id: number, estadoFinal: 'pagado' | 'entregado') {
+  /**
+   * Registra el cobro con el método elegido en el modal. "Cobrar y entregar" (apartado listo para recoger)
+   * lo hace el servidor en un solo paso; "Cobrar" registra el Pago aprobado y pasa el pedido a pagado.
+   * En ambos casos el pago queda a nombre de quien cobra, para su corte de caja.
+   */
+  async function confirmarCobro() {
+    if (!cobro) return;
+    const { pedido, entregar } = cobro;
     setGuardando(true);
     try {
-      const pedido = pedidosTrabajo.find((p) => p.id === id) ?? pedidosTodos.find((p) => p.id === id) ?? detallePedido;
-      const pagos = await listarPagosPorPedido(id);
-      if (pagos.length) {
-        // Ya había un registro de pago (flujo antiguo/importado): aprobarlo.
-        const ultimo = pagos[pagos.length - 1];
-        await actualizarPagoParcial(ultimo.id, { estado: 'aprobado', monto: pedido?.total });
+      if (entregar) {
+        await entregarPedido(pedido.id, metodoCobro);
       } else {
-        // Sin pasarela, el checkout no crea ningún Pago: quien cobra lo registra ya aprobado.
-        // Pago en línea: con el método que eligió la clienta. Al recoger: efectivo, como antes.
-        const metodo = pedido && !esPagoEnSalon(pedido.metodoPago) && pedido.metodoPago ? pedido.metodoPago : 'efectivo';
-        await crearPago({
-          pedidoId: id,
-          monto: pedido?.total ?? 0,
-          metodo,
-          estado: 'aprobado',
-          intentoNumero: 1,
-        });
+        const pagos = await listarPagosPorPedido(pedido.id);
+        if (pagos.length) {
+          // Ya había un registro de pago (flujo antiguo/importado): aprobarlo con el método real.
+          const ultimo = pagos[pagos.length - 1];
+          await actualizarPagoParcial(ultimo.id, { estado: 'aprobado', monto: pedido.total, metodo: metodoCobro });
+        } else {
+          await crearPago({ pedidoId: pedido.id, monto: pedido.total, metodo: metodoCobro, estado: 'aprobado', intentoNumero: 1 });
+        }
+        await actualizarPedido(pedido.id, { estado: 'pagado' });
       }
-      await actualizarPedido(id, { estado: estadoFinal });
+      setCobro(null);
       await recargar();
-      if (detalleId === id) {
-        const actualizado = await obtenerPedido(id);
-        setDetallePedido(actualizado);
-      }
       showToast(
-        estadoFinal === 'entregado' ? `Pedido #${id} cobrado y entregado en el salón.` : `Pedido #${id} cobrado y marcado como pagado.`,
+        entregar ? `Pedido #${pedido.id} cobrado y entregado en el salón.` : `Pedido #${pedido.id} cobrado.`,
         'success'
       );
     } catch (e) {
@@ -294,9 +320,16 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
     }
   }
 
+  const abrirCobro = (pedido: PedidoApi, entregar: boolean) => {
+    setDetalleId(null);
+    setDetallePedido(null);
+    setMetodoCobro('efectivo');
+    setCobro({ pedido, entregar });
+  };
+
   async function ejecutarAccion(p: PedidoApi, accion: AccionPedido) {
-    if (accion === 'cobrar') return cobrarPedido(p.id, 'pagado');
-    if (accion === 'cobrarEntregar') return cobrarPedido(p.id, 'entregado');
+    if (accion === 'cobrar') return abrirCobro(p, false);
+    if (accion === 'cobrarEntregar') return abrirCobro(p, true);
     if (accion === 'preparar') return cambiarEstado(p.id, 'preparando');
     if (accion === 'listo') return cambiarEstado(p.id, 'listo_recoger');
     if (accion === 'entregar') return cambiarEstado(p.id, 'entregado');
@@ -310,13 +343,16 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
 
   /** Opciones del selector del detalle: el estado actual y los siguientes válidos que no implican cobrar. */
   const opcionesEstado = detallePedido
-    ? [detallePedido.estado, ...siguientesEstadosSinCobro(detallePedido.estado, detallePedido.metodoPago)].map((estado) => ({
+    ? [
+        detallePedido.estado,
+        ...siguientesEstadosSinCobro(detallePedido.estado, detallePedido.metodoPago).filter((e) => tienePermiso(permisoDeEstado(e))),
+      ].map((estado) => ({
         value: estado,
         label: etiquetaEstadoPedido(estado, detallePedido.metodoPago),
       }))
     : [];
   const accionPrincipalDetalle = detallePedido
-    ? accionesPedido(detallePedido.estado, detallePedido.metodoPago).find((a) => a !== 'cancelar')
+    ? accionesPermitidas(detallePedido).find((a) => a !== 'cancelar')
     : undefined;
 
   return (
@@ -390,7 +426,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
                     {/* Cancelar, por ser destructiva, vive en el detalle ("Ver"), lejos de los botones del flujo. */}
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => void abrirDetalle(p.id)}>Ver</Button>
-                      {accionesPedido(p.estado, p.metodoPago).filter((a) => a !== 'cancelar').map((accion) => {
+                      {accionesPermitidas(p).filter((a) => a !== 'cancelar').map((accion) => {
                         const { etiqueta, icono: Icono, principal } = BOTON_ACCION[accion];
                         return (
                           <Button
@@ -450,7 +486,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
         size="lg"
         footer={
           <>
-            {detallePedido && accionesPedido(detallePedido.estado, detallePedido.metodoPago).includes('cancelar') && (
+            {detallePedido && accionesPermitidas(detallePedido).includes('cancelar') && (
               <Button
                 variant="danger"
                 className="sm:mr-auto inline-flex items-center gap-1"
@@ -542,6 +578,67 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
                   : 'Solo aparecen los pasos que siguen. Para cobrar, usa el botón de cobro: registra el pago.'}
               </p>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={cobro !== null}
+        onClose={() => { if (!guardando) setCobro(null); }}
+        title={cobro ? (cobro.entregar ? `Cobrar y entregar el pedido #${cobro.pedido.id}` : `Cobrar el pedido #${cobro.pedido.id}`) : ''}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setCobro(null)} disabled={guardando}>Volver</Button>
+            <Button onClick={() => void confirmarCobro()} disabled={guardando}>
+              {guardando ? 'Registrando…' : cobro?.entregar ? 'Cobrar y entregar' : 'Registrar cobro'}
+            </Button>
+          </>
+        }
+      >
+        {cobro && (
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{nombreCliente(cobro.pedido)}</p>
+              <p className="mf-cifras text-3xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                {fmtMoneda(cobro.pedido.total, cobro.pedido.moneda)}
+              </p>
+            </div>
+            <fieldset>
+              <legend className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                ¿Cómo pagó la clienta?
+              </legend>
+              <div className="grid grid-cols-1 gap-2">
+                {METODOS_COBRO.map(({ value, etiqueta, icono: Icono }) => {
+                  const elegido = metodoCobro === value;
+                  return (
+                    <label
+                      key={value}
+                      className="flex items-center gap-3 min-h-11 px-4 py-3 rounded-lg border-2 cursor-pointer transition-[border-color] duration-200"
+                      style={{
+                        backgroundColor: 'var(--superficie-elevada)',
+                        borderColor: elegido ? 'var(--checkout-entrega-borde-seleccion)' : 'var(--fondos-suaves)',
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="metodoCobro"
+                        value={value}
+                        checked={elegido}
+                        onChange={() => setMetodoCobro(value)}
+                        className="w-4 h-4 shrink-0"
+                        style={{ accentColor: 'var(--botones-principales)' }}
+                      />
+                      <Icono size={16} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>{etiqueta}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+              El cobro queda a tu nombre y entra en tu corte de caja de hoy, en el total de su método.
+            </p>
           </div>
         )}
       </Modal>

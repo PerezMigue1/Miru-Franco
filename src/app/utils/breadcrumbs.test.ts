@@ -49,7 +49,6 @@ describe('Pestaña activa de la cabecera con el mismo mapa', () => {
       '/cliente/servicios-citas/mis-citas',
       '/cliente/servicios-citas/reprogramar/4022',
       '/perfil',
-      '/cliente/tarjetas',
       '/cliente/cotizaciones',
     ]) {
       expect(seccionPortal(ruta)).toBeNull();

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarVentas, crearVenta, cancelarVenta, abrirCorte, VentaLocalApi, EstadoVentaLocal } from '../../../services/pos';
+import { listarVentas, crearVenta, cancelarVenta, abrirCorte, resumenCorteTexto, VentaLocalApi, EstadoVentaLocal } from '../../../services/pos';
+import { showToast } from '../../../utils/toast';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
 import { listarClientes, type ClienteApi } from '../../../services/clientes';
 import Modal from '../../../components/ui/Modal';
@@ -137,12 +138,13 @@ export default function VentaLocalPage() {
         setCorteError('Indica el efectivo contado en caja al cierre.');
         return;
       }
-      await abrirCorte({
+      const corte = await abrirCorte({
         efectivoInicial: Number(formCorteEfectivo) || 0,
         efectivoFinal: Number(formCorteEfectivoFinal),
         notas: formCorteNotas.trim() || undefined,
       });
       setIsModalCorteOpen(false); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas('');
+      showToast(resumenCorteTexto(corte), 'success', 10000);
     } catch (e) { setCorteError(e instanceof Error ? e.message : 'No se pudo registrar el corte'); }
     finally { setSavingCorte(false); }
   };

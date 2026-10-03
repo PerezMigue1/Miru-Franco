@@ -63,7 +63,7 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
   { label: 'Punto de venta', href: '/operacion/punto-de-venta', icon: Receipt, permiso: 'ventas:escritura' },
   { label: 'Pedidos online', href: '/operacion/pedidos-online', icon: ShoppingBag, permiso: 'caja:escritura' },
-  { label: 'Pedidos por recoger', href: '/operacion/pedidos-por-recoger', icon: PackageCheck, permiso: 'caja:escritura' },
+  { label: 'Pedidos por recoger', href: '/operacion/pedidos-por-recoger', icon: PackageCheck, permiso: 'pedidos:entregar' },
   { label: 'Agenda / Calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
   { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock, permiso: 'citas:escritura' },
   { label: 'Segmentación de clientes', href: '/operacion/segmentacion-clientes', icon: BrainCircuit, permiso: 'clientes:lectura' },
