@@ -7,6 +7,7 @@ import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import type { CotizacionApi, EstadoCotizacion } from '../../services/cotizaciones';
+import { formatearFechaSoloDia } from '../../utils/fechaSoloDia';
 
 /**
  * Estados de /cliente/cotizaciones: cargando, vacío, error y la lista. Son de presentación (la
@@ -15,21 +16,12 @@ import type { CotizacionApi, EstadoCotizacion } from '../../services/cotizacione
 
 const MXN = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
-/**
- * La fecha del evento se captura como día (YYYY-MM-DD) y se guarda a medianoche UTC: se formatea
- * en UTC para que en México no aparezca el día anterior.
- */
-const FECHA = new Intl.DateTimeFormat('es-MX', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
+/** La fecha del evento se captura como día (YYYY-MM-DD) y se guarda a medianoche UTC. */
 export function formatearFechaEvento(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? 'Fecha por confirmar' : FECHA.format(d);
+  return (
+    formatearFechaSoloDia(iso, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) ??
+    'Fecha por confirmar'
+  );
 }
 
 export function formatearMXN(valor: number): string {

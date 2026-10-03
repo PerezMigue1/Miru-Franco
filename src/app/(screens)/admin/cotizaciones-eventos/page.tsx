@@ -21,6 +21,7 @@ import {
   EstadoCotizacion,
 } from '../../../services/cotizaciones';
 import { etiquetaEstadoCotizacion, varianteEstadoCotizacion } from '../../../utils/estados';
+import { formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
 
 interface PaqueteOpcion {
   id: number;
@@ -29,14 +30,9 @@ interface PaqueteOpcion {
   precioEspecial: number;
 }
 
-/**
- * fechaEvento es solo fecha y se guarda a medianoche UTC: se formatea en UTC, como en
- * /cliente/cotizaciones (CotizacionesCliente.tsx), para que en México no salga el día anterior.
- */
+/** fechaEvento es solo día (medianoche UTC): mismo helper que /cliente/cotizaciones. */
 function fmtFecha(iso?: string): string {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-MX', { timeZone: 'UTC' });
+  return formatearFechaSoloDia(iso) ?? '-';
 }
 
 function fmtMoneda(v: number): string {

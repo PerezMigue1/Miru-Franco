@@ -19,12 +19,16 @@ import {
 } from '../../../../../services/clientes';
 import { listarQuejasPorCliente, type QuejaApi } from '../../../../../services/quejas';
 import { listarSeguimientosPorCliente, type SeguimientoApi } from '../../../../../services/seguimientos';
+import { formatearFechaSoloDia } from '../../../../../utils/fechaSoloDia';
 
+const FECHA_CORTA: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+
+/** Fechas con hora (citas, compras, actividad): en hora local. La de nacimiento usa formatearFechaSoloDia. */
 function formatearFecha(iso?: string | null): string {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return d.toLocaleDateString('es-MX', FECHA_CORTA);
   } catch {
     return '—';
   }
@@ -190,7 +194,7 @@ export default function ClienteDetalleOperacionPage() {
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Fecha de nacimiento</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFecha(cliente.fechaNacimiento)}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFechaSoloDia(cliente.fechaNacimiento, FECHA_CORTA) ?? '—'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Foto (URL)</label>

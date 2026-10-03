@@ -33,6 +33,7 @@ import {
 } from '../../../services/productos';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../utils/catalogStockSync';
 import { registrarEntrada, registrarSalida, registrarAjuste } from '../../../services/inventarioMovimientos';
+import { diasHastaFechaSoloDia, formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
 
 // Helper simple para sacar número de un precio tipo "$350"
 function precioANumero(precio: string | undefined): number {
@@ -49,11 +50,12 @@ function proximaCaducidad(producto: Producto): { fecha: string | null; diasResta
   if (fechas.length === 0) return { fecha: null, diasRestantes: null, estado: null };
   const ordenadas = fechas.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   const masCercana = ordenadas[0];
-  const ahora = new Date();
-  const fechaCad = new Date(masCercana);
-  const dias = Math.floor((fechaCad.getTime() - ahora.getTime()) / (24 * 60 * 60 * 1000));
+  // fechaCaducidad es solo día (medianoche UTC): días de calendario contra hoy en México, y el día
+  // tal cual se guardó. Antes se restaban milisegundos y se formateaba en hora local (un día antes).
+  const dias = diasHastaFechaSoloDia(masCercana);
+  const fechaFormateada = formatearFechaSoloDia(masCercana, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (dias === null || fechaFormateada === null) return { fecha: null, diasRestantes: null, estado: null };
   const estado: 'vigente' | 'proximo' | 'vencido' = dias < 0 ? 'vencido' : dias <= 30 ? 'proximo' : 'vigente';
-  const fechaFormateada = fechaCad.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
   return { fecha: fechaFormateada, diasRestantes: dias, estado };
 }
 

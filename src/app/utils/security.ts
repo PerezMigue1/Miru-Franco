@@ -84,9 +84,10 @@ export const validatePassword = (
     }
     
     if (userData.fechaNacimiento) {
+      // Fecha solo-día (medianoche UTC o 'YYYY-MM-DD'): getters UTC para no tomar el día anterior.
       const fecha = new Date(userData.fechaNacimiento);
-      const año = fecha.getFullYear().toString();
-      const dia = fecha.getDate().toString();
+      const año = fecha.getUTCFullYear().toString();
+      const dia = fecha.getUTCDate().toString();
       if (password.includes(año) || password.includes(dia)) {
         errors.push('La contraseña no puede contener tu fecha de nacimiento');
       }

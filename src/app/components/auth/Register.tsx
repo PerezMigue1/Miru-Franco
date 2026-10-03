@@ -438,11 +438,12 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           {...register('birthDate', {
             required: 'La fecha de nacimiento es requerida',
             validate: (v) => {
+              // 'YYYY-MM-DD' se lee como medianoche UTC: getters UTC para no tomar el día anterior.
               const birth = new Date(v);
               const today = new Date();
-              const age = today.getFullYear() - birth.getFullYear();
-              const monthDiff = today.getMonth() - birth.getMonth();
-              const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate()) ? age - 1 : age;
+              const age = today.getFullYear() - birth.getUTCFullYear();
+              const monthDiff = today.getMonth() - birth.getUTCMonth();
+              const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getUTCDate()) ? age - 1 : age;
               return actualAge >= 18 || 'Debes ser mayor de 18 años';
             },
           })}
