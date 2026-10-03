@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Clock3,
 } from 'lucide-react';
+import { hoyEnMexico } from '../../../utils/fechaSoloDia';
 
 /** Cualquiera de estas claves permite leer citas (mismas que exige GET /api/citas/dia en el backend). */
 const PERMISOS_CITAS = ['citas:propias', 'citas:asignadas', 'citas:escritura', 'citas:propia'];
@@ -68,7 +69,7 @@ export default function OperacionPage() {
     const puedeVerCaja = evaluarPermiso(lista, 'caja:lectura');
     const puedeVerSeguimientos = evaluarPermiso(lista, 'seguimientos:lectura');
 
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = hoyEnMexico();
     const miId = miUsuarioId();
 
     setLoading(true);

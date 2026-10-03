@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { diasHastaFechaSoloDia, formatearFechaSoloDia } from './fechaSoloDia';
+import {
+  diaEnMexico,
+  diasHastaFechaSoloDia,
+  formatearFechaSoloDia,
+  hoyEnMexico,
+  mesActualEnMexico,
+  mismoDiaHaceAnios,
+} from './fechaSoloDia';
 
 describe('formatearFechaSoloDia', () => {
   it('una fecha guardada como 2026-10-04T00:00:00Z se muestra como 4/10/2026 (no 3/10)', () => {
@@ -22,6 +29,24 @@ describe('formatearFechaSoloDia', () => {
     expect(formatearFechaSoloDia(null)).toBeNull();
     expect(formatearFechaSoloDia('')).toBeNull();
     expect(formatearFechaSoloDia('no es fecha')).toBeNull();
+  });
+});
+
+describe('hoy en México', () => {
+  it('"hoy" a las 19:00 y a las 23:59 hora de México sigue siendo el mismo día', () => {
+    expect(hoyEnMexico(new Date('2026-10-04T01:00:00Z'))).toBe('2026-10-03'); // 19:00 del 3
+    expect(hoyEnMexico(new Date('2026-10-04T05:59:00Z'))).toBe('2026-10-03'); // 23:59 del 3
+    expect(hoyEnMexico(new Date('2026-10-04T06:00:00Z'))).toBe('2026-10-04'); // 00:00 del 4
+  });
+
+  it('el mes actual no salta al siguiente la noche del último día', () => {
+    expect(mesActualEnMexico(new Date('2026-11-01T03:00:00Z'))).toBe('2026-10'); // 31 oct 21:00
+  });
+
+  it('diaEnMexico da el día de México de una marca de tiempo', () => {
+    expect(diaEnMexico('2026-10-04T01:30:00.000Z')).toBe('2026-10-03'); // queja a las 19:30 del 3
+    expect(diaEnMexico(null)).toBeNull();
+    expect(diaEnMexico('x')).toBeNull();
   });
 });
 
@@ -50,5 +75,20 @@ describe('diasHastaFechaSoloDia', () => {
   it('sin fecha o con una inválida devuelve null', () => {
     expect(diasHastaFechaSoloDia(undefined)).toBeNull();
     expect(diasHastaFechaSoloDia('x')).toBeNull();
+  });
+});
+
+describe('mismoDiaHaceAnios (mayoría de edad en el registro)', () => {
+  it('a las 23:00 del 3 de octubre en México, el límite de 18 años es el 3 de octubre de 2008', () => {
+    const hoy = hoyEnMexico(new Date('2026-10-04T05:00:00Z')); // en UTC ya es el 4
+    expect(hoy).toBe('2026-10-03');
+    expect(mismoDiaHaceAnios(hoy, 18)).toBe('2008-10-03');
+    expect('2008-10-04' <= mismoDiaHaceAnios(hoy, 18)).toBe(false); // cumple 18 mañana
+    expect('2008-10-03' <= mismoDiaHaceAnios(hoy, 18)).toBe(true);
+  });
+
+  it('un 29 de febrero en un año no bisiesto queda en el 28', () => {
+    expect(mismoDiaHaceAnios('2028-02-29', 18)).toBe('2010-02-28');
+    expect(mismoDiaHaceAnios('2028-02-29', 20)).toBe('2008-02-29');
   });
 });

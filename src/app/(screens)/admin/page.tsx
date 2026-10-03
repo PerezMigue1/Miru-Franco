@@ -54,6 +54,7 @@ import {
   type LucideIcon,
   ArrowRight,
 } from 'lucide-react';
+import { hoyEnMexico } from '../../utils/fechaSoloDia';
 
 // Paleta de gráficos derivada de la marca — orden fijo, nunca cíclico.
 const PALETA_GRAFICOS = ['#710014', '#9f6d1f', '#A64B63', '#6E7D57', '#D98E04'];
@@ -167,7 +168,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = hoyEnMexico();
 
     Promise.allSettled([
       getProductosParaDashboard()
@@ -536,7 +537,11 @@ export default function AdminDashboardPage() {
                             {c.productoNombre ?? 'Producto sin nombre'}
                           </span>
                           <Badge variant={c.vencida ? 'danger' : 'warning'} size="sm">
-                            {c.vencida ? `Vencido hace ${Math.abs(c.diasRestantes)}d` : `Vence en ${c.diasRestantes}d`}
+                            {c.vencida
+                              ? `Vencido hace ${Math.abs(c.diasRestantes)}d`
+                              : c.diasRestantes === 0
+                                ? 'Vence hoy'
+                                : `Vence en ${c.diasRestantes}d`}
                           </Badge>
                         </div>
                       ))}

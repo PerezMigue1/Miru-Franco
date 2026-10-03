@@ -13,6 +13,7 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { CheckCircle2, Clock3, RotateCcw } from 'lucide-react';
+import { diaEnMexico } from '../../../utils/fechaSoloDia';
 
 interface DevolucionFila {
   id: number;
@@ -32,7 +33,7 @@ function mapearDevolucion(d: DevolucionApi, pedido: PedidoApi): DevolucionFila {
     producto: `Pedido #${pedido.id}`,
     motivo: d.motivo ?? '-',
     estado: d.estado ?? 'pendiente',
-    fecha: d.creadoEn ? d.creadoEn.slice(0, 10) : '-',
+    fecha: diaEnMexico(d.creadoEn) ?? '-',
   };
 }
 
