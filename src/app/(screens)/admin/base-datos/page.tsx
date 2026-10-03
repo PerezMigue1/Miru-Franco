@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import AdminLayout from '../../../components/layouts/AdminLayout';
@@ -39,6 +39,7 @@ import {
   type TopCostlyQueryDirecta,
 } from '../../../services/database';
 import { mermaidToSvg, svgToPngBlob } from '../../../utils/mermaidRender';
+import { enParaleloLimitado } from '../../../utils/enParaleloLimitado';
 import JSZip from 'jszip';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
 import { getUsuarios, getUsuarioById, type Usuario } from '../../../services/usuarios';
@@ -225,6 +226,10 @@ function saveHistorialBackups(historial: BackupEntry[]): void {
   } catch { /* ignore */ }
 }
 
+/** Monitoreo: pausa mínima entre rondas automáticas y peticiones de métricas a la vez. */
+const MONITOREO_INTERVALO_MS = 30_000;
+const MONITOREO_PETICIONES_A_LA_VEZ = 3;
+
 // ─── Componente principal ──────────────────────────────────────────────────────
 export default function BaseDatosPage() {
   const router = useRouter();
@@ -278,12 +283,6 @@ export default function BaseDatosPage() {
   const [exportFechaDesde, setExportFechaDesde] = useState('');
   const [exportFechaHasta, setExportFechaHasta] = useState('');
   const [exportSoloActivos, setExportSoloActivos] = useState(false);
-
-  // ── Stats rápidas (ocultas en UI) ──
-  const [statsProductos, setStatsProductos] = useState<number | null>(null);
-  const [statsUsuarios, setStatsUsuarios] = useState<number | null>(null);
-  const [statsClientes, setStatsClientes] = useState<number | null>(null);
-  const [statsServicios, setStatsServicios] = useState<number | null>(null);
 
   // ── Monitoreo ──
   const [loadingRendimiento, setLoadingRendimiento] = useState(false);
@@ -409,30 +408,6 @@ export default function BaseDatosPage() {
     }
   }, [pathname]);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    const loadStats = async () => {
-      try {
-        const [productosRes, usuariosRes, serviciosRes] = await Promise.all([
-          getProductosSinRedirigir({ incluirNoDisponibles: true }),
-          getUsuarios(),
-          getServicios(),
-        ]);
-        if (cancelled) return;
-        setStatsProductos(productosRes.data.length);
-        const enriched = await Promise.all(
-          usuariosRes.map((u) => getUsuarioById(u.id).catch(() => u))
-        );
-        if (cancelled) return;
-        setStatsUsuarios(enriched.filter((u) => esRolPersonal(u.rol)).length);
-        setStatsClientes(enriched.filter((u) => String(u.rol || '').toLowerCase() === 'cliente').length);
-        setStatsServicios(serviciosRes.data.length);
-      } catch { /* silencioso */ }
-    };
-    loadStats();
-    return () => { cancelled = true; };
-  }, []);
-
   // Cargar columnas al elegir una tabla de exportación
   React.useEffect(() => {
     if (!tablaExport || tablaExport === '__todas__') {
@@ -455,13 +430,6 @@ export default function BaseDatosPage() {
     });
     return () => { cancelled = true; };
   }, [tablaExport]);
-
-  // Monitoreo en tiempo real
-  React.useEffect(() => {
-    cargarDashboardMonitoreo();
-    const id = setInterval(() => { cargarDashboardMonitoreo(); }, 10000);
-    return () => clearInterval(id);
-  }, []);
 
   // Cleanup preview URL
   useEffect(() => {
@@ -873,7 +841,13 @@ export default function BaseDatosPage() {
     }
   };
   // ─── Monitoreo ────────────────────────────────────────────────────────────────
+  // Ronda de métricas en curso (para no encimar rondas) y cuándo terminó la última.
+  const monitoreoEnCursoRef = useRef<AbortController | null>(null);
+  const monitoreoUltimaRondaRef = useRef(0);
+
   const cargarLocksBd = async () => {
+    // Si hay una ronda en curso, ya trae los locks: no se suma una petición más.
+    if (monitoreoEnCursoRef.current) return;
     setLoadingRendimiento(true);
     setErrorRendimiento(null);
     const res = await obtenerLocksDirectos();
@@ -882,43 +856,102 @@ export default function BaseDatosPage() {
     setLoadingRendimiento(false);
   };
 
-  const cargarDashboardMonitoreo = async () => {
+  // Una ronda de las 7 métricas: como mucho MONITOREO_PETICIONES_A_LA_VEZ peticiones juntas y
+  // nunca dos rondas encimadas. La ronda en curso se cancela al salir de Monitoreo o al ocultar la pestaña.
+  const cargarDashboardMonitoreo = useCallback(async () => {
+    if (monitoreoEnCursoRef.current) return;
+    const control = new AbortController();
+    monitoreoEnCursoRef.current = control;
+    const { signal } = control;
+    // El error anterior se queda visible hasta que esta ronda termine (no parpadea en cada ronda).
     setLoadingRendimiento(true);
-    setErrorRendimiento(null);
-    const [summaryRes, activityRes, locksRes, tableStatsRes, indexStatsRes, realtimeRes, insightsRes] =
-      await Promise.all([
-        obtenerResumenBdDirecto(),
-        obtenerActividadDirecta(),
-        obtenerLocksDirectos(),
-        obtenerTableStatsDirecto(),
-        obtenerIndexStatsDirecto(),
-        obtenerRealtimeMetricsDirecto(),
-        obtenerQueryInsightsDirecto(),
-      ]);
-    if (summaryRes.success) setDbSummary(summaryRes.data);
-    if (activityRes.success) setActividadRows(activityRes.rows);
-    if (locksRes.success) setLocksRows(locksRes.rows);
-    if (tableStatsRes.success) setTableStats(tableStatsRes.rows);
-    if (indexStatsRes.success) setIndexStats(indexStatsRes.rows);
-    if (realtimeRes.success) setRealtimeSeries((prev) => [...prev, realtimeRes.data].slice(-36));
-    if (insightsRes.success) {
-      setSlowQueries(insightsRes.slowQueries);
-      setTopCostlyQueries(insightsRes.topCostlyQueries);
-      setPgStatStatementsEnabled(insightsRes.pgStatStatementsEnabled);
+    try {
+      const [summaryRes, activityRes, locksRes, tableStatsRes, indexStatsRes, realtimeRes, insightsRes] =
+        await enParaleloLimitado(
+          [
+            () => obtenerResumenBdDirecto(signal),
+            () => obtenerActividadDirecta(signal),
+            () => obtenerLocksDirectos(signal),
+            () => obtenerTableStatsDirecto(signal),
+            () => obtenerIndexStatsDirecto(signal),
+            () => obtenerRealtimeMetricsDirecto(signal),
+            () => obtenerQueryInsightsDirecto(signal),
+          ] as const,
+          MONITOREO_PETICIONES_A_LA_VEZ,
+        );
+      if (signal.aborted) return;
+      monitoreoUltimaRondaRef.current = Date.now();
+      if (summaryRes.success) setDbSummary(summaryRes.data);
+      if (activityRes.success) setActividadRows(activityRes.rows);
+      if (locksRes.success) setLocksRows(locksRes.rows);
+      if (tableStatsRes.success) setTableStats(tableStatsRes.rows);
+      if (indexStatsRes.success) setIndexStats(indexStatsRes.rows);
+      // Con "Actualizar" a los pocos segundos el dato viene de la caché del backend: no se repite el punto.
+      if (realtimeRes.success) {
+        setRealtimeSeries((prev) =>
+          JSON.stringify(prev[prev.length - 1]) === JSON.stringify(realtimeRes.data)
+            ? prev
+            : [...prev, realtimeRes.data].slice(-36),
+        );
+      }
+      if (insightsRes.success) {
+        setSlowQueries(insightsRes.slowQueries);
+        setTopCostlyQueries(insightsRes.topCostlyQueries);
+        setPgStatStatementsEnabled(insightsRes.pgStatStatementsEnabled);
+      }
+      const error =
+        (!summaryRes.success && summaryRes.error) ||
+        (!activityRes.success && activityRes.error) ||
+        (!locksRes.success && locksRes.error) ||
+        (!tableStatsRes.success && tableStatsRes.error) ||
+        (!indexStatsRes.success && indexStatsRes.error) ||
+        (!realtimeRes.success && realtimeRes.error) ||
+        (!insightsRes.success && insightsRes.error) ||
+        null;
+      setErrorRendimiento(error);
+      if (!error) setUltimaActualizacionMonitoreo(new Date());
+    } finally {
+      if (monitoreoEnCursoRef.current === control) monitoreoEnCursoRef.current = null;
+      setLoadingRendimiento(false);
     }
-    const error =
-      (!summaryRes.success && summaryRes.error) ||
-      (!activityRes.success && activityRes.error) ||
-      (!locksRes.success && locksRes.error) ||
-      (!tableStatsRes.success && tableStatsRes.error) ||
-      (!indexStatsRes.success && indexStatsRes.error) ||
-      (!realtimeRes.success && realtimeRes.error) ||
-      (!insightsRes.success && insightsRes.error) ||
-      null;
-    setErrorRendimiento(error);
-    if (!error) setUltimaActualizacionMonitoreo(new Date());
-    setLoadingRendimiento(false);
-  };
+  }, []);
+
+  // Actualización automática solo en Monitoreo y con la pestaña visible: al entrar y luego 30 s
+  // después de que termine cada ronda (no setInterval: una ronda lenta no se encima con la siguiente).
+  // Un error no se reintenta: se muestra y se espera a la siguiente ronda o al botón Actualizar.
+  useEffect(() => {
+    if (vistaPrincipal !== 'monitoreo') return;
+    let activo = true;
+    let temporizador: ReturnType<typeof setTimeout> | null = null;
+    const restante = () => MONITOREO_INTERVALO_MS - (Date.now() - monitoreoUltimaRondaRef.current);
+    const programar = (espera: number) => {
+      if (!activo || temporizador || document.visibilityState !== 'visible') return;
+      temporizador = setTimeout(ronda, Math.max(0, espera));
+    };
+    const ronda = async () => {
+      temporizador = null;
+      // Si hubo una ronda manual (botón Actualizar) hace menos de 30 s, esperar lo que falta.
+      if (restante() > 1000) return programar(restante());
+      await cargarDashboardMonitoreo();
+      programar(MONITOREO_INTERVALO_MS);
+    };
+    const detener = () => {
+      if (temporizador) clearTimeout(temporizador);
+      temporizador = null;
+      monitoreoEnCursoRef.current?.abort();
+    };
+    const alCambiarVisibilidad = () => {
+      if (document.visibilityState !== 'visible') detener();
+      else if (!monitoreoEnCursoRef.current) programar(restante());
+    };
+    programar(restante());
+    document.addEventListener('visibilitychange', alCambiarVisibilidad);
+    return () => {
+      activo = false;
+      document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+      detener();
+    };
+  }, [vistaPrincipal, cargarDashboardMonitoreo]);
 
   // ─── Diagrama ─────────────────────────────────────────────────────────────────
   const handleDescargarDiagrama = async (e: React.FormEvent) => {
@@ -1015,8 +1048,13 @@ export default function BaseDatosPage() {
         setProductos(res.data);
         if (res.error) setErrorModulo(res.error);
       } else if (id === 'usuarios') {
-        const data = await getUsuarios();
-        const enriched = await Promise.all(data.map((u) => getUsuarioById(u.id).catch(() => u)));
+        // El listado ya trae el rol: solo se completa el perfil del personal, y de pocos en pocos
+        // (antes se pedía el de cada usuario a la vez: ~1000 peticiones que agotaban el pool).
+        const personal = (await getUsuarios()).filter((u) => esRolPersonal(u.rol));
+        const enriched = await enParaleloLimitado(
+          personal.map((u) => () => getUsuarioById(u.id).catch(() => u)),
+          3,
+        );
         setUsuarios(enriched.filter((u) => esRolPersonal(u.rol)));
       } else if (id === 'servicios') {
         const res = await getServicios();
