@@ -82,7 +82,10 @@ export async function importarDatos(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const msg = (data.message ?? data.error ?? `Error ${res.status}`) as string;
+      const msg =
+        res.status >= 500
+          ? textoErrorRespuesta(res.status, data)
+          : ((data.message ?? data.error ?? `Error ${res.status}`) as string);
       return { success: false, error: msg };
     }
 
@@ -129,7 +132,10 @@ export async function obtenerTablasImportables(): Promise<
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const msg = (data.message ?? data.error ?? `Error ${res.status}`) as string;
+      const msg =
+        res.status >= 500
+          ? textoErrorRespuesta(res.status, data)
+          : ((data.message ?? data.error ?? `Error ${res.status}`) as string);
       return { success: false, error: msg };
     }
     const tablasRaw: unknown[] = Array.isArray(data.tablas) ? data.tablas : [];
@@ -185,7 +191,10 @@ export async function truncarTabla(
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const msg = (data.message ?? data.error ?? `Error ${res.status}`) as string;
+      const msg =
+        res.status >= 500
+          ? textoErrorRespuesta(res.status, data)
+          : ((data.message ?? data.error ?? `Error ${res.status}`) as string);
       return { success: false, error: msg };
     }
     return {
@@ -227,9 +236,10 @@ export async function exportarDatos(
       let msg = `Error ${res.status}`;
       try {
         const j = JSON.parse(text);
-        msg = (j.message ?? j.error ?? msg) as string;
+        msg = res.status >= 500 ? textoErrorRespuesta(res.status, j) : ((j.message ?? j.error ?? msg) as string);
       } catch {
-        if (text) msg = text.slice(0, 120);
+        if (res.status >= 500) msg = textoErrorRespuesta(res.status, {});
+        else if (text) msg = text.slice(0, 120);
       }
       return { success: false, error: msg };
     }
@@ -271,11 +281,9 @@ export async function obtenerDiagrama(
   }
 
   try {
-    // Usar URL relativa en el navegador para que el proxy de Next.js (/api/* → backend) aplique
-    const url =
-      typeof window !== 'undefined'
-        ? `${DIAGRAM_ENDPOINT}?formato=${encodeURIComponent(formato)}`
-        : `${base}${DIAGRAM_ENDPOINT}?formato=${encodeURIComponent(formato)}`;
+    // Siempre al backend: una URL relativa solo funcionaba con el proxy de `next dev` (en next start
+    // y Vercel no hay rewrite de /api/* y respondía 404).
+    const url = `${base}${DIAGRAM_ENDPOINT}?formato=${encodeURIComponent(formato)}`;
     const res = await fetch(url, {
       method: 'GET',
       credentials: 'include',
@@ -286,9 +294,10 @@ export async function obtenerDiagrama(
       let msg = `Error ${res.status}`;
       try {
         const j = JSON.parse(text);
-        msg = (j.message ?? j.error ?? msg) as string;
+        msg = res.status >= 500 ? textoErrorRespuesta(res.status, j) : ((j.message ?? j.error ?? msg) as string);
       } catch {
-        if (text) msg = text.slice(0, 120);
+        if (res.status >= 500) msg = textoErrorRespuesta(res.status, {});
+        else if (text) msg = text.slice(0, 120);
       }
       if (res.status === 404 || text.includes('Cannot GET')) {
         msg += ` — Comprueba que el backend tenga GET ${DIAGRAM_ENDPOINT} registrado.`;
@@ -330,6 +339,26 @@ const EXPORT_DIRECT_PREFIX = '/api/db/export-direct';
 const getExportDirectBase = () => `${getBackendBaseUrl()}${EXPORT_DIRECT_PREFIX}`;
 
 /**
+ * Texto para el usuario ante una respuesta de error. En 5xx el backend manda un mensaje
+ * genérico y una referencia (el detalle queda en su log); en 4xx, el texto pensado para el usuario.
+ */
+export function textoErrorRespuesta(status: number, data: Record<string, unknown>): string {
+  const texto = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null);
+  const mensaje =
+    status >= 500
+      ? texto(data.message) ?? 'Ocurrió un error interno. Intenta de nuevo en unos segundos.'
+      : texto(data.error) ?? texto(data.message) ?? `Error ${status}`;
+  const referencia = texto(data.referencia);
+  return referencia ? `${mensaje} (ref. ${referencia})` : mensaje;
+}
+
+/** Fallo de red o petición cancelada: sin el texto técnico del navegador ("Failed to fetch"). */
+export function textoErrorRed(e: unknown): string {
+  if (e instanceof DOMException && e.name === 'AbortError') return 'Solicitud cancelada.';
+  return 'No se pudo conectar con el servidor. Intenta de nuevo en unos segundos.';
+}
+
+/**
  * Lista tablas disponibles para exportación directa (conexión a DATABASE_URL).
  * GET /api/db/export-direct
  */
@@ -346,12 +375,12 @@ export async function listarTablasDirectas(): Promise<
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+      return { success: false, error: textoErrorRespuesta(res.status, data) };
     }
     const tablas = Array.isArray(data.tablas) ? data.tablas : [];
     return { success: true, tablas };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar';
+    const msg = textoErrorRed(e);
     return { success: false, error: msg };
   }
 }
@@ -381,12 +410,12 @@ export async function obtenerColumnasDirectas(tabla: string): Promise<
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+      return { success: false, error: textoErrorRespuesta(res.status, data) };
     }
     const columnas = Array.isArray(data.columnas) ? data.columnas : [];
     return { success: true, columnas };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar';
+    const msg = textoErrorRed(e);
     return { success: false, error: msg };
   }
 }
@@ -506,12 +535,12 @@ export async function obtenerSchemaDirecto(
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+      return { success: false, error: textoErrorRespuesta(res.status, data) };
     }
     const columnas = Array.isArray(data.columnas) ? (data.columnas as ColumnaSchemaDirecta[]) : [];
     return { success: true, columnas };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar';
+    const msg = textoErrorRed(e);
     return { success: false, error: msg };
   }
 }
@@ -520,7 +549,7 @@ export async function obtenerSchemaDirecto(
  * Actividad actual de conexiones/sesiones.
  * GET /api/db/export-direct?meta=activity
  */
-export async function obtenerActividadDirecta(): Promise<
+export async function obtenerActividadDirecta(signal?: AbortSignal): Promise<
   { success: true; rows: ActivityRowDirecta[] } | { success: false; error: string }
 > {
   if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
@@ -528,12 +557,13 @@ export async function obtenerActividadDirecta(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=activity`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as ActivityRowDirecta[] };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
@@ -541,7 +571,7 @@ export async function obtenerActividadDirecta(): Promise<
  * Locks actuales en la base de datos.
  * GET /api/db/export-direct?meta=locks
  */
-export async function obtenerLocksDirectos(): Promise<
+export async function obtenerLocksDirectos(signal?: AbortSignal): Promise<
   { success: true; rows: LockRowDirecta[] } | { success: false; error: string }
 > {
   if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
@@ -549,16 +579,17 @@ export async function obtenerLocksDirectos(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=locks`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as LockRowDirecta[] };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
-export async function obtenerResumenBdDirecto(): Promise<
+export async function obtenerResumenBdDirecto(signal?: AbortSignal): Promise<
   { success: true; data: DbSummaryDirecta } | { success: false; error: string }
 > {
   if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
@@ -566,16 +597,17 @@ export async function obtenerResumenBdDirecto(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=db_summary`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, data: data as DbSummaryDirecta };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
-export async function obtenerTableStatsDirecto(): Promise<
+export async function obtenerTableStatsDirecto(signal?: AbortSignal): Promise<
   { success: true; rows: TableStatDirecta[] } | { success: false; error: string }
 > {
   if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
@@ -583,16 +615,17 @@ export async function obtenerTableStatsDirecto(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=table_stats`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as TableStatDirecta[] };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
-export async function obtenerIndexStatsDirecto(): Promise<
+export async function obtenerIndexStatsDirecto(signal?: AbortSignal): Promise<
   { success: true; rows: IndexStatDirecta[] } | { success: false; error: string }
 > {
   if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
@@ -600,12 +633,13 @@ export async function obtenerIndexStatsDirecto(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=index_stats`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as IndexStatDirecta[] };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
@@ -619,14 +653,14 @@ export async function obtenerTableSizesDirecto(): Promise<
       credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, rows: (Array.isArray(data.rows) ? data.rows : []) as TableSizeDirecta[] };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
-export async function obtenerRealtimeMetricsDirecto(): Promise<
+export async function obtenerRealtimeMetricsDirecto(signal?: AbortSignal): Promise<
   { success: true; data: RealtimeMetricsDirecta } | { success: false; error: string }
 > {
   if (!hasSession()) return { success: false, error: 'Debes iniciar sesión' };
@@ -634,16 +668,17 @@ export async function obtenerRealtimeMetricsDirecto(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=realtime_metrics`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, data: data as RealtimeMetricsDirecta };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
-export async function obtenerQueryInsightsDirecto(): Promise<
+export async function obtenerQueryInsightsDirecto(signal?: AbortSignal): Promise<
   {
     success: true;
     slowQueries: SlowQueryDirecta[];
@@ -656,9 +691,10 @@ export async function obtenerQueryInsightsDirecto(): Promise<
     const res = await fetch(`${getExportDirectBase()}?meta=query_insights`, {
       method: 'GET',
       credentials: 'include',
+      signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return {
       success: true,
       slowQueries: (Array.isArray(data.slowQueries) ? data.slowQueries : []) as SlowQueryDirecta[],
@@ -666,7 +702,7 @@ export async function obtenerQueryInsightsDirecto(): Promise<
       pgStatStatementsEnabled: Boolean(data.pgStatStatementsEnabled),
     };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
@@ -693,10 +729,10 @@ export async function obtenerExplainDirecto(
       credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+    if (!res.ok) return { success: false, error: textoErrorRespuesta(res.status, data) };
     return { success: true, plan: data.plan, query: String(data.query ?? '') };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : 'Error al conectar' };
+    return { success: false, error: textoErrorRed(e) };
   }
 }
 
@@ -731,7 +767,7 @@ export async function exportarDirecto(
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      return { success: false, error: (data.error as string) ?? `Error ${res.status}` };
+      return { success: false, error: textoErrorRespuesta(res.status, data) };
     }
     const blob = await res.blob();
     const contentDisposition = res.headers.get('Content-Disposition');
