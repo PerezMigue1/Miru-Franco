@@ -1,13 +1,16 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Star, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../../../components/ui/Table';
+import DatosRecogerEnSalon from '../../../../../../components/tienda/DatosRecogerEnSalon';
+import { showConfirm, showToast } from '../../../../../../utils/toast';
+import { mensajeUsuarioDesdeErrorApi } from '../../../../../../utils/apiErrorMessage';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
 import {
   obtenerPedido,
@@ -18,7 +21,10 @@ import {
   listarFacturasPorPedido,
   listarValoracionesPedido,
   listarDevolucionesPedido,
+  actualizarPedido,
+  esPagoEnSalon,
   etiquetaEstadoPedido,
+  etiquetaMetodoPagoPedido,
   varianteBadgeEstadoPedido,
 } from '../../../../../../services/ecommerce';
 import type {
@@ -31,6 +37,32 @@ import type {
   ValoracionApi,
   DevolucionApi,
 } from '../../../../../../services/ecommerce';
+
+/** Qué sigue para la clienta según el estado del pedido (todo se recoge en el salón). */
+function textoRecoger(pedido: PedidoApi): string | null {
+  const enSalon = esPagoEnSalon(pedido.metodoPago);
+  switch (pedido.estado) {
+    case 'pendiente_pago':
+      return enSalon
+        ? 'Tu pedido está apartado. Lo preparamos y te avisamos cuando puedas pasar a pagarlo y recogerlo.'
+        : 'Estamos confirmando tu pago. Después lo preparamos y te avisamos.';
+    case 'pagado':
+      return 'Pago recibido. Lo preparamos y te avisamos cuando esté listo para recoger.';
+    case 'preparando':
+      return 'Estamos preparando tu pedido. Te avisamos en la app y por correo cuando esté listo.';
+    case 'listo_recoger':
+      return enSalon
+        ? 'Tu pedido está listo. Pasa por él al salón y págalo en el mostrador.'
+        : 'Tu pedido está listo. Pasa por él al salón.';
+    case 'entregado':
+      return 'Recogiste tu pedido en el salón.';
+    default:
+      return null;
+  }
+}
+
+/** La clienta puede cancelar mientras el salón no empezó a preparar su pedido. */
+const ESTADOS_CANCELABLES = new Set(['pendiente_pago', 'pagado']);
 
 export default function DetallePedidoPage() {
   const params = useParams();
@@ -48,6 +80,7 @@ export default function DetallePedidoPage() {
   const [devoluciones, setDevoluciones] = useState<DevolucionApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(pedidoId)) {
@@ -126,6 +159,24 @@ export default function DetallePedidoPage() {
   }
 
   const envio = envios[0];
+  const textoSiguiente = textoRecoger(pedido);
+
+  const cancelarPedido = async () => {
+    const ok = await showConfirm(
+      'Se cancela tu pedido y los productos vuelven a la tienda. Esta acción no se puede deshacer.',
+      { title: `¿Cancelar el pedido #${pedido.id}?`, confirmText: 'Sí, cancelar pedido', cancelText: 'No, conservarlo' }
+    );
+    if (!ok) return;
+    setCancelando(true);
+    try {
+      setPedido(await actualizarPedido(pedido.id, { estado: 'cancelado' }));
+      showToast('Tu pedido quedó cancelado.', 'success');
+    } catch (e) {
+      showToast(mensajeUsuarioDesdeErrorApi(e), 'error');
+    } finally {
+      setCancelando(false);
+    }
+  };
 
   return (
     <ModuleLayout>
@@ -143,9 +194,14 @@ export default function DetallePedidoPage() {
               #{pedido.id}
             </p>
             <Badge variant={varianteBadgeEstadoPedido(pedido.estado)} size="lg">
-              {etiquetaEstadoPedido(pedido.estado)}
+              {etiquetaEstadoPedido(pedido.estado, pedido.metodoPago)}
             </Badge>
           </div>
+          {ESTADOS_CANCELABLES.has(pedido.estado) && (
+            <Button variant="outline" onClick={() => void cancelarPedido()} disabled={cancelando}>
+              {cancelando ? 'Cancelando…' : 'Cancelar pedido'}
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -172,10 +228,13 @@ export default function DetallePedidoPage() {
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
                   <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(pedido.subtotal)}</span>
                 </div>
-                <div className="flex justify-between mb-2">
-                  <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
-                  <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(pedido.costoEnvio)}</span>
-                </div>
+                {/* Solo pedidos anteriores: hoy todo se recoge en el salón, sin costo de envío. */}
+                {pedido.costoEnvio > 0 && (
+                  <div className="flex justify-between mb-2">
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
+                    <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(pedido.costoEnvio)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between pt-2 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
                     Total:
@@ -187,18 +246,36 @@ export default function DetallePedidoPage() {
               </div>
             </Card>
 
-            <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 80ms both' }}>
-              <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                Dirección de envío
-              </h2>
-              {pedido.direccionTextoCompleta ? (
+            {pedido.estado !== 'cancelado' && pedido.estado !== 'enviado' && (
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 80ms both' }}>
+                <h2 className="text-page-title mb-2 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <Store className="w-5 h-5 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+                  Recoger en el salón
+                </h2>
+                {textoSiguiente && (
+                  <p className="text-sm mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                    {textoSiguiente}
+                  </p>
+                )}
+                {pedido.estado !== 'entregado' && (
+                  <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                    <DatosRecogerEnSalon conAviso={false} />
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Pedidos anteriores que guardaron una dirección: se muestra como historial. */}
+            {pedido.direccionTextoCompleta && (
+              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 120ms both' }}>
+                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+                  Entrega registrada
+                </h2>
                 <p className="whitespace-pre-wrap" style={{ color: 'var(--menu-texto-principal)' }}>
                   {pedido.direccionTextoCompleta}
                 </p>
-              ) : (
-                <p style={{ color: 'var(--encabezados-alterno)' }}>Sin dirección en texto</p>
-              )}
-            </Card>
+              </Card>
+            )}
 
             {envio && (
               <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 160ms both' }}>
@@ -240,12 +317,12 @@ export default function DetallePedidoPage() {
                     <li key={h.id} style={{ color: 'var(--encabezados-alterno)' }}>
                       {h.estadoAnterior && (
                         <span className="inline-flex items-center gap-1">
-                          {etiquetaEstadoPedido(h.estadoAnterior)}
+                          {etiquetaEstadoPedido(h.estadoAnterior, pedido.metodoPago)}
                           <ArrowRight size={14} aria-label="cambió a" className="mx-1" />
                         </span>
                       )}
                       <span className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
-                        {etiquetaEstadoPedido(h.estadoNuevo)}
+                        {etiquetaEstadoPedido(h.estadoNuevo, pedido.metodoPago)}
                       </span>
                       {h.creadoEn && (
                         <span className="block text-xs mt-0.5">
@@ -375,7 +452,7 @@ export default function DetallePedidoPage() {
                   <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Método de pago
                   </p>
-                  <p style={{ color: 'var(--menu-texto-principal)' }}>{pedido.metodoPago ?? '—'}</p>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{etiquetaMetodoPagoPedido(pedido.metodoPago)}</p>
                 </div>
                 {pagos.length > 0 && (
                   <div>

@@ -13,26 +13,17 @@ import Card from '../../../../../components/ui/Card';
 import Input from '../../../../../components/ui/Input';
 import Select from '../../../../../components/ui/Select';
 import { useCart } from '../../../../../context/CartContext';
+import { CreditCard, Store } from 'lucide-react';
 import {
   crearPedido,
-  crearPago,
-  actualizarPedido,
+  METODO_PAGO_EN_SALON,
   type EstadoPedidoUi,
 } from '../../../../../services/ecommerce';
 import { getMiPerfil } from '../../../../../services/auth';
-import {
-  listarDireccionesUsuario,
-  type DireccionUsuarioDTO,
-} from '../../../../../services/perfil';
 import { hasValidToken } from '../../../../../utils/security';
 import { showAlert, showToast } from '../../../../../utils/toast';
-import { readCheckoutDireccionId, clearCheckoutDireccionId } from '../../../../../utils/checkoutDeliveryStorage';
 import { mensajeUsuarioDesdeErrorApi } from '../../../../../utils/apiErrorMessage';
 import { emitCatalogStockChanged } from '../../../../../utils/catalogStockSync';
-import {
-  lineaResumenEnvio,
-  etiquetaTipoDomicilio,
-} from '../../../../../utils/formatDireccionUsuario';
 import {
   calcularResumenVentaCarrito,
   construirNotasClienteVenta,
@@ -48,38 +39,22 @@ import {
   tipoTarjetaDesdeBinInfo,
 } from '../../../../../services/paymentsPublic';
 import CheckoutTarjetaAnimada from '../../../../../components/tienda/CheckoutTarjetaAnimada';
+import DatosRecogerEnSalon from '../../../../../components/tienda/DatosRecogerEnSalon';
 
-/**
- * Dirección del local para retiro en tienda (configurable por entorno).
- * Sin NEXT_PUBLIC_SALON_DIRECCION, nunca se muestra una calle inventada ni un
- * texto de "falta configurar" a la clienta — solo un aviso neutro y honesto.
- */
-const DIRECCION_RETIRO_LOCAL =
-  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SALON_DIRECCION
-    ? process.env.NEXT_PUBLIC_SALON_DIRECCION
-    : 'Recoge en el salón — te avisaremos cuando esté listo.';
-
-/**
- * Oculto hasta integrar pasarela (Mercado Pago). No borrar.
- * Sin pasarela no hay envíos — solo recoger en el salón. Anotado `: boolean`
- * a propósito: con el tipo literal `false` (sin anotar), TypeScript trata el
- * bloque JSX de abajo como código inalcanzable y deja de angostar el tipo de
- * `direccionSeleccionada` ahí dentro (falso positivo de compilación).
- */
-const MOSTRAR_ENTREGA_DOMICILIO: boolean = false;
-
-function textoDesdeDireccion(d: DireccionUsuarioDTO): string {
-  const line1 = [d.calle, d.numeroInterior].filter(Boolean).join(' ');
-  return [
-    line1,
-    d.coloniaBarrio,
-    d.localidad,
-    `${d.municipioAlcaldia}, ${d.estado} CP ${d.codigoPostal}`,
-    d.indicaciones,
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
+const OPCIONES_FORMA_PAGO = [
+  {
+    value: 'linea',
+    titulo: 'Pagar en línea',
+    texto: 'Con tarjeta de crédito o débito.',
+    icono: CreditCard,
+  },
+  {
+    value: 'salon',
+    titulo: 'Pagar al recoger en el salón',
+    texto: 'Te apartamos el pedido y lo pagas en el mostrador cuando pases por él.',
+    icono: Store,
+  },
+] as const;
 
 function mapMetodoCheckout(tipo: string): string {
   if (tipo === 'tarjeta_credito') return 'tarjeta_credito';
@@ -257,15 +232,14 @@ const OPCIONES_MSI = [
   { value: '12', label: '12 meses sin intereses' },
 ];
 
-const RUTA_ELEGIR_DOMICILIO = '/cliente/tienda-online/checkout/elegir-domicilio';
-
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart, loading: cartLoading } = useCart();
   /**
-   * Crédito: 1–3 → 4 datos tarjeta (BIN / indicio MSI) → 5 mensualidad → 6 revisar.
-   * Débito: 1–3 → 4 datos tarjeta → 5 revisar.
-   * Sin tarjeta: 1–3 → 5 revisar.
+   * 1 recoger en el salón → 3 forma de pago (el 2 ya no existe; se conserva la numeración).
+   * En línea con crédito: 1 → 3 → 4 datos tarjeta (BIN / indicio MSI) → 5 mensualidad → 6 revisar.
+   * En línea con débito: 1 → 3 → 4 datos tarjeta → 5 revisar.
+   * Pago al recoger: 1 → 3 → 5 revisar.
    */
   const [paso, setPaso] = useState(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -281,19 +255,13 @@ export default function CheckoutPage() {
    */
   const compraFinalizadaRef = useRef(false);
 
-  // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
-  // Sin pasarela no hay envíos — solo recoger en el salón. Se fija 'retiro' y
-  // nunca se deja cambiar (el toggle de domicilio queda oculto más abajo).
-  const [tipoEntrega, setTipoEntrega] = useState<'domicilio' | 'retiro'>('retiro');
-
-  const [direcciones, setDirecciones] = useState<DireccionUsuarioDTO[]>([]);
-  const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState('');
-
-  // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
-  // Sin pasarela real, el modelo es "paga en el salón al recoger" — no hay selección de
-  // método online. Se fija un tipo constante (no tarjeta) para que `esTarjeta`/`esTarjetaCredito`
-  // permanezcan en false y el wizard tome exactamente el camino "sin tarjeta" que ya existía.
-  const [metodoPago, setMetodoPago] = useState({ tipo: 'pago_en_salon' });
+  /**
+   * Dos formas de pago: en línea (tarjeta de crédito o débito, el flujo de tarjeta de siempre) o al
+   * recoger en el salón (el pedido queda apartado y se cobra en el mostrador). En línea, `metodoPago.tipo`
+   * queda vacío hasta que la clienta elige crédito o débito.
+   */
+  const [formaPago, setFormaPago] = useState<'linea' | 'salon'>('salon');
+  const [metodoPago, setMetodoPago] = useState({ tipo: METODO_PAGO_EN_SALON });
 
   const [solicitaFactura, setSolicitaFactura] = useState(false);
 
@@ -323,7 +291,6 @@ export default function CheckoutPage() {
 
   const tarjetaValues = watchTarjeta();
 
-  const [cargandoPerfilCheckout, setCargandoPerfilCheckout] = useState(true);
   const [tarjetaGuardadaId, setTarjetaGuardadaId] = useState<string | null>(null);
   /** Solo texto extra de MSI (crédito); marca/banco van en la tarjeta animada */
   const [binAyuda, setBinAyuda] = useState<string | null>(null);
@@ -381,14 +348,13 @@ export default function CheckoutPage() {
       setPaso(3);
     }
   }, [esTarjeta, paso, tarjetaGuardadaId]);
-  const totalPasosBarra = esTarjeta ? (esTarjetaCredito ? 6 : 5) : 4;
-  const pasoEnBarra = !esTarjeta && paso === 5 ? 4 : paso;
+  const totalPasosBarra = esTarjeta ? (esTarjetaCredito ? 5 : 4) : 3;
+  /** Número visible del paso (sin el antiguo paso 2). */
+  const pasoEnBarra =
+    paso === 1 ? 1 : paso === 3 ? 2 : paso === 4 ? 3 : paso === 5 ? (esTarjeta ? 4 : 3) : 5;
 
-  const resumenVenta = useMemo(
-    () => calcularResumenVentaCarrito(items, tipoEntrega),
-    [items, tipoEntrega]
-  );
-  const { subtotal, costoEnvio: envio, total } = resumenVenta;
+  const resumenVenta = useMemo(() => calcularResumenVentaCarrito(items), [items]);
+  const { subtotal, total } = resumenVenta;
 
   useEffect(() => {
     if (cartLoading) return;
@@ -404,14 +370,10 @@ export default function CheckoutPage() {
   }, [items.length, cartLoading, router]);
 
   useEffect(() => {
-    if (!hasValidToken()) {
-      setCargandoPerfilCheckout(false);
-      return;
-    }
+    if (!hasValidToken()) return;
     let cancelled = false;
-    setCargandoPerfilCheckout(true);
-    Promise.all([getMiPerfil(), listarDireccionesUsuario()])
-      .then(([perfil, list]) => {
+    getMiPerfil()
+      .then((perfil) => {
         if (cancelled) return;
         const baseNombre = splitNombreCompleto(perfil.nombre);
         const apellidosApi = perfil.apellidos?.trim();
@@ -422,59 +384,14 @@ export default function CheckoutPage() {
           telefono: perfil.telefono ?? '',
           rfcFactura: '',
         });
-        const dirList =
-          perfil.direcciones && perfil.direcciones.length > 0 ? perfil.direcciones : list;
-        setDirecciones(dirList);
       })
       .catch(() => {
-        if (!cancelled) {
-          listarDireccionesUsuario()
-            .then((list) => {
-              if (cancelled) return;
-              setDirecciones(list);
-            })
-            .catch(() => setDirecciones([]));
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCargandoPerfilCheckout(false);
+        /* sin perfil, la clienta llena sus datos de contacto a mano en la revisión */
       });
     return () => {
       cancelled = true;
     };
   }, []);
-
-  /** Prioridad: id guardado en checkout (pantalla elegir domicilio) → principal → primera. */
-  useEffect(() => {
-    if (cargandoPerfilCheckout) return;
-    if (direcciones.length === 0) {
-      setDireccionSeleccionadaId('');
-      return;
-    }
-    const stored = readCheckoutDireccionId();
-    if (stored && direcciones.some((d) => d.id === stored)) {
-      setDireccionSeleccionadaId(stored);
-      return;
-    }
-    const principal = direcciones.find((d) => d.esPrincipal);
-    setDireccionSeleccionadaId(principal?.id ?? direcciones[0]!.id);
-  }, [direcciones, cargandoPerfilCheckout]);
-
-  useEffect(() => {
-    const sync = () => {
-      if (direcciones.length === 0) return;
-      const stored = readCheckoutDireccionId();
-      if (stored && direcciones.some((d) => d.id === stored)) {
-        setDireccionSeleccionadaId(stored);
-      }
-    };
-    document.addEventListener('visibilitychange', sync);
-    window.addEventListener('focus', sync);
-    return () => {
-      document.removeEventListener('visibilitychange', sync);
-      window.removeEventListener('focus', sync);
-    };
-  }, [direcciones]);
 
   useEffect(() => {
     if (!esTarjeta) setTarjetaGuardadaId(null);
@@ -574,38 +491,20 @@ export default function CheckoutPage() {
   const metodosPagoOpciones = [
     { value: 'tarjeta_credito', label: 'Tarjeta de crédito' },
     { value: 'tarjeta_debito', label: 'Tarjeta de débito' },
-    { value: 'transferencia', label: 'Transferencia bancaria' },
-    { value: 'efectivo', label: 'Efectivo' },
   ];
 
-  const direccionSeleccionada = useMemo(
-    () => direcciones.find((d) => d.id === direccionSeleccionadaId),
-    [direcciones, direccionSeleccionadaId]
-  );
+  const etiquetaMetodoPago = () =>
+    formaPago === 'salon'
+      ? 'Pagas al recoger, en el salón'
+      : esTarjetaCredito
+        ? 'En línea, con tarjeta de crédito'
+        : 'En línea, con tarjeta de débito';
 
-  const textoDireccionPedido = (): string => {
-    if (tipoEntrega === 'retiro') return DIRECCION_RETIRO_LOCAL;
-    if (direccionSeleccionada) return textoDesdeDireccion(direccionSeleccionada);
-    return '';
-  };
-
-  // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
-  // Sin selección de método online, el "método" que ve la clienta es siempre el pago en salón.
-  const etiquetaMetodoPago = () => 'Pago en el salón al recoger tu pedido';
-
-  const textoCuandoLlega = () => {
-    if (tipoEntrega === 'retiro') {
-      return {
-        titulo: 'Retiro en la estética',
-        texto:
-          'Tu pedido estará listo para recoger en el local en aproximadamente 24–48 horas hábiles. Pagas ahí mismo, al recoger. Te avisaremos cuando puedas pasar.',
-      };
-    }
-    return {
-      titulo: 'Envío a domicilio',
-      texto:
-        'Entrega estimada: 3 a 5 días hábiles. El repartidor podrá contactarte al teléfono de tu cuenta.',
-    };
+  const elegirFormaPago = (forma: 'linea' | 'salon') => {
+    setFormaPago(forma);
+    setTarjetaGuardadaId(null);
+    setMetodoPago({ tipo: forma === 'salon' ? METODO_PAGO_EN_SALON : '' });
+    setSubmitError(null);
   };
 
   /** Tarjeta guardada (con tipo conocido) o BIN manual debe coincidir con tarjeta_credito / tarjeta_debito del paso 3. */
@@ -637,22 +536,9 @@ export default function CheckoutPage() {
     return null;
   };
 
-  const validarPaso1 = (): boolean => {
-    if (tipoEntrega === 'retiro') return true;
-    if (direcciones.length === 0) {
-      setSubmitError('Agrega un domicilio en tu cuenta o elige retiro en la estética.');
-      return false;
-    }
-    if (!direccionSeleccionada) {
-      setSubmitError('Elige un domicilio en “Modificar domicilio o elegir otro”.');
-      return false;
-    }
-    return true;
-  };
-
   const validarPaso3 = (): boolean => {
-    if (!metodoPago.tipo) {
-      setSubmitError('Selecciona una forma de pago.');
+    if (formaPago === 'linea' && !esTarjeta) {
+      setSubmitError('Para pagar en línea, elige tarjeta de crédito, de débito o una tarjeta guardada.');
       return false;
     }
     return true;
@@ -680,12 +566,10 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      const textoDir = textoDireccionPedido();
       let notasCliente = construirNotasClienteVenta({
         telefono: getContactoValues('telefono'),
         nombreContacto: getContactoValues('nombre'),
         apellidosContacto: getContactoValues('apellidos'),
-        tipoEntrega,
         esTarjeta,
         mesesMSI: esTarjetaCredito ? getTarjetaValues('mesesMSI') : '1',
         solicitaFactura,
@@ -702,20 +586,13 @@ export default function CheckoutPage() {
         const extra = `Tarjeta guardada (método): ${tarjetaGuardadaId}`;
         notasCliente = notasCliente ? `${notasCliente} — ${extra}` : extra;
       }
-      const dirNota = textoDir.trim();
-      if (dirNota) {
-        const etiquetaDir = tipoEntrega === 'retiro' ? 'Retiro' : 'Domicilio';
-        const dirLine = `${etiquetaDir}: ${dirNota}`;
-        notasCliente = notasCliente ? `${notasCliente} — ${dirLine}` : dirLine;
-      }
-
+      // Se recoge en el salón: el pedido no lleva dirección ni costo de envío. Con pago al recoger
+      // queda apartado (pendiente_pago con método pago_en_salon) hasta que se cobra al entregarlo.
       const pedido = await crearPedido({
         estado: 'pendiente_pago' as EstadoPedidoUi,
         moneda: 'MXN',
         notasCliente,
-        metodoPago: metodoPago.tipo ? mapMetodoCheckout(metodoPago.tipo) : undefined,
-        direccionEnvioId:
-          tipoEntrega === 'domicilio' && direccionSeleccionada ? direccionSeleccionada.id : undefined,
+        metodoPago: formaPago === 'salon' ? METODO_PAGO_EN_SALON : mapMetodoCheckout(metodoPago.tipo),
         items: items.map((item) => ({
           cantidad: item.cantidad,
           productoId: item.productoId,
@@ -724,15 +601,6 @@ export default function CheckoutPage() {
       });
       // El servidor descuenta stock al crear el pedido; refrescar catálogos abiertos.
       emitCatalogStockChanged();
-
-      const textoDirLimpio = textoDir.trim();
-      if (textoDirLimpio) {
-        try {
-          await actualizarPedido(pedido.id, { direccionTextoCompleta: textoDirLimpio });
-        } catch {
-          /* la dirección sigue en notasCliente */
-        }
-      }
 
       // Oculto hasta integrar pasarela (Mercado Pago). No borrar.
       // POST /api/pagos ahora es solo-staff (caja:escritura) — el cliente ya no crea su propio
@@ -750,7 +618,6 @@ export default function CheckoutPage() {
 
       compraFinalizadaRef.current = true;
       await clearCart();
-      clearCheckoutDireccionId();
       const q =
         esTarjeta
           ? `pedidoId=${pedido.id}&pago=tarjeta`
@@ -808,11 +675,6 @@ export default function CheckoutPage() {
   const manejarSiguiente = async () => {
     setSubmitError(null);
     if (paso === 1) {
-      if (!validarPaso1()) return;
-      setPaso(2);
-      return;
-    }
-    if (paso === 2) {
       setPaso(3);
       return;
     }
@@ -892,29 +754,16 @@ export default function CheckoutPage() {
       setPaso(3);
       return;
     }
-    if (paso > 1) {
-      setPaso(paso - 1);
+    if (paso === 3) {
+      setPaso(1);
     }
   };
 
   const etiquetasBarra = !esTarjeta
-    ? ['Entrega', 'Cuándo llegará', 'Pago en el salón', 'Revisa y confirma']
+    ? ['Recoger en el salón', 'Forma de pago', 'Revisa y confirma']
     : esTarjetaCredito
-      ? [
-          'Entrega',
-          'Cuándo llegará',
-          'Forma de pago',
-          'Datos de la tarjeta',
-          'Mensualidad',
-          'Revisa y confirma',
-        ]
-      : [
-          'Entrega',
-          'Cuándo llegará',
-          'Forma de pago',
-          'Datos de la tarjeta',
-          'Revisa y confirma',
-        ];
+      ? ['Recoger en el salón', 'Forma de pago', 'Datos de la tarjeta', 'Mensualidad', 'Revisa y confirma']
+      : ['Recoger en el salón', 'Forma de pago', 'Datos de la tarjeta', 'Revisa y confirma'];
 
   if (cartLoading || items.length === 0) {
     return (
@@ -964,275 +813,179 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 lg:gap-10">
           <div>
-            {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
-            {MOSTRAR_ENTREGA_DOMICILIO && paso === 1 && (
-              <div style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
-                <h2 className="text-page-title mb-6" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Elige la forma de entrega
-                </h2>
-
-                <div className="space-y-4">
-                  {/* Tarjeta: envío a domicilio (solo resumen; cambiar en otra pantalla) */}
-                  <div
-                    className="rounded-xl border-2 overflow-hidden"
-                    style={{
-                      backgroundColor: 'var(--superficie-elevada)',
-                      borderColor:
-                        tipoEntrega === 'domicilio'
-                          ? 'var(--checkout-entrega-borde-seleccion)'
-                          : 'var(--fondos-suaves)',
-                    }}
-                  >
-                    <label className="flex items-start gap-3 p-4 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="tipoEntrega"
-                        className="mt-1.5 shrink-0"
-                        checked={tipoEntrega === 'domicilio'}
-                        onChange={() => setTipoEntrega('domicilio')}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <span className="font-bold text-base" style={{ color: 'var(--menu-texto-principal)' }}>
-                            Enviar a domicilio
-                          </span>
-                          <span className="font-bold shrink-0" style={{ color: 'var(--success-texto)' }}>
-                            {envio === 0 ? 'Gratis' : `$${envio.toLocaleString()}`}
-                          </span>
-                        </div>
-                        {cargandoPerfilCheckout ? (
-                          <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Cargando tu domicilio…
-                          </p>
-                        ) : direccionSeleccionada ? (
-                          <>
-                            <p className="text-sm mt-3 leading-snug" style={{ color: 'var(--menu-texto-principal)' }}>
-                              {lineaResumenEnvio(direccionSeleccionada)}
-                            </p>
-                            <p className="text-xs mt-2 font-medium" style={{ color: 'var(--encabezados-alterno)' }}>
-                              {etiquetaTipoDomicilio(direccionSeleccionada)}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }}>
-                            No tienes domicilios guardados. Agrégalos desde tu cuenta (tabla{' '}
-                            <code className="text-xs">direcciones_usuario</code>).
-                          </p>
-                        )}
-                      </div>
-                    </label>
-                    <div
-                      className="border-t px-4 py-3"
-                      style={{ borderColor: 'var(--fondos-suaves)' }}
-                    >
-                      <button
-                        type="button"
-                        className="text-sm font-semibold bg-transparent border-0 cursor-pointer p-0 underline"
-                        style={{ color: 'var(--checkout-entrega-enlace)' }}
-                        onClick={() => router.push(RUTA_ELEGIR_DOMICILIO)}
-                      >
-                        Modificar domicilio o elegir otro
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Tarjeta: retiro en tienda */}
-                  <label
-                    className="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer"
-                    style={{
-                      backgroundColor: 'var(--superficie-elevada)',
-                      borderColor:
-                        tipoEntrega === 'retiro'
-                          ? 'var(--checkout-entrega-borde-seleccion)'
-                          : 'var(--fondos-suaves)',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="tipoEntrega"
-                      className="mt-1.5 shrink-0"
-                      checked={tipoEntrega === 'retiro'}
-                      onChange={() => setTipoEntrega('retiro')}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <span className="font-bold text-base" style={{ color: 'var(--menu-texto-principal)' }}>
-                          Retirar en la estética
-                        </span>
-                        <span className="font-bold shrink-0" style={{ color: 'var(--success-texto)' }}>
-                          Gratis
-                        </span>
-                      </div>
-                      <p className="text-sm mt-2 whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>
-                        {DIRECCION_RETIRO_LOCAL}
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Sin pasarela no hay envíos — solo recoger en el salón, fijo. */}
             {paso === 1 && (
               <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Cómo recoges tu pedido
+                  Recoges tu pedido en el salón
                 </h2>
-                <div
-                  className="rounded-lg px-4 py-4 mt-4"
-                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                >
-                  <p className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-                    <strong>Retiras en la estética.</strong>
-                  </p>
-                  <p className="text-sm mt-2 whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {DIRECCION_RETIRO_LOCAL}
-                  </p>
-                </div>
-              </Card>
-            )}
-
-            {paso === 2 && (
-              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
-                <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  ¿Cuándo llegará?
-                </h2>
-                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                  <p className="font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                    {textoCuandoLlega().titulo}
-                  </p>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {textoCuandoLlega().texto}
-                  </p>
-                </div>
-                <p className="text-sm mt-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Las fechas son estimadas y pueden variar según disponibilidad y método de pago.
+                <p className="text-sm mb-5" style={{ color: 'var(--encabezados-alterno)' }}>
+                  Lo preparamos y te lo apartamos en el mostrador.
                 </p>
-              </Card>
-            )}
-
-            {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
-            {false && paso === 3 && (
-              <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
-                <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  ¿Cómo quieres pagar?
-                </h2>
-                <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Elige una opción. Con tarjeta de crédito, primero ingresás los datos de la tarjeta (así podemos orientarte sobre meses sin intereses según el banco) y después elegís la mensualidad. Con débito, solo los datos de la tarjeta.
-                </p>
-                <div className="space-y-3">
-                  {metodosPagoOpciones.map((opt) => (
-                    <label
-                      key={opt.value}
-                      className="flex items-center gap-3 cursor-pointer p-4 rounded-lg border-2 transition-colors has-[:checked]:border-[var(--botones-principales)]"
-                      style={{ borderColor: 'var(--fondos-suaves)' }}
-                    >
-                      <input
-                        type="radio"
-                        name="metodoPagoTipo"
-                        value={opt.value}
-                        checked={
-                          opt.value === 'tarjeta_credito' || opt.value === 'tarjeta_debito'
-                            ? metodoPago.tipo === opt.value && tarjetaGuardadaId === null
-                            : metodoPago.tipo === opt.value
-                        }
-                        onChange={() => {
-                          const tipo = opt.value;
-                          setMetodoPago({
-                            ...metodoPago,
-                            tipo,
-                          });
-                          setTarjetaGuardadaId(null);
-                          if (tipo === 'tarjeta_debito') setTarjetaValue('mesesMSI', '1');
-                        }}
-                      />
-                      <span style={{ color: 'var(--menu-texto-principal)' }}>{opt.label}</span>
-                    </label>
-                  ))}
+                <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                  <DatosRecogerEnSalon />
                 </div>
-                {(esTarjeta || metodosPagoGuardados.length > 0) && (
-                  <div className="mt-4">
-                    <div className="space-y-2">
-                      {metodosPagoGuardados.length === 0 ? (
-                        <div className="rounded-lg px-4 py-3" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                          <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                            No tienes tarjetas guardadas.
-                          </p>
-                        </div>
-                      ) : (
-                        metodosPagoGuardados.map((sel) => {
-                          const marca = (sel.marca || 'Tarjeta').trim();
-                          const banco = (sel.bancoNombre || '').trim();
-                          const ult4 = (sel.ultimos4 || '****').trim();
-                          const tipoRaw = String(sel.tipoTarjeta ?? '').toLowerCase();
-                          const tipoTxt = tipoRaw === 'debito' ? 'Débito' : 'Crédito';
-                          const selected = tarjetaGuardadaId === sel.id;
-                          return (
-                            <label
-                              key={sel.id}
-                              className="rounded-xl border px-4 py-3 flex items-center gap-4 cursor-pointer"
-                              style={{
-                                backgroundColor: 'var(--superficie-elevada)',
-                                borderColor: selected
-                                  ? 'var(--checkout-entrega-borde-seleccion)'
-                                  : 'var(--fondos-suaves)',
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                name="metodoPagoTipo"
-                                checked={selected}
-                                onChange={() => {
-                                  setTarjetaGuardadaId(sel.id);
-                                  setMetodoPago((prev) => ({
-                                    ...prev,
-                                    tipo: tipoRaw === 'debito' ? 'tarjeta_debito' : 'tarjeta_credito',
-                                  }));
-                                  if (tipoRaw === 'debito') setTarjetaValue('mesesMSI', '1');
-                                }}
-                              />
-                              <span
-                                className="w-11 h-11 rounded-full border inline-flex items-center justify-center text-[10px] font-bold uppercase"
-                                style={{ borderColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}
-                              >
-                                {marca.slice(0, 4)}
-                              </span>
-                              <p className="text-sm sm:text-base" style={{ color: 'var(--menu-texto-principal)' }}>
-                                {banco ? `${banco} ` : ''}
-                                {tipoTxt} **** {ult4}
-                                {sel.esPredeterminada ? ' (predeterminada)' : ''}
-                              </p>
-                            </label>
-                          );
-                        })
-                      )}
-                    </div>
-                    <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Agregar una tarjeta nueva no borra las anteriores; todas quedan guardadas en tu perfil.
-                    </p>
-                  </div>
-                )}
               </Card>
             )}
 
-            {/* Pago en el salón — sin pasarela integrada, el pedido se paga al recogerlo. */}
             {paso === 3 && (
               <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
-                <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  ¿Cómo se paga tu pedido?
-                </h2>
-                <div
-                  className="rounded-lg px-4 py-4"
-                  style={{ backgroundColor: 'var(--fondos-suaves)' }}
-                >
-                  <p className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-                    <strong>Pagas en el salón, al recoger tu pedido.</strong>
+                <fieldset>
+                  <legend className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                    ¿Cómo quieres pagar?
+                  </legend>
+                  <p className="text-sm mb-5" style={{ color: 'var(--encabezados-alterno)' }}>
+                    En los dos casos recoges tu pedido en el salón.
                   </p>
-                  <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Todavía no aceptamos pagos en línea. Te avisaremos cuando tu pedido esté listo
-                    para pasar y pagarlo directamente en la estética.
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {OPCIONES_FORMA_PAGO.map((op) => {
+                      const Icono = op.icono;
+                      const elegida = formaPago === op.value;
+                      return (
+                        <label
+                          key={op.value}
+                          className="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-[border-color] duration-200"
+                          style={{
+                            backgroundColor: 'var(--superficie-elevada)',
+                            borderColor: elegida ? 'var(--checkout-entrega-borde-seleccion)' : 'var(--fondos-suaves)',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="formaPago"
+                            value={op.value}
+                            checked={elegida}
+                            onChange={() => elegirFormaPago(op.value)}
+                            className="mt-1 shrink-0 w-4 h-4"
+                            style={{ accentColor: 'var(--botones-principales)' }}
+                          />
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-2 font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                              <Icono className="w-4 h-4 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+                              {op.titulo}
+                            </span>
+                            <span className="block text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                              {op.texto}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                {formaPago === 'salon' && (
+                  <p
+                    className="text-sm mt-5 rounded-lg px-4 py-3"
+                    style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}
+                  >
+                    Tu pedido queda apartado. Pagas{' '}
+                    <strong className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>
+                      {formatearPrecioMXN(total)}
+                    </strong>{' '}
+                    en el mostrador cuando pases por él.
                   </p>
-                </div>
+                )}
+
+                {formaPago === 'linea' && (
+                  <div
+                    className="mt-6 pt-5 border-t"
+                    style={{ borderColor: 'var(--fondos-suaves)' }}
+                    role="radiogroup"
+                    aria-labelledby="titulo-tarjeta"
+                  >
+                    <h3 id="titulo-tarjeta" className="text-subtitle mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Tarjeta
+                    </h3>
+                    <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Con crédito, primero ingresas los datos de la tarjeta (así te orientamos sobre meses sin intereses
+                      según el banco) y después eliges la mensualidad.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {metodosPagoOpciones.map((opt) => {
+                        const elegida = metodoPago.tipo === opt.value && tarjetaGuardadaId === null;
+                        return (
+                          <label
+                            key={opt.value}
+                            className="flex items-center gap-3 min-h-11 px-4 py-3 rounded-lg border-2 cursor-pointer transition-[border-color] duration-200"
+                            style={{
+                              backgroundColor: 'var(--superficie-elevada)',
+                              borderColor: elegida ? 'var(--checkout-entrega-borde-seleccion)' : 'var(--fondos-suaves)',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="metodoPagoTipo"
+                              value={opt.value}
+                              checked={elegida}
+                              onChange={() => {
+                                setMetodoPago({ tipo: opt.value });
+                                setTarjetaGuardadaId(null);
+                                if (opt.value === 'tarjeta_debito') setTarjetaValue('mesesMSI', '1');
+                              }}
+                              className="w-4 h-4 shrink-0"
+                              style={{ accentColor: 'var(--botones-principales)' }}
+                            />
+                            <span style={{ color: 'var(--menu-texto-principal)' }}>{opt.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {metodosPagoGuardados.length > 0 && (
+                      <div className="mt-5">
+                        <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                          O usa una tarjeta guardada
+                        </p>
+                        <div className="space-y-2">
+                          {metodosPagoGuardados.map((sel) => {
+                            const marca = (sel.marca || 'Tarjeta').trim();
+                            const banco = (sel.bancoNombre || '').trim();
+                            const ult4 = (sel.ultimos4 || '****').trim();
+                            const tipoRaw = String(sel.tipoTarjeta ?? '').toLowerCase();
+                            const tipoTxt = tipoRaw === 'debito' ? 'Débito' : 'Crédito';
+                            const selected = tarjetaGuardadaId === sel.id;
+                            return (
+                              <label
+                                key={sel.id}
+                                className="rounded-xl border-2 px-4 py-3 flex items-center gap-4 cursor-pointer transition-[border-color] duration-200"
+                                style={{
+                                  backgroundColor: 'var(--superficie-elevada)',
+                                  borderColor: selected ? 'var(--checkout-entrega-borde-seleccion)' : 'var(--fondos-suaves)',
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="metodoPagoTipo"
+                                  checked={selected}
+                                  onChange={() => {
+                                    setTarjetaGuardadaId(sel.id);
+                                    setMetodoPago({ tipo: tipoRaw === 'debito' ? 'tarjeta_debito' : 'tarjeta_credito' });
+                                    if (tipoRaw === 'debito') setTarjetaValue('mesesMSI', '1');
+                                  }}
+                                  className="w-4 h-4 shrink-0"
+                                  style={{ accentColor: 'var(--botones-principales)' }}
+                                />
+                                <span
+                                  className="w-11 h-11 rounded-full border inline-flex items-center justify-center text-[10px] font-bold uppercase shrink-0"
+                                  style={{ borderColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}
+                                >
+                                  {marca.slice(0, 4)}
+                                </span>
+                                <span className="text-sm sm:text-base" style={{ color: 'var(--menu-texto-principal)' }}>
+                                  {banco ? `${banco} ` : ''}
+                                  {tipoTxt} <span className="mf-cifras">**** {ult4}</span>
+                                  {sel.esPredeterminada ? ' (predeterminada)' : ''}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+                          Agregar una tarjeta nueva no borra las anteriores; todas quedan guardadas en tu perfil.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </Card>
             )}
 
@@ -1498,17 +1251,10 @@ export default function CheckoutPage() {
                   </section>
 
                   <section className="pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
-                    <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                      Entrega
+                    <h3 className="text-subtitle mb-3" style={{ color: 'var(--menu-texto-principal)' }}>
+                      Recoges en el salón
                     </h3>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--encabezados-alterno)' }}>
-                      {tipoEntrega === 'retiro' ? 'Retiro en estética' : 'Envío a domicilio'}
-                      <br />
-                      {textoDireccionPedido()}
-                    </p>
-                    <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                      {textoCuandoLlega().texto}
-                    </p>
+                    <DatosRecogerEnSalon />
                   </section>
 
                   <section className="pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
@@ -1525,7 +1271,7 @@ export default function CheckoutPage() {
                       </p>
                     )}
                     <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Total a pagar:{' '}
+                      {formaPago === 'salon' ? 'Total a pagar al recoger:' : 'Total a pagar:'}{' '}
                       <strong style={{ color: 'var(--menu-texto-principal)' }}>
                         ${total.toLocaleString()} MXN
                       </strong>
@@ -1587,15 +1333,6 @@ export default function CheckoutPage() {
                   <span style={{ color: 'var(--encabezados-alterno)' }}>Subtotal:</span>
                   <span className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(subtotal)}</span>
                 </div>
-                {/* Oculto hasta integrar pasarela (Mercado Pago). No borrar. */}
-                {false && (
-                  <div className="flex justify-between">
-                    <span style={{ color: 'var(--encabezados-alterno)' }}>Envío:</span>
-                    <span style={{ color: 'var(--menu-texto-principal)' }}>
-                      {tipoEntrega === 'retiro' ? '$0' : `$${envio.toLocaleString()}`}
-                    </span>
-                  </div>
-                )}
                 <div className="pt-3 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                   <div className="flex justify-between">
                     <span className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>

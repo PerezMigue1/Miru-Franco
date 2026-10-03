@@ -507,10 +507,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
   const renderStep2 = () => (
     <div className="space-y-5">
-      <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>Cuéntanos sobre tu cabello</h3>
-      <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-        Las direcciones de envío las podrás agregar después desde tu perfil o al comprar en línea.
-      </p>
+      <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>Cuéntanos sobre tu cabello</h3>
 
       {/* Tipo de cabello */}
       <div>

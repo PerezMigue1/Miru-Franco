@@ -14,7 +14,6 @@ import {
   IdCard,
   LockKeyhole,
   LogOut,
-  MapPin,
   MessageSquare,
   ShieldCheck,
   ShoppingBag,
@@ -83,7 +82,7 @@ interface ProfileCard {
 
 /** Grupos del hub de la cuenta (listas de filas en vez de tarjetas iguales). */
 const GRUPOS_TARJETAS: { titulo: string; ids: string[] }[] = [
-  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'direcciones', 'tarjetas', 'comunicaciones'] },
+  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'tarjetas', 'comunicaciones'] },
   { titulo: 'Citas y beneficios', ids: ['citas', 'promociones'] },
   { titulo: 'Paneles del salón', ids: ['admin', 'operacion'] },
 ];
@@ -259,13 +258,6 @@ export default function UserProfile() {
       subtitle: 'Métodos de pago guardados para tus compras.',
       icon: CreditCard,
       href: '/cliente/tarjetas',
-    },
-    {
-      id: 'direcciones',
-      title: 'Direcciones',
-      subtitle: 'Direcciones guardadas para tus envíos.',
-      icon: MapPin,
-      href: '/cliente/direcciones',
     },
     {
       id: 'comunicaciones',

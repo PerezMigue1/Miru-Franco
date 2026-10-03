@@ -194,6 +194,8 @@ export type EstadoPedidoUi =
   | 'pendiente_pago'
   | 'pagado'
   | 'preparando'
+  | 'listo_recoger'
+  /** Solo pedidos anteriores: ya no hay envío a domicilio. */
   | 'enviado'
   | 'entregado'
   | 'cancelado';
@@ -760,15 +762,37 @@ export async function eliminarValoracion(id: number): Promise<void> {
   await apiClient.delete<void>(`/api/valoraciones/${id}`, BASE());
 }
 
-/** Etiquetas para UI (pedidos / mis compras). */
-export function etiquetaEstadoPedido(estado: string): string {
+/** Pago al recoger: el pedido se aparta (pendiente_pago) y se cobra en el mostrador al entregarlo. */
+export const METODO_PAGO_EN_SALON = 'pago_en_salon';
+
+export function esPagoEnSalon(metodoPago: string | null | undefined): boolean {
+  return (metodoPago ?? '').trim().toLowerCase() === METODO_PAGO_EN_SALON;
+}
+
+/** Método de pago del pedido en palabras (el backend guarda la clave). */
+export function etiquetaMetodoPagoPedido(metodoPago: string | null | undefined): string {
+  const clave = (metodoPago ?? '').trim().toLowerCase();
+  const m: Record<string, string> = {
+    [METODO_PAGO_EN_SALON]: 'Pago al recoger en el salón',
+    tarjeta_credito: 'Tarjeta de crédito',
+    tarjeta_debito: 'Tarjeta de débito',
+    efectivo: 'Efectivo',
+    transferencia: 'Transferencia',
+  };
+  return m[clave] ?? (clave ? clave.replace(/_/g, ' ') : 'Sin especificar');
+}
+
+/** Etiquetas para UI (pedidos / mis compras). Con el método de pago, el apartado se nombra como tal. */
+export function etiquetaEstadoPedido(estado: string, metodoPago?: string | null): string {
+  if (estado === 'pendiente_pago' && esPagoEnSalon(metodoPago)) return 'Apartado, pagas al recoger';
   const m: Record<string, string> = {
     borrador: 'Borrador',
     pendiente_pago: 'Pendiente de pago',
     pagado: 'Pagado',
-    preparando: 'Preparando',
+    preparando: 'En preparación',
+    listo_recoger: 'Listo para recoger',
     enviado: 'Enviado',
-    entregado: 'Entregado',
+    entregado: 'Entregado en el salón',
     cancelado: 'Cancelado',
   };
   return m[estado] ?? estado.replace(/_/g, ' ');
@@ -786,6 +810,7 @@ export function varianteBadgeEstadoPedido(estado: string): BadgeVariant {
       return 'info';
     case 'enviado':
       return 'info';
+    case 'listo_recoger':
     case 'entregado':
       return 'success';
     case 'cancelado':

@@ -2,6 +2,7 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { hoyEnMexico } from '../utils/fechaSoloDia';
 
 export type EstadoVentaLocal = 'pendiente' | 'pagada' | 'cancelada';
 
@@ -288,13 +289,18 @@ export async function obtenerCorte(id: number): Promise<CorteApi | null> {
   return normalizarCorte(obj);
 }
 
+/**
+ * Registra el corte de caja de HOY (día de México): el backend suma las ventas pagadas del día y
+ * calcula la diferencia contra el efectivo contado. Exige fecha, efectivo inicial y efectivo final.
+ */
 export async function abrirCorte(payload: {
   efectivoInicial: number;
+  efectivoFinal: number;
   notas?: string;
 }): Promise<CorteApi> {
-  const res = await apiClient.post<unknown>('/api/pos/cortes', payload, getBackendBaseUrl());
+  const res = await apiClient.post<unknown>('/api/pos/cortes', { fecha: hoyEnMexico(), ...payload }, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const corte = normalizarCorte(obj);
-  if (!corte) throw new Error('No se pudo abrir el corte');
+  if (!corte) throw new Error('No se pudo registrar el corte');
   return corte;
 }

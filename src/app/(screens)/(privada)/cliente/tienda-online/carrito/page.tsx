@@ -13,7 +13,7 @@ import { useCart, type CartItem } from '../../../../../context/CartContext';
 import { hasValidToken } from '../../../../../utils/security';
 import { calcularResumenCarritoVistaPrevia } from '../../../../../utils/ventaDesdeCarrito';
 import Link from 'next/link';
-import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, Store, Trash2 } from 'lucide-react';
 import { ServicioImagenPlaceholder } from '../../../../../components/servicios/ServicioImagen';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 
@@ -28,7 +28,7 @@ export default function CarritoComprasPage() {
     () => false
   );
 
-  const { subtotal, costoEnvio: envio, total } = calcularResumenCarritoVistaPrevia(items);
+  const { subtotal, total } = calcularResumenCarritoVistaPrevia(items);
   const haySesion = enCliente && hasValidToken();
 
   const handleRemoveConfirm = () => {
@@ -175,15 +175,15 @@ export default function CarritoComprasPage() {
                   <dt style={{ color: 'var(--encabezados-alterno)' }}>Subtotal</dt>
                   <dd style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(subtotal)}</dd>
                 </div>
-                <div className="flex justify-between">
-                  <dt style={{ color: 'var(--encabezados-alterno)' }}>Envío</dt>
-                  <dd style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(envio)}</dd>
-                </div>
                 <div className="pt-4 border-t flex justify-between items-baseline" style={{ borderColor: 'var(--mf-linea)' }}>
                   <dt className="font-bold" style={{ color: 'var(--menu-texto-principal)' }}>Total</dt>
                   <dd className="text-3xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(total)}</dd>
                 </div>
               </dl>
+              <p className="flex items-start gap-2 text-sm mb-5" style={{ color: 'var(--encabezados-alterno)' }}>
+                <Store className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+                Recoges tu pedido en el salón. Pagas en línea o al recogerlo.
+              </p>
               {enCliente && !haySesion && items.length > 0 && (
                 <p className="text-sm mb-4 p-3 rounded-[10px]" style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--encabezados-alterno)' }}>
                   Para <strong>pagar y generar tu pedido</strong> en el sistema necesitas{' '}
