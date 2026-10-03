@@ -3,6 +3,7 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { mensajeDeError } from '../utils/errorRed';
 
 /** Especialista asignado a un servicio (desde Prisma `ServicioEspecialista`). */
 export interface ServicioEspecialistaUI {
@@ -263,7 +264,7 @@ export async function getServicios(): Promise<ServiciosResult> {
     }
     return { data: list.map(normalizarServicio), error: null };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { data: [], error: msg };
   }
 }
@@ -286,7 +287,7 @@ export async function getServiciosAdmin(incluirInactivos = false): Promise<Servi
     }
     return { data: list.map(normalizarServicio), error: null };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { data: [], error: msg };
   }
 }

@@ -5,11 +5,12 @@
 
 import { getBackendBaseUrl } from './config';
 import { hasSession } from '../utils/security';
+import { MENSAJE_SIN_CONEXION, mensajeDeError } from '../utils/errorRed';
 
 /** Ruta base para endpoints de base de datos (import, export). */
 const DB_API_PREFIX = '/api/db';
 
-/** Ruta del endpoint del diagrama ER. GET /api/db/diagram?formato=mermaid|svg|png */
+/** Ruta del endpoint del diagrama ER. GET /api/db/diagram?formato=mermaid */
 const DIAGRAM_ENDPOINT = '/api/db/diagram';
 
 /** Tablas/entidades soportadas por el backend para import/export */
@@ -109,7 +110,7 @@ export async function importarDatos(
       errores,
     };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { success: false, error: msg };
   }
 }
@@ -158,7 +159,7 @@ export async function obtenerTablasImportables(): Promise<
 
     return { success: true, tablas };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { success: false, error: msg };
   }
 }
@@ -205,7 +206,7 @@ export async function truncarTabla(
       message: typeof data.message === 'string' ? data.message : undefined,
     };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { success: false, error: msg };
   }
 }
@@ -254,23 +255,20 @@ export async function exportarDatos(
 
     return { success: true, blob, filename };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { success: false, error: msg };
   }
 }
 
-/** Formatos soportados para el diagrama ER */
-export type FormatoDiagrama = 'mermaid' | 'svg' | 'png';
-
-const EXTENSIONES_DIAGRAMA: Record<FormatoDiagrama, string> = {
-  mermaid: 'mmd',
-  svg: 'svg',
-  png: 'png',
-};
+/**
+ * Formato que entrega el backend para el diagrama ER: solo el código Mermaid. SVG y PNG se
+ * generan en el navegador a partir de él (utils/mermaidRender.ts).
+ */
+export type FormatoDiagrama = 'mermaid';
 
 /**
- * Obtiene el diagrama ER como blob (para vista previa o descarga).
- * GET /api/db/diagram?formato=mermaid|svg|png
+ * Obtiene el diagrama ER (código Mermaid) como blob, para vista previa o descarga.
+ * GET /api/db/diagram?formato=mermaid
  */
 export async function obtenerDiagrama(
   formato: FormatoDiagrama
@@ -307,8 +305,7 @@ export async function obtenerDiagrama(
 
     const blob = await res.blob();
     const contentDisposition = res.headers.get('Content-Disposition');
-    const ext = EXTENSIONES_DIAGRAMA[formato];
-    let filename = `diagrama-er_${new Date().toISOString().slice(0, 10)}.${ext}`;
+    let filename = `diagrama-er_${new Date().toISOString().slice(0, 10)}.mmd`;
     if (contentDisposition) {
       const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
       if (match?.[1]) filename = match[1];
@@ -316,15 +313,11 @@ export async function obtenerDiagrama(
 
     return { success: true, blob, filename };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { success: false, error: msg };
   }
 }
 
-/**
- * Descarga el diagrama ER del esquema de la base de datos.
- * GET /api/db/diagram?formato=mermaid|svg|png
- */
 /**
  * Descarga el diagrama ER (wrapper que obtiene el blob; el download se hace en el handler).
  */
@@ -355,7 +348,7 @@ export function textoErrorRespuesta(status: number, data: Record<string, unknown
 /** Fallo de red o petición cancelada: sin el texto técnico del navegador ("Failed to fetch"). */
 export function textoErrorRed(e: unknown): string {
   if (e instanceof DOMException && e.name === 'AbortError') return 'Solicitud cancelada.';
-  return 'No se pudo conectar con el servidor. Intenta de nuevo en unos segundos.';
+  return MENSAJE_SIN_CONEXION;
 }
 
 /**
@@ -778,7 +771,7 @@ export async function exportarDirecto(
     }
     return { success: true, blob, filename };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al exportar';
+    const msg = mensajeDeError(e, 'Error al exportar');
     return { success: false, error: msg };
   }
 }

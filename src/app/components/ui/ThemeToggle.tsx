@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+
+const sinSuscripcion = () => () => {};
 
 /** Cambio de tema para barras oscuras (cabecera del sitio y de los paneles): área táctil de 44px. */
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // false en el servidor y al hidratar (el tema real vive en localStorage), true ya en el cliente.
+  const mounted = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   if (!mounted) return <span className="inline-block h-11 w-11 shrink-0" aria-hidden="true" />;
 
   const claro = theme === 'light';

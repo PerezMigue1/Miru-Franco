@@ -34,7 +34,7 @@ describe('textos de error del gestor de base de datos', () => {
 
   it('un fallo de red no muestra "Failed to fetch"', () => {
     expect(textoErrorRed(new TypeError('Failed to fetch'))).toBe(
-      'No se pudo conectar con el servidor. Intenta de nuevo en unos segundos.',
+      'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.',
     );
     expect(textoErrorRed(new DOMException('The operation was aborted.', 'AbortError'))).toBe('Solicitud cancelada.');
   });

@@ -55,16 +55,16 @@ Exportación por **conexión directa** a la BD (DATABASE_URL). No se usa el back
 Genera y descarga el diagrama de entidad-relación del esquema de la base de datos.
 
 **Formatos:**
-- Mermaid (`.mmd`) — texto/código
-- SVG
-- PNG
+- Mermaid (`.mmd`) — texto/código, tal como lo entrega el backend
+- SVG — generado en el navegador
+- PNG — generado en el navegador
 
 **Funcionalidad:**
 - **Vista previa** antes de descargar
 - **Descargar** en el formato seleccionado
 - **Diagrama interactivo (solo vista previa en Mermaid o SVG):** al hacer clic en una entidad (tabla) del diagrama, la página hace scroll a la sección «Consultar datos», expande el módulo correspondiente (Inventario, Usuarios, Servicios o Clientes) y muestra un mensaje breve «Mostrando: [módulo]». No aplica cuando la vista previa es PNG.
 
-**Dependencia:** Endpoint `GET /api/db/diagram?formato=mermaid|svg|png` del backend. Para SVG/PNG se usa `mermaidRender.ts` para convertir el código Mermaid.
+**Dependencia:** Endpoint `GET /api/db/diagram?formato=mermaid` del backend, que solo entrega el código Mermaid. SVG y PNG se generan en el navegador con `mermaidRender.ts` a partir de ese código.
 
 ---
 

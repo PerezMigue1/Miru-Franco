@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Timer } from 'lucide-react';
 import Notification from '../ui/Notification';
+import { MENSAJE_SIN_CONEXION } from '../../utils/errorRed';
 
 interface ActivateAccountProps {
   email: string;
@@ -111,7 +112,7 @@ export default function ActivateAccount({
         setError('El código es incorrecto o ha expirado. Solicita uno nuevo con "Reenviar código".');
       } else {
         setMensaje('❌ Error de conexión al verificar el código');
-        setError('No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta de nuevo.');
+        setError(MENSAJE_SIN_CONEXION);
       }
       console.error('Error verificando OTP:', errorMessage);
     } finally {
