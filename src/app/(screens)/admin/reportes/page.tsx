@@ -16,6 +16,7 @@ import {
   obtenerReporteClientes,
 } from '../../../services/reportes';
 import { exportarReportePdf, exportarReporteExcel, ReporteParaExportar } from '../../../utils/exportReportes';
+import { formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
 
 type TipoReporte = 'ventas' | 'servicios' | 'inventario' | 'clientes';
 
@@ -81,7 +82,7 @@ export default function ReportesPage() {
     setLoading(true);
     setError(null);
     const construir = async (): Promise<ReporteParaExportar> => {
-      const subtitulo = tipoReporte === 'inventario' ? 'Stock actual' : `Del ${fmtFecha(desde)} al ${fmtFecha(hasta)}`;
+      const subtitulo = tipoReporte === 'inventario' ? 'Stock actual' : `Del ${formatearFechaSoloDia(desde) ?? '-'} al ${formatearFechaSoloDia(hasta) ?? '-'}`;
       if (tipoReporte === 'ventas') {
         const r = await obtenerReporteVentas(desde, hasta);
         return {

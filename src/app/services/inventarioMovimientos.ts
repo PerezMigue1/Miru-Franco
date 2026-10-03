@@ -2,6 +2,7 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { diasHastaFechaSoloDia } from '../utils/fechaSoloDia';
 
 export type TipoMovimientoInventario = 'entrada' | 'salida' | 'ajuste';
 
@@ -231,9 +232,7 @@ export async function obtenerCaducidades(dias?: number): Promise<CaducidadApi[]>
     // El backend ya calcula diasRestantes/vencida; se usa ese valor y solo se recalcula si faltara.
     const diasRestantes = typeof r.diasRestantes === 'number'
       ? r.diasRestantes
-      : fechaCad
-        ? Math.round((new Date(fechaCad).getTime() - Date.now()) / 86400000)
-        : 0;
+      : (diasHastaFechaSoloDia(fechaCad) ?? 0);
     return {
       // El backend identifica la presentación con `id`, no `presentacionId`.
       presentacionId: Number(n(r.presentacionId ?? r.presentacion_id ?? r.id, 0) ?? 0),

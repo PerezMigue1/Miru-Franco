@@ -17,6 +17,18 @@ describe('security utils', () => {
     expect(result.errors).toBeUndefined();
   });
 
+  it('compara contra el día de nacimiento real aunque se guarde a medianoche UTC (hora de México)', () => {
+    const tzAnterior = process.env.TZ;
+    process.env.TZ = 'America/Mexico_City';
+    try {
+      // 2000-01-01 a medianoche UTC es 31/12/1999 en México: antes se comparaba contra 1999.
+      const result = validatePassword('Clave#2000Zz', { fechaNacimiento: '2000-01-01T00:00:00.000Z' });
+      expect(result.errors).toContain('La contraseña no puede contener tu fecha de nacimiento');
+    } finally {
+      process.env.TZ = tzAnterior;
+    }
+  });
+
   it('rejects weak password patterns', () => {
     const result = validatePassword('password123');
     expect(result.valid).toBe(false);
