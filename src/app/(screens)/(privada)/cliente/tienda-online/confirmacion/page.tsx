@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X } from 'lucide-react';
+import { AlertCircle, Clock, X } from 'lucide-react';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
@@ -17,8 +17,111 @@ import {
   varianteBadgeEstadoPedido,
   etiquetaEstadoPago,
   varianteBadgeEstadoPago,
+  consultarEstadoPagoEnLinea,
+  crearPreferenciaMercadoPago,
+  METODO_PAGO_MERCADOPAGO,
 } from '../../../../../services/ecommerce';
-import type { PedidoApi, PedidoItemApi, PagoApi } from '../../../../../services/ecommerce';
+import type { EstadoPagoEnLinea, PedidoApi, PedidoItemApi, PagoApi } from '../../../../../services/ecommerce';
+import { mensajeUsuarioDesdeErrorApi } from '../../../../../utils/apiErrorMessage';
+
+/** Mientras Mercado Pago confirma, la página consulta cada 3 s hasta 45 s; luego se queda con lo último. */
+const INTERVALO_ESTADO_MS = 3000;
+const ESPERA_MAXIMA_ESTADO_MS = 45_000;
+const VIGENCIA_PAGO_EN_LINEA_MS = 24 * 60 * 60 * 1000;
+
+/** Encabezado del pedido pagado en línea según el estado real que confirma el servidor. */
+function EncabezadoPagoEnLinea({
+  estado,
+  esperando,
+  venceEn,
+  reintentando,
+  onReintentar,
+}: {
+  estado: EstadoPagoEnLinea | null;
+  esperando: boolean;
+  venceEn: Date | null;
+  reintentando: boolean;
+  onReintentar: () => void;
+}) {
+  const circulo = (icono: React.ReactNode, fondo: string) => (
+    <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5" style={{ backgroundColor: fondo }}>
+      {icono}
+    </div>
+  );
+  const venceTexto = venceEn
+    ? venceEn.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', weekday: 'long', hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  if (estado === 'aprobado') {
+    return (
+      <>
+        <div className="mb-5 flex justify-center">
+          <SelloConfirmacion />
+        </div>
+        <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          ¡Pago recibido!
+        </h1>
+        <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
+          Tu pedido quedó pagado. Te avisamos en la app y por correo cuando esté listo para recoger en el salón.
+        </p>
+      </>
+    );
+  }
+  if (estado === 'revision') {
+    return (
+      <>
+        {circulo(<AlertCircle size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />, 'var(--warning)')}
+        <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          Recibimos tu pago
+        </h1>
+        <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
+          Necesitamos revisarlo antes de preparar tu pedido. El salón te contactará; no tienes que pagar otra vez.
+        </p>
+      </>
+    );
+  }
+  const noSeCompleto = estado === 'rechazado' || (estado === 'sin_pago' && !esperando);
+  if (noSeCompleto) {
+    return (
+      <>
+        {circulo(<AlertCircle size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />, 'var(--danger)')}
+        <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          Tu pago no se completó
+        </h1>
+        <p className="text-lg mb-5" style={{ color: 'var(--encabezados-alterno)' }}>
+          {estado === 'rechazado' ? 'Mercado Pago no aprobó el pago y no se hizo ningún cargo.' : 'Todavía no recibimos tu pago.'}{' '}
+          Tu pedido sigue apartado{venceTexto ? <> hasta el <span className="mf-cifras">{venceTexto}</span></> : null}.
+        </p>
+        <Button onClick={onReintentar} disabled={reintentando}>
+          {reintentando ? 'Abriendo Mercado Pago…' : 'Reintentar pago'}
+        </Button>
+      </>
+    );
+  }
+  if (estado === null) {
+    return (
+      <>
+        {circulo(<Clock size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />, 'var(--botones-principales)')}
+        <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          Consultando el estado de tu pago…
+        </h1>
+      </>
+    );
+  }
+  return (
+    <>
+      {circulo(<Clock size={36} aria-hidden style={{ color: 'var(--texto-fondo-oscuro)' }} />, 'var(--botones-principales)')}
+      <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        Tu pago se está procesando
+      </h1>
+      <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
+        {esperando
+          ? 'Mercado Pago aún no lo confirma. Esta página se actualiza sola.'
+          : 'Mercado Pago aún no lo confirma. Te avisamos en la app y por correo en cuanto se acredite.'}
+      </p>
+    </>
+  );
+}
 import { hasValidToken } from '../../../../../utils/security';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import SelloConfirmacion from '../../../../../components/cliente/SelloConfirmacion';
@@ -56,13 +159,63 @@ function ConfirmacionCompraContent() {
   const searchParams = useSearchParams();
   const rawId = searchParams.get('pedidoId');
   const pedidoId = rawId ? parseInt(rawId, 10) : NaN;
-  const pagoTarjetaHint = searchParams.get('pago') === 'tarjeta';
 
   const [pedido, setPedido] = useState<PedidoApi | null>(null);
   const [items, setItems] = useState<PedidoItemApi[]>([]);
   const [pagos, setPagos] = useState<PagoApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** Pago en línea: estado real consultado al servidor (nunca a los parámetros que pone Mercado Pago en la URL). */
+  const [estadoPago, setEstadoPago] = useState<EstadoPagoEnLinea | null>(null);
+  const [esperandoPago, setEsperandoPago] = useState(false);
+  const [reintentando, setReintentando] = useState(false);
+  const [errorReintento, setErrorReintento] = useState<string | null>(null);
+  const esPagoEnLinea = pedido?.metodoPago === METODO_PAGO_MERCADOPAGO;
+  /**
+   * Mercado Pago agrega estos parámetros al regresar: solo indican si vale la pena esperar a que confirme
+   * (el estado siempre se le pregunta al servidor). Quien llega desde "Completar el pago" no espera.
+   */
+  const volvioDeMercadoPago = ['payment_id', 'collection_id', 'collection_status', 'status', 'preference_id'].some((k) => searchParams.has(k));
+
+  useEffect(() => {
+    if (!esPagoEnLinea || !Number.isFinite(pedidoId)) return;
+    let cancelado = false;
+    let temporizador: ReturnType<typeof setTimeout> | undefined;
+    const inicio = Date.now();
+    const consultar = async () => {
+      try {
+        const r = await consultarEstadoPagoEnLinea(pedidoId);
+        if (cancelado) return;
+        setEstadoPago(r.estado);
+        setPedido((p) => (p ? { ...p, estado: r.pedidoEstado } : p));
+        const sigueEsperando =
+          (r.estado === 'pendiente' || (r.estado === 'sin_pago' && volvioDeMercadoPago)) &&
+          Date.now() - inicio < ESPERA_MAXIMA_ESTADO_MS;
+        setEsperandoPago(sigueEsperando);
+        if (sigueEsperando) temporizador = setTimeout(() => void consultar(), INTERVALO_ESTADO_MS);
+      } catch {
+        if (!cancelado) setEsperandoPago(false);
+      }
+    };
+    setEsperandoPago(true);
+    void consultar();
+    return () => {
+      cancelado = true;
+      if (temporizador) clearTimeout(temporizador);
+    };
+  }, [esPagoEnLinea, pedidoId, volvioDeMercadoPago]);
+
+  const reintentarPago = async () => {
+    setReintentando(true);
+    setErrorReintento(null);
+    try {
+      const { initPoint } = await crearPreferenciaMercadoPago(pedidoId);
+      window.location.assign(initPoint);
+    } catch (e) {
+      setErrorReintento(mensajeUsuarioDesdeErrorApi(e));
+      setReintentando(false);
+    }
+  };
 
   useEffect(() => {
     if (!hasValidToken()) {
@@ -171,6 +324,22 @@ function ConfirmacionCompraContent() {
     <ModuleLayout>
       <div className="max-w-3xl mx-auto">
         <Card className="text-center mf-entrada" padding="lg">
+          {esPagoEnLinea && !esCancelado ? (
+            <div className="mb-8" role="status" aria-live="polite">
+              <EncabezadoPagoEnLinea
+                estado={estadoPago}
+                esperando={esperandoPago}
+                venceEn={pedido.creadoEn ? new Date(new Date(pedido.creadoEn).getTime() + VIGENCIA_PAGO_EN_LINEA_MS) : null}
+                reintentando={reintentando}
+                onReintentar={() => void reintentarPago()}
+              />
+              {errorReintento && (
+                <p className="text-sm mt-3" role="alert" style={{ color: 'var(--danger-texto)' }}>
+                  {errorReintento}
+                </p>
+              )}
+            </div>
+          ) : (
           <div className="mb-8">
             {esCancelado ? (
               <div
@@ -194,12 +363,8 @@ function ConfirmacionCompraContent() {
                   ? 'Te apartamos tu pedido. Te avisamos en la app y por correo cuando esté listo para recogerlo y pagarlo en el salón.'
                   : 'Tu pedido quedó registrado. Te avisamos en la app y por correo cuando esté listo para recoger en el salón.'}
             </p>
-            {pagoTarjetaHint && !esCancelado && (
-              <p className="text-sm mt-3" style={{ color: 'var(--encabezados-alterno)' }}>
-                Elegiste pago con tarjeta: el pago aparecerá como pendiente hasta que se procese el cobro.
-              </p>
-            )}
           </div>
+          )}
 
           <div className="rounded-xl p-6 mb-6 text-left" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
             <div className="space-y-4">

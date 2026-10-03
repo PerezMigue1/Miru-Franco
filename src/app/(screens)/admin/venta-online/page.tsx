@@ -10,9 +10,9 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import { CheckCircle2, Clock3, CreditCard, Package, PackageCheck, RotateCcw } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, CreditCard, Package, PackageCheck, RotateCcw } from 'lucide-react';
 import {
-  listarPedidos,
+  listarPedidosPaginado,
   actualizarPedido,
   listarEnviosPorPedido,
   listarPagosPorPedido,
@@ -31,6 +31,8 @@ import { showAlert, showConfirm, showToast } from '../../../utils/toast';
 import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
 import { emitCatalogStockChanged } from '../../../utils/catalogStockSync';
 import { accionesPedido, siguientesEstadosSinCobro, type AccionPedido } from '../../../utils/flujoPedido';
+
+const TAMANO_PAGINA = 20;
 
 type LineaManual = {
   id: string;
@@ -139,21 +141,12 @@ export default function VentaOnlinePage() {
     return m;
   }, [usuarios]);
 
-  const pedidosFiltrados = useMemo(() => {
-    if (!filtroUsuarioId) return pedidos;
-    return pedidos.filter((p) => p.usuarioId === filtroUsuarioId);
-  }, [pedidos, filtroUsuarioId]);
-
-  const stats = useMemo(() => {
-    const s = { pendiente: 0, preparando: 0, listo: 0, entregado: 0 };
-    for (const p of pedidosFiltrados) {
-      if (p.estado === 'pendiente_pago' || p.estado === 'borrador') s.pendiente += 1;
-      else if (p.estado === 'preparando') s.preparando += 1;
-      else if (p.estado === 'listo_recoger') s.listo += 1;
-      else if (p.estado === 'entregado') s.entregado += 1;
-    }
-    return s;
-  }, [pedidosFiltrados]);
+  /** Paginación del servidor (antes solo se veían los primeros 20 pedidos). */
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalPedidos, setTotalPedidos] = useState(0);
+  /** Indicadores sobre todos los pedidos (con el filtro de clienta), no solo los de la página. */
+  const [stats, setStats] = useState({ pendiente: 0, preparando: 0, listo: 0, entregado: 0 });
 
   const selectedPedido = useMemo(
     () => pedidos.find((p) => p.id === selectedPedidoId) ?? null,
@@ -164,9 +157,20 @@ export default function VentaOnlinePage() {
     setLoading(true);
     setError(null);
     try {
-      const [peds, usrs] = await Promise.all([listarPedidos(), getUsuarios()]);
-      setPedidos(peds);
-      setUsuarios(usrs);
+      const usuarioId = filtroUsuarioId || undefined;
+      const contar = async (estado: EstadoPedidoUi) => (await listarPedidosPaginado({ estado, usuarioId, limit: 1 })).count;
+      const [res, borradores, pendientes, preparando, listos, entregados] = await Promise.all([
+        listarPedidosPaginado({ page: pagina, limit: TAMANO_PAGINA, usuarioId }),
+        contar('borrador'),
+        contar('pendiente_pago'),
+        contar('preparando'),
+        contar('listo_recoger'),
+        contar('entregado'),
+      ]);
+      setPedidos(res.data);
+      setTotalPaginas(Math.max(1, res.totalPages));
+      setTotalPedidos(res.count);
+      setStats({ pendiente: borradores + pendientes, preparando, listo: listos, entregado: entregados });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar venta online');
     } finally {
@@ -175,8 +179,12 @@ export default function VentaOnlinePage() {
   }
 
   useEffect(() => {
-    void cargarDatosBase();
+    void getUsuarios().then(setUsuarios).catch(() => setUsuarios([]));
   }, []);
+
+  useEffect(() => {
+    void cargarDatosBase();
+  }, [pagina, filtroUsuarioId]);
 
   useEffect(() => {
     if (!selectedPedido) {
@@ -333,7 +341,7 @@ export default function VentaOnlinePage() {
               Venta Online
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {pedidos.length} pedido{pedidos.length === 1 ? '' : 's'} · todo se recoge en el salón
+              {totalPedidos.toLocaleString('es-MX')} pedido{totalPedidos === 1 ? '' : 's'} · todo se recoge en el salón
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -371,7 +379,10 @@ export default function VentaOnlinePage() {
           <Select
             label="Filtrar por cliente"
             value={filtroUsuarioId}
-            onChange={(e) => setFiltroUsuarioId(e.target.value)}
+            onChange={(e) => {
+              setFiltroUsuarioId(e.target.value);
+              setPagina(1);
+            }}
             options={[
               { value: '', label: 'Todos' },
               ...usuarios.map((u) => ({ value: u.id, label: `${u.nombre} — ${u.email}` })),
@@ -383,7 +394,7 @@ export default function VentaOnlinePage() {
               Recargar
             </Button>
             <span className="text-sm self-center" style={{ color: 'var(--encabezados-alterno)' }}>
-              {loading ? 'Cargando pedidos…' : `${pedidosFiltrados.length} pedidos`}
+              {loading ? 'Cargando pedidos…' : `${totalPedidos.toLocaleString('es-MX')} pedidos`}
             </span>
           </div>
         </div>
@@ -391,7 +402,7 @@ export default function VentaOnlinePage() {
 
       <Card variant="elevated" padding="lg">
         <Table headers={['Pedido', 'Cliente', 'Total', 'Método', 'Estado', 'Fecha', 'Acciones']} headerSutil>
-          {pedidosFiltrados.map((p) => (
+          {pedidos.map((p) => (
             <TableRow key={p.id}>
               <TableCell rowPadding="lg">#{p.id}</TableCell>
               <TableCell rowPadding="lg">
@@ -423,6 +434,19 @@ export default function VentaOnlinePage() {
             </TableRow>
           ))}
         </Table>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+          <p className="text-xs mf-cifras" style={{ color: 'var(--encabezados-alterno)' }}>
+            Página {pagina} de {totalPaginas} · {totalPedidos.toLocaleString('es-MX')} pedidos
+          </p>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="inline-flex items-center gap-1" onClick={() => setPagina((n) => Math.max(1, n - 1))} disabled={pagina <= 1 || loading}>
+              <ChevronLeft size={14} aria-hidden /> Anterior
+            </Button>
+            <Button size="sm" variant="outline" className="inline-flex items-center gap-1" onClick={() => setPagina((n) => Math.min(totalPaginas, n + 1))} disabled={pagina >= totalPaginas || loading}>
+              Siguiente <ChevronRight size={14} aria-hidden />
+            </Button>
+          </div>
+        </div>
       </Card>
 
       {selectedPedido && (

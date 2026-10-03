@@ -257,6 +257,8 @@ export interface ListarPedidosPaginadoParams {
   page?: number;
   limit?: number;
   estado?: EstadoPedidoUi;
+  /** Solo personal: pedidos de una clienta. */
+  usuarioId?: string;
 }
 
 export interface PedidosPaginados {
@@ -281,6 +283,7 @@ export async function listarPedidosPaginado(
   if (params?.page) sp.set('page', String(params.page));
   if (params?.limit) sp.set('limit', String(params.limit));
   if (params?.estado) sp.set('estado', params.estado);
+  if (params?.usuarioId) sp.set('usuarioId', params.usuarioId);
   const qs = sp.toString();
   const res = await apiClient.get<unknown>(`/api/pedidos${qs ? `?${qs}` : ''}`, BASE());
   const o = (res && typeof res === 'object' ? res : {}) as Record<string, unknown>;
@@ -348,6 +351,37 @@ export type ActualizarPedidoPayload = Partial<{
   total: number;
   direccionTextoCompleta: string;
 }>;
+
+// --- Pago en línea (Mercado Pago Checkout Pro) ---
+
+/** Pide al servidor la URL de pago de Mercado Pago del pedido (montos y artículos los calcula el servidor). */
+export async function crearPreferenciaMercadoPago(pedidoId: number): Promise<{ initPoint: string }> {
+  const res = await apiClient.post<{ initPoint?: string }>('/api/pagos-en-linea/mercadopago/preferencia', { pedidoId }, BASE());
+  if (!res?.initPoint) throw new Error('No se pudo abrir Mercado Pago. Intenta de nuevo.');
+  return { initPoint: res.initPoint };
+}
+
+export type EstadoPagoEnLinea = 'aprobado' | 'pendiente' | 'rechazado' | 'revision' | 'sin_pago' | 'cancelado';
+
+/** Estado real del pago del pedido, consultado al servidor (no a los parámetros de la URL de regreso). */
+export async function consultarEstadoPagoEnLinea(pedidoId: number): Promise<{ estado: EstadoPagoEnLinea; pedidoEstado: EstadoPedidoUi }> {
+  return apiClient.get<{ estado: EstadoPagoEnLinea; pedidoEstado: EstadoPedidoUi }>(
+    `/api/pagos-en-linea/mercadopago/estado/${pedidoId}`,
+    BASE(),
+  );
+}
+
+/** Pedidos por recoger: marcar listo (permiso pedidos:entregar). */
+export async function marcarPedidoListo(id: number): Promise<void> {
+  await apiClient.post<unknown>(`/api/pedidos/${id}/listo`, {}, BASE());
+}
+
+export type MetodoCobroSalon = 'efectivo' | 'tarjeta_terminal' | 'transferencia';
+
+/** Pedidos por recoger: entregar; un apartado exige cómo se cobró (registra el pago para el corte). */
+export async function entregarPedido(id: number, metodoCobro?: MetodoCobroSalon): Promise<void> {
+  await apiClient.post<unknown>(`/api/pedidos/${id}/entregar`, metodoCobro ? { metodoCobro } : {}, BASE());
+}
 
 export async function actualizarPedido(id: number, payload: ActualizarPedidoPayload): Promise<PedidoApi> {
   const res = await apiClient.put<unknown>(`/api/pedidos/${id}`, payload, BASE());
@@ -489,7 +523,7 @@ export async function crearPago(payload: CrearPagoPayload): Promise<PagoApi> {
 }
 
 export type ActualizarPagoPayload = Partial<
-  Pick<CrearPagoPayload, 'monto' | 'estado' | 'referenciaExterna' | 'errorMensaje' | 'pagadoEn' | 'payload'>
+  Pick<CrearPagoPayload, 'monto' | 'estado' | 'referenciaExterna' | 'errorMensaje' | 'pagadoEn' | 'payload' | 'metodo'>
 >;
 
 export async function actualizarPagoParcial(id: number, payload: ActualizarPagoPayload): Promise<PagoApi> {
@@ -764,6 +798,8 @@ export async function eliminarValoracion(id: number): Promise<void> {
 
 /** Pago al recoger: el pedido se aparta (pendiente_pago) y se cobra en el mostrador al entregarlo. */
 export const METODO_PAGO_EN_SALON = 'pago_en_salon';
+/** Pago en línea con Mercado Pago Checkout Pro (lo marca pagado el servidor al confirmarlo Mercado Pago). */
+export const METODO_PAGO_MERCADOPAGO = 'mercado_pago';
 
 export function esPagoEnSalon(metodoPago: string | null | undefined): boolean {
   return (metodoPago ?? '').trim().toLowerCase() === METODO_PAGO_EN_SALON;
@@ -776,6 +812,8 @@ export function etiquetaMetodoPagoPedido(metodoPago: string | null | undefined):
     [METODO_PAGO_EN_SALON]: 'Pago al recoger en el salón',
     tarjeta_credito: 'Tarjeta de crédito',
     tarjeta_debito: 'Tarjeta de débito',
+    [METODO_PAGO_MERCADOPAGO]: 'En línea con Mercado Pago',
+    tarjeta_terminal: 'Tarjeta en terminal',
     efectivo: 'Efectivo',
     transferencia: 'Transferencia',
   };
@@ -828,6 +866,7 @@ export function etiquetaEstadoPago(estado: string): string {
     rechazado: 'Pago rechazado',
     cancelado: 'Pago cancelado',
     reembolsado: 'Reembolsado',
+    en_revision: 'Pago por revisar',
   };
   return m[estado] ?? estado.replace(/_/g, ' ');
 }
@@ -837,6 +876,7 @@ export function varianteBadgeEstadoPago(estado: string): BadgeVariant {
     case 'aprobado':
       return 'success';
     case 'pendiente':
+    case 'en_revision':
       return 'warning';
     case 'rechazado':
     case 'cancelado':

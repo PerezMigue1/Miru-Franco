@@ -15,7 +15,7 @@ export const RUTAS_CON_SESION = [
   '/cliente/garantias',
   '/cliente/notificaciones',
   '/cliente/seguimientos',
-  '/cliente/tarjetas',
+  '/cliente/tarjetas', // solo redirige a /perfil (el sitio ya no guarda tarjetas)
   '/cliente/tienda-online/checkout',
   '/cliente/tienda-online/confirmacion',
   '/cliente/tienda-online/mis-pedidos',

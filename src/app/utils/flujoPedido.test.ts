@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accionesPedido, siguientesEstados, siguientesEstadosSinCobro } from './flujoPedido';
+import { accionesPedido, permisoDeAccion, siguientesEstados, siguientesEstadosSinCobro } from './flujoPedido';
 
 describe('Flujo del pedido para recoger en el salón', () => {
   it('pago en línea: se cobra, se prepara, queda listo y se entrega', () => {
@@ -7,6 +7,11 @@ describe('Flujo del pedido para recoger en el salón', () => {
     expect(accionesPedido('pagado', 'tarjeta_credito')).toEqual(['preparar', 'cancelar']);
     expect(accionesPedido('preparando', 'tarjeta_credito')).toEqual(['listo', 'cancelar']);
     expect(accionesPedido('listo_recoger', 'tarjeta_credito')).toEqual(['entregar', 'cancelar']);
+  });
+
+  it('pago en línea con Mercado Pago pendiente: el personal no lo cobra en caja (lo confirma Mercado Pago)', () => {
+    expect(accionesPedido('pendiente_pago', 'mercado_pago')).toEqual(['cancelar']);
+    expect(accionesPedido('pagado', 'mercado_pago')).toEqual(['preparar', 'cancelar']);
   });
 
   it('pago al recoger: el apartado se prepara sin cobrar y se cobra al entregar', () => {
@@ -27,6 +32,11 @@ describe('Flujo del pedido para recoger en el salón', () => {
     expect(siguientesEstadosSinCobro('pendiente_pago', 'tarjeta_credito')).toEqual(['cancelado']);
     expect(siguientesEstadosSinCobro('listo_recoger', 'pago_en_salon')).toEqual(['cancelado']);
     expect(siguientesEstadosSinCobro('listo_recoger', 'tarjeta_debito')).toEqual(['entregado', 'cancelado']);
+  });
+
+  it('cada botón pide el permiso que exige el servidor: entregas o caja', () => {
+    expect(['listo', 'entregar', 'cobrarEntregar'].map((a) => permisoDeAccion(a as never))).toEqual(['pedidos:entregar', 'pedidos:entregar', 'pedidos:entregar']);
+    expect(['cobrar', 'preparar', 'cancelar'].map((a) => permisoDeAccion(a as never))).toEqual(['caja:escritura', 'caja:escritura', 'caja:escritura']);
   });
 
   it('entregado y cancelado no tienen siguiente paso', () => {

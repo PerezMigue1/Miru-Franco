@@ -3,10 +3,10 @@
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import PanelPedidosOnline from '../../../../components/pedidos/PanelPedidosOnline';
 
-/** Pedidos por recoger en el salón para el personal con permiso de caja (mismo panel que admin). */
+/** Pedidos por recoger en el salón: permiso propio pedidos:entregar, sin necesitar el corte de caja. */
 export default function PedidosPorRecogerOperacionPage() {
   return (
-    <OperacionLayout permisoRequerido="caja:escritura">
+    <OperacionLayout permisoRequerido="pedidos:entregar">
       <div className="w-full max-w-none space-y-8">
         <div>
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>

@@ -8,7 +8,7 @@ const { post } = vi.hoisted(() => ({
 vi.mock('./client', () => ({ apiClient: { post } }));
 vi.mock('./config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
-import { abrirCorte } from './pos';
+import { abrirCorte, resumenCorteTexto } from './pos';
 
 describe('Corte de caja: la petición lleva lo que exige el backend', () => {
   afterEach(() => {
@@ -26,5 +26,14 @@ describe('Corte de caja: la petición lleva lo que exige el backend', () => {
     const [ruta, cuerpo] = post.mock.calls[0];
     expect(ruta).toBe('/api/pos/cortes');
     expect(cuerpo).toEqual({ fecha: '2026-10-03', efectivoInicial: 500, efectivoFinal: 1250.5, notas: 'Turno tarde' });
+  });
+
+  it('devuelve los totales por método y la diferencia (Decimal llega como texto), con un resumen legible', async () => {
+    post.mockResolvedValueOnce({
+      data: { id: 9, efectivoInicial: '500', efectivoFinal: '790', totalVentas: '650', totalEfectivo: '300', totalTarjeta: '300', totalTransferencia: '50', diferencia: '-10' },
+    } as never);
+    const corte = await abrirCorte({ efectivoInicial: 500, efectivoFinal: 790 });
+    expect(corte).toMatchObject({ totalEfectivo: 300, totalTarjeta: 300, totalTransferencia: 50, diferencia: -10 });
+    expect(resumenCorteTexto(corte)).toBe('Corte registrado · Efectivo $300.00 · Tarjeta $300.00 · Transferencia $50.00 · Diferencia -$10.00');
   });
 });
