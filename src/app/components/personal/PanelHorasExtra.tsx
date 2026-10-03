@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import { listarHorasExtra, type ListadoHorasExtraApi } from '../../services/horasExtra';
+import { mesActualEnMexico } from '../../utils/fechaSoloDia';
 
 function fmtMoneda(v: number): string {
   return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -14,7 +15,7 @@ function fmtMoneda(v: number): string {
  * y en operacion/gestion-equipo.
  */
 export default function PanelHorasExtra() {
-  const [mesHorasExtra, setMesHorasExtra] = useState(() => new Date().toISOString().slice(0, 7));
+  const [mesHorasExtra, setMesHorasExtra] = useState(() => mesActualEnMexico());
   const [horasExtraData, setHorasExtraData] = useState<ListadoHorasExtraApi | null>(null);
   const [loadingHorasExtra, setLoadingHorasExtra] = useState(true);
   const [horasExtraError, setHorasExtraError] = useState<string | null>(null);

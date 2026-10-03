@@ -15,6 +15,7 @@ import { listarVentas, crearVenta, VentaLocalApi } from '../../../../services/po
 import { getServicios, Servicio } from '../../../../services/servicios';
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { etiquetaEstadoVenta, varianteEstadoVenta } from '../../../../utils/estados';
+import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
 
 function precioNum(p?: string): number {
   return Number(String(p ?? '').replace(/[^0-9.]/g, '')) || 0;
@@ -43,7 +44,7 @@ export default function CobroSinCitaPage() {
   const [fMetodoPago, setFMetodoPago] = useState('efectivo');
   const [fClienteId, setFClienteId] = useState('');
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyEnMexico();
 
   const cargar = useCallback(() => {
     setLoading(true);

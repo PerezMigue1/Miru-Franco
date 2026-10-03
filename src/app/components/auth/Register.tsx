@@ -15,6 +15,7 @@ import {
 } from '../../utils/phone';
 import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
+import { hoyEnMexico, mismoDiaHaceAnios } from '../../utils/fechaSoloDia';
 
 interface RegisterProps {
   onSwitchToLogin?: () => void;
@@ -434,18 +435,12 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           disabled={isSubmitting}
           className={inputClass(!!errors.birthDate)}
           style={inputStyle(!!errors.birthDate)}
-          max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+          max={mismoDiaHaceAnios(hoyEnMexico(), 18)}
           {...register('birthDate', {
             required: 'La fecha de nacimiento es requerida',
-            validate: (v) => {
-              // 'YYYY-MM-DD' se lee como medianoche UTC: getters UTC para no tomar el día anterior.
-              const birth = new Date(v);
-              const today = new Date();
-              const age = today.getFullYear() - birth.getUTCFullYear();
-              const monthDiff = today.getMonth() - birth.getUTCMonth();
-              const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getUTCDate()) ? age - 1 : age;
-              return actualAge >= 18 || 'Debes ser mayor de 18 años';
-            },
+            // Mayor de edad si nació a más tardar el mismo día de hace 18 años, contando "hoy" en
+            // México (sin depender de la zona del navegador). Ambos son 'YYYY-MM-DD': se comparan como texto.
+            validate: (v) => v <= mismoDiaHaceAnios(hoyEnMexico(), 18) || 'Debes ser mayor de 18 años',
           })}
         />
         {errors.birthDate && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.birthDate.message}</p>}

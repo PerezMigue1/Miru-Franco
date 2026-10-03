@@ -9,13 +9,7 @@ import Badge from '../../../../components/ui/Badge';
 import { marcarAsistencia, listarMiAsistencia, type RegistroAsistenciaApi } from '../../../../services/asistencia';
 import { obtenerMisHorasExtra, type ResumenHorasExtraApi } from '../../../../services/horasExtra';
 import { Clock3, LogIn, LogOut, TrendingUp } from 'lucide-react';
-
-const ZONA_SALON = 'America/Mexico_City';
-
-/** Mismo criterio que el backend: "hoy" en hora de México, no la del navegador. */
-function hoyMexico(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: ZONA_SALON });
-}
+import { ZONA_MEXICO, hoyEnMexico } from '../../../../utils/fechaSoloDia';
 
 function fmtMoneda(v: number): string {
   return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -25,7 +19,7 @@ function fmtHora(iso?: string | null): string {
   if (!iso) return '-';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '-';
-  return d.toLocaleTimeString('es-MX', { timeZone: ZONA_SALON, hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('es-MX', { timeZone: ZONA_MEXICO, hour: '2-digit', minute: '2-digit' });
 }
 
 function fmtFechaSolo(fecha: string): string {
@@ -61,7 +55,7 @@ export default function MiAsistenciaPage() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const registroHoy = useMemo(() => registros.find((r) => r.fecha === hoyMexico()) ?? null, [registros]);
+  const registroHoy = useMemo(() => registros.find((r) => r.fecha === hoyEnMexico()) ?? null, [registros]);
 
   const estadoBoton = useMemo(() => {
     if (!registroHoy) return 'marcar_entrada' as const;

@@ -149,7 +149,11 @@ export default function ControlCaducidadPage() {
                 <TableCell rowPadding="lg">{producto.fechaCaducidad}</TableCell>
                 <TableCell rowPadding="lg">
                   <span style={{ color: producto.diasRestantes < 0 ? 'var(--danger-texto)' : producto.diasRestantes < 30 ? 'var(--warning-texto)' : 'var(--success-texto)' }}>
-                    {producto.diasRestantes > 0 ? `${producto.diasRestantes} días` : `Vencido hace ${Math.abs(producto.diasRestantes)} días`}
+                    {producto.diasRestantes > 0
+                      ? `${producto.diasRestantes} días`
+                      : producto.diasRestantes === 0
+                        ? 'Caduca hoy'
+                        : `Vencido hace ${Math.abs(producto.diasRestantes)} días`}
                   </span>
                 </TableCell>
                 <TableCell rowPadding="lg">

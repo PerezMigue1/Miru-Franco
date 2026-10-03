@@ -4,6 +4,7 @@ import {
   type EstadoPedidoUi,
   type PedidoApi,
 } from '../services/ecommerce';
+import { diaEnMexico } from './fechaSoloDia';
 
 /** Pedidos que se consideran venta efectiva para inventario (excluye borrador, pendiente sin pago y cancelados). */
 export const ESTADOS_PEDIDO_CONTABLES_VENTA: EstadoPedidoUi[] = [
@@ -64,12 +65,13 @@ export function filtrarLineasRangoFechasInclusivo(
   });
 }
 
+/** Día y mes de México de la venta: con el día UTC, lo vendido desde las 18:00 caía en el siguiente. */
 function claveDia(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return diaEnMexico(d) ?? '';
 }
 
 function claveMes(d: Date): string {
-  return d.toISOString().slice(0, 7);
+  return claveDia(d).slice(0, 7);
 }
 
 /** Año y número de semana ISO (para agrupar). */

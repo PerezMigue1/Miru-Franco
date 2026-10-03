@@ -16,6 +16,7 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import { getCategoryColor } from '../../../utils/categoryColors';
 import { BadgeDollarSign, Receipt, ShoppingCart } from 'lucide-react';
+import { hoyEnMexico } from '../../../utils/fechaSoloDia';
 
 interface VentaFila {
   id: number;
@@ -92,7 +93,7 @@ export default function VentaLocalPage() {
   const [ventaDetalle, setVentaDetalle] = useState<VentaFila | null>(null);
 
   const cargar = () => {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = hoyEnMexico();
     setLoading(true);
     listarVentas({ desde: hoy })
       .then(({ data }) => setVentasHoy(data.map(mapearVenta)))

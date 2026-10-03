@@ -14,6 +14,7 @@ import Textarea from '../../../../components/ui/Textarea';
 import { listarSeguimientos, crearSeguimiento, SeguimientoApi } from '../../../../services/seguimientos';
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { AlertTriangle, ClipboardCheck, ThumbsUp } from 'lucide-react';
+import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
 
 function fmt(iso?: string | null): string {
   if (!iso) return '-';
@@ -36,7 +37,7 @@ export default function SeguimientoPostServicioPage() {
   const [fUsuarioId, setFUsuarioId] = useState('');
   const [fCitaId, setFCitaId] = useState('');
   const [fNotas, setFNotas] = useState('');
-  const [fFecha, setFFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fFecha, setFFecha] = useState(() => hoyEnMexico());
   const [fSatisfaccion, setFSatisfaccion] = useState('');
   const [fRequiereAccion, setFRequiereAccion] = useState('false');
 
@@ -55,7 +56,7 @@ export default function SeguimientoPostServicioPage() {
   }, [cargar]);
 
   const reset = () => {
-    setFUsuarioId(''); setFCitaId(''); setFNotas(''); setFFecha(new Date().toISOString().slice(0, 10));
+    setFUsuarioId(''); setFCitaId(''); setFNotas(''); setFFecha(hoyEnMexico());
     setFSatisfaccion(''); setFRequiereAccion('false'); setFormError(null);
   };
 

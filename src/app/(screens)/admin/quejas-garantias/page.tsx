@@ -14,6 +14,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
 import { AlertTriangle, CheckCircle2, ClipboardList, Inbox } from 'lucide-react';
+import { diaEnMexico } from '../../../utils/fechaSoloDia';
 
 interface CasoFila {
   id: number;
@@ -37,7 +38,7 @@ function mapearQueja(q: QuejaApi): CasoFila {
     id: q.id,
     cliente: q.clienteNombre ?? '-',
     servicio: '-',
-    fecha: q.creadoEn ? q.creadoEn.slice(0, 10) : '-',
+    fecha: diaEnMexico(q.creadoEn) ?? '-',
     tipo: 'Queja',
     estado: ESTADO_UI[q.estado] ?? q.estado,
     descripcion: q.descripcion,

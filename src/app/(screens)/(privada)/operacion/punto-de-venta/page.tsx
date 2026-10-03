@@ -19,6 +19,7 @@ import { usePermisos } from '../../../../utils/permisos';
 import { etiquetaEstadoVenta, varianteEstadoVenta } from '../../../../utils/estados';
 import { generarTicketVentaPdf } from '../../../../utils/ticketVenta';
 import { ShoppingCart, Trash2, AlertTriangle, BadgeDollarSign, Download, CheckCircle2 } from 'lucide-react';
+import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
 
 interface LineaTicket {
   key: string;
@@ -92,7 +93,7 @@ export default function PuntoDeVentaPage() {
   const [savingCancel, setSavingCancel] = useState(false);
 
   const cargarVentas = useCallback(() => {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = hoyEnMexico();
     setLoadingVentas(true);
     setErrorVentas(null);
     listarVentas({ desde: hoy, limit: 100 })
