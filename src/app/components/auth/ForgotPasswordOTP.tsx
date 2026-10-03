@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, CircleCheck, CircleX, Timer } from 'lucide-react';
+import { MENSAJE_SIN_CONEXION } from '../../utils/errorRed';
 
 interface ForgotPasswordOTPProps {
   email: string;
@@ -110,7 +111,7 @@ export default function ForgotPasswordOTP({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setMensaje('❌ Error de conexión al verificar el código');
-      setError('No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta de nuevo.');
+      setError(MENSAJE_SIN_CONEXION);
       console.error('Error verificando código de recuperación:', errorMessage);
     } finally {
       setIsLoading(false);
@@ -151,7 +152,7 @@ export default function ForgotPasswordOTP({
       } else {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
         setMensaje('❌ Error de conexión al reenviar el código');
-        setError('No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta de nuevo.');
+        setError(MENSAJE_SIN_CONEXION);
         console.error('Error reenviando código de recuperación:', errorMessage);
       }
     } finally {

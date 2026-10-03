@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import {
   PieChart,
@@ -58,16 +58,21 @@ import {
 // Paleta de gráficos derivada de la marca — orden fijo, nunca cíclico.
 const PALETA_GRAFICOS = ['#710014', '#9f6d1f', '#A64B63', '#6E7D57', '#D98E04'];
 
+const CONSULTA_MOVIMIENTO_REDUCIDO = '(prefers-reduced-motion: reduce)';
+
+function suscribirMovimientoReducido(avisar: () => void) {
+  const mq = window.matchMedia(CONSULTA_MOVIMIENTO_REDUCIDO);
+  mq.addEventListener('change', avisar);
+  return () => mq.removeEventListener('change', avisar);
+}
+
+/** false en el servidor y al hidratar; luego la preferencia del sistema, y se actualiza si cambia. */
 function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReduced(mq.matches);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return reduced;
+  return useSyncExternalStore(
+    suscribirMovimientoReducido,
+    () => window.matchMedia(CONSULTA_MOVIMIENTO_REDUCIDO).matches,
+    () => false,
+  );
 }
 
 function precioANumero(precio: string | undefined): number {

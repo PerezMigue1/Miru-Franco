@@ -85,7 +85,7 @@ function buildCsp(scriptSrc: string): string {
  * img-src sin esquema comodín (https:) ni *.host (reduce alertas ZAP "CSP: Wildcard").
  * style-src mantiene 'unsafe-inline' por uso de style={{}} en la app (ZAP puede seguir avisando ahí).
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === 'development') {
     return NextResponse.next();
   }

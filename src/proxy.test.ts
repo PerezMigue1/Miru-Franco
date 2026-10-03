@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { NextRequest } from 'next/server';
 import { describe, expect, it } from 'vitest';
-import { middleware } from './middleware';
+import { proxy } from './proxy';
 
 const APP_DIR = join(__dirname, 'app');
 
@@ -38,7 +38,7 @@ function scriptSrc(csp: string): string[] {
   return directiva ? directiva.split(/\s+/).slice(1) : [];
 }
 
-describe('CSP del middleware', () => {
+describe('CSP del proxy (antes middleware)', () => {
   const urls = urlsDePaginas();
 
   it('encuentra las páginas de la app', () => {
@@ -49,7 +49,7 @@ describe('CSP del middleware', () => {
     const conUnsafeInline: string[] = [];
     const sinNonce: string[] = [];
     for (const url of urls) {
-      const csp = middleware(new NextRequest(`https://www.mirufranco.com${url}`)).headers.get('Content-Security-Policy') ?? '';
+      const csp = proxy(new NextRequest(`https://www.mirufranco.com${url}`)).headers.get('Content-Security-Policy') ?? '';
       const fuentes = scriptSrc(csp);
       if (fuentes.includes("'unsafe-inline'")) conUnsafeInline.push(url);
       if (!fuentes.some((f) => f.startsWith("'nonce-"))) sinNonce.push(url);

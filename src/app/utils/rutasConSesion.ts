@@ -1,6 +1,6 @@
 /**
  * Rutas de la clienta que exigen sesión. La sesión es una cookie httpOnly del dominio del API,
- * así que el middleware de Next no la ve: la comprobación es en el cliente
+ * así que el proxy de Next (src/proxy.ts) no la ve: la comprobación es en el cliente
  * (SesionClienteGuard, montado en el layout de (privada)).
  *
  * Todo lo demás bajo /cliente es público: tienda y detalle de producto, servicios y su detalle,

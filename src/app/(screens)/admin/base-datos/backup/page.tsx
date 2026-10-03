@@ -8,7 +8,6 @@ import Button from '../../../../components/ui/Button';
 import Select from '../../../../components/ui/Select';
 import Badge from '../../../../components/ui/Badge';
 import { Clock3, Database, Menu, Save, ShieldAlert, Timer, X } from 'lucide-react';
-import JSZip from 'jszip';
 import { exportarDirecto, listarTablasDirectas } from '../../../../services/database';
 
 type FormatoBackup = 'json' | 'sql' | 'csv';
@@ -199,6 +198,9 @@ export default function BackupPage() {
         tamano = res.blob.size;
         await descargarArchivo(res.blob, res.filename);
       } else {
+        // JSZip se carga solo al generar el ZIP: arrastra el polyfill de util, que intenta un eval
+        // bloqueado por la CSP. Importado arriba, se ejecutaba (y avisaba) con solo abrir la página.
+        const { default: JSZip } = await import('jszip');
         const zip = new JSZip();
         for (const tabla of tablasABackup) {
           const res = await exportarDirecto(tabla, formatoActual);

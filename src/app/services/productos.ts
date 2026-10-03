@@ -4,6 +4,7 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { imagenProductoMostrable, normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
+import { mensajeDeError } from '../utils/errorRed';
 
 /** Producto normalizado para la UI (catálogo y detalle) */
 export interface Producto {
@@ -318,7 +319,7 @@ export async function getProductosSinRedirigir(opts?: GetProductosSinRedirigirOp
     }
     return { data: list.map(normalizarProducto), error: null };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al conectar con el servidor';
+    const msg = mensajeDeError(e, 'Error al conectar con el servidor');
     return { data: [], error: msg };
   }
 }

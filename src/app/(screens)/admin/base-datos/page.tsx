@@ -27,7 +27,6 @@ import {
   type ModoImportacion,
   type TablaImportable,
   type ResultadoTruncate,
-  type FormatoDiagrama,
   type OpcionesExportDirecto,
   type ActivityRowDirecta,
   type LockRowDirecta,
@@ -40,7 +39,6 @@ import {
 } from '../../../services/database';
 import { mermaidToSvg, svgToPngBlob } from '../../../utils/mermaidRender';
 import { enParaleloLimitado } from '../../../utils/enParaleloLimitado';
-import JSZip from 'jszip';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
 import { getUsuarios, getUsuarioById, type Usuario } from '../../../services/usuarios';
 import { getServicios, type Servicio } from '../../../services/servicios';
@@ -108,7 +106,10 @@ const FORMATOS_EXPORT = [
   { value: 'json', label: 'JSON' },
 ] as const;
 
-const FORMATOS_DIAGRAMA: { value: FormatoDiagrama; label: string }[] = [
+/** Formatos que ofrece la página: el backend solo da Mermaid; SVG y PNG se generan en el navegador. */
+type FormatoDescargaDiagrama = 'mermaid' | 'svg' | 'png';
+
+const FORMATOS_DIAGRAMA: { value: FormatoDescargaDiagrama; label: string }[] = [
   { value: 'mermaid', label: 'Mermaid (.mmd)' },
   { value: 'svg', label: 'SVG' },
   { value: 'png', label: 'PNG' },
@@ -251,7 +252,7 @@ export default function BaseDatosPage() {
 
   
   // ── Diagrama ──
-  const [formatoDiagrama, setFormatoDiagrama] = useState<FormatoDiagrama>('mermaid');
+  const [formatoDiagrama, setFormatoDiagrama] = useState<FormatoDescargaDiagrama>('mermaid');
   const [descargandoDiagrama, setDescargandoDiagrama] = useState(false);
   const [errorDiagrama, setErrorDiagrama] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -510,6 +511,9 @@ export default function BaseDatosPage() {
         }
       }
       if (archivos.length > 1) {
+        // JSZip se carga solo al generar el ZIP: arrastra el polyfill de util, que intenta un eval
+        // bloqueado por la CSP. Importado arriba, se ejecutaba (y avisaba) con solo abrir la página.
+        const { default: JSZip } = await import('jszip');
         const zip = new JSZip();
         for (const { filename, blob } of archivos) zip.file(filename, blob);
         const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -2256,7 +2260,7 @@ export default function BaseDatosPage() {
                     <Select
                       options={FORMATOS_DIAGRAMA.map((f) => ({ value: f.value, label: f.label }))}
                       value={formatoDiagrama}
-                      onChange={(e) => setFormatoDiagrama(e.target.value as FormatoDiagrama)}
+                      onChange={(e) => setFormatoDiagrama(e.target.value as FormatoDescargaDiagrama)}
                     />
                   </div>
                   <div className="flex flex-wrap gap-3">

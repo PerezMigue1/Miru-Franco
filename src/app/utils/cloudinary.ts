@@ -13,6 +13,16 @@
  */
 
 import { comprimirImagenSiSupera, CLOUDINARY_SUBIDA_MAX_BYTES } from './comprimirImagenCliente';
+import { MENSAJE_SIN_CONEXION, esErrorDeRed } from './errorRed';
+
+/** POST a Cloudinary; si falla la red, un mensaje para el usuario en vez de "Failed to fetch". */
+async function enviarACloudinary(formData: FormData): Promise<Response> {
+  try {
+    return await fetch(getCloudinaryUploadUrl(), { method: 'POST', body: formData });
+  } catch (e) {
+    throw esErrorDeRed(e) ? new Error(MENSAJE_SIN_CONEXION) : e;
+  }
+}
 
 function getCloudinaryUploadUrl(): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
@@ -48,10 +58,7 @@ export async function subirImagenCloudinary(
   formData.append('file', listo);
   formData.append('upload_preset', preset);
 
-  const res = await fetch(getCloudinaryUploadUrl(), {
-    method: 'POST',
-    body: formData,
-  });
+  const res = await enviarACloudinary(formData);
 
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
@@ -103,14 +110,11 @@ export async function subirPdfCloudinary(
   formData.append('file', file);
   formData.append('upload_preset', preset);
 
-  const res = await fetch(getCloudinaryUploadUrl(), {
-    method: 'POST',
-    body: formData,
-  });
+  const res = await enviarACloudinary(formData);
 
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-    let raw = err?.error?.message || 'Error al subir el PDF';
+    const raw = err?.error?.message || 'Error al subir el PDF';
     if (
       typeof raw === 'string' &&
       (raw.includes('whitelisted') || raw.includes('unsigned') || raw.includes('Upload preset'))

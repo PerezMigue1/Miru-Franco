@@ -5,6 +5,7 @@ import { hasSession, clearAuthData, sesionPorRenovar } from '../utils/security';
 import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 import { rutaLogin } from '../utils/rutasConSesion';
+import { MENSAJE_SIN_CONEXION, esErrorDeRed } from '../utils/errorRed';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -396,12 +397,14 @@ class ApiClient {
         console.error(`[API] Error en ${url}:`, error);
       }
 
-      // Mejorar mensaje de error para "Failed to fetch" (problemas de CORS o conexión)
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        const enhancedError = new Error(
-          'No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet e intenta de nuevo más tarde.'
-        ) as Error & { originalError?: Error; url?: string; isNetworkError?: boolean };
-        enhancedError.originalError = error;
+      // Fallo de red ("Failed to fetch" en Chrome, "Load failed" en Safari, "NetworkError…" en Firefox)
+      if (esErrorDeRed(error)) {
+        const enhancedError = new Error(MENSAJE_SIN_CONEXION) as Error & {
+          originalError?: Error;
+          url?: string;
+          isNetworkError?: boolean;
+        };
+        enhancedError.originalError = error as Error;
         enhancedError.url = url;
         enhancedError.isNetworkError = true;
         throw enhancedError;

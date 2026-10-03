@@ -5,12 +5,14 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useRef,
   useState,
   startTransition,
   ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
 import { hasSession } from '../utils/security';
+import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
 import {
   listarCarrito,
   crearCarritoItem,
@@ -21,6 +23,14 @@ import {
 import { imagenProductoMostrable } from '../utils/normalizarUrlImagen';
 
 const CART_STORAGE_KEY = 'miru-cart';
+
+/** Con sesión, el carrito del servidor se vuelve a pedir como mucho cada 60 s (al navegar o al volver a la pestaña). */
+const RECARGA_MINIMA_MS = 60_000;
+
+/** /admin y /operacion no usan el carrito: ahí no se pide al servidor ni se toca el del invitado. */
+function esPanelInterno(ruta: string): boolean {
+  return /^\/(admin|operacion)(\/|$)/.test(ruta);
+}
 
 export interface CartItem {
   /** `srv-{id}` servidor o `local-{productoId}-{presentacionId}` invitado */
@@ -140,6 +150,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** Si ya se cargó el carrito (servidor o localStorage), con qué estado de sesión y cuándo. */
+  const cargadoRef = useRef(false);
+  const sesionCargadaRef = useRef<boolean | null>(null);
+  const ultimaCargaRef = useRef(0);
 
   // Las actualizaciones de la carga van en transición: corren al montar, mientras el Suspense de la
   // página (loading.tsx) puede seguir sin hidratar. Una actualización urgente de este contexto (Header
@@ -148,6 +162,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const refreshCart = useCallback(async () => {
     if (typeof window === 'undefined') return;
     const conSesion = hasSession();
+    sesionCargadaRef.current = conSesion;
+    ultimaCargaRef.current = Date.now();
+    cargadoRef.current = true;
     if (conSesion) {
       startTransition(() => setLoading(true));
       try {
@@ -181,27 +198,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      void refreshCart();
-      startTransition(() => setMounted(true));
-    });
+    queueMicrotask(() => startTransition(() => setMounted(true)));
+  }, []);
+
+  /**
+   * Se pide al cargar y cuando cambia la sesión (login, logout: tras el login se fusiona el carrito
+   * de invitado). Fuera de eso, con sesión, como mucho cada 60 s. Antes se pedía en cada navegación
+   * y cada vez que la ventana recuperaba el foco, también en /admin y /operacion.
+   */
+  const recargarSiHaceFalta = useCallback(() => {
+    if (esPanelInterno(window.location.pathname)) return;
+    const conSesion = hasSession();
+    const cambioLaSesion = sesionCargadaRef.current !== conSesion;
+    const vencido = conSesion && Date.now() - ultimaCargaRef.current > RECARGA_MINIMA_MS;
+    if (cambioLaSesion || vencido) void refreshCart();
   }, [refreshCart]);
 
-  /** Tras login y `router.push`, el token ya existe: volver a cargar / fusionar carrito. */
   useEffect(() => {
-    void refreshCart();
-  }, [pathname, refreshCart]);
+    recargarSiHaceFalta();
+  }, [pathname, recargarSiHaceFalta]);
 
   useEffect(() => {
-    const onFocus = () => {
-      if (hasSession()) void refreshCart();
+    const alVolverALaPestana = () => {
+      if (document.visibilityState === 'visible') recargarSiHaceFalta();
     };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [refreshCart]);
+    document.addEventListener('visibilitychange', alVolverALaPestana);
+    window.addEventListener(MIRU_USER_STORAGE_UPDATED, recargarSiHaceFalta);
+    return () => {
+      document.removeEventListener('visibilitychange', alVolverALaPestana);
+      window.removeEventListener(MIRU_USER_STORAGE_UPDATED, recargarSiHaceFalta);
+    };
+  }, [recargarSiHaceFalta]);
 
   useEffect(() => {
-    if (!mounted) return;
+    // Sin haber cargado el carrito (p. ej. en /admin) no se guarda: se borraría el del invitado.
+    if (!mounted || !cargadoRef.current) return;
     if (!hasSession()) saveToStorage(items);
   }, [items, mounted]);
 
