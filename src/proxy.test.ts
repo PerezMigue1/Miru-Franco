@@ -42,7 +42,7 @@ describe('CSP del proxy (antes middleware)', () => {
   const urls = urlsDePaginas();
 
   it('encuentra las páginas de la app', () => {
-    expect(urls).toEqual(expect.arrayContaining(['/home', '/contacto', '/sobre-nosotros', '/terminos', '/login']));
+    expect(urls).toEqual(expect.arrayContaining(['/home', '/contacto', '/sobre-nosotros', '/terminos-y-condiciones', '/login']));
   });
 
   it("ninguna página recibe 'unsafe-inline' en script-src: todas llevan nonce", () => {

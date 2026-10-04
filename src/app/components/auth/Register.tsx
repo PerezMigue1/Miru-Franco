@@ -681,7 +681,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           />
           <span className="ml-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
             Acepto los{' '}
-            <a href="/terminos" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4" style={{ color: 'var(--menu-texto-principal)' }} onClick={(e) => e.stopPropagation()}>
+            <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4" style={{ color: 'var(--menu-texto-principal)' }} onClick={(e) => e.stopPropagation()}>
               Términos y Condiciones
             </a>
           </span>
@@ -801,6 +801,14 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               </span>
             </button>
           </div>
+          {currentStep > 1 && (
+            <p className="mf-leyenda-terminos">
+              Al crear tu cuenta aceptas los{' '}
+              <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">
+                Términos y Condiciones<span className="sr-only"> (se abre en otra pestaña)</span>
+              </a>
+            </p>
+          )}
         </form>
 
         <div className="mt-6 text-center">

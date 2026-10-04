@@ -226,6 +226,302 @@ html:has(.superficie-cliente) {
 }
 
 /* ==========================================================================
+   Términos y Condiciones (/terminos-y-condiciones): lectura larga con índice.
+   Vino como acento en claro; en oscuro el vino cae a ~1.5:1, así que el acento pasa al oro de texto.
+   El hover de marca (--hover) va en subrayados y marcadores, no en el texto: como color de texto
+   pequeño queda por debajo de 4.5:1 sobre lino y sobre carbón.
+   ========================================================================== */
+.mf-terminos-pagina {
+  --terminos-acento: var(--botones-principales);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--fondo-general);
+}
+.dark .mf-terminos-pagina {
+  --terminos-acento: var(--oro-texto);
+}
+.mf-terminos {
+  flex: 1;
+  margin-top: var(--mf-header-offset, 104px);
+  padding-block: 2.5rem 5rem;
+}
+.mf-terminos__marco {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+.mf-terminos__cabecera {
+  position: relative;
+  max-width: 68ch;
+  margin-bottom: 2rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--mf-linea);
+}
+/* Filete dorado sobre el divisor: el detalle de joyería de la marca. */
+.mf-terminos__cabecera::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 4rem;
+  height: 1px;
+  background-color: var(--logo-branding);
+}
+.mf-terminos__cabecera h1 {
+  color: var(--menu-texto-principal);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.mf-terminos__marca {
+  margin-top: 0.5rem;
+  font-family: var(--font-family-serif);
+  font-size: 1.125rem;
+  font-style: italic;
+  color: var(--terminos-acento);
+}
+.mf-terminos__fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--encabezados-alterno);
+}
+.mf-terminos__fecha svg {
+  flex-shrink: 0;
+  color: var(--logo-branding);
+}
+.mf-terminos__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Índice: fijo al costado desde 1024px; debajo, un plegable nativo antes del texto. */
+.mf-terminos__indice {
+  display: none;
+}
+.mf-terminos__indice-titulo {
+  margin-bottom: 0.75rem;
+  font-family: var(--font-family-serif);
+  font-size: 1rem;
+  color: var(--menu-texto-principal);
+}
+.mf-terminos__indice-lista a {
+  display: block;
+  padding: 0.375rem 0 0.375rem 0.75rem;
+  border-left: 1px solid var(--mf-linea-fuerte);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--encabezados-alterno);
+  transition: color var(--mf-dur-hover, 200ms) ease, border-color var(--mf-dur-hover, 200ms) ease;
+}
+.mf-terminos__indice-lista a:hover {
+  color: var(--menu-texto-principal);
+  border-left-color: var(--hover);
+}
+.mf-terminos__indice-lista a:focus-visible,
+.mf-terminos__plegable summary:focus-visible,
+.mf-terminos__texto a:focus-visible {
+  outline: 2px solid var(--mf-foco);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.mf-terminos__num {
+  color: var(--terminos-acento);
+  font-variant-numeric: tabular-nums;
+}
+.mf-terminos__plegable {
+  margin-bottom: 2rem;
+  border-radius: 14px;
+  background-color: var(--fondos-suaves);
+  box-shadow: var(--mf-sombra-1);
+}
+.mf-terminos__plegable summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3rem;
+  padding: 0 1rem;
+  font-weight: 600;
+  color: var(--menu-texto-principal);
+  cursor: pointer;
+  list-style: none;
+}
+.mf-terminos__plegable summary::-webkit-details-marker {
+  display: none;
+}
+.mf-terminos__chevron {
+  flex-shrink: 0;
+  transition: transform 200ms var(--mf-ease-out);
+}
+.mf-terminos__plegable[open] .mf-terminos__chevron {
+  transform: rotate(180deg);
+}
+.mf-terminos__plegable .mf-terminos__indice-lista {
+  padding: 0 0.5rem 0.5rem;
+}
+.mf-terminos__plegable .mf-terminos__indice-lista a {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  border-left: 0;
+  border-top: 1px solid var(--mf-linea);
+  font-size: 0.9375rem;
+}
+@media (min-width: 1024px) {
+  .mf-terminos {
+    padding-top: 3.5rem;
+  }
+  .mf-terminos__cabecera {
+    margin-bottom: 3rem;
+  }
+  .mf-terminos__cuerpo {
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 4rem;
+  }
+  .mf-terminos__indice {
+    display: block;
+    position: sticky;
+    top: calc(var(--mf-header-offset, 104px) + 1.5rem);
+    align-self: start;
+    max-height: calc(100dvh - var(--mf-header-offset, 104px) - 3rem);
+    overflow-y: auto;
+  }
+  .mf-terminos__plegable {
+    display: none;
+  }
+}
+
+/* Texto: .mf-legal da la medida (68ch) y el interlineado; aquí el ritmo de secciones y listas. */
+.mf-terminos__intro {
+  margin-bottom: 2.5rem;
+  font-size: 1.0625rem;
+  color: var(--menu-texto-principal);
+}
+.mf-terminos__seccion {
+  scroll-margin-top: calc(var(--mf-header-offset, 104px) + 1.5rem);
+}
+.mf-terminos__seccion + .mf-terminos__seccion {
+  margin-top: 3rem;
+}
+.mf-terminos__texto h2 {
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin-bottom: 1rem;
+}
+.mf-terminos__seccion > * + * {
+  margin-top: 1rem;
+}
+.mf-terminos__seccion > h3 {
+  margin-top: 2rem;
+  margin-bottom: -0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--menu-texto-principal);
+}
+.mf-terminos__texto ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.mf-terminos__texto ol > li + li {
+  margin-top: 0.625rem;
+}
+.mf-terminos__texto ol > li::marker {
+  color: var(--terminos-acento);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.mf-terminos__texto ul {
+  list-style: disc;
+  margin-top: 0.5rem;
+  padding-left: 1.25rem;
+}
+.mf-terminos__texto ul > li + li {
+  margin-top: 0.25rem;
+}
+.mf-terminos__texto ul > li::marker {
+  color: var(--logo-branding);
+}
+.mf-terminos__texto strong {
+  font-weight: 600;
+  color: var(--menu-texto-principal);
+}
+.mf-terminos__texto a {
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--mf-dur-hover, 200ms) ease;
+}
+.mf-terminos__texto a:hover {
+  text-decoration-color: var(--hover);
+}
+
+/* Ficha de contacto (sección 1) dentro de la Card elevada. */
+.mf-terminos__contacto dl {
+  display: grid;
+  gap: 1.25rem 2rem;
+}
+@media (min-width: 640px) {
+  .mf-terminos__contacto dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.mf-terminos__contacto dt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--menu-texto-principal);
+}
+.mf-terminos__contacto dt svg {
+  flex-shrink: 0;
+  color: var(--terminos-acento);
+}
+.mf-terminos__contacto dd {
+  margin-top: 0.25rem;
+  padding-left: calc(18px + 0.5rem);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--encabezados-alterno);
+  overflow-wrap: anywhere;
+}
+/* Leyenda bajo el botón final del registro y del checkout (sin casilla: solo informa y enlaza). */
+.mf-leyenda-terminos {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--encabezados-alterno);
+}
+.mf-leyenda-terminos a {
+  font-weight: 600;
+  color: var(--menu-texto-principal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: text-decoration-color var(--mf-dur-hover, 200ms) ease;
+}
+.mf-leyenda-terminos a:hover {
+  text-decoration-color: var(--hover);
+}
+.mf-leyenda-terminos a:focus-visible {
+  outline: 2px solid var(--mf-foco);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-leyenda-terminos a,
+  .mf-terminos__chevron,
+  .mf-terminos__indice-lista a,
+  .mf-terminos__texto a {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
    Sello de confirmación (cita confirmada, pedido realizado): el único momento de
    celebración del flujo. Anillo dorado que se traza y check que aparece con un leve rebote.
    ========================================================================== */

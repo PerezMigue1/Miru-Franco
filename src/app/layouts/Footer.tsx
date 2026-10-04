@@ -189,10 +189,10 @@ export default function Footer() {
             © {new Date().getFullYear()} Mirú Franco. Todos los derechos reservados.
           </p>
           <div className="flex gap-6 text-sm flex-wrap justify-center">
-            <Link href="/terminos" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
+            <Link href="/terminos-y-condiciones" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Términos y Condiciones
             </Link>
-            <Link href="/terminos" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
+            <Link href="/terminos-y-condiciones#datos-personales" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Política de Privacidad
             </Link>
           </div>

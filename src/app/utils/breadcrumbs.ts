@@ -120,7 +120,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
   if (first === 'register') return [...base, { label: 'Registro' }];
   if (first === 'forgot-password') return [...base, { label: 'Recuperar contraseña' }];
   if (first === 'reset-password') return [...base, { label: 'Restablecer contraseña' }];
-  if (first === 'terminos') return [...base, { label: 'Términos y condiciones' }];
+  if (first === 'terminos-y-condiciones') return [...base, { label: 'Términos y Condiciones' }];
   if (first === '403') return [...base, { label: 'Acceso denegado' }];
   if (first === '400') return [...base, { label: 'Solicitud incorrecta' }];
   if (first === '500') return [...base, { label: 'Error del servidor' }];

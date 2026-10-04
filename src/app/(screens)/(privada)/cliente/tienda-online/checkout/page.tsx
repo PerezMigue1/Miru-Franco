@@ -528,6 +528,14 @@ export default function CheckoutPage() {
                 </span>
               </Button>
             </div>
+            {paso === 3 && (
+              <p className="mf-leyenda-terminos">
+                Al confirmar tu pedido aceptas los{' '}
+                <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">
+                  Términos y Condiciones<span className="sr-only"> (se abre en otra pestaña)</span>
+                </a>
+              </p>
+            )}
           </div>
 
           <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
