@@ -286,6 +286,8 @@ export default function UserProfile() {
     if (c.id === 'operacion') return ['estilista', 'empleado', 'becario'].includes(normalizedRole);
     // Oculto: la ruta /cliente/comunicaciones todavía no existe (llevaba a un 404). No borrar.
     if (c.id === 'comunicaciones') return false;
+    // Oculto: /cliente/promociones es una maqueta sin backend y redirige a /perfil (next.config). No borrar.
+    if (c.id === 'promociones') return false;
     return true;
   });
 

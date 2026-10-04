@@ -949,6 +949,9 @@ export async function obtenerDevolucion(id: number): Promise<DevolucionApi | nul
   return o ? normalizarDevolucion(o) : null;
 }
 
+export type TipoDevolucion = 'cambio' | 'reembolso';
+export type CausaDevolucion = 'sellado_sin_abrir' | 'defecto_fabrica' | 'producto_distinto' | 'sin_existencias' | 'cancelacion_antes_listo';
+
 export interface CrearDevolucionPayload {
   pedidoId: number;
   motivo?: string;
@@ -956,6 +959,10 @@ export interface CrearDevolucionPayload {
   monto?: number;
   pedidoItemId?: number;
   pagoId?: number;
+  /** Con tipo y causa, el backend aplica la política de cambios y reembolsos de los términos. */
+  tipo?: TipoDevolucion;
+  causa?: CausaDevolucion;
+  sellado?: boolean;
 }
 
 export async function crearDevolucion(payload: CrearDevolucionPayload): Promise<DevolucionApi> {

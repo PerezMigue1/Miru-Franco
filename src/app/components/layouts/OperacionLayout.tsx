@@ -7,7 +7,7 @@ import { normalizarUsuarioAlmacenado } from '../../utils/normalizarUsuarioAlmace
 import { emitMiruUserStorageUpdated } from '../../utils/userStorageSync';
 import { api } from '../../services/auth';
 import { STAFF_ROLES, getRolFromUser } from '../../utils/adminAuth';
-import { usePermisos, getPermisosFromUser, evaluarPermiso } from '../../utils/permisos';
+import { usePermisos, getPermisosFromUser, evaluarPermiso, PERMISOS_COMISIONES } from '../../utils/permisos';
 import PanelShell from './PanelShell';
 import PanelVerificando from './PanelVerificando';
 import {
@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Clock3,
+  HandCoins,
   ImagePlus,
   LayoutDashboard,
   Receipt,
@@ -34,8 +35,10 @@ interface OperacionLayoutProps {
    * Clave de `permisos_rol` que exige esta página (defensa en profundidad: bloquea el
    * acceso directo por URL además de que el enlace ya esté oculto en el sidebar).
    * Sin esta prop, el layout se comporta exactamente igual que antes de esta fase.
+   * Con una lista basta con tener cualquiera de las claves (pasa una constante del módulo, no un
+   * arreglo literal: la prop entra en las dependencias del efecto de verificación).
    */
-  permisoRequerido?: string;
+  permisoRequerido?: string | readonly string[];
 }
 
 /**
@@ -57,7 +60,7 @@ interface OperacionLayoutProps {
  * Segmentación de clientes exige `clientes:lectura` — mismo permiso que ya gatea el
  * endpoint `/api/clientes/segmentacion` en el backend.
  */
-const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: string }[] = [
+const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: string | readonly string[] }[] = [
   { label: 'Panel de operación', href: '/operacion', icon: LayoutDashboard },
   { label: 'Ejecución de servicios', href: '/operacion/ejecucion-servicios', icon: Scissors },
   { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
@@ -72,6 +75,7 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Mi asistencia', href: '/operacion/mi-asistencia', icon: Clock3 },
   { label: 'Gestión de equipo', href: '/operacion/gestion-equipo', icon: UserCog, permiso: 'asistencia:gestionar' },
   { label: 'Subir imágenes', href: '/operacion/subir-imagenes', icon: ImagePlus },
+  { label: 'Comisiones', href: '/operacion/comisiones', icon: HandCoins, permiso: PERMISOS_COMISIONES },
 ];
 
 function esActivo(pathname: string | null, href: string): boolean {

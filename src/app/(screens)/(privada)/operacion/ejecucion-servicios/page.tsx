@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { listarCitas, checkInCita, checkOutCita, registrarMateriales, CitaApi } from '../../../../services/citas';
 import { getProductosSinRedirigir } from '../../../../services/productos';
-import { getServicios, Servicio } from '../../../../services/servicios';
 import Modal from '../../../../components/ui/Modal';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
@@ -17,10 +17,13 @@ import Textarea from '../../../../components/ui/Textarea';
 import { Wrench, Clock3, CheckCircle2 } from 'lucide-react';
 import { usePermisos } from '../../../../utils/permisos';
 import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCitas';
+import RegistrarSinCita from '../../../../components/operacion/RegistrarSinCita';
+import { showToast } from '../../../../utils/toast';
 
 interface ServicioFila {
   id: number;
   cliente: string;
+  sinCita: boolean;
   servicio: string;
   especialista: string;
   especialistaId?: string;
@@ -49,6 +52,7 @@ function mapearCita(c: CitaApi): ServicioFila {
   return {
     id: c.id,
     cliente: c.clienteNombre ?? '-',
+    sinCita: c.origen === 'sin_cita',
     servicio: c.servicioNombre ?? '-',
     especialista: c.especialistaNombre ?? '-',
     especialistaId: c.especialistaId,
@@ -81,14 +85,13 @@ interface PresentacionOpcion {
 export default function EjecucionServiciosPage() {
   // El becario solo atiende sus citas asignadas: en las demás no ve los botones (el backend responde 403).
   const { tienePermiso } = usePermisos();
+  const router = useRouter();
   const miId = idUsuarioSesion();
   const [servicios, setServicios] = useState<ServicioFila[]>([]);
   const [citasHoy, setCitasHoy] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [catalogoServicios, setCatalogoServicios] = useState<Servicio[]>([]);
-  const [catalogoError, setCatalogoError] = useState(false);
 
   // Modal materiales
   const [isModalMaterialesOpen, setIsModalMaterialesOpen] = useState(false);
@@ -151,12 +154,6 @@ export default function EjecucionServiciosPage() {
 
   useEffect(() => { cargar(); }, []);
 
-  useEffect(() => {
-    getServicios()
-      .then(({ data }) => setCatalogoServicios(data))
-      .catch(() => setCatalogoError(true));
-  }, []);
-
   const handleCheckIn = async (id: number) => {
     setSavingId(id);
     setError(null);
@@ -168,7 +165,13 @@ export default function EjecucionServiciosPage() {
   const handleCheckOut = async (id: number) => {
     setSavingId(id);
     setError(null);
-    try { await checkOutCita(id); cargar(); }
+    try {
+      await checkOutCita(id);
+      // Quien cobra pasa directo al punto de venta con la cita precargada; quien no, la deja por cobrar.
+      if (tienePermiso('ventas:escritura')) { router.push(`/operacion/punto-de-venta?citaId=${id}`); return; }
+      showToast('Servicio finalizado: queda en servicios por cobrar', 'success');
+      cargar();
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo finalizar el servicio'); }
     finally { setSavingId(null); }
   };
@@ -215,7 +218,12 @@ export default function EjecucionServiciosPage() {
         <Table headers={['Cliente', 'Servicio', 'Especialista', 'Inicio', 'Fin', 'Duración', 'Productos', 'Estado', 'Acciones']} headerSutil>
           {servicios.map((servicio) => (
             <TableRow key={servicio.id}>
-              <TableCell rowPadding="lg">{servicio.cliente}</TableCell>
+              <TableCell rowPadding="lg">
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  {servicio.cliente}
+                  {servicio.sinCita && <Badge variant="default" size="sm">Sin cita</Badge>}
+                </span>
+              </TableCell>
               <TableCell rowPadding="lg">{servicio.servicio}</TableCell>
               <TableCell rowPadding="lg">{servicio.especialista}</TableCell>
               <TableCell rowPadding="lg">{servicio.inicio}</TableCell>
@@ -261,36 +269,20 @@ export default function EjecucionServiciosPage() {
             </TableRow>
           ))}
         </Table>
+        {!loading && servicios.length === 0 && (
+          <p className="py-6 text-center text-sm text-encabezados-alterno">No hay servicios pendientes ni en curso.</p>
+        )}
         </Card>
 
-        <Card variant="elevated" padding="lg">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Registrar Nuevo Servicio
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Cliente" placeholder="Buscar cliente..." fullWidth />
-          <Select
-            label="Tipo de Servicio"
-            options={
-              catalogoError
-                ? [{ value: '', label: 'No se pudo cargar el catálogo de servicios' }]
-                : [
-                    { value: '', label: 'Selecciona un servicio…' },
-                    ...catalogoServicios.map((s) => ({ value: String(s.id), label: s.nombre })),
-                  ]
-            }
-            fullWidth
+        {tienePermiso('citas:escritura') && (
+          <RegistrarSinCita
+            titulo="Registrar nuevo servicio"
+            descripcion="Para quien llega sin cita y se atiende en este momento: el servicio queda en curso."
+            textoBoton="Iniciar servicio"
+            iniciarAhora
+            onCreado={() => cargar()}
           />
-          <Input label="Productos Utilizados" placeholder="Separar por comas" fullWidth />
-          <Input label="Tiempo Empleado (minutos)" type="number" fullWidth />
-          <div className="md:col-span-2">
-            <Textarea label="Observaciones" placeholder="Notas sobre el servicio..." rows={4} fullWidth />
-          </div>
-          <div className="md:col-span-2">
-            <Button>Registrar Servicio</Button>
-          </div>
-        </div>
-        </Card>
+        )}
       </div>
 
       {/* Modal: Registrar Materiales */}

@@ -79,7 +79,6 @@ export default function CobroSinCitaPage() {
         items: [{
           servicioId: Number(fServicioId),
           cantidad: Number(fCantidad),
-          precioUnitario: precioNum(servicio.precio),
         }],
         metodoPago: fMetodoPago,
         clienteId: fClienteId || undefined,
@@ -181,7 +180,6 @@ export default function CobroSinCitaPage() {
               { value: 'efectivo', label: 'Efectivo' },
               { value: 'tarjeta', label: 'Tarjeta' },
               { value: 'transferencia', label: 'Transferencia' },
-              { value: 'mixto', label: 'Mixto' },
             ]}
             fullWidth
           />

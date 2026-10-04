@@ -12,10 +12,16 @@ export type EstadoCita =
   | 'reprogramada'
   | 'no_asistio';
 
+export type OrigenCita = 'en_linea' | 'mostrador' | 'sin_cita';
+
 export interface CitaApi {
   id: number;
-  clienteId: string;
+  /** null en citas sin cita de una persona sin cuenta (ver nombreInvitado). */
+  clienteId: string | null;
+  /** Nombre de la clienta registrada, o el de la invitada si no tiene cuenta. */
   clienteNombre?: string | null;
+  telefonoInvitado?: string | null;
+  origen?: OrigenCita;
   especialistaId: string;
   especialistaNombre?: string | null;
   servicioId: number;
@@ -26,6 +32,7 @@ export interface CitaApi {
   notas?: string | null;
   motivoCancelacion?: string | null;
   horaCheckIn?: string | null;
+  horaCheckOut?: string | null;
   creadoEn?: string;
 }
 
@@ -87,9 +94,12 @@ function normalizarCita(x: unknown): CitaApi | null {
     : 'pendiente';
   return {
     id: Number(n(r.id, 0) ?? 0),
-    clienteId: s(r.clienteId ?? r.cliente_id),
-    // El backend anida el nombre en cliente/especialista/servicio; usarlo como respaldo.
-    clienteNombre: s(r.clienteNombre ?? r.cliente_nombre ?? (r.cliente as Record<string, unknown>)?.nombre) || null,
+    clienteId: s(r.clienteId ?? r.cliente_id) || null,
+    // El backend anida el nombre en cliente/especialista/servicio; usarlo como respaldo. Sin cuenta: el de la invitada.
+    clienteNombre:
+      s(r.clienteNombre ?? r.cliente_nombre ?? (r.cliente as Record<string, unknown>)?.nombre ?? r.nombreInvitado ?? r.nombre_invitado) || null,
+    telefonoInvitado: s(r.telefonoInvitado ?? r.telefono_invitado) || null,
+    origen: (['en_linea', 'mostrador', 'sin_cita'] as const).find((o) => o === s(r.origen)) ?? 'en_linea',
     especialistaId: s(r.especialistaId ?? r.especialista_id),
     especialistaNombre: s(r.especialistaNombre ?? r.especialista_nombre ?? (r.especialista as Record<string, unknown>)?.nombre) || null,
     servicioId: Number(n(r.servicioId ?? r.servicio_id, 0) ?? 0),
@@ -100,6 +110,7 @@ function normalizarCita(x: unknown): CitaApi | null {
     notas: s(r.notas) || null,
     motivoCancelacion: s(r.motivoCancelacion ?? r.motivo_cancelacion) || null,
     horaCheckIn: s(r.horaCheckIn ?? r.hora_check_in) || null,
+    horaCheckOut: s(r.horaCheckOut ?? r.hora_check_out) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
   };
 }
@@ -364,4 +375,60 @@ export async function obtenerDisponibilidad(params: {
       return { inicio: s(sr.inicio), fin: s(sr.fin), horaLocal: s(sr.horaLocal) };
     }),
   };
+}
+
+// --- Atención sin cita (recepción) ---
+
+export interface CrearCitaSinCitaPayload {
+  /** Persona sin cuenta: nombre (y teléfono). Clienta registrada: clienteId. */
+  nombre?: string;
+  telefono?: string;
+  clienteId?: string;
+  servicioId: number;
+  especialistaId: string;
+  /** true: empieza a atenderse ya (queda en curso). */
+  iniciarAhora?: boolean;
+}
+
+/** POST /api/citas/sin-cita — turno inmediato de alguien que llega sin cita. */
+export async function crearCitaSinCita(payload: CrearCitaSinCitaPayload): Promise<CitaApi> {
+  const res = await apiClient.post<unknown>('/api/citas/sin-cita', payload, getBackendBaseUrl());
+  const cita = normalizarCita((res as Record<string, unknown>)?.data ?? res);
+  if (!cita) throw new Error('No se pudo registrar el turno');
+  return cita;
+}
+
+export interface PersonaPersonal {
+  id: string;
+  nombre: string;
+  foto: string | null;
+}
+
+function listaPersonal(res: unknown): PersonaPersonal[] {
+  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? ((res as Record<string, unknown>).data as unknown[]) : [];
+  return arr
+    .map((x) => {
+      const r = (x ?? {}) as Record<string, unknown>;
+      return { id: s(r.id), nombre: s(r.nombre) || 'Sin nombre', foto: r.foto != null ? s(r.foto) : null };
+    })
+    .filter((p) => p.id);
+}
+
+/** GET /api/citas/especialistas-libres — quién puede hacer el servicio y está libre ahora. */
+export async function especialistasLibres(servicioId: number): Promise<PersonaPersonal[]> {
+  const res = await apiClient.get<unknown>(`/api/citas/especialistas-libres?servicioId=${servicioId}`, { customBase: getBackendBaseUrl() });
+  return listaPersonal(res);
+}
+
+/** GET /api/citas/personal — personal activo que atiende (para elegir participantes al cobrar). */
+export async function personalQueAtiende(): Promise<PersonaPersonal[]> {
+  const res = await apiClient.get<unknown>('/api/citas/personal', { customBase: getBackendBaseUrl() });
+  return listaPersonal(res);
+}
+
+/** GET /api/citas/por-cobrar — citas finalizadas que todavía no tienen venta. */
+export async function citasPorCobrar(): Promise<CitaApi[]> {
+  const res = await apiClient.get<unknown>('/api/citas/por-cobrar', { customBase: getBackendBaseUrl() });
+  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? ((res as Record<string, unknown>).data as unknown[]) : [];
+  return arr.map(normalizarCita).filter((c): c is CitaApi => Boolean(c));
 }

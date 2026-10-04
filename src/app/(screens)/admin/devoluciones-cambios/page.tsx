@@ -12,6 +12,7 @@ import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import NuevaSolicitudDevolucion from '../../../components/admin/NuevaSolicitudDevolucion';
 import { CheckCircle2, Clock3, RotateCcw } from 'lucide-react';
 import { diaEnMexico } from '../../../utils/fechaSoloDia';
 
@@ -40,6 +41,7 @@ function mapearDevolucion(d: DevolucionApi, pedido: PedidoApi): DevolucionFila {
 export default function DevolucionesCambiosPage() {
   const [solicitudes, setSolicitudes] = useState<DevolucionFila[]>([]);
   const [solicitudesRaw, setSolicitudesRaw] = useState<DevolucionApi[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +59,7 @@ export default function DevolucionesCambiosPage() {
     setLoading(true);
     try {
       const pedidos = await listarPedidos();
+      setPedidos(pedidos);
       const rows: DevolucionFila[] = [];
       const raws: DevolucionApi[] = [];
       await Promise.all(
@@ -173,29 +176,7 @@ export default function DevolucionesCambiosPage() {
         )}
         </Card>
 
-        <Card variant="elevated" padding="lg">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Nueva solicitud de cambio
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Cliente" placeholder="Nombre del cliente" fullWidth />
-          <Input label="Producto a Cambiar" placeholder="Nombre del producto" fullWidth />
-          <Select
-            label="Motivo"
-            options={[
-              { value: 'incorrecto', label: 'Producto Incorrecto' },
-              { value: 'equivocacion', label: 'Equivocación' },
-              { value: 'otro', label: 'Otro' },
-            ]}
-            fullWidth
-          />
-          <Input label="Producto de Reemplazo" placeholder="Seleccionar producto..." fullWidth />
-          <Input label="Diferencia de Precio" placeholder="$0.00" fullWidth />
-          <div className="md:col-span-2">
-            <Button fullWidth>Procesar Cambio</Button>
-          </div>
-        </div>
-        </Card>
+        <NuevaSolicitudDevolucion pedidos={pedidos} onCreada={cargar} />
       </div>
       {/* Modal: Procesar Cambio / Ver Detalles */}
       <Modal

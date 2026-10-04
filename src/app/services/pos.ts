@@ -38,15 +38,23 @@ export interface VentaLocalApi {
 }
 
 export interface CrearVentaPayload {
+  /** El precio no se manda: el backend cobra el de la base. */
   items: Array<{
     presentacionId?: number;
     servicioId?: number;
     cantidad: number;
-    precioUnitario: number;
+    /** Cita finalizada que se cobra con esta línea de servicio. */
+    citaId?: number;
+    /** Personal que participó en el servicio. */
+    participantes?: string[];
   }>;
   metodoPago: string;
   clienteId?: string;
+  /** Único ajuste de precio; si es mayor a 0 requiere motivoDescuento. */
   descuento?: number;
+  motivoDescuento?: string;
+  /** Solo con metodoPago 'mixto': la suma debe ser igual al total. */
+  pagos?: { efectivo?: number; tarjeta?: number; transferencia?: number };
   notas?: string;
 }
 

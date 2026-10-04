@@ -62,6 +62,14 @@ export function mismoDiaHaceAnios(dia: string, anios: number): string {
   return `${anio}-${String(m).padStart(2, '0')}-${String(Math.min(d, ultimoDelMes)).padStart(2, '0')}`;
 }
 
+/** Primer y último día del mes de una fecha solo-día ('YYYY-MM-DD'). */
+export function rangoDelMes(dia: string): { desde: string; hasta: string } {
+  const [a, m] = dia.split('-').map(Number);
+  const ultimo = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  const mes = `${a}-${String(m).padStart(2, '0')}`;
+  return { desde: `${mes}-01`, hasta: `${mes}-${String(ultimo).padStart(2, '0')}` };
+}
+
 /** 'YYYY-MM' del mes actual en México. */
 export function mesActualEnMexico(ahora: Date = new Date()): string {
   return hoyEnMexico(ahora).slice(0, 7);

@@ -344,7 +344,7 @@ export default function Header() {
                             style={
                               userAvatarUrl
                                 ? undefined
-                                : { backgroundColor: 'var(--hover)', color: 'var(--texto-fondo-oscuro)' }
+                                : { backgroundColor: 'var(--botones-principales)', color: 'var(--texto-fondo-oscuro)' }
                             }
                           >
                             {userAvatarUrl ? (

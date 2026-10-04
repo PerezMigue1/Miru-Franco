@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { listarCitas, checkInCita, checkOutCita, CitaApi } from '../../../../services/citas';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
@@ -8,7 +9,8 @@ import Card from '../../../../components/ui/Card';
 import TarjetaKpi from '../../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
-import Input from '../../../../components/ui/Input';
+import RegistrarSinCita from '../../../../components/operacion/RegistrarSinCita';
+import { showToast } from '../../../../utils/toast';
 import { Users, UserCheck, Timer } from 'lucide-react';
 import { usePermisos } from '../../../../utils/permisos';
 import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCitas';
@@ -16,6 +18,7 @@ import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCit
 interface TurnoFila {
   id: number;
   cliente: string;
+  sinCita: boolean;
   llegada: string;
   fechaHoraInicio: string;
   horaCheckIn: string | null;
@@ -30,6 +33,7 @@ function mapearCita(c: CitaApi, posicionEnEspera: number): TurnoFila {
   return {
     id: c.id,
     cliente: c.clienteNombre ?? '-',
+    sinCita: c.origen === 'sin_cita',
     llegada: fechaHora && !isNaN(fechaHora.getTime()) ? fechaHora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-',
     fechaHoraInicio: c.fechaHoraInicio,
     horaCheckIn: c.horaCheckIn ?? null,
@@ -77,6 +81,7 @@ const ESTADOS_TURNO = ['pendiente', 'confirmada', 'en_curso'];
 export default function ColaAtencionPage() {
   // El becario solo llama y finaliza sus citas asignadas (el backend responde 403 en las demás).
   const { tienePermiso } = usePermisos();
+  const router = useRouter();
   const miId = idUsuarioSesion();
   const [citasHoy, setCitasHoy] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +129,13 @@ export default function ColaAtencionPage() {
   const handleCheckOut = async (id: number) => {
     setSavingId(id);
     setError(null);
-    try { await checkOutCita(id); cargar(); }
+    try {
+      await checkOutCita(id);
+      // Quien cobra pasa directo al punto de venta con la cita precargada; quien no, la deja por cobrar.
+      if (tienePermiso('ventas:escritura')) { router.push(`/operacion/punto-de-venta?citaId=${id}`); return; }
+      showToast('Turno finalizado: queda en servicios por cobrar', 'success');
+      cargar();
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo finalizar el turno'); }
     finally { setSavingId(null); }
   };
@@ -183,7 +194,12 @@ export default function ColaAtencionPage() {
                   <Badge variant="success">En Atención</Badge>
                 )}
               </TableCell>
-              <TableCell className="font-semibold" rowPadding="lg">{turno.cliente}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  {turno.cliente}
+                  {turno.sinCita && <Badge variant="default" size="sm">Sin cita</Badge>}
+                </span>
+              </TableCell>
               <TableCell rowPadding="lg">{turno.llegada}</TableCell>
               <TableCell rowPadding="lg">{turno.servicio}</TableCell>
               <TableCell rowPadding="lg">
@@ -213,22 +229,20 @@ export default function ColaAtencionPage() {
             </TableRow>
           ))}
         </Table>
+        {!loading && turnos.length === 0 && (
+          <p className="py-6 text-center text-sm text-encabezados-alterno">Nadie en la lista de espera.</p>
+        )}
         </Card>
 
-        <Card variant="elevated" padding="lg">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Registrar Nuevo Turno
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Nombre del Cliente" placeholder="Nombre completo" fullWidth />
-          <Input label="Teléfono (opcional)" placeholder="555-1234-5678" fullWidth />
-          <Input label="Servicio Deseado" placeholder="Tipo de servicio" fullWidth />
-          <Input label="Hora de Llegada" type="time" fullWidth />
-          <div className="md:col-span-2">
-            <Button fullWidth>Agregar a Lista de Espera</Button>
-          </div>
-        </div>
-        </Card>
+        {tienePermiso('citas:escritura') && (
+          <RegistrarSinCita
+            titulo="Registrar nuevo turno"
+            descripcion="Para quien llega sin cita: entra a la lista de espera con la hora de llegada de ahora."
+            textoBoton="Agregar a la lista de espera"
+            iniciarAhora={false}
+            onCreado={() => cargar()}
+          />
+        )}
       </div>
     </OperacionLayout>
   );

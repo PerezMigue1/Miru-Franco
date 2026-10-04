@@ -18,7 +18,6 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   '/cliente/tienda-online': { etiqueta: 'Tienda' },
   '/cliente/servicios-citas': { etiqueta: 'Servicios y citas' },
   '/cliente/galeria': { etiqueta: 'Galería' },
-  '/cliente/promociones': { etiqueta: 'Promociones' },
 
   // Pantallas globales del usuario
   '/cliente/tienda-online/carrito': { etiqueta: 'Carrito', global: true },
@@ -31,8 +30,6 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   '/cliente/notificaciones': { etiqueta: 'Notificaciones', global: true },
   '/cliente/devoluciones': { etiqueta: 'Devoluciones', global: true },
   '/cliente/facturas': { etiqueta: 'Facturas', global: true },
-  '/cliente/garantias': { etiqueta: 'Garantías', global: true },
-  '/cliente/seguimientos': { etiqueta: 'Seguimientos', global: true },
 
   // Pantallas que dependen de otra
   '/cliente/tienda-online/productos/[id]': { etiqueta: 'Producto', padre: '/cliente/tienda-online' },
@@ -148,7 +145,6 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       facturacion: { label: 'Facturación', href: '/admin/facturacion' },
       pagos: { label: 'Pagos', href: '/admin/pagos' },
       reportes: { label: 'Reportes', href: '/admin/reportes' },
-      marketing: { label: 'Marketing', href: '/admin/marketing' },
       notificaciones: { label: 'Notificaciones', href: '/admin/notificaciones' },
       'gestion-personal': { label: 'Gestión de personal', href: '/admin/gestion-personal' },
       'compras-proveedores': { label: 'Compras a proveedores', href: '/admin/compras-proveedores' },
@@ -188,6 +184,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'clientes-crm': 'Perfil de cliente',
       'cobro-sin-cita': 'Cobro sin cita',
       'cola-atencion': 'Cola de atención',
+      comisiones: 'Comisiones',
       'ejecucion-servicios': 'Ejecución de servicios',
       'gestion-citas': 'Gestión de citas',
       'gestion-equipo': 'Gestión de equipo',

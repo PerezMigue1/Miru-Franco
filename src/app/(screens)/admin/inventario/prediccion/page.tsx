@@ -2030,8 +2030,7 @@ export default function PrediccionInventarioPage() {
                     <svg
                       viewBox={`0 0 ${graficaReserva.width} ${graficaReserva.height}`}
                       width="100%"
-                      height="auto"
-                      className="min-h-[220px] max-h-[300px]"
+                      className="h-auto min-h-[220px] max-h-[300px]"
                       role="img"
                       aria-label="Stock proyectado"
                       onMouseLeave={() => setGraficaPredHover(null)}
@@ -2476,8 +2475,7 @@ export default function PrediccionInventarioPage() {
                     <svg
                       viewBox={`0 0 ${graficaOrigenVentas.w} ${graficaOrigenVentas.h}`}
                       width="100%"
-                      height="auto"
-                      className="min-h-[200px] max-h-[240px]"
+                      className="h-auto min-h-[200px] max-h-[240px]"
                       role="img"
                       aria-label="Unidades de venta por día"
                     >

@@ -18,6 +18,8 @@ import Badge from '../../../components/ui/Badge';
 import { getCategoryColor } from '../../../utils/categoryColors';
 import { BadgeDollarSign, Receipt, ShoppingCart } from 'lucide-react';
 import { hoyEnMexico } from '../../../utils/fechaSoloDia';
+import PagoMixtoCampos from '../../../components/operacion/PagoMixtoCampos';
+import { itemsDeVenta, pagosMixtos, totalesTicket, validarCobro, type LineaCobro, type MontosMixtos } from '../../../utils/cobroPos';
 
 interface VentaFila {
   id: number;
@@ -73,6 +75,8 @@ export default function VentaLocalPage() {
   const [formPrecioUnitario, setFormPrecioUnitario] = useState('');
   const [formMetodoPago, setFormMetodoPago] = useState('efectivo');
   const [formDescuento, setFormDescuento] = useState('0');
+  const [formMotivoDescuento, setFormMotivoDescuento] = useState('');
+  const [formPagos, setFormPagos] = useState<MontosMixtos>({});
   const [formNotas, setFormNotas] = useState('');
   const [savingVenta, setSavingVenta] = useState(false);
   const [ventaError, setVentaError] = useState<string | null>(null);
@@ -109,23 +113,37 @@ export default function VentaLocalPage() {
     listarClientes().then(({ data }) => setCatClientes(data)).catch(() => {});
   }, []);
 
+  // El precio es el del catálogo (el backend cobra el de la base); solo se muestra.
+  const prodVenta = catProductos.find((p) => String(p.id) === formProductoId);
+  const lineasVenta: LineaCobro[] = formProductoId && Number(formCantidad) >= 1
+    ? [{
+        tipo: 'producto',
+        presentacionId: prodVenta?.presentaciones?.[0]?.id ?? Number(formProductoId),
+        cantidad: Number(formCantidad),
+        precioUnitario: Number(String(formPrecioUnitario).replace(/[^0-9.]/g, '')) || 0,
+      }]
+    : [];
+  const { descuento: descuentoVenta, total: totalVenta } = totalesTicket(lineasVenta, Number(formDescuento) || 0);
+
   const handleCrearVenta = async () => {
-    if (!formProductoId || !formCantidad || !formPrecioUnitario) {
-      setVentaError('Selecciona producto, cantidad y precio'); return;
+    if (!formProductoId || !formCantidad) {
+      setVentaError('Selecciona producto y cantidad'); return;
     }
+    const problema = validarCobro({ lineas: lineasVenta, descuento: Number(formDescuento) || 0, motivoDescuento: formMotivoDescuento, metodoPago: formMetodoPago, pagos: formPagos });
+    if (problema) { setVentaError(problema); return; }
     setSavingVenta(true); setVentaError(null);
     try {
-      const prod = catProductos.find((p) => String(p.id) === formProductoId);
-      const presId = prod?.presentaciones?.[0]?.id ?? Number(formProductoId);
       await crearVenta({
-        items: [{ presentacionId: presId, cantidad: Number(formCantidad), precioUnitario: Number(String(formPrecioUnitario).replace(/[^0-9.]/g, '')) }],
+        items: itemsDeVenta(lineasVenta),
         metodoPago: formMetodoPago,
         clienteId: formClienteId || undefined,
-        descuento: formDescuento ? Number(formDescuento) : undefined,
+        descuento: descuentoVenta || undefined,
+        motivoDescuento: descuentoVenta > 0 ? formMotivoDescuento.trim() : undefined,
+        pagos: pagosMixtos(formMetodoPago, formPagos),
         notas: formNotas.trim() || undefined,
       });
       setFormProductoId(''); setFormCantidad('1'); setFormPrecioUnitario('');
-      setFormClienteId(''); setFormDescuento('0'); setFormNotas('');
+      setFormClienteId(''); setFormDescuento('0'); setFormMotivoDescuento(''); setFormPagos({}); setFormNotas('');
       cargar();
     } catch (e) { setVentaError(e instanceof Error ? e.message : 'Error al procesar venta'); }
     finally { setSavingVenta(false); }
@@ -225,7 +243,7 @@ export default function VentaLocalPage() {
               fullWidth
             />
             <Input label="Cantidad" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
-            <Input label="Precio unitario" type="number" min={0} step={0.01} placeholder="0.00" value={formPrecioUnitario} onChange={(e) => setFormPrecioUnitario(e.target.value)} fullWidth />
+            <Input label="Precio unitario" type="number" value={formPrecioUnitario} readOnly helperText="Precio del catálogo. Para ajustarlo usa el descuento con su motivo." placeholder="0.00" fullWidth />
             <Select
               label="Método de pago"
               value={formMetodoPago}
@@ -238,7 +256,11 @@ export default function VentaLocalPage() {
               ]}
               fullWidth
             />
+            {formMetodoPago === 'mixto' && <PagoMixtoCampos montos={formPagos} onChange={(m) => { setFormPagos(m); setVentaError(null); }} total={totalVenta} />}
             <Input label="Descuento ($)" type="number" min={0} step={0.01} value={formDescuento} onChange={(e) => setFormDescuento(e.target.value)} placeholder="0" fullWidth />
+            {descuentoVenta > 0 && (
+              <Input label="Motivo del descuento *" value={formMotivoDescuento} maxLength={200} onChange={(e) => setFormMotivoDescuento(e.target.value)} placeholder="Ej. Clienta frecuente, promoción…" fullWidth />
+            )}
             <Textarea label="Notas" value={formNotas} onChange={(e) => setFormNotas(e.target.value)} placeholder="Observaciones opcionales..." rows={2} fullWidth />
             {ventaError && <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{ventaError}</p>}
             <Button fullWidth onClick={handleCrearVenta} disabled={savingVenta}>{savingVenta ? 'Procesando...' : 'Procesar Venta'}</Button>

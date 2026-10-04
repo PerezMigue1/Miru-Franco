@@ -24,10 +24,14 @@ export function getPermisosFromUser(
 }
 
 /** True si `permisos` incluye la clave exacta, o el wildcard `'*'` (admin, pasa todo). */
-export function evaluarPermiso(permisos: string[], clave: string | undefined | null): boolean {
-  if (!clave) return true;
+/** Configurar montos y personal (estilista) o ver las comisiones propias (empleado, becario). */
+export const PERMISOS_COMISIONES = ['comisiones:configurar', 'comisiones:ver_propias'] as const;
+
+/** Con una lista de claves basta con tener cualquiera (igual que @Permisos en el backend). */
+export function evaluarPermiso(permisos: string[], clave: string | readonly string[] | undefined | null): boolean {
+  if (!clave || (Array.isArray(clave) && clave.length === 0)) return true;
   if (permisos.includes('*')) return true;
-  return permisos.includes(clave);
+  return typeof clave === 'string' ? permisos.includes(clave) : clave.some((c) => permisos.includes(c));
 }
 
 function leerPermisosDeLocalStorage(): string[] {
@@ -48,7 +52,7 @@ function leerPermisosDeLocalStorage(): string[] {
  */
 export function usePermisos(): {
   permisos: string[];
-  tienePermiso: (clave: string | undefined | null) => boolean;
+  tienePermiso: (clave: string | readonly string[] | undefined | null) => boolean;
 } {
   const [permisos, setPermisos] = useState<string[]>(() => leerPermisosDeLocalStorage());
 
@@ -64,7 +68,7 @@ export function usePermisos(): {
   }, []);
 
   const tienePermiso = useCallback(
-    (clave: string | undefined | null) => evaluarPermiso(permisos, clave),
+    (clave: string | readonly string[] | undefined | null) => evaluarPermiso(permisos, clave),
     [permisos],
   );
 
