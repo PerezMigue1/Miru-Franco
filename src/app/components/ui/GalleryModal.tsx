@@ -102,7 +102,7 @@ export default function GalleryModal({
           </p>
           <p
             className="text-xs mt-3 tabular-nums"
-            style={{ color: 'var(--texto-fondo-oscuro)', opacity: 0.35 }}
+            style={{ color: 'var(--texto-fondo-oscuro-70)' }}
           >
             {(currentIndex as number) + 1} / {items.length}
           </p>

@@ -51,10 +51,17 @@ export default function InventarioHistorialVentasPage() {
   const [busqueda, setBusqueda] = useState("");
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    const pid = searchParams.get("producto");
-    if (pid) setBusqueda(pid);
-  }, [searchParams]);
+  // Si la URL trae ?producto=, se usa como búsqueda. Se ajusta en render comparando con el
+  // valor anterior del parámetro, en lugar de hacerlo en un effect.
+  const productoParam = searchParams.get("producto");
+  const [productoParamPrevio, setProductoParamPrevio] = useState<string | null>(null);
+  if (productoParam !== productoParamPrevio) {
+    setProductoParamPrevio(productoParam);
+    if (productoParam) {
+      setBusqueda(productoParam);
+      setPage(1);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -87,10 +94,6 @@ export default function InventarioHistorialVentasPage() {
     () => ordenadas.filter((l) => coincideBusqueda(l, busqueda)),
     [ordenadas, busqueda],
   );
-
-  useEffect(() => {
-    setPage(1);
-  }, [busqueda]);
 
   const totalIngresos = useMemo(
     () => lineas.reduce((acc, l) => acc + l.subtotal, 0),
@@ -155,7 +158,10 @@ export default function InventarioHistorialVentasPage() {
               label="Buscar"
               placeholder="Pedido, ID de producto o nombre…"
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setPage(1);
+              }}
               icon={<Search className="h-4 w-4" aria-hidden />}
             />
           </div>

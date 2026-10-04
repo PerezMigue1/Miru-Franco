@@ -15,7 +15,7 @@ web
 Mirú Franco Beauty Salón (Huejutla de Reyes, Hidalgo, México) opera en un solo sistema su portal de clientas (reservas de servicios y tienda en línea) y su operación interna (agenda, cobro, inventario, personal). El éxito es que una clienta reserve o compre sin fricción y que el personal atienda sin fricción desde recepción.
 
 ## Operating Context
-- Horario: lunes a sábado de 9:00 a 20:00. Contacto: contacto@mirufranco.com.
+- Horario: lunes a viernes de 9:30 a 19:30 h, sábados de 9:30 a 19:00 h, domingos cerrado (igual que `configuracion_salon` y `HORARIO_SALON`). Contacto: contacto@mirufranco.com.
 - Backend propio NestJS (`backend-miru`) sobre Neon PostgreSQL con datos reales de clientas; tareas programadas de notificaciones.
 - Imágenes en Cloudinary. `/operacion/subir-imagenes` sube fotos y devuelve URLs que el equipo asigna a servicios y productos; no hay tabla de galería.
 - El sitio tiene modo claro y oscuro.

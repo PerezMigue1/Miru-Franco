@@ -366,7 +366,7 @@ export default function Header() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-base truncate" style={{ color: 'var(--texto-fondo-oscuro)' }}>{userName}</p>
+                            <p className="font-bold text-base truncate" style={{ color: 'var(--texto-cuerpo)' }}>{userName}</p>
                             <button
                               onClick={() => {
                                 setIsUserMenuOpen(false);
@@ -386,7 +386,7 @@ export default function Header() {
                       <hr style={{ borderColor: 'var(--borde-visible)' }} />
                       {/* Mi cuenta */}
                       <div className="py-2">
-                        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--texto-fondo-oscuro)', opacity: 0.5 }}>
+                        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
                           Mi cuenta
                         </p>
                         <button
@@ -395,7 +395,7 @@ export default function Header() {
                             router.push('/cliente/tienda-online/mis-pedidos');
                           }}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
-                          style={{ color: 'var(--texto-fondo-oscuro)' }}
+                          style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Mis pedidos
                         </button>
@@ -405,7 +405,7 @@ export default function Header() {
                             router.push('/cliente/servicios-citas/mis-citas');
                           }}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
-                          style={{ color: 'var(--texto-fondo-oscuro)' }}
+                          style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Mis citas
                         </button>
@@ -415,7 +415,7 @@ export default function Header() {
                             router.push('/cliente/tienda-online');
                           }}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
-                          style={{ color: 'var(--texto-fondo-oscuro)' }}
+                          style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Sigue comprando
                         </button>
@@ -425,7 +425,7 @@ export default function Header() {
                             router.push('/cliente/tienda-online/carrito');
                           }}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors flex items-center justify-between"
-                          style={{ color: 'var(--texto-fondo-oscuro)' }}
+                          style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Carrito
                           {totalItems > 0 && (
@@ -444,7 +444,7 @@ export default function Header() {
                           onClick={handleLogout}
                           disabled={loading}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors disabled:opacity-50"
-                          style={{ color: 'var(--texto-fondo-oscuro)' }}
+                          style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           {loading ? 'Cerrando...' : 'Cerrar sesión'}
                         </button>

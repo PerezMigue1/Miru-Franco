@@ -66,10 +66,10 @@ export default function SobreNosotrosPage() {
               <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                 En Mirú Franco, nos dedicamos a realzar tu belleza natural con productos y servicios de la más alta calidad. Nuestro equipo de profesionales está comprometido a brindarte una experiencia excepcional en cada visita.
               </p>
-              <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--encabezados-alterno)', opacity: 0.8 }}>
+              <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--texto-secundario)' }}>
                 Con años de experiencia en el cuidado capilar, combinamos técnicas tradicionales con innovaciones modernas para ofrecerte resultados que superen tus expectativas.
               </p>
-              <p className="text-base leading-relaxed" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
+              <p className="text-base leading-relaxed" style={{ color: 'var(--texto-secundario)' }}>
                 Cada cliente es único, y por eso diseñamos un plan de cuidado personalizado para adaptarnos a tus necesidades específicas, tu tipo de cabello y tus preferencias de estilo.
               </p>
             </div>

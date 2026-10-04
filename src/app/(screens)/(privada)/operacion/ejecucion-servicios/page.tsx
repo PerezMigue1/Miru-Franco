@@ -15,12 +15,15 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import { Wrench, Clock3, CheckCircle2 } from 'lucide-react';
+import { usePermisos } from '../../../../utils/permisos';
+import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCitas';
 
 interface ServicioFila {
   id: number;
   cliente: string;
   servicio: string;
   especialista: string;
+  especialistaId?: string;
   inicio: string;
   fin: string;
   duracionMinutos: number | null;
@@ -48,6 +51,7 @@ function mapearCita(c: CitaApi): ServicioFila {
     cliente: c.clienteNombre ?? '-',
     servicio: c.servicioNombre ?? '-',
     especialista: c.especialistaNombre ?? '-',
+    especialistaId: c.especialistaId,
     inicio,
     fin,
     duracionMinutos,
@@ -75,6 +79,9 @@ interface PresentacionOpcion {
 }
 
 export default function EjecucionServiciosPage() {
+  // El becario solo atiende sus citas asignadas: en las demás no ve los botones (el backend responde 403).
+  const { tienePermiso } = usePermisos();
+  const miId = idUsuarioSesion();
   const [servicios, setServicios] = useState<ServicioFila[]>([]);
   const [citasHoy, setCitasHoy] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -233,6 +240,7 @@ export default function EjecucionServiciosPage() {
                 </Badge>
               </TableCell>
               <TableCell rowPadding="lg">
+                {puedeAtenderCita(tienePermiso, servicio.especialistaId, miId) && (
                 <div className="flex gap-2">
                   {servicio.estado === 'pendiente' && (
                     <Button size="sm" variant="primary" onClick={() => handleCheckIn(servicio.id)} disabled={savingId === servicio.id}>
@@ -248,6 +256,7 @@ export default function EjecucionServiciosPage() {
                     + Materiales
                   </Button>
                 </div>
+                )}
               </TableCell>
             </TableRow>
           ))}

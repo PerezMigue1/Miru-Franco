@@ -10,6 +10,8 @@ import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Badge from '../../../../components/ui/Badge';
 import Input from '../../../../components/ui/Input';
 import { Users, UserCheck, Timer } from 'lucide-react';
+import { usePermisos } from '../../../../utils/permisos';
+import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCitas';
 
 interface TurnoFila {
   id: number;
@@ -18,6 +20,7 @@ interface TurnoFila {
   fechaHoraInicio: string;
   horaCheckIn: string | null;
   servicio: string;
+  especialistaId?: string;
   estado: string;
   posicion: number;
 }
@@ -31,6 +34,7 @@ function mapearCita(c: CitaApi, posicionEnEspera: number): TurnoFila {
     fechaHoraInicio: c.fechaHoraInicio,
     horaCheckIn: c.horaCheckIn ?? null,
     servicio: c.servicioNombre ?? '-',
+    especialistaId: c.especialistaId,
     estado: c.estado === 'en_curso' ? 'en_atencion' : 'esperando',
     posicion: c.estado === 'en_curso' ? 0 : posicionEnEspera,
   };
@@ -71,6 +75,9 @@ function tiempoEsperaTurno(turno: TurnoFila, ahora: Date): number | null {
 const ESTADOS_TURNO = ['pendiente', 'confirmada', 'en_curso'];
 
 export default function ColaAtencionPage() {
+  // El becario solo llama y finaliza sus citas asignadas (el backend responde 403 en las demás).
+  const { tienePermiso } = usePermisos();
+  const miId = idUsuarioSesion();
   const [citasHoy, setCitasHoy] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -188,6 +195,7 @@ export default function ColaAtencionPage() {
                 {fmtMinutos(tiempoEsperaTurno(turno, ahora))}
               </TableCell>
               <TableCell rowPadding="lg">
+                {puedeAtenderCita(tienePermiso, turno.especialistaId, miId) && (
                 <div className="flex gap-2">
                   {turno.estado === 'esperando' && (
                     <Button size="sm" onClick={() => handleCheckIn(turno.id)} disabled={savingId === turno.id}>
@@ -200,6 +208,7 @@ export default function ColaAtencionPage() {
                     </Button>
                   )}
                 </div>
+                )}
               </TableCell>
             </TableRow>
           ))}

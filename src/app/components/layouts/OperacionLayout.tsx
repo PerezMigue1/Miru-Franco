@@ -132,6 +132,7 @@ export default function OperacionLayout({ children, permisoRequerido }: Operacio
         const user = JSON.parse(userJson) as Record<string, unknown>;
         const rolStorage = getRolFromUser(user);
         if (rolYPermisoOk(rolStorage, getPermisosFromUser(user))) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con localStorage tras hidratar; useSyncExternalStore cambiaría la semántica del guard de sesión
           setAccesoPermitido(true);
           setVerificando(false);
           // Sesión cacheada sin `permisos` (previa a esta fase): refresca en segundo

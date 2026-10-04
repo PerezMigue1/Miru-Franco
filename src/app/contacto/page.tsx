@@ -69,7 +69,7 @@ export default function ContactoPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Dirección</p>
-                      <p className="text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
+                      <p className="text-sm leading-relaxed" style={{ color: 'var(--texto-secundario)' }}>
                         {DIRECCION_SALON ?? `${CIUDAD_SALON}, México`}
                       </p>
                     </div>
@@ -124,7 +124,7 @@ export default function ContactoPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Horario</p>
-                      <p className="text-sm" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
+                      <p className="text-sm" style={{ color: 'var(--texto-secundario)' }}>
                         {HORARIO_SALON.frases.map((frase) => (
                           <span key={frase} className="block">
                             {frase}

@@ -218,7 +218,7 @@ export default function PrediccionInventarioPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    // loading ya arranca en true (estado inicial) y este effect solo corre al montar.
     Promise.all([
       getProductosSinRedirigir({ incluirNoDisponibles: true }),
       cargarLineasVentasDesdePedidosOnline(),

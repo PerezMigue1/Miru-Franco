@@ -15,6 +15,8 @@ import { listarSeguimientos, crearSeguimiento, SeguimientoApi } from '../../../.
 import { listarClientes, ClienteApi } from '../../../../services/clientes';
 import { AlertTriangle, ClipboardCheck, ThumbsUp } from 'lucide-react';
 import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
+import { usePermisos } from '../../../../utils/permisos';
+import { puedeCrearSeguimientos } from '../../../../utils/permisosCitas';
 
 function fmt(iso?: string | null): string {
   if (!iso) return '-';
@@ -23,6 +25,8 @@ function fmt(iso?: string | null): string {
 }
 
 export default function SeguimientoPostServicioPage() {
+  // Leer: todo el personal. Crear: solo con seguimientos:escritura (el becario no).
+  const { tienePermiso } = usePermisos();
   const [seguimientos, setSeguimientos] = useState<SeguimientoApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +104,9 @@ export default function SeguimientoPostServicioPage() {
               Da seguimiento a la satisfacción de los clientes tras el servicio
             </p>
           </div>
-          <Button onClick={() => { reset(); setIsOpen(true); }}>+ Nuevo Seguimiento</Button>
+          {puedeCrearSeguimientos(tienePermiso) && (
+            <Button onClick={() => { reset(); setIsOpen(true); }}>+ Nuevo Seguimiento</Button>
+          )}
         </div>
 
         {/* KPIs */}

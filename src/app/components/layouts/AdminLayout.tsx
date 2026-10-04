@@ -156,6 +156,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         const user = JSON.parse(userJson) as Record<string, unknown>;
         rolFromStorage = getRolFromUser(user);
         if (checkAdminAndAllow(rolFromStorage)) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con localStorage tras hidratar; useSyncExternalStore cambiaría la semántica del guard de sesión
           setPerfilUsuario({
             nombre: String(user.nombre ?? ''),
             email: String(user.email ?? ''),

@@ -82,14 +82,27 @@ export function InventarioAnalisisCategoriasPanel({
   const [movimientosLoading, setMovimientosLoading] = useState(false);
   const [movimientosError, setMovimientosError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Sincroniza productoSel con el deep link (productoIdExterno). Se hace en render comparando con
+  // las props de la última sincronización, en lugar de un effect con setState.
+  const [syncPara, setSyncPara] = useState<{
+    id: typeof productoIdExterno;
+    productos: Producto[];
+    solo: boolean;
+  } | null>(null);
+  if (
+    !syncPara ||
+    syncPara.id !== productoIdExterno ||
+    syncPara.productos !== productos ||
+    syncPara.solo !== soloConsumo
+  ) {
+    setSyncPara({ id: productoIdExterno, productos, solo: soloConsumo });
     if (!productoIdExterno) {
       if (soloConsumo) setProductoSel('');
-      return;
+    } else {
+      const ok = productos.some((p) => String(p.id) === String(productoIdExterno));
+      if (ok) setProductoSel(String(productoIdExterno));
     }
-    const ok = productos.some((p) => String(p.id) === String(productoIdExterno));
-    if (ok) setProductoSel(String(productoIdExterno));
-  }, [productoIdExterno, productos, soloConsumo]);
+  }
 
   const arbolCatSub = useMemo(() => {
     const m = new Map<string, Set<string>>();
@@ -117,18 +130,12 @@ export function InventarioAnalisisCategoriasPanel({
     categoriaSel && (arbolCatSub.get(categoriaSel)?.size ?? 0) > 0
   );
 
-  useEffect(() => {
-    if (!categoriaSel) {
-      setSubcategoriaSel('');
-      return;
-    }
-    const subs = arbolCatSub.get(categoriaSel);
-    if (!subs || subs.size === 0) {
-      setSubcategoriaSel('');
-      return;
-    }
-    if (!subs.has(subcategoriaSel)) setSubcategoriaSel('');
-  }, [categoriaSel, arbolCatSub, subcategoriaSel]);
+  // La subcategoría solo es válida si hay categoría elegida y esa categoría la contiene. Si deja de
+  // serlo se limpia en render (converge: tras limpiarla, '' ya no dispara otro cambio).
+  const subcategoriaValida = Boolean(
+    categoriaSel && arbolCatSub.get(categoriaSel)?.has(subcategoriaSel)
+  );
+  if (subcategoriaSel !== '' && !subcategoriaValida) setSubcategoriaSel('');
 
   const desde = useMemo(() => {
     const d = new Date();
@@ -161,22 +168,31 @@ export function InventarioAnalisisCategoriasPanel({
     [productos, productoSel]
   );
 
-  useEffect(() => {
-    let cancel = false;
+  // Al cambiar el producto o la ventana se reinicia el estado de movimientos en render, comparando
+  // con lo que se cargó la última vez. El effect de abajo solo hace la petición.
+  // Sin producto no se toca movimientosLoading (si había una petición en curso se cancela y el
+  // valor queda como estaba, igual que antes).
+  const [movsPara, setMovsPara] = useState<{ p: Producto | null; d: number } | null>(null);
+  if (!movsPara || movsPara.p !== productoActivo || movsPara.d !== desde.getTime()) {
+    setMovsPara({ p: productoActivo, d: desde.getTime() });
     if (!productoActivo) {
       setMovimientosApi([]);
       setMovimientosError(null);
-      return;
-    }
-    const productoId = productoActivo.id;
-    if (productoId == null || String(productoId).trim() === '') {
+    } else if (productoActivo.id == null || String(productoActivo.id).trim() === '') {
       setMovimientosApi([]);
       setMovimientosError('No se pudo consultar movimientos: id de producto inválido.');
-      return;
+    } else {
+      setMovimientosLoading(true);
+      setMovimientosError(null);
     }
+  }
 
-    setMovimientosLoading(true);
-    setMovimientosError(null);
+  useEffect(() => {
+    if (!productoActivo) return;
+    const productoId = productoActivo.id;
+    if (productoId == null || String(productoId).trim() === '') return;
+
+    let cancel = false;
     listarMovimientosInventario({
       productoId,
       desde: desde.toISOString(),

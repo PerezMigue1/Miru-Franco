@@ -60,6 +60,17 @@ export default function OperacionPage() {
   const { permisos } = usePermisos();
   const permisosClave = permisos.join(',');
 
+  // Cuando cambian los permisos se vuelve a cargar: el estado de carga se pone aquí, en render,
+  // comparando con la clave anterior, para no hacer setState síncrono dentro del effect.
+  const [clavePrevia, setClavePrevia] = useState(permisosClave);
+  if (clavePrevia !== permisosClave) {
+    setClavePrevia(permisosClave);
+    if (permisosClave) {
+      setLoading(true);
+      setError(null);
+    }
+  }
+
   useEffect(() => {
     // Sin permisos todavía no se sabe qué puede ver el rol: esperar a que lleguen en vez de
     // disparar peticiones que el backend va a rechazar con 403.
@@ -71,9 +82,6 @@ export default function OperacionPage() {
 
     const hoy = hoyEnMexico();
     const miId = miUsuarioId();
-
-    setLoading(true);
-    setError(null);
 
     // Cada fuente se carga por separado y solo si el rol tiene el permiso que exige el
     // backend (p. ej. empleado no tiene caja:lectura ni seguimientos:lectura).

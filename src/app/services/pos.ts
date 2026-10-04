@@ -60,7 +60,6 @@ export interface CorteApi {
   totalTransferencia?: number | null;
   /** efectivo contado − (efectivo inicial + efectivo esperado) */
   diferencia?: number | null;
-  estado: string;
   notas?: string | null;
   creadoEn?: string;
   cerradoEn?: string | null;
@@ -156,7 +155,6 @@ function normalizarCorte(x: unknown): CorteApi | null {
     totalTarjeta: n(r.totalTarjeta ?? r.total_tarjeta),
     totalTransferencia: n(r.totalTransferencia ?? r.total_transferencia),
     diferencia: n(r.diferencia),
-    estado: s(r.estado) || 'abierto',
     notas: s(r.notas) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
     cerradoEn: s(r.cerradoEn ?? r.cerrado_en) || null,

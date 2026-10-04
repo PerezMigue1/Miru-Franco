@@ -52,6 +52,10 @@
   --borde-visible: rgba(255, 255, 255, 0.2);
   --borde-secundario: rgba(255, 255, 255, 0.3);
   --texto-fondo-oscuro-70: rgba(242, 241, 237, 0.7);
+  /* Texto secundario sobre lino y arena (contacto, sobre nosotros, días fuera del mes).
+     Sustituye a --encabezados-alterno con opacidad: carbón al 78 % sobre lino.
+     5.85:1 sobre --fondo-general y 4.75:1 sobre --fondos-suaves. Sobre terracota usar --texto-cuerpo. */
+  --texto-secundario: #4a4541;
   --texto-fondo-oscuro-80: rgba(242, 241, 237, 0.8);
   --texto-fondo-oscuro-10: rgba(242, 241, 237, 0.1);
   /* Tarjetas internas checkout (evita blanco puro en modo oscuro) */
@@ -121,6 +125,8 @@
   --texto-fondo-oscuro: #ffffff;
   --input-bg: #1f1f1f;
   --texto-fondo-oscuro-70: rgba(255, 255, 255, 0.7);
+  /* Terracota sin opacidad: 6.05:1 sobre #161616, 5.51:1 sobre #1f1f1f, 4.80:1 sobre #2a2a2a. */
+  --texto-secundario: var(--encabezados-alterno);
   --texto-fondo-oscuro-80: rgba(255, 255, 255, 0.8);
   --texto-fondo-oscuro-10: rgba(255, 255, 255, 0.1);
   --menu-lateral-bg: #710014;
@@ -502,9 +508,10 @@ p {
   text-transform: uppercase;
 }
 
-/* Color del logo para MIRÚ Franco */
+/* Color del logo para MIRÚ Franco (texto grande del hero). --oro-grande es el oro de marca
+   ajustado para texto grande: 3.7:1 sobre lino en claro y 6.7:1 sobre carbón en oscuro. */
 .text-brand-gold {
-  color: var(--logo-branding);
+  color: var(--oro-grande);
 }
 
 /* Hero decorations */

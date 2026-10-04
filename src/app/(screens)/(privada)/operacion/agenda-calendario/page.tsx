@@ -93,9 +93,8 @@ export default function AgendaCalendarioPage() {
 
   const celdas = useMemo(() => construirCeldas(mesActual.year, mesActual.month), [mesActual]);
 
+  // Solo lanza la petición; quien la dispara pone loading/error antes (reiniciarVista o Reintentar).
   const cargar = useCallback((year: number, month: number, especialistaId: string) => {
-    setLoading(true);
-    setError(null);
     const desde = fechaAISO(year, month, 1);
     const hasta = fechaAISO(year, month, diasEnMes(year, month));
     listarCalendario(desde, hasta, especialistaId || undefined)
@@ -106,8 +105,14 @@ export default function AgendaCalendarioPage() {
 
   useEffect(() => {
     cargar(mesActual.year, mesActual.month, filtroEspecialistaId);
-    setDiaSeleccionado(null);
   }, [mesActual, filtroEspecialistaId, cargar]);
+
+  // Al cambiar de mes o de especialista: mostrar carga y soltar el día seleccionado.
+  const reiniciarVista = () => {
+    setLoading(true);
+    setError(null);
+    setDiaSeleccionado(null);
+  };
 
   // El selector de especialistas solo se llena si el rol tiene empleados:lectura; sin él, el
   // backend responde 403 y la petición no aporta nada (el selector queda vacío igual).
@@ -135,9 +140,11 @@ export default function AgendaCalendarioPage() {
   }, [citasMes, diaSeleccionado]);
 
   const irMesAnterior = () => {
+    reiniciarVista();
     setMesActual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
   };
   const irMesSiguiente = () => {
+    reiniciarVista();
     setMesActual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
   };
 
@@ -183,7 +190,10 @@ export default function AgendaCalendarioPage() {
             </div>
             <Select
               value={filtroEspecialistaId}
-              onChange={(e) => setFiltroEspecialistaId(e.target.value)}
+              onChange={(e) => {
+                reiniciarVista();
+                setFiltroEspecialistaId(e.target.value);
+              }}
               options={[
                 { value: '', label: 'Todos los especialistas' },
                 ...especialistas.map((esp) => ({ value: esp.usuarioId, label: esp.nombre ?? esp.puesto ?? 'Especialista sin nombre' })),
@@ -195,7 +205,11 @@ export default function AgendaCalendarioPage() {
           {error ? (
             <div className="text-center py-8">
               <p className="mb-3" style={{ color: 'var(--danger-texto)' }}>{error}</p>
-              <Button variant="outline" onClick={() => cargar(mesActual.year, mesActual.month, filtroEspecialistaId)}>Reintentar</Button>
+              <Button variant="outline" onClick={() => {
+                  setLoading(true);
+                  setError(null);
+                  cargar(mesActual.year, mesActual.month, filtroEspecialistaId);
+                }}>Reintentar</Button>
             </div>
           ) : (
             <>
@@ -223,13 +237,12 @@ export default function AgendaCalendarioPage() {
                       style={{
                         backgroundColor: esSeleccionado ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
                         border: esHoy && !esSeleccionado ? '2px solid var(--logo-branding)' : '2px solid transparent',
-                        opacity: celda.fueraDelMes ? 0.4 : 1,
                         cursor: loading ? 'default' : 'pointer',
                       }}
                     >
                       <span
                         className="text-sm font-medium"
-                        style={{ color: esSeleccionado ? '#F2F1ED' : 'var(--menu-texto-principal)' }}
+                        style={{ color: esSeleccionado ? '#F2F1ED' : celda.fueraDelMes ? 'var(--texto-secundario)' : 'var(--menu-texto-principal)' }}
                       >
                         {celda.day}
                       </span>

@@ -65,7 +65,7 @@ export default function ReportesPage() {
   // KPIs del mes en curso, independientes del tipo/rango elegido en el generador.
   useEffect(() => {
     const { desde: d, hasta: h } = rangoMesActual();
-    setLoadingKpis(true);
+    // loadingKpis ya arranca en true (estado inicial) y este effect solo corre al montar.
     Promise.allSettled([obtenerReporteVentas(d, h), obtenerReporteServicios(d, h), obtenerReporteClientes(d, h)])
       .then(([ventasRes, serviciosRes, clientesRes]) => {
         if (ventasRes.status === 'fulfilled') {
@@ -78,9 +78,17 @@ export default function ReportesPage() {
       .finally(() => setLoadingKpis(false));
   }, []);
 
-  const cargarReporte = useCallback(() => {
+  // Al cambiar tipo o rango se muestra el estado de carga. Se ajusta en render comparando con la
+  // clave anterior, para que el effect que llama a cargarReporte no haga setState síncrono.
+  const claveReporte = `${tipoReporte}|${desde}|${hasta}`;
+  const [claveVista, setClaveVista] = useState(claveReporte);
+  if (claveVista !== claveReporte) {
+    setClaveVista(claveReporte);
     setLoading(true);
     setError(null);
+  }
+
+  const cargarReporte = useCallback(() => {
     const construir = async (): Promise<ReporteParaExportar> => {
       const subtitulo = tipoReporte === 'inventario' ? 'Stock actual' : `Del ${formatearFechaSoloDia(desde) ?? '-'} al ${formatearFechaSoloDia(hasta) ?? '-'}`;
       if (tipoReporte === 'ventas') {

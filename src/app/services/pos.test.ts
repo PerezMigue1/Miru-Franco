@@ -8,7 +8,7 @@ const { post } = vi.hoisted(() => ({
 vi.mock('./client', () => ({ apiClient: { post } }));
 vi.mock('./config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
-import { abrirCorte, resumenCorteTexto } from './pos';
+import { abrirCorte, crearVenta, resumenCorteTexto } from './pos';
 
 describe('Corte de caja: la petición lleva lo que exige el backend', () => {
   afterEach(() => {
@@ -35,5 +35,23 @@ describe('Corte de caja: la petición lleva lo que exige el backend', () => {
     const corte = await abrirCorte({ efectivoInicial: 500, efectivoFinal: 790 });
     expect(corte).toMatchObject({ totalEfectivo: 300, totalTarjeta: 300, totalTransferencia: 50, diferencia: -10 });
     expect(resumenCorteTexto(corte)).toBe('Corte registrado · Efectivo $300.00 · Tarjeta $300.00 · Transferencia $50.00 · Diferencia -$10.00');
+  });
+});
+
+describe('Estados de venta local: solo pendiente, pagada y cancelada', () => {
+  it('el corte no inventa un estado: la tabla cortes_caja no tiene esa columna', async () => {
+    post.mockResolvedValueOnce({ data: { id: 3, efectivoInicial: '0', totalVentas: '0' } } as never);
+    const corte = await abrirCorte({ efectivoInicial: 0, efectivoFinal: 0 });
+    expect(corte).not.toHaveProperty('estado');
+  });
+
+  it.each(['pendiente', 'pagada', 'cancelada'])('una venta en %s conserva su estado', async (estado) => {
+    post.mockResolvedValueOnce({ data: { id: 5, estado, items: [] } } as never);
+    expect((await crearVenta({ items: [], metodoPago: 'efectivo' } as never)).estado).toBe(estado);
+  });
+
+  it("un estado que no existe en el enum ('abierta') nunca se muestra: cae en 'pendiente'", async () => {
+    post.mockResolvedValueOnce({ data: { id: 6, estado: 'abierta', items: [] } } as never);
+    expect((await crearVenta({ items: [], metodoPago: 'efectivo' } as never)).estado).toBe('pendiente');
   });
 });
