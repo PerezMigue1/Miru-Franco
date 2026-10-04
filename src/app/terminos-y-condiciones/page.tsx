@@ -213,8 +213,10 @@ export default function TerminosYCondicionesPage() {
       <Seccion n={6}>
         <ol>
           <li>
-            <strong>Anticipo:</strong> algunas citas requieren un anticipo para quedar confirmadas. El anticipo
-            se descuenta del total de tu servicio.
+            <strong>Anticipo:</strong> algunas citas requieren un anticipo para quedar confirmadas. Lo puedes
+            pagar en línea con Mercado Pago o en el salón (efectivo, transferencia o tarjeta). Si no se paga en{' '}
+            {P.horasAnticipoCita} horas desde que agendas, la cita se libera y el horario queda disponible. El
+            anticipo se descuenta del total de tu servicio.
           </li>
           <li>
             <strong>Confirmación:</strong> te contactaremos un día antes para confirmar tu cita.

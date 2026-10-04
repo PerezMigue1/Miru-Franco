@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { listarCitas, checkInCita, checkOutCita, registrarMateriales, CitaApi } from '../../../../services/citas';
 import { getProductosSinRedirigir } from '../../../../services/productos';
 import Modal from '../../../../components/ui/Modal';
+import { AccionesAnticipo, IndicadorAnticipo } from '../../../../components/operacion/AnticipoCita';
+import { useAhora } from '../../../../hooks/useAhora';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -32,6 +34,8 @@ interface ServicioFila {
   duracionMinutos: number | null;
   estado: string;
   productos: string[];
+  /** La cita completa: el anticipo y sus acciones salen de aquí. */
+  cita: CitaApi;
 }
 
 function mapearCita(c: CitaApi): ServicioFila {
@@ -61,6 +65,7 @@ function mapearCita(c: CitaApi): ServicioFila {
     duracionMinutos,
     estado: estadoMap[c.estado] ?? c.estado,
     productos: [],
+    cita: c,
   };
 }
 
@@ -83,6 +88,7 @@ interface PresentacionOpcion {
 }
 
 export default function EjecucionServiciosPage() {
+  const ahora = useAhora();
   // El becario solo atiende sus citas asignadas: en las demás no ve los botones (el backend responde 403).
   const { tienePermiso } = usePermisos();
   const router = useRouter();
@@ -223,6 +229,7 @@ export default function EjecucionServiciosPage() {
                   {servicio.cliente}
                   {servicio.sinCita && <Badge variant="default" size="sm">Sin cita</Badge>}
                 </span>
+                {(servicio.cita.anticipoRequerido ?? 0) > 0 && <div className="mt-1"><IndicadorAnticipo cita={servicio.cita} ahora={ahora} /></div>}
               </TableCell>
               <TableCell rowPadding="lg">{servicio.servicio}</TableCell>
               <TableCell rowPadding="lg">{servicio.especialista}</TableCell>
@@ -265,6 +272,9 @@ export default function EjecucionServiciosPage() {
                   </Button>
                 </div>
                 )}
+                <div className="mt-2 flex flex-wrap gap-2 empty:hidden">
+                  <AccionesAnticipo cita={servicio.cita} ahora={ahora} onCambio={cargar} />
+                </div>
               </TableCell>
             </TableRow>
           ))}

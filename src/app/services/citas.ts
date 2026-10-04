@@ -34,6 +34,25 @@ export interface CitaApi {
   horaCheckIn?: string | null;
   horaCheckOut?: string | null;
   creadoEn?: string;
+  /** Anticipo pedido al agendar (foto del monto del servicio) y su plazo; null si la cita no lo pide. */
+  anticipoRequerido?: number | null;
+  anticipoVenceEn?: string | null;
+  anticipoPagadoEn?: string | null;
+  /** Pagos del anticipo (en línea o en el salón), del más viejo al más reciente. */
+  pagosAnticipo?: PagoAnticipoApi[];
+  /** Suma de los pagos aprobados: lo que el POS descuenta del servicio. */
+  anticipoPagado?: number;
+}
+
+export interface PagoAnticipoApi {
+  id: number;
+  estado: 'pendiente' | 'aprobado' | 'rechazado' | 'cancelado' | 'reembolsado' | 'en_revision' | string;
+  monto: number;
+  metodo: string;
+  proveedor: string | null;
+  pagadoEn: string | null;
+  /** El salón retuvo este anticipo (decisión firme: ya no se reembolsa). */
+  retenidoEn?: string | null;
 }
 
 export interface CrearCitaPayload {
@@ -43,6 +62,8 @@ export interface CrearCitaPayload {
   fechaHoraInicio: string;
   fechaHoraFin: string;
   notas?: string;
+  /** Desde /operacion: pedir el anticipo del servicio (en el portal se pide siempre que el servicio lo tenga). */
+  pedirAnticipo?: boolean;
 }
 
 export type NivelRiesgoCancelacion = 'bajo' | 'medio' | 'alto';
@@ -112,6 +133,29 @@ function normalizarCita(x: unknown): CitaApi | null {
     horaCheckIn: s(r.horaCheckIn ?? r.hora_check_in) || null,
     horaCheckOut: s(r.horaCheckOut ?? r.hora_check_out) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
+    ...anticipoDe(r),
+  };
+}
+
+function anticipoDe(r: Record<string, unknown>) {
+  const num = (v: unknown) => (v === null || v === undefined || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+  const pagosRaw = Array.isArray(r.pagos) ? (r.pagos as Record<string, unknown>[]) : [];
+  const pagosAnticipo: PagoAnticipoApi[] = pagosRaw.map((p) => ({
+    id: Number(p.id),
+    estado: s(p.estado),
+    monto: num(p.monto) ?? 0,
+    metodo: s(p.metodo),
+    proveedor: p.proveedor != null ? s(p.proveedor) : null,
+    pagadoEn: s(p.pagadoEn ?? p.pagado_en) || null,
+    retenidoEn: s(p.retenidoEn ?? p.retenido_en) || null,
+  }));
+  const anticipoPagado = Math.round(pagosAnticipo.filter((p) => p.estado === 'aprobado').reduce((acc, p) => acc + p.monto * 100, 0)) / 100;
+  return {
+    anticipoRequerido: num(r.anticipoRequerido ?? r.anticipo_requerido),
+    anticipoVenceEn: s(r.anticipoVenceEn ?? r.anticipo_vence_en) || null,
+    anticipoPagadoEn: s(r.anticipoPagadoEn ?? r.anticipo_pagado_en) || null,
+    pagosAnticipo,
+    anticipoPagado,
   };
 }
 
@@ -442,4 +486,53 @@ export async function citasPorCobrar(): Promise<CitaApi[]> {
   const res = await apiClient.get<unknown>('/api/citas/por-cobrar', { customBase: getBackendBaseUrl() });
   const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? ((res as Record<string, unknown>).data as unknown[]) : [];
   return arr.map(normalizarCita).filter((c): c is CitaApi => Boolean(c));
+}
+
+// --- Anticipo de citas ---
+
+export type EstadoPagoAnticipo = 'no_requiere' | 'aprobado' | 'pendiente' | 'rechazado' | 'revision' | 'sin_pago' | 'vencido' | 'cancelada' | 'reembolsado';
+
+/** POST /api/pagos-en-linea/citas/:id/preferencia: URL de Mercado Pago para pagar el anticipo (solo la dueña). */
+export async function crearPreferenciaAnticipo(citaId: number): Promise<{ initPoint: string }> {
+  const res = await apiClient.post<{ initPoint?: string }>(`/api/pagos-en-linea/citas/${citaId}/preferencia`, {}, getBackendBaseUrl());
+  if (!res?.initPoint) throw new Error('No se pudo abrir Mercado Pago. Intenta de nuevo.');
+  return { initPoint: res.initPoint };
+}
+
+/** GET /api/pagos-en-linea/citas/:id/estado: el backend consulta Mercado Pago (no se confía en la URL). */
+export async function consultarEstadoAnticipo(citaId: number): Promise<{
+  estado: EstadoPagoAnticipo;
+  citaEstado: EstadoCita;
+  anticipoRequerido: number | null;
+  anticipoVenceEn: string | null;
+  anticipoPagadoEn: string | null;
+}> {
+  const r = (await apiClient.get<Record<string, unknown>>(`/api/pagos-en-linea/citas/${citaId}/estado`, { customBase: getBackendBaseUrl() })) ?? {};
+  return {
+    estado: s(r.estado) as EstadoPagoAnticipo,
+    citaEstado: s(r.citaEstado) as EstadoCita,
+    anticipoRequerido: r.anticipoRequerido == null ? null : Number(r.anticipoRequerido),
+    anticipoVenceEn: s(r.anticipoVenceEn) || null,
+    anticipoPagadoEn: s(r.anticipoPagadoEn) || null,
+  };
+}
+
+/** POST /api/citas/:id/anticipo: el personal cobra el anticipo en el salón. */
+export async function registrarAnticipo(citaId: number, metodo: 'efectivo' | 'transferencia' | 'tarjeta'): Promise<void> {
+  await apiClient.post<unknown>(`/api/citas/${citaId}/anticipo`, { metodo }, getBackendBaseUrl());
+}
+
+/** POST /api/citas/:id/anticipo/reembolsar: Mercado Pago lo devuelve por su API; en el salón solo se registra. */
+export async function reembolsarAnticipo(citaId: number): Promise<void> {
+  await apiClient.post<unknown>(`/api/citas/${citaId}/anticipo/reembolsar`, {}, getBackendBaseUrl());
+}
+
+/** POST /api/citas/:id/anticipo/retener: el salón se queda el anticipo de un pago en revisión. */
+export async function retenerAnticipo(citaId: number): Promise<void> {
+  await apiClient.post<unknown>(`/api/citas/${citaId}/anticipo/retener`, {}, getBackendBaseUrl());
+}
+
+/** PATCH /api/citas/:id/no-asistio: la clienta no llegó; el anticipo pagado se retiene. */
+export async function marcarNoAsistio(citaId: number): Promise<void> {
+  await apiClient.patch<unknown>(`/api/citas/${citaId}/no-asistio`, {}, getBackendBaseUrl());
 }

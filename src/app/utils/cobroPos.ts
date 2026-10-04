@@ -11,6 +11,8 @@ export interface LineaCobro {
   citaId?: number;
   /** Personal elegido que participó (la especialista de la cita la agrega el backend). */
   participantes?: string[];
+  /** Anticipo ya pagado de la cita: se descuenta del saldo (el backend lo recalcula; no viaja en el payload). */
+  anticipo?: number;
 }
 
 export type MontosMixtos = { efectivo?: string; tarjeta?: string; transferencia?: string };
@@ -38,10 +40,11 @@ export function itemsDeVenta(lineas: LineaCobro[]): CrearVentaPayload['items'] {
   });
 }
 
-export function totalesTicket(lineas: LineaCobro[], descuento: number): { subtotal: number; descuento: number; total: number } {
+export function totalesTicket(lineas: LineaCobro[], descuento: number): { subtotal: number; descuento: number; anticipo: number; total: number } {
   const subtotal = centavos(lineas.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0)) / 100;
+  const anticipo = centavos(lineas.reduce((acc, l) => acc + (l.anticipo ?? 0), 0)) / 100;
   const d = Math.max(0, Number(descuento) || 0);
-  return { subtotal, descuento: d, total: Math.max(0, centavos(subtotal - d) / 100) };
+  return { subtotal, descuento: d, anticipo, total: Math.max(0, centavos(subtotal - d - anticipo) / 100) };
 }
 
 export function pagosMixtos(metodoPago: string, montos: MontosMixtos): CrearVentaPayload['pagos'] | undefined {
@@ -63,9 +66,10 @@ export function validarCobro(c: {
   pagos: MontosMixtos;
 }): string | null {
   if (c.lineas.length === 0) return 'Agrega al menos un producto o servicio al ticket';
-  const { subtotal, descuento, total } = totalesTicket(c.lineas, c.descuento);
+  const { subtotal, descuento, anticipo, total } = totalesTicket(c.lineas, c.descuento);
   if (Number(c.descuento) < 0) return 'El descuento no puede ser negativo';
   if (descuento > subtotal) return 'El descuento no puede ser mayor al subtotal';
+  if (centavos(descuento + anticipo) > centavos(subtotal)) return 'El descuento más el anticipo no pueden ser mayores al subtotal';
   if (descuento > 0 && !c.motivoDescuento.trim()) return 'Escribe el motivo del descuento';
   if (c.metodoPago === 'mixto') {
     const montos = Object.values(c.pagos).map((v) => Number(v || 0));

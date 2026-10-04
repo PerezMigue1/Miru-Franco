@@ -26,6 +26,7 @@ import {
   PackageCheck,
   UserCog,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -76,6 +77,7 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Gestión de equipo', href: '/operacion/gestion-equipo', icon: UserCog, permiso: 'asistencia:gestionar' },
   { label: 'Subir imágenes', href: '/operacion/subir-imagenes', icon: ImagePlus },
   { label: 'Comisiones', href: '/operacion/comisiones', icon: HandCoins, permiso: PERMISOS_COMISIONES },
+  { label: 'Anticipos por servicio', href: '/operacion/anticipos', icon: Wallet, permiso: 'servicios:escritura' },
 ];
 
 function esActivo(pathname: string | null, href: string): boolean {

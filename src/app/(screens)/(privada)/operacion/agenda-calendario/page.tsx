@@ -7,6 +7,8 @@ import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
 import Select from '../../../../components/ui/Select';
 import { listarCalendario, CitaApi } from '../../../../services/citas';
+import { AccionesAnticipo, IndicadorAnticipo } from '../../../../components/operacion/AnticipoCita';
+import { useAhora } from '../../../../hooks/useAhora';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
 import { usePermisos } from '../../../../utils/permisos';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
@@ -80,6 +82,7 @@ function construirCeldas(year: number, month: number): CeldaMes[] {
 }
 
 export default function AgendaCalendarioPage() {
+  const ahora = useAhora();
   const hoy = new Date();
   const isoHoy = fechaAISO(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
 
@@ -289,7 +292,7 @@ export default function AgendaCalendarioPage() {
                 {citasDelDiaSeleccionado.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-4 p-3 rounded-lg"
+                    className="flex flex-wrap items-center gap-4 p-3 rounded-lg"
                     style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
                     <div className="text-center min-w-[70px]">
@@ -301,8 +304,12 @@ export default function AgendaCalendarioPage() {
                       <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                         {(c.servicioNombre ?? 'Servicio')} · {(c.especialistaNombre ?? 'Especialista sin nombre')}
                       </p>
+                      {(c.anticipoRequerido ?? 0) > 0 && <div className="mt-1"><IndicadorAnticipo cita={c} ahora={ahora} /></div>}
                     </div>
                     <Badge variant={varianteEstadoCita(c.estado)}>{etiquetaEstadoCita(c.estado)}</Badge>
+                    <div className="flex flex-wrap gap-2 empty:hidden">
+                      <AccionesAnticipo cita={c} ahora={ahora} onCambio={() => cargar(mesActual.year, mesActual.month, filtroEspecialistaId)} />
+                    </div>
                   </div>
                 ))}
               </div>

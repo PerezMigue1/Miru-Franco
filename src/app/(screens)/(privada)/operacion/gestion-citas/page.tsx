@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { AccionesAnticipo, IndicadorAnticipo } from '../../../../components/operacion/AnticipoCita';
+import { useAhora } from '../../../../hooks/useAhora';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -58,6 +60,7 @@ function etiquetaRiesgo(nivel: NivelRiesgoCancelacion): string {
 }
 
 export default function GestionCitasPage() {
+  const ahora = useAhora();
   const [citas, setCitas] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +90,8 @@ export default function GestionCitasPage() {
   const [fHoraInicio, setFHoraInicio] = useState('');
   const [fHoraFin, setFHoraFin] = useState('');
   const [fNotas, setFNotas] = useState('');
+  /** El personal decide si esta cita pide el anticipo del servicio (desde /operacion no se pide solo). */
+  const [fPedirAnticipo, setFPedirAnticipo] = useState(false);
 
   // Modal reprogramar
   const [isReprogOpen, setIsReprogOpen] = useState(false);
@@ -177,9 +182,11 @@ export default function GestionCitasPage() {
 
   const resetForm = () => {
     setFClienteId(''); setFEspecialistaId(''); setFServicioId('');
-    setFFecha(''); setFHoraInicio(''); setFHoraFin(''); setFNotas('');
+    setFFecha(''); setFHoraInicio(''); setFHoraFin(''); setFNotas(''); setFPedirAnticipo(false);
     setFormError(null);
   };
+
+  const anticipoServicioForm = servicios.find((s) => String(s.id) === fServicioId)?.anticipoMonto ?? 0;
 
   const handleCrear = async () => {
     if (!fClienteId || !fEspecialistaId || !fServicioId || !fFecha || !fHoraInicio || !fHoraFin) {
@@ -199,6 +206,7 @@ export default function GestionCitasPage() {
         fechaHoraInicio: combinar(fFecha, fHoraInicio),
         fechaHoraFin: combinar(fFecha, fHoraFin),
         notas: fNotas.trim() || undefined,
+        ...(fPedirAnticipo && anticipoServicioForm > 0 ? { pedirAnticipo: true } : {}),
       });
       setIsModalOpen(false);
       resetForm();
@@ -378,7 +386,10 @@ export default function GestionCitasPage() {
                 <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraFin)}</TableCell>
                 <TableCell rowPadding="lg">{cita.servicioNombre ?? 'Servicio'}</TableCell>
                 <TableCell rowPadding="lg">
-                  <Badge variant={varianteEstadoCita(cita.estado)}>{etiquetaEstadoCita(cita.estado)}</Badge>
+                  <div className="flex min-w-32 flex-col items-start gap-1.5">
+                    <Badge variant={varianteEstadoCita(cita.estado)}>{etiquetaEstadoCita(cita.estado)}</Badge>
+                    {(cita.anticipoRequerido ?? 0) > 0 && <IndicadorAnticipo cita={cita} ahora={ahora} />}
+                  </div>
                 </TableCell>
                 <TableCell rowPadding="lg">
                   {esFinal(cita.estado) ? (
@@ -412,6 +423,7 @@ export default function GestionCitasPage() {
                         <Button size="sm" variant="danger" onClick={() => handleCancelar(cita.id)}>Cancelar</Button>
                       </>
                     )}
+                    <AccionesAnticipo cita={cita} ahora={ahora} onCambio={() => { void cargar(); }} conNoAsistio />
                   </div>
                 </TableCell>
               </TableRow>
@@ -491,6 +503,20 @@ export default function GestionCitasPage() {
             <Input label="Hora fin *" type="time" value={fHoraFin} onChange={(e) => setFHoraFin(e.target.value)} fullWidth />
           </div>
           <Textarea label="Notas (opcional)" value={fNotas} onChange={(e) => setFNotas(e.target.value)} rows={3} fullWidth />
+          {anticipoServicioForm > 0 && (
+            <label className="flex min-h-11 items-start gap-3 text-sm text-menu-texto-principal">
+              <input
+                type="checkbox"
+                checked={fPedirAnticipo}
+                onChange={(e) => setFPedirAnticipo(e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--botones-principales)]"
+              />
+              <span>
+                Pedir anticipo de <span className="mf-cifras font-semibold">${anticipoServicioForm.toFixed(2)}</span>
+                <span className="block text-xs text-encabezados-alterno">La clienta tiene 2 horas para pagarlo; si no, la cita se libera.</span>
+              </span>
+            </label>
+          )}
         </div>
       </Modal>
 

@@ -184,6 +184,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'clientes-crm': 'Perfil de cliente',
       'cobro-sin-cita': 'Cobro sin cita',
       'cola-atencion': 'Cola de atención',
+      anticipos: 'Anticipos por servicio',
       comisiones: 'Comisiones',
       'ejecucion-servicios': 'Ejecución de servicios',
       'gestion-citas': 'Gestión de citas',

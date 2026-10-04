@@ -55,7 +55,7 @@ describe('Cobro en el punto de venta', () => {
     ]);
   });
   it('totales con descuento', () => {
-    expect(totalesTicket(lineas, 100)).toEqual({ subtotal: 1200, descuento: 100, total: 1100 });
+    expect(totalesTicket(lineas, 100)).toEqual({ subtotal: 1200, descuento: 100, anticipo: 0, total: 1100 });
   });
   it('un descuento mayor a 0 exige motivo y no puede pasar del subtotal', () => {
     const t = { lineas, metodoPago: 'efectivo', pagos: {} };

@@ -61,6 +61,8 @@ function lineaDeCita(c: CitaApi, servicios: Servicio[]): LineaTicket {
     precioUnitario: precioNum(servicio?.precio),
     citaId: c.id,
     participantes: [],
+    // Anticipo ya pagado (en línea o en el salón): se descuenta del saldo; el backend lo recalcula.
+    anticipo: c.anticipoPagado ?? 0,
     especialistaId: c.especialistaId,
     especialistaNombre: c.especialistaNombre,
     clienteNombre: c.clienteNombre,
@@ -293,7 +295,7 @@ function PuntoDeVenta() {
     setLineas((prev) => prev.filter((l) => l.key !== key));
   };
 
-  const { subtotal: subtotalTicket, descuento: descuentoNum, total: totalTicket } = totalesTicket(lineas, Number(formDescuento) || 0);
+  const { subtotal: subtotalTicket, descuento: descuentoNum, anticipo: anticipoTicket, total: totalTicket } = totalesTicket(lineas, Number(formDescuento) || 0);
 
   const resetTicket = () => {
     setLineas([]);
@@ -455,6 +457,7 @@ function PuntoDeVenta() {
                           <p className="text-sm text-encabezados-alterno">
                             {c.servicioNombre || 'Servicio'} · {c.especialistaNombre || 'Especialista'}
                             {c.horaCheckOut ? ` · terminó ${horaCorta(c.horaCheckOut)}` : ''}
+                            {(c.anticipoPagado ?? 0) > 0 ? ` · anticipo ${fmtMoneda(c.anticipoPagado ?? 0)}` : ''}
                           </p>
                         </div>
                         <Button size="sm" variant={enTicket ? 'outline' : 'primary'} disabled={enTicket} onClick={() => agregarCita(c, catServicios)} className="shrink-0 self-start sm:self-auto">
@@ -545,6 +548,7 @@ function PuntoDeVenta() {
                             <p className="text-xs text-encabezados-alterno">
                               {fmtMoneda(l.precioUnitario)} c/u
                               {l.citaId ? ` · cita #${l.citaId}${l.clienteNombre ? ` de ${l.clienteNombre}` : ''}` : ''}
+                              {l.anticipo ? ` · anticipo pagado ${fmtMoneda(l.anticipo)}` : ''}
                             </p>
                             {excedeStock && (
                               <p className="mt-1 flex items-center gap-1 text-xs text-[var(--warning-texto)]">
@@ -679,8 +683,13 @@ function PuntoDeVenta() {
                     <span>Descuento</span><span>-{fmtMoneda(descuentoNum)}</span>
                   </div>
                 )}
+                {anticipoTicket > 0 && (
+                  <div className="flex justify-between text-sm text-encabezados-alterno">
+                    <span>Anticipo</span><span className="mf-cifras">-{fmtMoneda(anticipoTicket)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold text-menu-texto-principal">
-                  <span>Total</span><span>{fmtMoneda(totalTicket)}</span>
+                  <span>{anticipoTicket > 0 ? 'Saldo a pagar' : 'Total'}</span><span className="mf-cifras">{fmtMoneda(totalTicket)}</span>
                 </div>
               </div>
 

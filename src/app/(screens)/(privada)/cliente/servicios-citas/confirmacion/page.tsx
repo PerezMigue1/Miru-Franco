@@ -12,6 +12,11 @@ import { obtenerCita, type CitaApi } from '../../../../../services/citas';
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
 import SelloConfirmacion from '../../../../../components/cliente/SelloConfirmacion';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
+import EncabezadoAnticipo from '../../../../../components/cliente/EncabezadoAnticipo';
+import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../../utils/estados';
+
+/** Parámetros con los que Mercado Pago regresa: solo indican que vale la pena esperar, nunca el estado. */
+const PARAMS_REGRESO_MP = ['payment_id', 'collection_id', 'collection_status', 'status', 'preference_id'];
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -19,6 +24,7 @@ function ConfirmacionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const citaId = searchParams.get('citaId');
+  const volvioDeMercadoPago = PARAMS_REGRESO_MP.some((k) => searchParams.has(k));
 
   const [cita, setCita] = useState<CitaApi | null>(null);
   const [servicio, setServicio] = useState<Servicio | null>(null);
@@ -85,13 +91,16 @@ function ConfirmacionContent() {
     minute: '2-digit',
     timeZone: TZ_MEXICO,
   });
-  const badgeVariant = cita.estado === 'cancelada' ? 'danger' : 'success';
+  const conAnticipo = (cita.anticipoRequerido ?? 0) > 0;
 
   return (
     <ModuleLayout>
       <div className="max-w-2xl mx-auto">
         <PasosFlujo pasos={PASOS_RESERVA} actual={PASOS_RESERVA.length} etiqueta="Pasos para reservar" />
         <Card className="text-center mf-entrada" padding="lg">
+          {conAnticipo ? (
+            <EncabezadoAnticipo cita={cita} volvioDeMercadoPago={volvioDeMercadoPago} />
+          ) : (
           <div className="mb-8">
             <div className="mb-5 flex justify-center">
               <SelloConfirmacion />
@@ -103,6 +112,7 @@ function ConfirmacionContent() {
               Tu cita ha sido agendada exitosamente
             </p>
           </div>
+          )}
 
           <div className="rounded-[12px] p-6 mb-6" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
             <div className="space-y-4 text-left">
@@ -155,8 +165,14 @@ function ConfirmacionContent() {
                   {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '—'}
                 </span>
               </div>
+              {conAnticipo && (
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-encabezados-alterno">Anticipo:</span>
+                  <span className="mf-cifras font-semibold text-menu-texto-principal">{formatearPrecioMXN(cita.anticipoRequerido ?? 0)}</span>
+                </div>
+              )}
               <div className="flex justify-center pt-4">
-                <Badge variant={badgeVariant} size="lg">{cita.estado}</Badge>
+                <Badge variant={varianteEstadoCita(cita.estado)} size="lg">{etiquetaEstadoCita(cita.estado)}</Badge>
               </div>
             </div>
           </div>

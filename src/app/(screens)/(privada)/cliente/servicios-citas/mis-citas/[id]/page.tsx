@@ -7,12 +7,15 @@ import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import { obtenerCita, type CitaApi } from '../../../../../../services/citas';
+import AnticipoPortal from '../../../../../../components/cliente/AnticipoPortal';
+import { useAhora } from '../../../../../../hooks/useAhora';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
 export default function DetalleMiCitaPage() {
+  const ahora = useAhora();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -230,7 +233,13 @@ export default function DetalleMiCitaPage() {
             </Card>
           </div>
 
-          <div>
+          <div className="space-y-6">
+            {(cita.anticipoRequerido ?? 0) > 0 && (
+              <Card>
+                <h3 className="text-subtitle mb-4 text-menu-texto-principal">Anticipo</h3>
+                <AnticipoPortal cita={cita} ahora={ahora} detalle />
+              </Card>
+            )}
             <Card>
               <h3
                 className="text-subtitle mb-4"

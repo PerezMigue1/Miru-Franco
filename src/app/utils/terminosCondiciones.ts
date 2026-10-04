@@ -17,6 +17,8 @@ export const PLAZOS_TERMINOS = {
   diasGarantiaServicio: 7,
   /** Horas para completar el pago en línea antes de que el pedido se cancele. */
   horasPagoEnLinea: 24,
+  /** Horas para pagar el anticipo de una cita agendada en línea antes de que se libere (HORAS_ANTICIPO_CITA del backend). */
+  horasAnticipoCita: 2,
   /** Días para preparar un apartado antes de que se cancele. */
   diasApartadoSinPreparar: 3,
   /** Día, desde que el apartado está listo, en que se manda el recordatorio. */

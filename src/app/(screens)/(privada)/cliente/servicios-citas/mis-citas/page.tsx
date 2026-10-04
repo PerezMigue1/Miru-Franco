@@ -10,11 +10,15 @@ import Badge from '../../../../../components/ui/Badge';
 import Input from '../../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../../components/ui/Table';
 import { listarCitas, type CitaApi } from '../../../../../services/citas';
+import AnticipoPortal from '../../../../../components/cliente/AnticipoPortal';
+import { useAhora } from '../../../../../hooks/useAhora';
+import { etiquetaEstadoCita } from '../../../../../utils/estados';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
 export default function MisCitasPage() {
   const router = useRouter();
+  const ahora = useAhora();
 
   const [citas, setCitas] = useState<CitaApi[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -118,13 +122,20 @@ export default function MisCitasPage() {
             {citasFiltradas.map((cita) => (
               <TableRow key={cita.id}>
                 <TableCell className="font-mono text-xs">#{cita.id}</TableCell>
-                <TableCell className="font-semibold">{cita.servicioNombre ?? '—'}</TableCell>
+                <TableCell>
+                  <span className="font-semibold">{cita.servicioNombre ?? '—'}</span>
+                  {(cita.anticipoRequerido ?? 0) > 0 && (
+                    <div className="mt-2">
+                      <AnticipoPortal cita={cita} ahora={ahora} />
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{formatearFecha(cita.fechaHoraInicio)}</TableCell>
                 <TableCell>{formatearHora(cita.fechaHoraInicio)}</TableCell>
                 <TableCell>{cita.especialistaNombre ?? '—'}</TableCell>
                 <TableCell>
                   <Badge variant={obtenerVariantEstado(cita.estado)}>
-                    {cita.estado}
+                    {etiquetaEstadoCita(cita.estado)}
                   </Badge>
                 </TableCell>
                 <TableCell>

@@ -35,6 +35,8 @@ export interface Servicio {
   duracion?: string;
   /** Duración en minutos, alineada con Prisma `duracionMinutos`. */
   duracionMinutos?: number;
+  /** Anticipo que pide al agendar en línea (null o 0: no pide). */
+  anticipoMonto?: number | null;
   precio?: string;
   categoria?: string;
   /** Indica si el servicio requiere evaluación previa (Prisma `requiereEvaluacion`). */
@@ -65,6 +67,8 @@ type ApiServicioRaw = Record<string, unknown> & {
   duracion_minutos?: number;
   duracionMinutos?: number;
   precio?: number | string;
+  anticipoMonto?: number | string | null;
+  anticipo_monto?: number | string | null;
   categoria?: string;
   requiere_evaluacion?: boolean;
   requiereEvaluacion?: boolean;
@@ -217,6 +221,11 @@ function normalizarServicio(raw: ApiServicioRaw): Servicio {
     duracion,
     duracionMinutos: typeof duracionMin === 'number' ? duracionMin : undefined,
     precio,
+    anticipoMonto: (() => {
+      const v = raw.anticipoMonto ?? raw.anticipo_monto;
+      const n = v === null || v === undefined || v === '' ? null : Number(v);
+      return n !== null && Number.isFinite(n) && n > 0 ? n : null;
+    })(),
     categoria: raw.categoria != null ? String(raw.categoria) : undefined,
     requiereEvaluacion,
     // Exponer el estado real; si el backend no lo envía (respuestas antiguas), asumir activo.
@@ -364,4 +373,9 @@ export async function updateServicio(id: string | number, payload: ServicioPaylo
 export async function deleteServicio(id: string | number): Promise<void> {
   const base = getBackendBaseUrl();
   await apiClient.delete(`/api/servicios/${id}`, base);
+}
+
+/** PUT /api/servicios/:id/anticipo (servicios:escritura): 0 o null quitan el anticipo del servicio. */
+export async function actualizarAnticipoServicio(id: string | number, anticipoMonto: number | null): Promise<void> {
+  await apiClient.put<unknown>(`/api/servicios/${id}/anticipo`, { anticipoMonto }, getBackendBaseUrl());
 }

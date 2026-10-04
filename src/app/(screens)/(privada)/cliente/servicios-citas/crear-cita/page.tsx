@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
@@ -10,11 +10,12 @@ import Textarea from '../../../../../components/ui/Textarea';
 import { getServicioPorId } from '../../../../../services/servicios';
 import type { Servicio } from '../../../../../services/servicios';
 import { getMiPerfil } from '../../../../../services/auth';
-import { crearCita, obtenerEspecialistas, type EspecialistaApi } from '../../../../../services/citas';
+import { crearCita, crearPreferenciaAnticipo, obtenerEspecialistas, type EspecialistaApi } from '../../../../../services/citas';
 import Link from 'next/link';
-import { CalendarDays, CalendarCheck2, Clock3, UserRound } from 'lucide-react';
+import { CalendarDays, CalendarCheck2, Clock3, UserRound, Wallet } from 'lucide-react';
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
+import { PLAZOS_TERMINOS } from '../../../../../utils/terminosCondiciones';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -32,10 +33,14 @@ function CrearCitaContent() {
   const [especialista, setEspecialista] = useState<EspecialistaApi | null>(null);
   const [loadingEspecialista, setLoadingEspecialista] = useState(!!especialistaId);
 
-  const [enviando, setEnviando] = useState(false);
+  const [enviando, setEnviando] = useState<false | 'linea' | 'salon'>(false);
+  /** Qué botón se usó (por clic, no por SubmitEvent.submitter, que Safari anterior a 15.4 no tiene). */
+  const modoPago = useRef<'linea' | 'salon'>('linea');
   const [error, setError] = useState<string | null>(null);
 
   const datosIncompletos = !servicioId || !especialistaId || !inicio || !fin;
+  /** Anticipo del servicio: aparta el horario PLAZOS_TERMINOS.horasAnticipoCita horas mientras se paga. */
+  const anticipo = servicio?.anticipoMonto ?? 0;
 
   useEffect(() => {
     if (!servicioId) {
@@ -58,13 +63,15 @@ function CrearCitaContent() {
       .finally(() => setLoadingEspecialista(false));
   }, [especialistaId]);
 
-  const manejarEnviar = async (e: React.FormEvent) => {
+  const manejarEnviar = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (datosIncompletos) {
       setError('Faltan datos de la cita. Vuelve a seleccionar especialista, fecha y hora.');
       return;
     }
-    setEnviando(true);
+    // Con anticipo: el botón principal paga en línea; el secundario confirma y paga en el salón.
+    const pagarEnSalon = modoPago.current === 'salon';
+    setEnviando(anticipo > 0 && !pagarEnSalon ? 'linea' : 'salon');
     setError(null);
     try {
       const perfil = await getMiPerfil();
@@ -76,6 +83,15 @@ function CrearCitaContent() {
         fechaHoraFin: fin!,
         notas: notas || undefined,
       }, { propios: true });
+      if ((cita.anticipoRequerido ?? 0) > 0 && !pagarEnSalon) {
+        try {
+          const { initPoint } = await crearPreferenciaAnticipo(cita.id);
+          window.location.assign(initPoint);
+          return;
+        } catch {
+          // La cita ya quedó apartada: en la confirmación puede volver a intentar el pago.
+        }
+      }
       router.push(`/cliente/servicios-citas/confirmacion?citaId=${cita.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cita. Intenta con otro horario.');
@@ -214,20 +230,44 @@ function CrearCitaContent() {
                         {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '—'}
                       </p>
                     </div>
+                    {anticipo > 0 && (
+                      <div className="rounded-xl bg-fondos-suaves p-4">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <p className="flex items-center gap-2 text-sm font-semibold text-menu-texto-principal">
+                            <Wallet size={16} aria-hidden className="shrink-0 text-logo-branding" />
+                            Anticipo para apartar tu cita
+                          </p>
+                          <p className="mf-cifras text-xl font-bold text-menu-texto-principal">{formatearPrecioMXN(anticipo)}</p>
+                        </div>
+                        <p className="mt-2 text-sm text-encabezados-alterno">
+                          Tienes {PLAZOS_TERMINOS.horasAnticipoCita} horas para pagarlo; si no, el horario se libera.
+                          Se descuenta del total el día de tu cita.
+                        </p>
+                      </div>
+                    )}
                     {error && (
-                      <p className="text-sm" role="alert" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+                      <p className="text-sm text-[var(--danger-texto)]" role="alert">{error}</p>
                     )}
                     <Button
                       type="submit"
+                      value="linea"
+                      onClick={() => { modoPago.current = 'linea'; }}
                       fullWidth
                       size="lg"
                       className="mt-4"
-                      disabled={enviando || datosIncompletos}
+                      disabled={!!enviando || datosIncompletos}
                     >
-                      <span className="mf-feedback-contenido w-full" data-cambiando={enviando ? 'true' : 'false'}>
-                        {enviando ? 'Confirmando…' : 'Confirmar Cita'}
+                      <span className="mf-feedback-contenido w-full" data-cambiando={enviando === 'linea' ? 'true' : 'false'}>
+                        {anticipo > 0
+                          ? enviando === 'linea' ? 'Abriendo Mercado Pago…' : 'Pagar anticipo con Mercado Pago'
+                          : enviando ? 'Confirmando…' : 'Confirmar Cita'}
                       </span>
                     </Button>
+                    {anticipo > 0 && (
+                      <Button type="submit" value="salon" onClick={() => { modoPago.current = 'salon'; }} variant="outline" fullWidth disabled={!!enviando || datosIncompletos}>
+                        {enviando === 'salon' ? 'Apartando…' : 'Apartar y pagar en el salón'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </Card>
