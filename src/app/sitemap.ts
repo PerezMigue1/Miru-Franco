@@ -13,6 +13,7 @@ const RUTAS_FIJAS: { path: string; changeFrequency: MetadataRoute.Sitemap[number
   { path: '/sobre-nosotros', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/contacto', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/terminos-y-condiciones', changeFrequency: 'yearly', priority: 0.2 },
+  { path: '/aviso-de-privacidad', changeFrequency: 'yearly', priority: 0.2 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

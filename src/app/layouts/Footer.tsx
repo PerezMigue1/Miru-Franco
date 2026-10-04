@@ -192,8 +192,8 @@ export default function Footer() {
             <Link href="/terminos-y-condiciones" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Términos y Condiciones
             </Link>
-            <Link href="/terminos-y-condiciones#datos-personales" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
-              Política de Privacidad
+            <Link href="/aviso-de-privacidad" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
+              Aviso de Privacidad
             </Link>
           </div>
           <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>

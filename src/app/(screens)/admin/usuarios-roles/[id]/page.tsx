@@ -10,6 +10,8 @@ import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import FotoUsuarioUploader from '../../../../components/admin/FotoUsuarioUploader';
 import { getUsuarioById, updateUsuario, getRoles, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
+import CasillaDatosSalud from '../../../../components/legal/CasillaDatosSalud';
+import { errorConsentimientoAlergias, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
 
 const ROLES_PERMITIDOS = ['admin', 'estilista', 'empleado', 'becario'] as const;
 
@@ -51,6 +53,9 @@ export default function EditarUsuarioPage() {
   const [colorActual, setColorActual] = useState('');
   const [productosUsados, setProductosUsados] = useState('');
   const [alergias, setAlergias] = useState('');
+  // Consentimiento de la clienta para datos de salud: se confirma en cada guardado con alergias y no se guarda.
+  const [consienteDatosSensibles, setConsienteDatosSensibles] = useState(false);
+  const [errorConsentimiento, setErrorConsentimiento] = useState<string | null>(null);
 
   useEffect(() => {
     getRoles().then(setRoles).catch(() => setRoles([]));
@@ -91,6 +96,9 @@ export default function EditarUsuarioPage() {
       setError('El nombre es obligatorio.');
       return;
     }
+    const faltaConsentimiento = errorConsentimientoAlergias(alergias, consienteDatosSensibles, 'personal');
+    setErrorConsentimiento(faltaConsentimiento);
+    if (faltaConsentimiento) return;
     setSaving(true);
     setError(null);
     try {
@@ -107,6 +115,7 @@ export default function EditarUsuarioPage() {
         colorActual: colorActual.trim() || null,
         productosUsados: productosUsados.trim() || null,
         alergias: alergias.trim() || null,
+        ...(requiereConsentimiento(alergias) ? { consienteDatosSensibles: true } : {}),
       });
       router.push('/admin/usuarios-roles');
     } catch (err) {
@@ -227,6 +236,16 @@ export default function EditarUsuarioPage() {
               </div>
               <div className="md:col-span-2 sm:col-span-2">
                 <Textarea label="Alergias conocidas" value={alergias} onChange={(e) => setAlergias(e.target.value)} rows={2} fullWidth />
+                <CasillaDatosSalud
+                  quien="personal"
+                  className="mt-2"
+                  checked={consienteDatosSensibles}
+                  onChange={(e) => {
+                    setConsienteDatosSensibles(e.target.checked);
+                    if (e.target.checked) setErrorConsentimiento(null);
+                  }}
+                  error={errorConsentimiento}
+                />
               </div>
             </div>
           </div>

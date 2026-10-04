@@ -423,6 +423,10 @@ html:has(.superficie-cliente) {
   font-weight: 600;
   color: var(--menu-texto-principal);
 }
+/* Subtítulo justo bajo el título de la sección (aviso de privacidad, 4): sin el aire de separación. */
+.mf-terminos__seccion > h2 + h3 {
+  margin-top: 0;
+}
 .mf-terminos__texto ol {
   list-style: decimal;
   padding-left: 1.5rem;

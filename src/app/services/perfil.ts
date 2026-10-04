@@ -206,13 +206,15 @@ export interface ActualizarMiPerfilPayload {
   colorActual?: string | null;
   productosUsados?: string | null;
   alergias?: string | null;
+  /** Obligatorio (true) si alergias trae texto. No se guarda en la base. */
+  consienteDatosSensibles?: boolean;
   aceptaAvisoPrivacidad?: boolean;
   recibePromociones?: boolean;
 }
 
 /**
  * Claves permitidas en PATCH `/api/auth/me` según el DTO del backend (ValidationPipe whitelist).
- * Campos de perfil capilar / aviso de privacidad se omiten en la petición hasta que el API los exponga en el DTO.
+ * Las alergias van con su consentimiento; el resto del perfil capilar y el aviso de privacidad todavía no se envían.
  */
 function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, unknown> {
   const body: Record<string, unknown> = {};
@@ -220,6 +222,9 @@ function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, u
   if (payload.telefono !== undefined) body.telefono = payload.telefono;
   if (payload.foto !== undefined) body.foto = payload.foto;
   if (payload.recibePromociones !== undefined) body.recibePromociones = payload.recibePromociones;
+  // Alergias (dato de salud): viajan con el consentimiento expreso; el backend rechaza (400) alergias sin él.
+  if (payload.alergias !== undefined) body.alergias = payload.alergias;
+  if (payload.consienteDatosSensibles !== undefined) body.consienteDatosSensibles = payload.consienteDatosSensibles;
   if (payload.fechaNacimiento !== undefined) {
     const v = payload.fechaNacimiento;
     if (v && !String(v).includes('T')) {

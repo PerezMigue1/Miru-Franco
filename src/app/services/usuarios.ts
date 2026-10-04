@@ -381,6 +381,8 @@ export interface CrearUsuarioPayload {
   recibePromociones?: boolean;
   /** Usuarios creados por admin deben poder iniciar sesión sin verificación de correo */
   confirmado?: boolean;
+  /** Obligatorio (true) si perfilCapilar.alergias trae texto. No se guarda. */
+  consienteDatosSensibles?: boolean;
 }
 
 /**
@@ -411,6 +413,7 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
     aceptaAvisoPrivacidad: Boolean(aceptaAvisoPrivacidad),
     recibePromociones: Boolean(recibePromociones),
     confirmado: payload.confirmado ?? true, // Usuarios creados por admin pueden iniciar sesión sin verificación
+    ...(payload.consienteDatosSensibles !== undefined ? { consienteDatosSensibles: payload.consienteDatosSensibles } : {}),
   };
   // No enviar dirección embebida: DireccionUsuario se gestiona aparte tras crear el usuario.
   // No enviar "rol" si el backend lo rechaza en el POST; asignar rol después con PATCH /api/usuarios/:id/rol
@@ -450,6 +453,8 @@ export interface ActualizarUsuarioPayload {
   colorActual?: string | null;
   productosUsados?: string | null;
   alergias?: string | null;
+  /** Obligatorio (true) si alergias trae texto: el personal confirma que la clienta autorizó. No se guarda. */
+  consienteDatosSensibles?: boolean;
 }
 
 export interface UsuarioPedidoRelacionado {

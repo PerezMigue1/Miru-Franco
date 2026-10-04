@@ -16,6 +16,8 @@ import {
 import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
 import { hoyEnMexico, mismoDiaHaceAnios } from '../../utils/fechaSoloDia';
+import CasillaDatosSalud from '../legal/CasillaDatosSalud';
+import { errorConsentimientoAlergias, requiereConsentimiento } from '../../utils/consentimientoDatosSensibles';
 
 interface RegisterProps {
   onSwitchToLogin?: () => void;
@@ -37,6 +39,8 @@ interface FormValues {
   productosUsados: string;
   hasAllergies: 'yes' | 'no' | '';
   allergies: string;
+  /** Consentimiento expreso para datos de salud; no se guarda, solo viaja al backend. */
+  consienteDatosSensibles: boolean;
   hasChemicalTreatments: 'yes' | 'no' | '';
   chemicalTreatments: string;
   acceptTerms: boolean;
@@ -71,7 +75,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       name: '', email: '', phone: '', password: '', confirmPassword: '',
       birthDate: '', securityQuestion: '', securityAnswer: '',
       hairType: '', colorNatural: '', colorActual: '', productosUsados: '',
-      hasAllergies: '', allergies: '',
+      hasAllergies: '', allergies: '', consienteDatosSensibles: false,
       hasChemicalTreatments: '', chemicalTreatments: '',
       acceptTerms: false, receivePromotions: false,
     },
@@ -202,6 +206,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         },
         aceptaAvisoPrivacidad: values.acceptTerms,
         recibePromociones: values.receivePromotions,
+        ...(values.hasAllergies === 'yes' && requiereConsentimiento(values.allergies)
+          ? { consienteDatosSensibles: values.consienteDatosSensibles }
+          : {}),
       };
 
       const response = await api.register(registerData);
@@ -572,7 +579,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                 <label className="flex items-center cursor-pointer">
                   <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'no'}
-                    onChange={() => { field.onChange('no'); setValue('allergies', ''); }}
+                    onChange={() => { field.onChange('no'); setValue('allergies', ''); setValue('consienteDatosSensibles', false); }}
                     onBlur={field.onBlur}
                   />
                   <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>No</span>
@@ -607,6 +614,26 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           )}
           {errors.hasAllergies && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.hasAllergies.message}</p>}
           {errors.allergies && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.allergies.message}</p>}
+          {hasAllergiesValue === 'yes' && (
+            <Controller
+              name="consienteDatosSensibles"
+              control={control}
+              rules={{
+                validate: (v, all) =>
+                  errorConsentimientoAlergias(all.hasAllergies === 'yes' ? all.allergies : '', v) ?? true,
+              }}
+              render={({ field }) => (
+                <CasillaDatosSalud
+                  name={field.name}
+                  checked={!!field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  onBlur={field.onBlur}
+                  disabled={isSubmitting}
+                  error={errors.consienteDatosSensibles?.message}
+                />
+              )}
+            />
+          )}
         </div>
       </div>
 
@@ -661,13 +688,13 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         </div>
       </div>
 
-      {/* Términos */}
+      {/* Aviso de Privacidad (se guarda como aceptaAvisoPrivacidad) */}
       <div className="space-y-3 pt-4">
         <label className="flex items-start cursor-pointer">
           <Controller
             name="acceptTerms"
             control={control}
-            rules={{ required: 'Debes aceptar los Términos y Condiciones' }}
+            rules={{ required: 'Debes aceptar el Aviso de Privacidad' }}
             render={({ field }) => (
               <input
                 type="checkbox"
@@ -680,9 +707,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             )}
           />
           <span className="ml-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-            Acepto los{' '}
-            <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4" style={{ color: 'var(--menu-texto-principal)' }} onClick={(e) => e.stopPropagation()}>
-              Términos y Condiciones
+            Acepto el{' '}
+            <a href="/aviso-de-privacidad" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4" style={{ color: 'var(--menu-texto-principal)' }} onClick={(e) => e.stopPropagation()}>
+              Aviso de Privacidad<span className="sr-only"> (se abre en otra pestaña)</span>
             </a>
           </span>
         </label>

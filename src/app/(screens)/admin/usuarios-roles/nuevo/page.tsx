@@ -10,6 +10,8 @@ import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import { createUsuario, patchUsuarioRol, getRoles, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
 import { api as authApi } from '../../../../services/auth';
+import CasillaDatosSalud from '../../../../components/legal/CasillaDatosSalud';
+import { errorConsentimientoAlergias, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
 
 const ROLES_PERMITIDOS = ['admin', 'estilista', 'empleado', 'becario'] as const;
 
@@ -44,6 +46,9 @@ export default function NuevoUsuarioPage() {
   const [tipoCabello, setTipoCabello] = useState('liso');
   const [tieneAlergias, setTieneAlergias] = useState(false);
   const [alergias, setAlergias] = useState('');
+  // Consentimiento de la clienta para datos de salud: se confirma al registrar alergias y no se guarda.
+  const [consienteDatosSensibles, setConsienteDatosSensibles] = useState(false);
+  const [errorConsentimiento, setErrorConsentimiento] = useState<string | null>(null);
   const [tratamientosQuimicos, setTratamientosQuimicos] = useState(false);
   const [tratamientos, setTratamientos] = useState('');
   const [aceptaAviso, setAceptaAviso] = useState(true);
@@ -111,6 +116,11 @@ export default function NuevoUsuarioPage() {
       setError('Nombre, email y contraseña son obligatorios.');
       return;
     }
+    // Solo se mandan alergias si la casilla "Tiene alergias" está marcada.
+    const alergiasEnviadas = tieneAlergias ? alergias.trim() : '';
+    const faltaConsentimiento = errorConsentimientoAlergias(alergiasEnviadas, consienteDatosSensibles, 'personal');
+    setErrorConsentimiento(faltaConsentimiento);
+    if (faltaConsentimiento) return;
     const emailTrimmed = email.trim().toLowerCase();
     const resVerify = await authApi.verificarCorreoExistente(emailTrimmed);
     if (resVerify.existe) {
@@ -133,12 +143,13 @@ export default function NuevoUsuarioPage() {
         perfilCapilar: {
           tipoCabello,
           tieneAlergias,
-          alergias: alergias.trim() || undefined,
+          alergias: alergiasEnviadas || undefined,
           tratamientosQuimicos,
           tratamientos: tratamientos.trim() || undefined,
         },
         aceptaAvisoPrivacidad: aceptaAviso,
         recibePromociones: recibePromo,
+        ...(requiereConsentimiento(alergiasEnviadas) ? { consienteDatosSensibles: true } : {}),
       });
       if (rol && rol !== 'cliente') {
         try {
@@ -258,7 +269,18 @@ export default function NuevoUsuarioPage() {
                   <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Tiene alergias</span>
                 </label>
                 {tieneAlergias && (
-                  <Textarea label="Alergias" value={alergias} onChange={(e) => setAlergias(e.target.value)} placeholder="Especificar" fullWidth rows={2} />
+                  <>
+                    <Textarea label="Alergias" value={alergias} onChange={(e) => setAlergias(e.target.value)} placeholder="Especificar" fullWidth rows={2} />
+                    <CasillaDatosSalud
+                      quien="personal"
+                      checked={consienteDatosSensibles}
+                      onChange={(e) => {
+                        setConsienteDatosSensibles(e.target.checked);
+                        if (e.target.checked) setErrorConsentimiento(null);
+                      }}
+                      error={errorConsentimiento}
+                    />
+                  </>
                 )}
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={tratamientosQuimicos} onChange={(e) => setTratamientosQuimicos(e.target.checked)} className="rounded" />

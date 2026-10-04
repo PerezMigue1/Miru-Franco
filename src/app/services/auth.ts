@@ -247,6 +247,8 @@ export const api = {
     };
     aceptaAvisoPrivacidad: boolean;
     recibePromociones: boolean;
+    /** Obligatorio si perfilCapilar.alergias trae texto. No se guarda. */
+    consienteDatosSensibles?: boolean;
   }): Promise<RegisterResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const data = await apiClient.post<RegisterResponse>('/api/usuarios/registro', registerData, BACKEND_BASE);

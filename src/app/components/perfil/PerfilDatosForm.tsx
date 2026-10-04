@@ -14,6 +14,8 @@ import {
   type TipoCabelloValor,
 } from '../../services/perfil';
 import { sanitizarEntradaTelefono10, esTelefonoMexicoValido, mensajeTelefonoInvalido } from '../../utils/phone';
+import CasillaDatosSalud from '../legal/CasillaDatosSalud';
+import { errorConsentimientoAlergias, requiereConsentimiento } from '../../utils/consentimientoDatosSensibles';
 
 const TIPO_CABELLO_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Sin especificar' },
@@ -31,6 +33,8 @@ interface FormValues {
   colorActual: string;
   productosUsados: string;
   alergias: string;
+  /** Consentimiento expreso para datos de salud: se pide en cada guardado con alergias y no se guarda. */
+  consienteDatosSensibles: boolean;
   aceptaAvisoPrivacidad: boolean;
   recibePromociones: boolean;
 }
@@ -55,7 +59,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
   } = useForm<FormValues>({
     defaultValues: {
       nombre: '', telefono: '', fechaNacimiento: '', tipoCabello: '',
-      colorNatural: '', colorActual: '', productosUsados: '', alergias: '',
+      colorNatural: '', colorActual: '', productosUsados: '', alergias: '', consienteDatosSensibles: false,
       aceptaAvisoPrivacidad: false, recibePromociones: false,
     },
   });
@@ -77,6 +81,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
           colorActual: p.colorActual || '',
           productosUsados: p.productosUsados || '',
           alergias: p.alergias || '',
+          consienteDatosSensibles: false,
           aceptaAvisoPrivacidad: p.aceptaAvisoPrivacidad === true,
           recibePromociones: p.recibePromociones === true,
         });
@@ -102,6 +107,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
       colorActual: values.colorActual.trim() || null,
       productosUsados: values.productosUsados.trim() || null,
       alergias: values.alergias.trim() || null,
+      ...(requiereConsentimiento(values.alergias) ? { consienteDatosSensibles: values.consienteDatosSensibles } : {}),
       aceptaAvisoPrivacidad: values.aceptaAvisoPrivacidad,
       recibePromociones: values.recibePromociones,
     });
@@ -182,6 +188,14 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
         <Input label="Productos que usas" fullWidth disabled={disabled} {...register('productosUsados')} />
         <div className="md:col-span-2">
           <Input label="Alergias" fullWidth disabled={disabled} {...register('alergias')} />
+          <CasillaDatosSalud
+            className="mt-2"
+            disabled={disabled}
+            error={errors.consienteDatosSensibles?.message}
+            {...register('consienteDatosSensibles', {
+              validate: (v, all) => errorConsentimientoAlergias(all.alergias, v) ?? true,
+            })}
+          />
         </div>
 
         <div className="md:col-span-2 flex flex-col gap-3">

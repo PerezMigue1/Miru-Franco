@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
     }
     return [];
   },
+  // /terminos se reemplazó por /terminos-y-condiciones: 301 (no el 308 de `permanent`) para enlaces y buscadores.
+  async redirects() {
+    return [{ source: '/terminos', destination: '/terminos-y-condiciones', statusCode: 301 }];
+  },
   images: {
     remotePatterns: [
       {
