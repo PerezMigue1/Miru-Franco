@@ -2,20 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { RotateCw } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import PerfilFotoBlock from './PerfilFotoBlock';
 import { getMiPerfil } from '../../services/auth';
-import {
-  mergePerfilEnLocalStorage,
-  patchMiPerfil,
-  type PerfilUsuarioCompleto,
-  type TipoCabelloValor,
-} from '../../services/perfil';
+import { mergePerfilEnLocalStorage, patchMiPerfil, type PerfilUsuarioCompleto } from '../../services/perfil';
 import { sanitizarEntradaTelefono10, esTelefonoMexicoValido, mensajeTelefonoInvalido } from '../../utils/phone';
 import CasillaDatosSalud from '../legal/CasillaDatosSalud';
-import { errorConsentimientoAlergias, requiereConsentimiento } from '../../utils/consentimientoDatosSensibles';
+import { errorConsentimientoAlergias } from '../../utils/consentimientoDatosSensibles';
+import {
+  VALORES_PERFIL_VACIOS,
+  cuerpoGuardarPerfil,
+  formularioPerfilHabilitado,
+  valoresDesdePerfil,
+  type ValoresPerfil,
+} from '../../utils/perfilDatosForm';
 
 const TIPO_CABELLO_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Sin especificar' },
@@ -24,20 +27,6 @@ const TIPO_CABELLO_OPTIONS: { value: string; label: string }[] = [
   { value: 'rizado', label: 'Rizado' },
 ];
 
-interface FormValues {
-  nombre: string;
-  telefono: string;
-  fechaNacimiento: string;
-  tipoCabello: string;
-  colorNatural: string;
-  colorActual: string;
-  productosUsados: string;
-  alergias: string;
-  /** Consentimiento expreso para datos de salud: se pide en cada guardado con alergias y no se guarda. */
-  consienteDatosSensibles: boolean;
-  aceptaAvisoPrivacidad: boolean;
-  recibePromociones: boolean;
-}
 
 export interface PerfilDatosFormProps {
   onSaved?: (p: PerfilUsuarioCompleto) => void;
@@ -48,6 +37,8 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState<string | null>(null);
   const [perfil, setPerfil] = useState<PerfilUsuarioCompleto | null>(null);
+  // Cada reintento vuelve a disparar la carga del perfil.
+  const [intentoCarga, setIntentoCarga] = useState(0);
 
   const {
     register,
@@ -56,13 +47,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    defaultValues: {
-      nombre: '', telefono: '', fechaNacimiento: '', tipoCabello: '',
-      colorNatural: '', colorActual: '', productosUsados: '', alergias: '', consienteDatosSensibles: false,
-      aceptaAvisoPrivacidad: false, recibePromociones: false,
-    },
-  });
+  } = useForm<ValoresPerfil>({ defaultValues: VALORES_PERFIL_VACIOS });
 
   useEffect(() => {
     let cancelled = false;
@@ -72,19 +57,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
       .then((p) => {
         if (cancelled) return;
         setPerfil(p);
-        reset({
-          nombre: p.nombre || '',
-          telefono: sanitizarEntradaTelefono10(p.telefono || ''),
-          fechaNacimiento: p.fechaNacimiento?.slice(0, 10) || '',
-          tipoCabello: p.tipoCabello || '',
-          colorNatural: p.colorNatural || '',
-          colorActual: p.colorActual || '',
-          productosUsados: p.productosUsados || '',
-          alergias: p.alergias || '',
-          consienteDatosSensibles: false,
-          aceptaAvisoPrivacidad: p.aceptaAvisoPrivacidad === true,
-          recibePromociones: p.recibePromociones === true,
-        });
+        reset(valoresDesdePerfil(p));
       })
       .catch((e) => {
         if (!cancelled) setLoadError(e instanceof Error ? e.message : 'No se pudo cargar el perfil.');
@@ -93,24 +66,14 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
         if (!cancelled) setLoadingPerfil(false);
       });
     return () => { cancelled = true; };
-  }, [reset]);
+  }, [reset, intentoCarga]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: ValoresPerfil) => {
+    // Sin perfil cargado no se guarda: los valores vacíos de inicio borrarían alergias, teléfono, etc.
+    const cuerpo = cuerpoGuardarPerfil(perfil, values);
+    if (!cuerpo) return;
     setSaveOk(null);
-    const tc = values.tipoCabello as TipoCabelloValor | '';
-    await patchMiPerfil({
-      nombre: values.nombre.trim() || (perfil?.nombre ?? ''),
-      telefono: values.telefono.trim() ? sanitizarEntradaTelefono10(values.telefono) : null,
-      fechaNacimiento: values.fechaNacimiento.trim() || null,
-      tipoCabello: tc === '' ? null : tc,
-      colorNatural: values.colorNatural.trim() || null,
-      colorActual: values.colorActual.trim() || null,
-      productosUsados: values.productosUsados.trim() || null,
-      alergias: values.alergias.trim() || null,
-      ...(requiereConsentimiento(values.alergias) ? { consienteDatosSensibles: values.consienteDatosSensibles } : {}),
-      aceptaAvisoPrivacidad: values.aceptaAvisoPrivacidad,
-      recibePromociones: values.recibePromociones,
-    });
+    await patchMiPerfil(cuerpo);
     setSaveOk('Cambios guardados.');
     const p = await getMiPerfil();
     setPerfil(p);
@@ -118,14 +81,28 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
     onSaved?.(p);
   };
 
-  const disabled = loadingPerfil || isSubmitting;
+  const disabled = !formularioPerfilHabilitado({ cargando: loadingPerfil, enviando: isSubmitting, perfil });
 
   return (
     <div className="rounded-lg border border-[var(--fondos-suaves)] bg-[var(--tarjetas-paneles)] p-6">
       <h3 className="text-elegant-title mb-6" style={{ color: 'var(--encabezados-alterno)', fontFamily: 'var(--font-family-serif)' }}>Información personal</h3>
 
       {loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>}
-      {loadError && !loadingPerfil && <p className="text-sm mb-4" style={{ color: 'var(--danger-texto)' }}>{loadError}</p>}
+      {loadError && !loadingPerfil && (
+        <div className="mb-4 flex flex-wrap items-center gap-3" role="alert">
+          <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{loadError}</p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="inline-flex items-center gap-2"
+            onClick={() => setIntentoCarga((n) => n + 1)}
+          >
+            <RotateCw size={16} aria-hidden />
+            Reintentar
+          </Button>
+        </div>
+      )}
       {saveOk && <p className="text-sm mb-4" style={{ color: 'var(--success-texto)' }} role="status">{saveOk}</p>}
 
       <div className="mb-8">
