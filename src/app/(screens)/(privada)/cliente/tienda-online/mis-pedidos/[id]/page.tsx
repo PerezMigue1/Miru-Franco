@@ -95,7 +95,7 @@ export default function DetallePedidoPage() {
     (async () => {
       try {
         const [p, lineas, env, pays, hist, fac, val, dev] = await Promise.all([
-          obtenerPedido(pedidoId),
+          obtenerPedido(pedidoId, { propios: true }),
           listarPedidoItems(pedidoId),
           listarEnviosPorPedido(pedidoId),
           listarPagosPorPedido(pedidoId),
@@ -172,7 +172,7 @@ export default function DetallePedidoPage() {
     if (!ok) return;
     setCancelando(true);
     try {
-      setPedido(await actualizarPedido(pedido.id, { estado: 'cancelado' }));
+      setPedido(await actualizarPedido(pedido.id, { estado: 'cancelado' }, { propios: true }));
       showToast('Tu pedido quedó cancelado.', 'success');
     } catch (e) {
       showToast(mensajeUsuarioDesdeErrorApi(e), 'error');

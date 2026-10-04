@@ -30,7 +30,7 @@ export default function DetalleMiCitaPage() {
       });
       return;
     }
-    obtenerCita(Number(id))
+    obtenerCita(Number(id), { propios: true })
       .then((c) => {
         if (!c) {
           setError('Cita no encontrada.');

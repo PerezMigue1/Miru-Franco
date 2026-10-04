@@ -233,7 +233,7 @@ function ConfirmacionCompraContent() {
     (async () => {
       try {
         const [p, lineas, pays] = await Promise.all([
-          obtenerPedido(pedidoId),
+          obtenerPedido(pedidoId, { propios: true }),
           listarPedidoItems(pedidoId),
           listarPagosPorPedido(pedidoId),
         ]);

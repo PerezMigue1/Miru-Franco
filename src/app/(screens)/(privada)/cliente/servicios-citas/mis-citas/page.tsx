@@ -22,7 +22,7 @@ export default function MisCitasPage() {
   const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
-    listarCitas({ orden: 'fechaHoraInicio', limit: 100 })
+    listarCitas({ orden: 'fechaHoraInicio', limit: 100, propios: true })
       .then((r) => setCitas(r.data))
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar tus citas'))
       .finally(() => setCargando(false));

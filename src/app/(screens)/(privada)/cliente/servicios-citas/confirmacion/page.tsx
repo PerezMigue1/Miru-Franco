@@ -33,7 +33,7 @@ function ConfirmacionContent() {
       });
       return;
     }
-    obtenerCita(Number(citaId))
+    obtenerCita(Number(citaId), { propios: true })
       .then((c) => {
         if (!c) {
           setError('No se encontró la cita.');

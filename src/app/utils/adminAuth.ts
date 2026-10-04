@@ -38,3 +38,14 @@ export function rutaPorRol(rol: string | undefined): string {
   if (STAFF_ROLES.includes(r)) return '/operacion';
   return '/403';
 }
+
+/**
+ * Acceso a su panel desde el menú de cuenta del sitio público: admin a /admin, personal a /operacion.
+ * La clienta no tiene panel (null). Todos los roles usan además el portal de clienta con sus datos.
+ */
+export function panelDeRol(rol: string | undefined): { href: string; etiqueta: string } | null {
+  if (isAdminRol(rol)) return { href: '/admin', etiqueta: 'Panel de administración' };
+  const r = (rol ?? '').toLowerCase().trim();
+  if (STAFF_ROLES.includes(r)) return { href: '/operacion', etiqueta: 'Panel de operación' };
+  return null;
+}

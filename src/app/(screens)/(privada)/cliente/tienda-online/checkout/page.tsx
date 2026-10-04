@@ -210,7 +210,7 @@ export default function CheckoutPage() {
           productoId: item.productoId,
           presentacionId: item.presentacionId,
         })),
-      });
+      }, { propios: true });
       pedidoId = pedido.id;
       // El servidor descuenta stock al crear el pedido; refrescar catálogos abiertos.
       emitCatalogStockChanged();

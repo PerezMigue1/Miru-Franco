@@ -6,6 +6,7 @@ import { handleSecurityError } from '../../utils/security';
 import { Eye, EyeOff, Timer } from 'lucide-react';
 import Notification from '../ui/Notification';
 import ActivateAccount from './ActivateAccount';
+import { guardarRegresoParaGoogle } from './redireccionTrasLogin';
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -336,6 +337,8 @@ export default function Login({
 
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
+    // Al volver de Google se regresa a la página de la que venía (cualquier rol).
+    guardarRegresoParaGoogle(window.location.search);
     // ✅ Usar configuracion centralizada segun GUIA_ACTUALIZAR_FRONTEND_SIN_ROMPER.md
     import('../../services/config').then(({ getBackendBaseUrl }) => {
       const BACKEND_BASE = getBackendBaseUrl();

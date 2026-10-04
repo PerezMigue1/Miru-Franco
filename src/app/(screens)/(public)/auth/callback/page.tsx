@@ -13,6 +13,7 @@ import { normalizarUsuarioAlmacenado } from '../../../../utils/normalizarUsuario
 import { emitMiruUserStorageUpdated } from '../../../../utils/userStorageSync';
 import { api } from '../../../../services/auth';
 import { mergePerfilEnLocalStorage } from '../../../../services/perfil';
+import { tomarRegresoDeGoogle } from '../../../../components/auth/redireccionTrasLogin';
 
 /** Retraso sin `setTimeout(() => { ... })` para no disparar taint (URL → setTimeout) en Semgrep. */
 function sleep(ms: number): Promise<void> {
@@ -109,7 +110,8 @@ function AuthCallbackContent() {
             
             // Esperar un momento para mostrar el mensaje de éxito
             await sleep(1500);
-            router.push('/home');
+            // Regresa a la página de la que venía antes de ir a Google, para cualquier rol.
+            router.push(tomarRegresoDeGoogle());
           } else {
             setStatus('error');
             setMessage(data.message || data.error || 'Error al obtener token');

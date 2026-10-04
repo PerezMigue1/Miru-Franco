@@ -35,7 +35,7 @@ export default function CancelarCitaPage() {
       });
       return;
     }
-    obtenerCita(Number(id))
+    obtenerCita(Number(id), { propios: true })
       .then((c) => {
         if (!c) {
           setError('Cita no encontrada.');
@@ -65,7 +65,7 @@ export default function CancelarCitaPage() {
     setErrorCancelar(null);
     try {
       const motivoCancelacion = [motivo, comentarios].filter(Boolean).join(' — ') || 'Sin motivo especificado';
-      await cancelarCita(Number(id), { motivoCancelacion });
+      await cancelarCita(Number(id), { motivoCancelacion }, { propios: true });
       router.push('/cliente/servicios-citas/mis-citas');
     } catch (err) {
       setErrorCancelar(err instanceof Error ? err.message : 'No se pudo cancelar la cita.');

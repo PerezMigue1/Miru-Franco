@@ -23,7 +23,7 @@ export default function MisPedidosPage() {
     let cancelled = false;
     (async () => {
       try {
-        const list = await listarPedidos();
+        const list = await listarPedidos({ propios: true });
         if (cancelled) return;
         setPedidos(list);
       } catch (e) {

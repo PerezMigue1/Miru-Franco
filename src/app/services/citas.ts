@@ -124,7 +124,15 @@ export interface ListarCitasParams {
   limit?: number;
   /** Campo de orden. Por defecto 'fechaHoraInicio' (asc). */
   orden?: 'fechaHoraInicio' | 'creadoEn';
+  /** Portal de clienta: solo las citas donde quien está en sesión es la clienta, sea del rol que sea. */
+  propios?: boolean;
 }
+
+/** Portal de clienta (cualquier rol): el backend solo devuelve y cambia citas propias; la ajena da 404. */
+export interface OpcionesPortalCita {
+  propios?: boolean;
+}
+const conPropios = (ruta: string, opts?: OpcionesPortalCita) => (opts?.propios ? `${ruta}?propios=true` : ruta);
 
 export async function listarCitas(
   params?: ListarCitasParams
@@ -135,6 +143,7 @@ export async function listarCitas(
   if (params?.estado) sp.set('estado', params.estado);
   if (params?.especialistaId) sp.set('especialistaId', params.especialistaId);
   if (params?.orden) sp.set('orden', params.orden);
+  if (params?.propios) sp.set('propios', 'true');
   sp.set('page', String(params?.page ?? 1));
   sp.set('limit', String(params?.limit ?? 50));
   const endpoint = `/api/citas?${sp.toString()}`;
@@ -164,14 +173,14 @@ export async function listarCalendario(desde: string, hasta: string, especialist
   return (arr as unknown[]).map(normalizarCita).filter((c): c is CitaApi => Boolean(c));
 }
 
-export async function obtenerCita(id: number): Promise<CitaApi | null> {
-  const res = await apiClient.get<unknown>(`/api/citas/${id}`, { customBase: getBackendBaseUrl() });
+export async function obtenerCita(id: number, opts?: OpcionesPortalCita): Promise<CitaApi | null> {
+  const res = await apiClient.get<unknown>(conPropios(`/api/citas/${id}`, opts), { customBase: getBackendBaseUrl() });
   const obj = (res as Record<string, unknown>)?.data ?? res;
   return normalizarCita(obj);
 }
 
-export async function crearCita(payload: CrearCitaPayload): Promise<CitaApi> {
-  const res = await apiClient.post<unknown>('/api/citas', payload, getBackendBaseUrl());
+export async function crearCita(payload: CrearCitaPayload, opts?: OpcionesPortalCita): Promise<CitaApi> {
+  const res = await apiClient.post<unknown>(conPropios('/api/citas', opts), payload, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const cita = normalizarCita(obj);
   if (!cita) throw new Error('No se pudo crear la cita');
@@ -268,9 +277,10 @@ export async function checkOutCita(id: number): Promise<CitaApi> {
 
 export async function reprogramarCita(
   id: number,
-  payload: { fechaHoraInicio: string; fechaHoraFin: string }
+  payload: { fechaHoraInicio: string; fechaHoraFin: string },
+  opts?: OpcionesPortalCita
 ): Promise<CitaApi> {
-  const res = await apiClient.patch<unknown>(`/api/citas/${id}/reprogramar`, payload, getBackendBaseUrl());
+  const res = await apiClient.patch<unknown>(conPropios(`/api/citas/${id}/reprogramar`, opts), payload, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const cita = normalizarCita(obj);
   if (!cita) throw new Error('No se pudo reprogramar la cita');
@@ -279,9 +289,10 @@ export async function reprogramarCita(
 
 export async function cancelarCita(
   id: number,
-  payload: { motivoCancelacion: string }
+  payload: { motivoCancelacion: string },
+  opts?: OpcionesPortalCita
 ): Promise<CitaApi> {
-  const res = await apiClient.patch<unknown>(`/api/citas/${id}/cancelar`, payload, getBackendBaseUrl());
+  const res = await apiClient.patch<unknown>(conPropios(`/api/citas/${id}/cancelar`, opts), payload, getBackendBaseUrl());
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const cita = normalizarCita(obj);
   if (!cita) throw new Error('No se pudo cancelar la cita');

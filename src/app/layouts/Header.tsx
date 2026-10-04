@@ -13,6 +13,9 @@ import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenad
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
 import { listarNotificaciones } from '../services/ecommerce';
 import { useNotificacionesSSE } from '../hooks/useNotificacionesSSE';
+import { getRolFromUser, panelDeRol } from '../utils/adminAuth';
+import { rutaLogin } from '../utils/rutasConSesion';
+import { rutaDeRegreso } from '../components/auth/redireccionTrasLogin';
 
 export default function Header() {
   const router = useRouter();
@@ -26,6 +29,8 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('Usuario');
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
+  /** Personal y admin usan el sitio como clienta y además tienen acceso directo a su panel. */
+  const [panel, setPanel] = useState<{ href: string; etiqueta: string } | null>(null);
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
@@ -51,6 +56,7 @@ export default function Header() {
     if (typeof window === 'undefined' || !logged) {
       setUserName('Usuario');
       setUserAvatarUrl(null);
+      setPanel(null);
       return;
     }
     try {
@@ -58,10 +64,12 @@ export default function Header() {
       if (!raw) {
         setUserName('Usuario');
         setUserAvatarUrl(null);
+        setPanel(null);
         return;
       }
       const parsed = JSON.parse(raw) as unknown;
       const user = normalizarUsuarioAlmacenado(parsed);
+      setPanel(panelDeRol(getRolFromUser(user as Record<string, unknown>)));
       const name = String(user.nombre ?? 'Usuario').trim() || 'Usuario';
       setUserName(name);
       const foto = String(user.foto ?? '').trim();
@@ -69,6 +77,7 @@ export default function Header() {
     } catch {
       setUserName('Usuario');
       setUserAvatarUrl(null);
+      setPanel(null);
     }
   };
 
@@ -438,6 +447,23 @@ export default function Header() {
                           )}
                         </button>
                       </div>
+                      {panel && (
+                        <>
+                          <hr style={{ borderColor: 'var(--borde-visible)' }} />
+                          <div className="py-2">
+                            <button
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                router.push(panel.href);
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-[var(--hover)]/10 transition-colors"
+                              style={{ color: 'var(--texto-cuerpo)' }}
+                            >
+                              {panel.etiqueta}
+                            </button>
+                          </div>
+                        </>
+                      )}
                       <hr style={{ borderColor: 'var(--borde-visible)' }} />
                       <div className="py-2">
                         <button
@@ -454,7 +480,7 @@ export default function Header() {
                 </div>
               ) : (
                 <Link
-                  href="/login"
+                  href={rutaDeRegreso(pathname) ? rutaLogin(pathname as string) : '/login'}
                   className="flex items-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro shrink-0"
                   style={{ backgroundColor: 'var(--hover)' }}
                   aria-label="Iniciar sesión"

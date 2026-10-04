@@ -36,7 +36,7 @@ export default function FacturasPage() {
       return;
     }
     try {
-      const [f, p] = await Promise.all([listarFacturasDelCliente(), listarPedidos()]);
+      const [f, p] = await Promise.all([listarFacturasDelCliente(), listarPedidos({ propios: true })]);
       setFacturas(f);
       setPedidos(p);
     } catch (e) {

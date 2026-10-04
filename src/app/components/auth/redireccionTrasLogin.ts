@@ -1,15 +1,25 @@
 import { hasSession } from '../../utils/security';
 
-/** Rutas permitidas para redirigir después del login (evita open redirect). */
-const REDIRECT_ALLOWED_PREFIXES = ['/admin', '/perfil', '/cliente'];
-
 const ADMIN_ROL_VALORES = ['admin', 'administrador'];
 
-function safeReturnUrl(returnUrl: string | null): string | null {
+/** Pantallas de acceso: regresar a ellas después de entrar haría un ciclo. */
+const PANTALLAS_DE_ACCESO = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback'];
+
+/** Donde se guarda el regreso mientras el usuario va y viene de Google (no viaja en la URL de Google). */
+const CLAVE_REGRESO_GOOGLE = 'miru:regreso-tras-login';
+
+/**
+ * Página interna a la que se vuelve después de iniciar sesión, para cualquier rol: el personal y admin
+ * regresan a donde estaban igual que una clienta. Solo rutas del propio sitio (empiezan con una sola
+ * "/"), nunca externas (sin open redirect) ni las pantallas de acceso. `null` si no es válida.
+ */
+export function rutaDeRegreso(returnUrl: string | null | undefined): string | null {
   if (!returnUrl || typeof returnUrl !== 'string') return null;
-  const path = returnUrl.startsWith('/') ? returnUrl : `/${returnUrl}`;
-  const allowed = REDIRECT_ALLOWED_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
-  return allowed ? path : null;
+  const ruta = returnUrl.trim();
+  if (!ruta.startsWith('/') || ruta.startsWith('//') || ruta.startsWith('/\\')) return null;
+  const camino = ruta.split(/[?#]/)[0];
+  if (PANTALLAS_DE_ACCESO.some((p) => camino === p || camino.startsWith(`${p}/`))) return null;
+  return ruta;
 }
 
 function isAdminRol(rol: string | undefined): boolean {
@@ -19,14 +29,12 @@ function isAdminRol(rol: string | undefined): boolean {
 }
 
 /**
- * Destino después de un login correcto. Misma lógica que tenía la página /login (movida aquí
- * sin cambios para que también aplique cuando el formulario de acceso se abre desde /register o
- * /forgot-password con el panel deslizante): returnUrl permitido, si no /admin para admin y
- * /home para el resto. `null` = no hay sesión guardada.
+ * Destino después de un login correcto: la página de la que venía (returnUrl válido) para cualquier rol;
+ * si no venía de ninguna, /admin para admin y /home para el resto. `null` = no hay sesión guardada.
  */
 export function destinoTrasLogin(search: string): string | null {
   if (!hasSession()) return null;
-  const returnUrl = safeReturnUrl(new URLSearchParams(search).get('returnUrl'));
+  const returnUrl = rutaDeRegreso(new URLSearchParams(search).get('returnUrl'));
   if (returnUrl) return returnUrl;
   const userJson = localStorage.getItem('user');
   let destino = '/home';
@@ -40,4 +48,26 @@ export function destinoTrasLogin(search: string): string | null {
     }
   }
   return destino;
+}
+
+/** Antes de ir a Google: guarda el returnUrl de la página de acceso para usarlo al volver. */
+export function guardarRegresoParaGoogle(search: string): void {
+  try {
+    const regreso = rutaDeRegreso(new URLSearchParams(search).get('returnUrl'));
+    if (regreso) sessionStorage.setItem(CLAVE_REGRESO_GOOGLE, regreso);
+    else sessionStorage.removeItem(CLAVE_REGRESO_GOOGLE);
+  } catch {
+    // sin sessionStorage: se vuelve a /home
+  }
+}
+
+/** Al volver de Google: el regreso guardado (y lo borra), o /home. */
+export function tomarRegresoDeGoogle(): string {
+  try {
+    const regreso = rutaDeRegreso(sessionStorage.getItem(CLAVE_REGRESO_GOOGLE));
+    sessionStorage.removeItem(CLAVE_REGRESO_GOOGLE);
+    return regreso ?? '/home';
+  } catch {
+    return '/home';
+  }
 }

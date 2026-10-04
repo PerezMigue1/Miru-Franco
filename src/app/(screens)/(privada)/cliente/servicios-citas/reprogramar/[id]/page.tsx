@@ -43,7 +43,7 @@ export default function ReprogramarCitaPage() {
       });
       return;
     }
-    obtenerCita(Number(id))
+    obtenerCita(Number(id), { propios: true })
       .then((c) => {
         if (!c) {
           setError('Cita no encontrada.');
@@ -87,7 +87,7 @@ export default function ReprogramarCitaPage() {
       await reprogramarCita(Number(id), {
         fechaHoraInicio: slotSeleccionado.inicio,
         fechaHoraFin: slotSeleccionado.fin,
-      });
+      }, { propios: true });
       router.push(`/cliente/servicios-citas/mis-citas/${id}`);
     } catch (err) {
       setErrorEnviar(err instanceof Error ? err.message : 'No se pudo reprogramar la cita.');

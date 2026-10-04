@@ -75,7 +75,7 @@ function CrearCitaContent() {
         fechaHoraInicio: inicio!,
         fechaHoraFin: fin!,
         notas: notas || undefined,
-      });
+      }, { propios: true });
       router.push(`/cliente/servicios-citas/confirmacion?citaId=${cita.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cita. Intenta con otro horario.');

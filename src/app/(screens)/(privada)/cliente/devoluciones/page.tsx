@@ -43,7 +43,7 @@ export default function DevolucionesPage() {
       return;
     }
     try {
-      const [devs, peds] = await Promise.all([listarDevolucionesDelCliente(), listarPedidos()]);
+      const [devs, peds] = await Promise.all([listarDevolucionesDelCliente(), listarPedidos({ propios: true })]);
       setLista(devs);
       setPedidos(peds.filter((p) => p.estado !== 'cancelado' && p.estado !== 'borrador'));
     } catch (e) {

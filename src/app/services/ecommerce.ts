@@ -248,8 +248,17 @@ function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
   };
 }
 
-export async function listarPedidos(): Promise<PedidoApi[]> {
-  const res = await apiClient.get<unknown>('/api/pedidos', BASE());
+/**
+ * Portal de clienta: `propios` pide al backend solo lo de quien está en sesión, sea del rol que sea
+ * (el personal usa el portal como clienta). Los paneles llaman sin él y ven lo que su permiso permite.
+ */
+export interface OpcionesPortal {
+  propios?: boolean;
+}
+const conPropios = (ruta: string, opts?: OpcionesPortal) => (opts?.propios ? `${ruta}${ruta.includes('?') ? '&' : '?'}propios=true` : ruta);
+
+export async function listarPedidos(opts?: OpcionesPortal): Promise<PedidoApi[]> {
+  const res = await apiClient.get<unknown>(conPropios('/api/pedidos', opts), BASE());
   return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarPedido(r));
 }
 
@@ -297,8 +306,8 @@ export async function listarPedidosPaginado(
   };
 }
 
-export async function obtenerPedido(id: number): Promise<PedidoApi | null> {
-  const res = await apiClient.get<unknown>(`/api/pedidos/${id}`, BASE());
+export async function obtenerPedido(id: number, opts?: OpcionesPortal): Promise<PedidoApi | null> {
+  const res = await apiClient.get<unknown>(conPropios(`/api/pedidos/${id}`, opts), BASE());
   const o = unwrapObject<Record<string, unknown>>(res);
   return o ? normalizarPedido(o) : null;
 }
@@ -329,8 +338,8 @@ export interface CrearPedidoPayload {
   items: CrearPedidoLineaPayload[];
 }
 
-export async function crearPedido(payload: CrearPedidoPayload): Promise<PedidoApi> {
-  const res = await apiClient.post<unknown>('/api/pedidos', payload, BASE());
+export async function crearPedido(payload: CrearPedidoPayload, opts?: OpcionesPortal): Promise<PedidoApi> {
+  const res = await apiClient.post<unknown>(conPropios('/api/pedidos', opts), payload, BASE());
   const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
   if (o && o.id != null) return normalizarPedido(o);
   throw new Error('No se pudo crear el pedido');
@@ -383,8 +392,8 @@ export async function entregarPedido(id: number, metodoCobro?: MetodoCobroSalon)
   await apiClient.post<unknown>(`/api/pedidos/${id}/entregar`, metodoCobro ? { metodoCobro } : {}, BASE());
 }
 
-export async function actualizarPedido(id: number, payload: ActualizarPedidoPayload): Promise<PedidoApi> {
-  const res = await apiClient.put<unknown>(`/api/pedidos/${id}`, payload, BASE());
+export async function actualizarPedido(id: number, payload: ActualizarPedidoPayload, opts?: OpcionesPortal): Promise<PedidoApi> {
+  const res = await apiClient.put<unknown>(conPropios(`/api/pedidos/${id}`, opts), payload, BASE());
   const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
   if (o && o.id != null) return normalizarPedido(o);
   throw new Error('No se pudo actualizar el pedido');
@@ -895,7 +904,8 @@ export async function listarValoracionesPedido(pedidoId: number): Promise<Valora
 
 /** Pedidos del usuario que incluyen el producto (para elegir `pedido_id` al valorar). */
 export async function listarPedidosQueIncluyenProducto(productoId: number): Promise<PedidoApi[]> {
-  const pedidos = await listarPedidos();
+  // Solo los pedidos de quien está en sesión (decide si puede reseñar el producto).
+  const pedidos = await listarPedidos({ propios: true });
   const elegibles: PedidoApi[] = [];
   for (const p of pedidos) {
     if (p.estado === 'cancelado' || p.estado === 'borrador') continue;
