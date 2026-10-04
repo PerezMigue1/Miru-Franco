@@ -208,13 +208,12 @@ export interface ActualizarMiPerfilPayload {
   alergias?: string | null;
   /** Obligatorio (true) si alergias trae texto. No se guarda en la base. */
   consienteDatosSensibles?: boolean;
-  aceptaAvisoPrivacidad?: boolean;
   recibePromociones?: boolean;
 }
 
 /**
  * Claves permitidas en PATCH `/api/auth/me` según el DTO del backend (ValidationPipe whitelist).
- * Las alergias van con su consentimiento; el resto del perfil capilar y el aviso de privacidad todavía no se envían.
+ * Las alergias van con su consentimiento; el resto del perfil capilar todavía no se envía.
  */
 function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, unknown> {
   const body: Record<string, unknown> = {};

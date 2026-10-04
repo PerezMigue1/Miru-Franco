@@ -5,6 +5,7 @@ import Card from '../components/ui/Card';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
 import { metadataPublica } from '../utils/seo';
 import { PLAZOS_TERMINOS as P, fechaActualizacionTerminos } from '../utils/terminosCondiciones';
+import { HORARIO_SALON } from '../utils/contactoSalon';
 
 export const metadata = metadataPublica({
   title: 'Términos y Condiciones',
@@ -88,7 +89,13 @@ export default function TerminosYCondicionesPage() {
               <dt>
                 <Clock size={18} aria-hidden /> Horario de atención
               </dt>
-              <dd>lunes a sábado de 9:30 a 19:00 h. Domingos cerrado.</dd>
+              <dd>
+              {HORARIO_SALON.frases.map((frase) => (
+                <span key={frase} className="block">
+                  {frase}
+                </span>
+              ))}
+            </dd>
             </div>
           </dl>
         </Card>
@@ -146,7 +153,8 @@ export default function TerminosYCondicionesPage() {
         <h3>4.2 Apartar y pagar al recoger</h3>
         <ol>
           <li>
-            Apartas tus productos en línea y los pagas en el salón al recogerlos, en efectivo o por transferencia.
+            Apartas tus productos en línea y los pagas en el salón al recogerlos, en efectivo, por transferencia o con
+            tarjeta, según los medios disponibles en el salón.
           </li>
           <li>
             Si tu pedido no se prepara en {P.diasApartadoSinPreparar} días, se cancela automáticamente.

@@ -41,12 +41,12 @@ export default function DatosRecogerEnSalon({ conAviso = true }: { conAviso?: bo
       </li>
       <li className="flex items-start gap-3">
         <Clock className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
-        <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-          <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-            {HORARIO_SALON.dias}, <span className="mf-cifras">{HORARIO_SALON.horas}</span>
-          </span>
-          <br />
-          {HORARIO_SALON.cerrado}
+        <p className="text-sm mf-cifras" style={{ color: 'var(--encabezados-alterno)' }}>
+          {HORARIO_SALON.frases.map((frase) => (
+            <span key={frase} className="block">
+              {frase}
+            </span>
+          ))}
         </p>
       </li>
       {conAviso && (

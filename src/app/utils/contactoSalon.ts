@@ -17,5 +17,19 @@ export const NOMBRE_SALON = 'Mirú Franco Beauty Salón';
 export const DIRECCION_SALON: string | null = process.env.NEXT_PUBLIC_SALON_DIRECCION?.trim() || null;
 export const CIUDAD_SALON = 'Huejutla de Reyes, Hidalgo';
 
-/** Horario de atención, el mismo que publica /contacto. */
-export const HORARIO_SALON = { dias: 'Lunes a sábado', horas: '9:00 a 20:00', cerrado: 'Domingo cerrado' } as const;
+/**
+ * Horario de atención: la única fuente para el pie de página, /contacto, los términos y "recoger en el salón".
+ * Debe coincidir con configuracion_salon en la base, que es la que usa la agenda de citas.
+ */
+const TRAMOS_HORARIO = [
+  { dias: 'Lunes a viernes', abre: '9:30', cierra: '19:30' },
+  { dias: 'Sábados', abre: '9:30', cierra: '19:00' },
+] as const;
+const FRASES_HORARIO = [...TRAMOS_HORARIO.map((t) => `${t.dias} de ${t.abre} a ${t.cierra} h.`), 'Domingos cerrado.'];
+
+export const HORARIO_SALON = {
+  /** Una frase por tramo, para mostrarlas en líneas separadas. */
+  frases: FRASES_HORARIO,
+  /** "Lunes a viernes de 9:30 a 19:30 h. Sábados de 9:30 a 19:00 h. Domingos cerrado." */
+  texto: FRASES_HORARIO.join(' '),
+} as const;

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { socialColors } from '../utils/colors';
-import { TELEFONO_SALON } from '../utils/contactoSalon';
+import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
 
 function IconInstagram({ className }: { className?: string }) {
   return (
@@ -152,8 +152,7 @@ export default function Footer() {
             <ul className="space-y-4 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               <li className="flex items-start gap-3">
                 <MapPin size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
-                {/* TODO: Agregar dirección exacta */}
-                <span>Huejutla de Reyes, Hidalgo, México</span>
+                <span>{DIRECCION_SALON ?? `${CIUDAD_SALON}, México`}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
@@ -177,7 +176,13 @@ export default function Footer() {
               )}
               <li className="flex items-start gap-3">
                 <Clock size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
-                <span>Lun – Sáb: 9:00 AM – 8:00 PM</span>
+                <span>
+                  {HORARIO_SALON.frases.map((frase) => (
+                    <span key={frase} className="block">
+                      {frase}
+                    </span>
+                  ))}
+                </span>
               </li>
             </ul>
           </div>

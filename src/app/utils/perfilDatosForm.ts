@@ -14,14 +14,13 @@ export interface ValoresPerfil {
   alergias: string;
   /** Consentimiento expreso para datos de salud: se pide en cada guardado con alergias y no se guarda. */
   consienteDatosSensibles: boolean;
-  aceptaAvisoPrivacidad: boolean;
   recibePromociones: boolean;
 }
 
 export const VALORES_PERFIL_VACIOS: ValoresPerfil = {
   nombre: '', telefono: '', fechaNacimiento: '', tipoCabello: '',
   colorNatural: '', colorActual: '', productosUsados: '', alergias: '', consienteDatosSensibles: false,
-  aceptaAvisoPrivacidad: false, recibePromociones: false,
+  recibePromociones: false,
 };
 
 /** Valores con los que se precarga el formulario a partir del perfil que devuelve GET /api/auth/me. */
@@ -36,7 +35,6 @@ export function valoresDesdePerfil(p: PerfilUsuarioCompleto): ValoresPerfil {
     productosUsados: p.productosUsados || '',
     alergias: p.alergias || '',
     consienteDatosSensibles: false,
-    aceptaAvisoPrivacidad: p.aceptaAvisoPrivacidad === true,
     recibePromociones: p.recibePromociones === true,
   };
 }
@@ -70,7 +68,6 @@ export function cuerpoGuardarPerfil(
     productosUsados: values.productosUsados.trim() || null,
     alergias: values.alergias.trim() || null,
     ...(requiereConsentimiento(values.alergias) ? { consienteDatosSensibles: values.consienteDatosSensibles } : {}),
-    aceptaAvisoPrivacidad: values.aceptaAvisoPrivacidad,
     recibePromociones: values.recibePromociones,
   };
 }

@@ -491,6 +491,7 @@ html:has(.superficie-cliente) {
   line-height: 1.6;
   color: var(--encabezados-alterno);
   overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 /* Leyenda bajo el botón final del registro y del checkout (sin casilla: solo informa y enlaza). */
 .mf-leyenda-terminos {

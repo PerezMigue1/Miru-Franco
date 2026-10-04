@@ -2,7 +2,7 @@ import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
 import { MapPin, Mail, Phone, Clock } from 'lucide-react';
 import { metadataPublica } from '../utils/seo';
-import { TELEFONO_SALON } from '../utils/contactoSalon';
+import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 
 function IconInstagram({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -69,9 +69,8 @@ export default function ContactoPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Dirección</p>
-                      {/* TODO: Agregar dirección exacta */}
                       <p className="text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
-                        Huejutla de Reyes, Hidalgo, México
+                        {DIRECCION_SALON ?? `${CIUDAD_SALON}, México`}
                       </p>
                     </div>
                   </div>
@@ -126,10 +125,11 @@ export default function ContactoPage() {
                     <div>
                       <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Horario</p>
                       <p className="text-sm" style={{ color: 'var(--encabezados-alterno)', opacity: 0.75 }}>
-                        Lunes – Sábado: 9:00 AM – 8:00 PM
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--encabezados-alterno)', opacity: 0.6 }}>
-                        Domingo: Cerrado
+                        {HORARIO_SALON.frases.map((frase) => (
+                          <span key={frase} className="block">
+                            {frase}
+                          </span>
+                        ))}
                       </p>
                     </div>
                   </div>

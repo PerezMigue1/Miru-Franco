@@ -177,10 +177,6 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
 
         <div className="md:col-span-2 flex flex-col gap-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer text-[var(--menu-texto-principal)]">
-            <input type="checkbox" disabled={disabled} {...register('aceptaAvisoPrivacidad')} />
-            Acepto el aviso de privacidad
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer text-[var(--menu-texto-principal)]">
             <input type="checkbox" disabled={disabled} {...register('recibePromociones')} />
             Deseo recibir promociones
           </label>
