@@ -1,4 +1,7 @@
-/** Miniatura local si no hay imagen o falla la carga (evita hosts externos bloqueados). */
+/**
+ * Miniatura local si no hay imagen o falla la carga (evita hosts externos bloqueados).
+ * Colores fijos: es un SVG en data URI, no hereda las variables CSS de la página.
+ */
 export const IMG_SERVICIO_PLACEHOLDER =
   'data:image/svg+xml,' +
   encodeURIComponent(

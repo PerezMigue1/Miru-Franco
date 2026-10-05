@@ -543,7 +543,7 @@ export default function InventarioPage() {
         {aplicandoDescuento && (
           <div
             className="flex items-center gap-3 mb-4 p-3 rounded-lg"
-            style={{ backgroundColor: 'rgba(217, 142, 4, 0.15)', boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${'var(--warning)'} 45%, transparent)` }}
+            style={{ backgroundColor: 'var(--ambar-15)', boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${'var(--warning)'} 45%, transparent)` }}
           >
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-current shrink-0" style={{ color: 'var(--warning)' }} />
             <div>

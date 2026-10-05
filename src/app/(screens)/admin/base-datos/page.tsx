@@ -1867,7 +1867,7 @@ export default function BaseDatosPage() {
                             ].map(({ label, series, color }) => (
                               <div key={label}>
                                 <p className="text-xs mb-1" style={{ color: 'var(--encabezados-alterno)' }}>{label}</p>
-                                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-24 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-24 rounded" style={{ backgroundColor: 'var(--negro-15)' }}>
                                   <polyline fill="none" stroke={color} strokeWidth="1.8" points={buildLineFromSeries(series)} />
                                 </svg>
                               </div>

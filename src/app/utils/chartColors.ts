@@ -2,14 +2,26 @@
  * Paleta de gráficos derivada de la marca Miru Franco — orden fijo, nunca cíclico.
  * Los 5 tokens no se sobreescriben en `.dark` (ver globals.css), por lo que la
  * secuencia es estable entre modo claro y oscuro sin necesitar variantes por tema.
- * Mismo orden que `PALETA_GRAFICOS` en `(screens)/admin/page.tsx`.
+ * La usan las gráficas del panel de admin ((screens)/admin/page.tsx) y la predicción de inventario.
  */
 export const CHART_COLORS_MARCA = [
-  'var(--danger)', // vino #710014
-  'var(--logo-branding)', // oro #9f6d1f
-  'var(--hover)', // terracota #A64B63
-  'var(--success)', // verde salvia #6E7D57
-  'var(--warning)', // ámbar #D98E04
+  'var(--danger)', // vino
+  'var(--logo-branding)', // oro
+  'var(--hover)', // terracota
+  'var(--success)', // verde salvia
+  'var(--warning)', // ámbar
+] as const;
+
+/** Colores por categoría (pastel de inventario): mismo orden que tenía la paleta fija anterior. */
+export const CHART_COLORS_CATEGORIAS = [
+  'var(--enlaces-textos-interactivos)', // azul
+  'var(--success)', // verde salvia
+  'var(--warning)', // ámbar
+  'var(--grafica-guinda)',
+  'var(--grafica-ciruela)',
+  'var(--grafica-petroleo)',
+  'var(--grafica-teja)',
+  'var(--grafica-indigo)',
 ] as const;
 
 /** Chrome de gráficas (ejes, grid, tooltip, etiquetas) consciente de tema — nunca colores fijos. */

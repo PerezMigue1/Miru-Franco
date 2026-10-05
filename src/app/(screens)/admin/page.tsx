@@ -18,6 +18,7 @@ import AdminLayout from '../../components/layouts/AdminLayout';
 import Card from '../../components/ui/Card';
 import TarjetaKpi from '../../components/ui/TarjetaKpi';
 import Badge from '../../components/ui/Badge';
+import { CHART_COLORS_MARCA } from '../../utils/chartColors';
 import { getProductosParaDashboard } from '../../services/productos';
 import { listarVentas } from '../../services/pos';
 import { listarCitasDelDia, listarCitas, type CitaApi } from '../../services/citas';
@@ -57,7 +58,6 @@ import {
 import { hoyEnMexico } from '../../utils/fechaSoloDia';
 
 // Paleta de gráficos derivada de la marca — orden fijo, nunca cíclico.
-const PALETA_GRAFICOS = ['#710014', '#9f6d1f', '#A64B63', '#6E7D57', '#D98E04'];
 
 const CONSULTA_MOVIMIENTO_REDUCIDO = '(prefers-reduced-motion: reduce)';
 
@@ -244,7 +244,7 @@ export default function AdminDashboardPage() {
       .filter(([, valor]) => valor > 0)
       .map(([estado, valor]) => ({ estado, nombre: ETIQUETAS_ESTADO_CITA[estado] ?? estado, valor }))
       .sort((a, b) => b.valor - a.valor)
-      .map((d, i) => ({ ...d, color: PALETA_GRAFICOS[i % PALETA_GRAFICOS.length] }));
+      .map((d, i) => ({ ...d, color: CHART_COLORS_MARCA[i % CHART_COLORS_MARCA.length] }));
   }, [citasConteoPorEstado.data]);
 
   // ── Gráfico 2: ventas pagadas por método (conteo, no monto) ─────────────
@@ -255,7 +255,7 @@ export default function AdminDashboardPage() {
     return Array.from(conteo.entries())
       .map(([metodo, valor]) => ({ metodo, nombre: etiquetas[metodo] ?? metodo, valor }))
       .sort((a, b) => b.valor - a.valor)
-      .map((d, i) => ({ ...d, color: PALETA_GRAFICOS[i % PALETA_GRAFICOS.length] }));
+      .map((d, i) => ({ ...d, color: CHART_COLORS_MARCA[i % CHART_COLORS_MARCA.length] }));
   }, [ventasPagadas.data]);
 
   // ── Gráfico 3: usuarios por rol ──────────────────────────────────────────
@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
     return Array.from(conteo.entries())
       .map(([rol, valor]) => ({ rol, nombre: ETIQUETAS_ROL[rol] ?? rol, valor }))
       .sort((a, b) => b.valor - a.valor)
-      .map((d, i) => ({ ...d, color: PALETA_GRAFICOS[i % PALETA_GRAFICOS.length] }));
+      .map((d, i) => ({ ...d, color: CHART_COLORS_MARCA[i % CHART_COLORS_MARCA.length] }));
   }, [usuarios.data]);
 
   const alertasOrdenadas = [...alertasStock.data].sort((a, b) => a.stockActual - b.stockActual).slice(0, 5);
@@ -919,7 +919,7 @@ function BarraRanking({ items, max }: { items: { nombre: string; valor: number }
           <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--fondo-general)' }}>
             <div
               className="h-full rounded-full"
-              style={{ width: `${(item.valor / max) * 100}%`, backgroundColor: PALETA_GRAFICOS[i % PALETA_GRAFICOS.length] }}
+              style={{ width: `${(item.valor / max) * 100}%`, backgroundColor: CHART_COLORS_MARCA[i % CHART_COLORS_MARCA.length] }}
             />
           </div>
         </div>
@@ -929,9 +929,9 @@ function BarraRanking({ items, max }: { items: { nombre: string; valor: number }
 }
 
 const TIPO_ACTIVIDAD: Record<ItemActividad['tipo'], { icon: LucideIcon; color: string; bg: string }> = {
-  venta: { icon: ShoppingCart, color: 'var(--success)', bg: 'rgba(110, 125, 87, 0.18)' },
-  cita: { icon: CalendarClock, color: 'var(--enlaces-textos-interactivos)', bg: 'rgba(74, 123, 167, 0.18)' },
-  queja: { icon: MessageSquareWarning, color: 'var(--danger-texto)', bg: 'rgba(113, 0, 20, 0.12)' },
+  venta: { icon: ShoppingCart, color: 'var(--success)', bg: 'var(--salvia-18)' },
+  cita: { icon: CalendarClock, color: 'var(--enlaces-textos-interactivos)', bg: 'var(--azul-18)' },
+  queja: { icon: MessageSquareWarning, color: 'var(--danger-texto)', bg: 'var(--vino-12)' },
 };
 
 function ItemActividadFila({ item }: { item: ItemActividad }) {

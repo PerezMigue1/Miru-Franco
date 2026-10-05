@@ -118,7 +118,7 @@ export function SubirImagenesCloudinaryButton({
           style={{
             color: 'var(--danger-texto)',
             borderColor: 'var(--danger)',
-            backgroundColor: 'rgba(220, 38, 38, 0.08)',
+            backgroundColor: 'var(--rojo-08)',
           }}
         >
           {error}

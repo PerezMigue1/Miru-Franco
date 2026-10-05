@@ -134,7 +134,7 @@ export default function PerfilFotoBlock({
       >
         <div
           className={`relative ${sizeClass} rounded-full overflow-hidden shrink-0 border-2 border-[var(--fondos-suaves)] bg-[var(--fondos-suaves)]`}
-          style={variant === 'full' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : undefined}
+          style={variant === 'full' ? { boxShadow: '0 2px 12px var(--negro-08)' } : undefined}
         >
           {fotoUrl ? (
             <Image

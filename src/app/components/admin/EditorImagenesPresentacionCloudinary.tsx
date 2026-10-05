@@ -73,14 +73,14 @@ export function EditorImagenesPresentacionCloudinary({
                 <img
                   src={url}
                   alt=""
-                  className="pointer-events-none h-full w-full object-cover bg-black/5"
+                  className="pointer-events-none h-full w-full object-cover bg-negro/5"
                 />
               </button>
               <button
                 type="button"
                 aria-label={`Quitar imagen ${i + 1}`}
                 className="absolute top-0.5 right-0.5 z-[2] flex h-6 w-6 items-center justify-center rounded text-xs font-bold leading-none shadow opacity-90 hover:opacity-100"
-                style={{ backgroundColor: 'var(--danger)', color: '#fff' }}
+                style={{ backgroundColor: 'var(--danger)', color: 'var(--blanco)' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(i);
@@ -116,7 +116,7 @@ export function EditorImagenesPresentacionCloudinary({
               Clic fuera del recuadro, el botón ✕ o la tecla Escape para cerrar.
             </p>
             <div
-              className="flex max-h-[min(85vh,900px)] w-full items-center justify-center overflow-auto rounded-md bg-black/40 p-2"
+              className="flex max-h-[min(85vh,900px)] w-full items-center justify-center overflow-auto rounded-md bg-negro/40 p-2"
               style={{ minHeight: '200px' }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}

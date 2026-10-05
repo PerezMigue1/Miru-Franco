@@ -95,7 +95,7 @@ export function ProductoGaleriaDetalle({ urls, nombreProducto }: Props) {
             <span
               className="rounded-full px-2 py-0.5 text-xs font-medium"
               style={{
-                backgroundColor: 'rgba(0,0,0,0.55)',
+                backgroundColor: 'var(--negro-55)',
                 color: 'var(--menu-texto-principal)',
               }}
             >

@@ -111,6 +111,51 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* Colores que antes estaban escritos a mano en componentes: mismo valor en claro y en oscuro. */
+  /* Marfil de la marca (texto sobre vino y carbón). No es --texto-fondo-oscuro: ese pasa a blanco en oscuro. */
+  --marfil:    #F2F1ED;
+  --marfil-75: rgba(242, 241, 237, 0.75);
+  --marfil-70: rgba(242, 241, 237, 0.7);
+  --marfil-07: rgba(242, 241, 237, 0.07);
+  /* Blanco y negro con sus transparencias (velos, sombras, líneas de gráficas). */
+  --blanco:    #ffffff;
+  --blanco-04: rgba(255, 255, 255, 0.04);
+  --blanco-07: rgba(255, 255, 255, 0.07);
+  --negro:     #000000;
+  --negro-08:  rgba(0, 0, 0, 0.08);
+  --negro-09:  rgba(0, 0, 0, 0.09);
+  --negro-15:  rgba(0, 0, 0, 0.15);
+  --negro-18:  rgba(0, 0, 0, 0.18);
+  --negro-55:  rgba(0, 0, 0, 0.55);
+  --carbon-92: rgba(22, 22, 22, 0.92);
+  --carbon-96: rgba(22, 22, 22, 0.96);
+  /* Transparencias de los colores de marca. */
+  --oro-30:       rgba(159, 109, 31, 0.3);
+  --oro-32:       rgba(159, 109, 31, 0.32);
+  --oro-45:       rgba(159, 109, 31, 0.45);
+  --oro-55:       rgba(159, 109, 31, 0.55);
+  --destello-oro: rgba(214, 170, 92, 0.28);
+  --vino-12:      rgba(113, 0, 20, 0.12);
+  --vino-55:      rgba(113, 0, 20, 0.55);
+  --salvia-18:    rgba(110, 125, 87, 0.18);
+  --azul-10:      rgba(74, 123, 167, 0.10);
+  --azul-18:      rgba(74, 123, 167, 0.18);
+  --azul-75:      rgba(74, 123, 167, 0.75);
+  --ambar-15:     rgba(217, 142, 4, 0.15);
+  --rosa-08:      rgba(176, 56, 102, 0.08);
+  --rosa-50:      rgba(176, 56, 102, 0.5);
+  --rojo-08:      rgba(220, 38, 38, 0.08);
+  /* Colores extra de las gráficas por categoría (los primeros son --enlaces-textos-interactivos, --success y --warning). */
+  --grafica-guinda:   #590C0C;
+  --grafica-ciruela:  #8B5A8C;
+  --grafica-petroleo: #2A6F6F;
+  --grafica-teja:     #C45C3E;
+  --grafica-indigo:   #5C6BC0;
+  /* Colores de otras marcas en el pie de página (no cambian con el tema). */
+  --marca-facebook:  #1877F2;
+  --marca-twitter:   #1DA1F2;
+  --marca-instagram: linear-gradient(45deg, #FCAF45 0%, #FF8C42 15%, #E1306C 40%, #833AB4 70%, #405DE6 100%);
 }
 
 /* Modo oscuro - solo colores oscuros de la paleta */
@@ -157,6 +202,51 @@
   /* En dark, --tarjetas-paneles/--fondo-general son grises neutros, no cálidos: el azul
      original ya funciona ahí (no se toca, per instrucción). */
   --texto-enlace-sobre-calido: var(--info-texto);
+
+  /* Los mismos valores que en :root a propósito: estos colores no cambian con el tema. */
+  /* Marfil de la marca (texto sobre vino y carbón). No es --texto-fondo-oscuro: ese pasa a blanco en oscuro. */
+  --marfil:    #F2F1ED;
+  --marfil-75: rgba(242, 241, 237, 0.75);
+  --marfil-70: rgba(242, 241, 237, 0.7);
+  --marfil-07: rgba(242, 241, 237, 0.07);
+  /* Blanco y negro con sus transparencias (velos, sombras, líneas de gráficas). */
+  --blanco:    #ffffff;
+  --blanco-04: rgba(255, 255, 255, 0.04);
+  --blanco-07: rgba(255, 255, 255, 0.07);
+  --negro:     #000000;
+  --negro-08:  rgba(0, 0, 0, 0.08);
+  --negro-09:  rgba(0, 0, 0, 0.09);
+  --negro-15:  rgba(0, 0, 0, 0.15);
+  --negro-18:  rgba(0, 0, 0, 0.18);
+  --negro-55:  rgba(0, 0, 0, 0.55);
+  --carbon-92: rgba(22, 22, 22, 0.92);
+  --carbon-96: rgba(22, 22, 22, 0.96);
+  /* Transparencias de los colores de marca. */
+  --oro-30:       rgba(159, 109, 31, 0.3);
+  --oro-32:       rgba(159, 109, 31, 0.32);
+  --oro-45:       rgba(159, 109, 31, 0.45);
+  --oro-55:       rgba(159, 109, 31, 0.55);
+  --destello-oro: rgba(214, 170, 92, 0.28);
+  --vino-12:      rgba(113, 0, 20, 0.12);
+  --vino-55:      rgba(113, 0, 20, 0.55);
+  --salvia-18:    rgba(110, 125, 87, 0.18);
+  --azul-10:      rgba(74, 123, 167, 0.10);
+  --azul-18:      rgba(74, 123, 167, 0.18);
+  --azul-75:      rgba(74, 123, 167, 0.75);
+  --ambar-15:     rgba(217, 142, 4, 0.15);
+  --rosa-08:      rgba(176, 56, 102, 0.08);
+  --rosa-50:      rgba(176, 56, 102, 0.5);
+  --rojo-08:      rgba(220, 38, 38, 0.08);
+  /* Colores extra de las gráficas por categoría (los primeros son --enlaces-textos-interactivos, --success y --warning). */
+  --grafica-guinda:   #590C0C;
+  --grafica-ciruela:  #8B5A8C;
+  --grafica-petroleo: #2A6F6F;
+  --grafica-teja:     #C45C3E;
+  --grafica-indigo:   #5C6BC0;
+  /* Colores de otras marcas en el pie de página (no cambian con el tema). */
+  --marca-facebook:  #1877F2;
+  --marca-twitter:   #1DA1F2;
+  --marca-instagram: linear-gradient(45deg, #FCAF45 0%, #FF8C42 15%, #E1306C 40%, #833AB4 70%, #405DE6 100%);
 }
 
 /* Más ancho útil que el `container` por defecto de Tailwind (mejor en monitores comunes) */
@@ -225,6 +315,10 @@
   --color-link:         var(--enlaces-textos-interactivos);
   --color-over-dark:    var(--texto-fondo-oscuro);
   --color-surface:      var(--superficie-elevada);
+  /* Para clases de Tailwind sin colores fijos: text-blanco, bg-negro/45, bg-marfil, ring-blanco/25… */
+  --color-marfil:       var(--marfil);
+  --color-blanco:       var(--blanco);
+  --color-negro:        var(--negro);
 
   /* Fuentes adicionales para Tailwind */
   --font-serif:  var(--font-playfair-display), Georgia, serif;

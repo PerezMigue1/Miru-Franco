@@ -47,7 +47,7 @@ export default function GalleryModal({
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(22,22,22,0.92)' }}
+      style={{ backgroundColor: 'var(--carbon-92)' }}
       onClick={onClose}
     >
       {/* Cerrar */}

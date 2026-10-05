@@ -14,7 +14,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 type EstiloBoton = CSSProperties & Record<`--${string}`, string>;
 
-/** Colores por variante como variables CSS: el hover lo resuelve `.mf-btn-color` (sistema.css), no JS. */
+/**
+ * Colores por variante como variables CSS: el hover lo resuelve `.mf-btn-color` (sistema.css), no JS.
+ * Los #fff y #000 dentro de color-mix() son fijos a propósito: blanco/negro de referencia para aclarar u
+ * oscurecer el color del token en el hover, sin importar el tema.
+ */
 const VARIANTES: Record<NonNullable<ButtonProps['variant']>, Record<string, string>> = {
   primary: {
     '--btn-bg': 'var(--botones-principales)',

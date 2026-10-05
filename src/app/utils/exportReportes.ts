@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 /**
  * Colores de marca fijos (no CSS vars): un PDF/Excel generado es un documento binario sin
  * acceso al DOM ni a modo claro/oscuro, así que se usan los mismos hex estables definidos
- * en globals.css (--danger vino / --logo-branding oro) como constantes aquí.
+ * en globals.css (--danger vino / --logo-branding oro) como constantes aquí. Por eso son colores fijos.
  */
 export const COLOR_VINO: [number, number, number] = [113, 0, 20]; // #710014
 export const COLOR_ORO: [number, number, number] = [159, 109, 31]; // #9f6d1f

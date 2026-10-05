@@ -50,7 +50,7 @@ export function useInclinacion3D<T extends HTMLElement>(maxGrados = 3) {
       if (enReposo) el.style.willChange = '';
       if (brillo) {
         brillo.style.opacity = actual.brillo.toFixed(3);
-        brillo.style.background = `radial-gradient(420px circle at ${actual.gx.toFixed(1)}% ${actual.gy.toFixed(1)}%, rgba(214, 170, 92, 0.28), transparent 45%)`;
+        brillo.style.background = `radial-gradient(420px circle at ${actual.gx.toFixed(1)}% ${actual.gy.toFixed(1)}%, var(--destello-oro), transparent 45%)`;
       }
       if (enMovimiento) raf = requestAnimationFrame(pintar);
       else {

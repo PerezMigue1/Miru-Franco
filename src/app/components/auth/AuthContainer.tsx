@@ -317,8 +317,8 @@ export default function AuthContainer({ initialView = 'login', onAuthSuccess }: 
 
             <div className="flex flex-col items-center text-center">
               <div className="relative aspect-square w-52 xl:w-60">
-                <div className="absolute -inset-5 rounded-full border" style={{ borderColor: 'rgba(159, 109, 31, 0.3)' }} aria-hidden />
-                <div className="absolute inset-3 rounded-full border border-dashed" style={{ borderColor: 'rgba(159, 109, 31, 0.32)' }} aria-hidden />
+                <div className="absolute -inset-5 rounded-full border" style={{ borderColor: 'var(--oro-30)' }} aria-hidden />
+                <div className="absolute inset-3 rounded-full border border-dashed" style={{ borderColor: 'var(--oro-32)' }} aria-hidden />
                 <Image src="/logo-miru.jpg" alt="" fill className="object-contain p-10" sizes="15rem" priority />
               </div>
               <p className="mt-8 text-brand-tagline tracking-[0.2em]" style={{ color: 'var(--oro-sobre-carbon)' }}>
@@ -326,10 +326,10 @@ export default function AuthContainer({ initialView = 'login', onAuthSuccess }: 
               </p>
 
               <div key={vista} className="mf-auth__panel-invitacion">
-                <p className="text-2xl font-bold" style={{ fontFamily: 'var(--font-family-serif)', color: '#f2f1ed' }}>
+                <p className="text-2xl font-bold" style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--marfil)' }}>
                   {panel.titulo}
                 </p>
-                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed" style={{ color: 'rgba(242, 241, 237, 0.75)' }}>
+                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed" style={{ color: 'var(--marfil-75)' }}>
                   {panel.texto}
                 </p>
                 <button type="button" className="mf-auth__panel-boton" onClick={() => irA(panel.destino)}>
@@ -338,7 +338,7 @@ export default function AuthContainer({ initialView = 'login', onAuthSuccess }: 
               </div>
             </div>
 
-            <p className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(242, 241, 237, 0.7)' }}>
+            <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--marfil-70)' }}>
               <MapPin size={13} aria-hidden style={{ color: 'var(--logo-branding)' }} />
               Huejutla de Reyes, Hidalgo
             </p>

@@ -21,6 +21,7 @@ const TAMANO_FRASCO = '(min-width: 768px) 140px, 95px';
 /**
  * Posición de cada sticker como variables CSS (ver .mf-sticker-capa). Las terminadas en -m son las
  * de móvil, donde la composición es más baja: ahí las tijeras van a la esquina, lejos del Goji.
+ * Colores fijos de las figuras: son parte de la ilustración del hero animado, no de la interfaz.
  */
 const STICKERS = [
   { motivo: 'tijeras', fondo: '#710014', tinta: '#f6efe6', estilo: { '--x': '1%', '--y': '10%', '--ancho': '4.25rem', '--giro': '-12deg', '--x-m': '-2%', '--y-m': '0%', '--ancho-m': '3.25rem' }, prof: 1.3, movil: true },
@@ -90,9 +91,9 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                 style={{
                   ['--btn-bg' as string]: 'var(--botones-principales)',
                   ['--btn-bg-hover' as string]: 'var(--hover)',
-                  ['--btn-texto' as string]: '#F2F1ED',
+                  ['--btn-texto' as string]: 'var(--marfil)',
                   minHeight: '48px',
-                  boxShadow: '0 10px 24px -10px rgba(113, 0, 20, 0.55)',
+                  boxShadow: '0 10px 24px -10px var(--vino-55)',
                 }}
               >
                 Agendar cita

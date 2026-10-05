@@ -213,7 +213,7 @@ export default function ServiciosPage() {
         )}
 
         {error && (
-          <div role="alert" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--danger)', color: '#F2F1ED', boxShadow: 'var(--mf-sombra-1)' }}>
+          <div role="alert" className="px-4 py-3 rounded-[10px] text-sm font-semibold" style={{ backgroundColor: 'var(--danger)', color: 'var(--marfil)', boxShadow: 'var(--mf-sombra-1)' }}>
             {error}
           </div>
         )}

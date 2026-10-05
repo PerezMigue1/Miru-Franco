@@ -59,7 +59,7 @@ export default function ErrorScreen({ codigo, titulo, mensaje, icono = 'solicitu
           style={{
             ['--btn-bg' as string]: 'var(--botones-principales)',
             ['--btn-bg-hover' as string]: 'var(--hover)',
-            ['--btn-texto' as string]: '#F2F1ED',
+            ['--btn-texto' as string]: 'var(--marfil)',
           }}
         >
           Volver al inicio

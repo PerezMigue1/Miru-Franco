@@ -6,7 +6,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 const PRIMARIO = {
   ['--btn-bg' as string]: 'var(--botones-principales)',
   ['--btn-bg-hover' as string]: 'var(--hover)',
-  ['--btn-texto' as string]: '#F2F1ED',
+  ['--btn-texto' as string]: 'var(--marfil)',
 } as React.CSSProperties;
 
 const SECUNDARIO = {

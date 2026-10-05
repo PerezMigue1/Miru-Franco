@@ -761,8 +761,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                       className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
                       style={{
                         backgroundColor: n <= currentStep ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
-                        color: n <= currentStep ? '#F2F1ED' : 'var(--encabezados-alterno)',
-                        boxShadow: activo ? '0 0 0 3px rgba(159, 109, 31, 0.55)' : 'none',
+                        color: n <= currentStep ? 'var(--marfil)' : 'var(--encabezados-alterno)',
+                        boxShadow: activo ? '0 0 0 3px var(--oro-55)' : 'none',
                         transition: 'background-color 240ms ease, box-shadow 240ms ease',
                       }}
                     >
@@ -820,7 +820,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               style={{
                 ['--btn-bg' as string]: 'var(--botones-principales)',
                 ['--btn-bg-hover' as string]: 'var(--hover)',
-                ['--btn-texto' as string]: '#F2F1ED',
+                ['--btn-texto' as string]: 'var(--marfil)',
               }}
             >
               <span className="mf-feedback-contenido" data-cambiando={isSubmitting ? 'true' : 'false'}>

@@ -184,7 +184,7 @@ export default function ForgotPassword({
             style={{
               ['--btn-bg' as string]: 'var(--botones-principales)',
               ['--btn-bg-hover' as string]: 'var(--hover)',
-              ['--btn-texto' as string]: '#F2F1ED',
+              ['--btn-texto' as string]: 'var(--marfil)',
             }}
           >
             {isLoading 

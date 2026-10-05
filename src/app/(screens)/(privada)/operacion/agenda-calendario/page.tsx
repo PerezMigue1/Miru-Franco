@@ -245,7 +245,7 @@ export default function AgendaCalendarioPage() {
                     >
                       <span
                         className="text-sm font-medium"
-                        style={{ color: esSeleccionado ? '#F2F1ED' : celda.fueraDelMes ? 'var(--texto-secundario)' : 'var(--menu-texto-principal)' }}
+                        style={{ color: esSeleccionado ? 'var(--marfil)' : celda.fueraDelMes ? 'var(--texto-secundario)' : 'var(--menu-texto-principal)' }}
                       >
                         {celda.day}
                       </span>
@@ -253,7 +253,7 @@ export default function AgendaCalendarioPage() {
                         <span
                           aria-hidden
                           className={`w-1.5 h-1.5 rounded-full ${
-                            esSeleccionado ? 'bg-[#F2F1ED]' : 'bg-[var(--botones-principales)] dark:bg-[var(--logo-branding)]'
+                            esSeleccionado ? 'bg-marfil' : 'bg-[var(--botones-principales)] dark:bg-[var(--logo-branding)]'
                           }`}
                         />
                       )}

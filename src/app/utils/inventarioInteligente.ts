@@ -1,6 +1,7 @@
 import type { Producto } from '../services/productos';
 import type { LineaVentaProducto } from './inventarioVentasOnline';
 import { agregarSerieTemporal, filtrarLineasDesdeFecha, filtrarLineasPorProducto, promedioUnidadesPorDia } from './inventarioVentasOnline';
+import { CHART_COLORS_CATEGORIAS } from './chartColors';
 
 /** Separa categoría / subcategoría si el texto usa separadores habituales; si no hay sub, devuelve sub vacía. */
 export function parseCategoriaSub(categoria: string): { categoriaPrincipal: string; subcategoria: string } {
@@ -87,16 +88,7 @@ export interface ParticipacionPastel {
   color: string;
 }
 
-const COLORES_PASTEL = [
-  '#4A7BA7',
-  '#6E7D57',
-  '#D98E04',
-  '#590C0C',
-  '#8B5A8C',
-  '#2A6F6F',
-  '#C45C3E',
-  '#5C6BC0',
-];
+const COLORES_PASTEL = CHART_COLORS_CATEGORIAS;
 
 export function participacionPorProducto(
   productos: Producto[],

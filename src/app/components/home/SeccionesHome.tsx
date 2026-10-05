@@ -188,7 +188,7 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
                     <div
                       key={s.id}
                       className="mf-revelar rounded-[14px] p-6"
-                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.07)' }}
+                      style={{ backgroundColor: 'var(--blanco-04)', boxShadow: '0 0 0 1px var(--blanco-07)' }}
                     >
                       <Icono className="w-8 h-8 mb-4" strokeWidth={1.25} style={{ color: 'var(--logo-branding)' }} />
                       <h3 className="font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>{s.nombre}</h3>
@@ -233,7 +233,7 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
               <div className="relative w-64 sm:w-80 aspect-[4/5]">
                 <div
                   className="absolute -inset-3 rounded-t-full border"
-                  style={{ borderColor: 'rgba(159, 109, 31, 0.55)' }}
+                  style={{ borderColor: 'var(--oro-55)' }}
                   aria-hidden
                 />
                 <div className="relative h-full w-full overflow-hidden rounded-t-full" style={{ boxShadow: 'var(--mf-sombra-2)' }}>

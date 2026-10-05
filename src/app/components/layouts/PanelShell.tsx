@@ -86,7 +86,7 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
             </span>
             <span
               className="truncate text-base font-bold leading-none sm:text-[1.0625rem]"
-              style={{ fontFamily: 'var(--font-family-serif)', color: '#f2f1ed' }}
+              style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--marfil)' }}
             >
               Mirú Franco
             </span>

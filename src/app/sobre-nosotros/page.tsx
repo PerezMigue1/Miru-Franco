@@ -77,7 +77,7 @@ export default function SobreNosotrosPage() {
               {/* Arco: eco de la forma del monograma */}
               <div
                 className="relative w-64 sm:w-80 aspect-[4/5] rounded-t-full overflow-hidden"
-                style={{ backgroundColor: 'var(--mf-banda)', boxShadow: 'var(--mf-sombra-2)', outline: '1px solid rgba(159, 109, 31, 0.55)', outlineOffset: '10px' }}
+                style={{ backgroundColor: 'var(--mf-banda)', boxShadow: 'var(--mf-sombra-2)', outline: '1px solid var(--oro-55)', outlineOffset: '10px' }}
               >
                 <Image
                   src="/logo-miru.jpg"
@@ -126,7 +126,7 @@ export default function SobreNosotrosPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
               {VALORES.map((v) => (
-                <div key={v.titulo} className="mf-revelar border-t pt-6" style={{ borderColor: 'rgba(159, 109, 31, 0.45)' }}>
+                <div key={v.titulo} className="mf-revelar border-t pt-6" style={{ borderColor: 'var(--oro-45)' }}>
                   <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--oro-sobre-carbon)', fontFamily: 'var(--font-family-serif)' }}>
                     {v.titulo}
                   </h3>

@@ -56,7 +56,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
               <li
                 key={item.href}
                 className="mf-entrada"
-                style={{ borderBottom: '1px solid rgba(242,241,237,0.07)', ['--i' as string]: i }}
+                style={{ borderBottom: '1px solid var(--marfil-07)', ['--i' as string]: i }}
               >
                 <Link
                   href={item.href}
@@ -88,7 +88,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
             style={{
               ['--btn-bg' as string]: 'var(--botones-principales)',
               ['--btn-bg-hover' as string]: 'var(--hover)',
-              ['--btn-texto' as string]: '#F2F1ED',
+              ['--btn-texto' as string]: 'var(--marfil)',
             }}
           >
             Agendar Cita
@@ -101,7 +101,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
         <div
           className="px-6 pb-8 border-t"
           style={{
-            borderColor: 'rgba(242,241,237,0.07)',
+            borderColor: 'var(--marfil-07)',
             opacity: 0,
             animation: `fadeIn 400ms ease-out ${NAV_LINKS.length * 75 + 140}ms forwards`,
           }}
@@ -120,7 +120,7 @@ export default function MenuHamburguesa({ onClose }: MenuHamburguesaProps) {
                 onClick={onClose}
                 className="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium transition-opacity hover:opacity-70"
                 style={{
-                  backgroundColor: 'rgba(242,241,237,0.07)',
+                  backgroundColor: 'var(--marfil-07)',
                   color: 'var(--texto-fondo-oscuro-70)',
                   minHeight: '36px',
                 }}

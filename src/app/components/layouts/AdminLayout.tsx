@@ -240,7 +240,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className={`flex items-center gap-2.5 ${colapsado ? 'lg:justify-center' : ''}`}>
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold"
-              style={{ backgroundColor: 'var(--botones-principales)', color: '#f2f1ed' }}
+              style={{ backgroundColor: 'var(--botones-principales)', color: 'var(--marfil)' }}
               title={colapsado ? perfilUsuario.nombre : undefined}
             >
               {perfilUsuario.foto && !fotoRota ? (

@@ -11,6 +11,7 @@ export async function mermaidToSvg(mermaidCode: string): Promise<string> {
     securityLevel: 'loose',
     theme: 'neutral',
     er: { useMaxWidth: true },
+    // Colores fijos: Mermaid dibuja el diagrama a SVG/PNG fuera del CSS de la app (no lee var(--...)).
     themeVariables: {
       fontFamily: 'Arial, Helvetica, sans-serif',
       primaryColor: '#eee',

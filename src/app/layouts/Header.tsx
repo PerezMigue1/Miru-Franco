@@ -221,7 +221,7 @@ export default function Header() {
         {/* Barra Superior - Top Header */}
         <header
           className={`relative z-20 ${scrolled ? 'backdrop-blur-sm' : ''}`}
-          style={{ backgroundColor: scrolled ? 'rgba(22,22,22,0.96)' : 'var(--header-footer)' }}
+          style={{ backgroundColor: scrolled ? 'var(--carbon-96)' : 'var(--header-footer)' }}
         >
         <div className="layout-page">
           <div className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2">
@@ -315,7 +315,7 @@ export default function Header() {
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                   >
                     {userAvatarUrl ? (
-                      <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-white/25">
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-blanco/25">
                         <Image
                           src={userAvatarUrl}
                           alt=""

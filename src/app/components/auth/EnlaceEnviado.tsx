@@ -67,7 +67,7 @@ export default function EnlaceEnviado({
             style={{
               ['--btn-bg' as string]: 'var(--botones-principales)',
               ['--btn-bg-hover' as string]: 'var(--hover)',
-              ['--btn-texto' as string]: '#F2F1ED',
+              ['--btn-texto' as string]: 'var(--marfil)',
             }}
           >
             Volver a Iniciar Sesión

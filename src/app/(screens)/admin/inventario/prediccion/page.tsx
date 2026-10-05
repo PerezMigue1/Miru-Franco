@@ -2817,7 +2817,7 @@ export default function PrediccionInventarioPage() {
 
         {tablaOverlayOpen && (
           <div
-            className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-[1px] p-3 sm:p-5"
+            className="fixed inset-0 z-[70] bg-negro/70 backdrop-blur-[1px] p-3 sm:p-5"
             onClick={() => setTablaOverlayOpen(false)}
             role="dialog"
             aria-modal="true"

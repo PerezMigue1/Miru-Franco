@@ -21,6 +21,7 @@ export function Sticker({
 }) {
   return (
     <span className={`mf-sticker ${className}`} style={style} aria-hidden>
+      {/* Contorno marfil fijo: es parte de la ilustración del hero animado, no de la interfaz. */}
       <svg viewBox="0 0 64 64" width="100%" height="100%">
         {motivo === 'destello' ? (
           <path

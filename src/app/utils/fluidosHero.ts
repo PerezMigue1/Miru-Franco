@@ -1,7 +1,10 @@
 import type { Producto } from '../services/productos';
 import { formatearPrecioMXN } from './formatoPrecio';
 
-/** Los cuatro fluidos AVYNA del hero: id real del catálogo → render propio en /public/hero/web. */
+/**
+ * Los cuatro fluidos AVYNA del hero: id real del catálogo → render propio en /public/hero/web.
+ * Colores fijos: son el tono de cada fluido en la animación del hero, no colores de la interfaz.
+ */
 export const FLUIDOS_HERO = [
   { id: 34, clave: 'goji', color: '#7a1a1f' },
   { id: 33, clave: 'argan', color: '#d99a4e' },

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
-import { socialColors } from '../utils/colors';
 import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
 
 function IconInstagram({ className }: { className?: string }) {
@@ -72,9 +71,9 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Instagram"
                   className="p-2 rounded-full hover:opacity-80 transition-opacity"
-                  style={{ background: socialColors.instagramGradient }}
+                  style={{ background: 'var(--marca-instagram)' }}
                 >
-                  <IconInstagram className="w-5 h-5 text-white" />
+                  <IconInstagram className="w-5 h-5 text-blanco" />
                 </a>
               )}
               {fbUrl && (
@@ -84,9 +83,9 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Facebook"
                   className="p-2 rounded-full hover:opacity-80 transition-opacity"
-                  style={{ backgroundColor: socialColors.facebook }}
+                  style={{ backgroundColor: 'var(--marca-facebook)' }}
                 >
-                  <IconFacebook className="w-5 h-5 text-white" />
+                  <IconFacebook className="w-5 h-5 text-blanco" />
                 </a>
               )}
               {twUrl && (
@@ -96,9 +95,9 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   aria-label="Twitter / X"
                   className="p-2 rounded-full hover:opacity-80 transition-opacity"
-                  style={{ backgroundColor: socialColors.twitter }}
+                  style={{ backgroundColor: 'var(--marca-twitter)' }}
                 >
-                  <IconTwitter className="w-5 h-5 text-white" />
+                  <IconTwitter className="w-5 h-5 text-blanco" />
                 </a>
               )}
               {!igUrl && !fbUrl && !twUrl && (

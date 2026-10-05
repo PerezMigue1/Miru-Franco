@@ -79,7 +79,7 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
           {safe.map((_, idx) => (
             <span
               key={idx}
-              className={`h-1.5 w-1.5 rounded-full bg-white transition-opacity duration-150 motion-reduce:transition-none ${
+              className={`h-1.5 w-1.5 rounded-full bg-blanco transition-opacity duration-150 motion-reduce:transition-none ${
                 idx === i ? 'opacity-90' : 'opacity-45'
               }`}
             />

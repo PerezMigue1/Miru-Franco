@@ -77,20 +77,20 @@ export function SvgLineaVentas({
         const y = toY(t);
         return (
           <g key={`yt-${t}`}>
-            <line x1={padLeft} y1={y} x2={w - padRight} y2={y} stroke="rgba(0,0,0,0.09)" strokeWidth={1} />
+            <line x1={padLeft} y1={y} x2={w - padRight} y2={y} stroke="var(--negro-09)" strokeWidth={1} />
             <text x={padLeft - 8} y={y + 4} textAnchor="end" fontSize="10" fill="var(--encabezados-alterno)">
               {formatNum(t)}
             </text>
           </g>
         );
       })}
-      <line x1={padLeft} y1={height - padBottom} x2={w - padRight} y2={height - padBottom} stroke="rgba(0,0,0,0.18)" strokeWidth={1} />
-      <line x1={padLeft} y1={padTop} x2={padLeft} y2={height - padBottom} stroke="rgba(0,0,0,0.18)" strokeWidth={1} />
+      <line x1={padLeft} y1={height - padBottom} x2={w - padRight} y2={height - padBottom} stroke="var(--negro-18)" strokeWidth={1} />
+      <line x1={padLeft} y1={padTop} x2={padLeft} y2={height - padBottom} stroke="var(--negro-18)" strokeWidth={1} />
       <line x1={padLeft} y1={avgY} x2={w - padRight} y2={avgY} stroke="var(--warning)" strokeDasharray="4 4" strokeWidth={1.5} />
       <text x={w - padRight} y={avgY - 6} textAnchor="end" fontSize="10" fill="var(--warning)">
         Promedio: {formatNum(avg)}
       </text>
-      <path d={areaD} fill="rgba(74, 123, 167, 0.10)" />
+      <path d={areaD} fill="var(--azul-10)" />
       <path d={d} fill="none" stroke={stroke} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />
       {series.map((s, i) => {
         const x = padLeft + i * step;
@@ -118,7 +118,7 @@ export function SvgLineaVentas({
 export function SvgBarrasVentas({
   series,
   height = 160,
-  fill = 'rgba(74, 123, 167, 0.75)',
+  fill = 'var(--azul-75)',
 }: {
   series: Serie[];
   height?: number;
@@ -154,15 +154,15 @@ export function SvgBarrasVentas({
         const y = toY(t);
         return (
           <g key={`ytb-${t}`}>
-            <line x1={padLeft} y1={y} x2={w - padRight} y2={y} stroke="rgba(0,0,0,0.09)" strokeWidth={1} />
+            <line x1={padLeft} y1={y} x2={w - padRight} y2={y} stroke="var(--negro-09)" strokeWidth={1} />
             <text x={padLeft - 8} y={y + 4} textAnchor="end" fontSize="10" fill="var(--encabezados-alterno)">
               {formatNum(t)}
             </text>
           </g>
         );
       })}
-      <line x1={padLeft} y1={height - padBottom} x2={w - padRight} y2={height - padBottom} stroke="rgba(0,0,0,0.18)" strokeWidth={1} />
-      <line x1={padLeft} y1={padTop} x2={padLeft} y2={height - padBottom} stroke="rgba(0,0,0,0.18)" strokeWidth={1} />
+      <line x1={padLeft} y1={height - padBottom} x2={w - padRight} y2={height - padBottom} stroke="var(--negro-18)" strokeWidth={1} />
+      <line x1={padLeft} y1={padTop} x2={padLeft} y2={height - padBottom} stroke="var(--negro-18)" strokeWidth={1} />
       <line x1={padLeft} y1={avgY} x2={w - padRight} y2={avgY} stroke="var(--warning)" strokeDasharray="4 4" strokeWidth={1.5} />
       <text x={w - padRight} y={avgY - 6} textAnchor="end" fontSize="10" fill="var(--warning)">
         Promedio: {formatNum(avg)}

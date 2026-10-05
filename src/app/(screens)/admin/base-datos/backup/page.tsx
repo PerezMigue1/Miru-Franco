@@ -594,7 +594,7 @@ export default function BackupPage() {
             )}
             {autoEnabled && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="rounded-lg border p-3" style={{ borderColor: 'rgba(176, 56, 102, 0.5)', backgroundColor: 'rgba(176, 56, 102, 0.08)' }}>
+                <div className="rounded-lg border p-3" style={{ borderColor: 'var(--rosa-50)', backgroundColor: 'var(--rosa-08)' }}>
                   <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Próximo backup</p>
                   <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                     {proximoBackup
@@ -602,7 +602,7 @@ export default function BackupPage() {
                       : 'Sin programación'}
                   </p>
                 </div>
-                <div className="rounded-lg border p-3" style={{ borderColor: 'rgba(176, 56, 102, 0.5)', backgroundColor: 'rgba(176, 56, 102, 0.08)' }}>
+                <div className="rounded-lg border p-3" style={{ borderColor: 'var(--rosa-50)', backgroundColor: 'var(--rosa-08)' }}>
                   <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Último backup automático</p>
                   <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                     {ultimoBackupAutomatico

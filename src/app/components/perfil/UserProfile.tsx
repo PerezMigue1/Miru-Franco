@@ -401,10 +401,10 @@ export default function UserProfile() {
               </span>
             )}
             <span
-              className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/45"
+              className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-negro/0 transition-colors group-hover:bg-negro/45"
               aria-hidden
             >
-              <span className="px-1 text-center text-xs font-semibold leading-tight text-[#f2f1ed] opacity-0 group-hover:opacity-100">
+              <span className="px-1 text-center text-xs font-semibold leading-tight text-marfil opacity-0 group-hover:opacity-100">
                 {avatarFotoUploading ? '…' : 'Cambiar'}
               </span>
             </span>

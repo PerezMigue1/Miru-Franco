@@ -556,7 +556,7 @@ export default function CatalogoProductosPage() {
           {process.env.NODE_ENV === 'development' && error.includes('conectar') && (
             <div className="text-sm mb-4 text-left" style={{ color: 'var(--encabezados-alterno)' }}>
               <p className="mb-2">El frontend está intentando conectar a:</p>
-              <code className="block mb-3 p-2 rounded break-all bg-black/10" title="Abre esta URL en otra pestaña para comprobar si el backend responde">
+              <code className="block mb-3 p-2 rounded break-all bg-negro/10" title="Abre esta URL en otra pestaña para comprobar si el backend responde">
                 {errorUrl ?? '…'}
               </code>
               <p className="mb-1">Comprueba:</p>
