@@ -3,6 +3,9 @@
 @import "./sistema.css";
 @import "./cliente.css";
 
+/* Las pruebas mencionan clases prohibidas como ejemplo (coloresFijos.test.ts): que no generen CSS. */
+@source not "../../**/*.test.ts";
+
 /* Modo oscuro controlado por clase .dark en <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -35,10 +38,6 @@
   --success-texto: #242d1b;
   --boton-acento-bg: #758764;
   --texto-sobre-acento: var(--header-footer);
-  /* Vino como texto de acento/ítem activo (ej. sidebar) es ilegible en modo oscuro (1.48:1).
-     En claro se mantiene el vino; en dark se sobreescribe a una variante más clara del azul
-     de --enlaces-textos-interactivos (ver .dark), no un color inventado. */
-  --texto-acento-dark: var(--botones-principales);
   /* Azul (--enlaces-textos-interactivos) sobre superficies cálidas claras (--tarjetas-paneles,
      --fondo-general, --fondos-suaves) cae a 1.5-2.8:1 — ilegible. En dark esas superficies son
      grises neutros (no cálidas), el azul ya funciona ahí, no se toca.
@@ -46,11 +45,9 @@
      4.56:1 sobre --tarjetas-paneles (la superficie más dura de la paleta), 8.43:1 y 6.84:1 en las
      otras dos — mínimo de oscurecimiento necesario para pasar AA en esa superficie específica. */
   --texto-enlace-sobre-calido: #14341e;
-  --hero-brand-color: #161616;
   --hero-tagline-color: #2A2A2A;
   --borde-sutil: rgba(255, 255, 255, 0.1);
   --borde-visible: rgba(255, 255, 255, 0.2);
-  --borde-secundario: rgba(255, 255, 255, 0.3);
   --texto-fondo-oscuro-70: rgba(242, 241, 237, 0.7);
   /* Texto secundario sobre lino y arena (contacto, sobre nosotros, días fuera del mes).
      Sustituye a --encabezados-alterno con opacidad: carbón al 78 % sobre lino.
@@ -65,10 +62,7 @@
   /* Modo claro: enlace tipo botón vino; en oscuro se fuerza azul abajo */
   --checkout-entrega-enlace: var(--botones-principales);
 
-  --background: var(--fondo-general);
-  --foreground: var(--menu-texto-principal);
   --input-bg: #F2F1ED;
-  --menu-lateral-bg: #FFFFFF;
   /* Margen horizontal respecto al borde del viewport */
   --layout-gutter-x: 1rem;
   /* Oro para cifras y títulos grandes sobre lino (3.7:1); el de marca daba 2.8:1 */
@@ -165,8 +159,6 @@
   --fondos-suaves: #1f1f1f;
   --menu-texto-principal: #ffffff;
   --encabezados-alterno: #b38e6f;
-  --background: #161616;
-  --foreground: #710014;
   --texto-fondo-oscuro: #ffffff;
   --input-bg: #1f1f1f;
   --texto-fondo-oscuro-70: rgba(255, 255, 255, 0.7);
@@ -174,13 +166,11 @@
   --texto-secundario: var(--encabezados-alterno);
   --texto-fondo-oscuro-80: rgba(255, 255, 255, 0.8);
   --texto-fondo-oscuro-10: rgba(255, 255, 255, 0.1);
-  --menu-lateral-bg: #710014;
   --superficie-elevada: #2a2a2a;
   --checkout-entrega-borde-seleccion: #a64b63;
   /* Enlaces sobre oscuro: el azul claro del sistema (#4a7ba7 daba 4.0:1 sobre #161616) */
   --checkout-entrega-enlace: var(--info-texto);
   --enlaces-textos-interactivos: #4a7ba7;
-  --hero-brand-color: var(--texto-fondo-oscuro);
   --hero-tagline-color: rgba(242, 241, 237, 0.85);
 
   /* Auditoría de contraste WCAG AA (modo oscuro): --logo-branding y --warning no se sobreescriben
@@ -195,10 +185,6 @@
   --success-texto: #82a163;
   --boton-acento-bg: #758764;
   --texto-sobre-acento: var(--header-footer);
-  /* Vino (#710014) como texto sobre fondos oscuros da 1.48:1 (sidebar) — ilegible.
-     Variante más clara del mismo azul de --enlaces-textos-interactivos: 6.07:1 sobre
-     --fondo-general dark, 4.81:1 sobre --tarjetas-paneles dark. Cumple AA en ambas. */
-  --texto-acento-dark: #689bc0;
   /* En dark, --tarjetas-paneles/--fondo-general son grises neutros, no cálidos: el azul
      original ya funciona ahí (no se toca, per instrucción). */
   --texto-enlace-sobre-calido: var(--info-texto);
@@ -282,51 +268,24 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   
-  /* Colores personalizados para Tailwind */
+  /* Colores de la paleta para clases de Tailwind (text-*, bg-*, border-*…) */
   --color-fondo-general: var(--fondo-general);
   --color-logo-branding: var(--logo-branding);
   --color-tarjetas-paneles: var(--tarjetas-paneles);
-  --color-header-footer: var(--header-footer);
   --color-menu-texto-principal: var(--menu-texto-principal);
-  --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --color-success: var(--success);
   --color-encabezados-alterno: var(--encabezados-alterno);
-  --color-hover: var(--hover);
-  --color-botones-principales: var(--botones-principales);
   --color-texto-fondo-oscuro: var(--texto-fondo-oscuro);
-  --color-enlaces-textos-interactivos: var(--enlaces-textos-interactivos);
   --color-fondos-suaves: var(--fondos-suaves);
-  --color-iconografia: var(--iconografia);
-  
-  /* Background y foreground (mantener compatibilidad) */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  /* Alias cortos para uso en clases Tailwind */
-  --color-fondo:        var(--fondo-general);
-  --color-fondo-soft:   var(--fondos-suaves);
-  --color-card:         var(--tarjetas-paneles);
-  --color-header:       var(--header-footer);
-  --color-brand:        var(--botones-principales);
-  --color-brand-hover:  var(--hover);
-  --color-gold:         var(--logo-branding);
-  --color-gold-soft:    var(--iconografia);
-  --color-link:         var(--enlaces-textos-interactivos);
-  --color-over-dark:    var(--texto-fondo-oscuro);
-  --color-surface:      var(--superficie-elevada);
-  /* Para clases de Tailwind sin colores fijos: text-blanco, bg-negro/45, bg-marfil, ring-blanco/25… */
-  --color-marfil:       var(--marfil);
-  --color-blanco:       var(--blanco);
-  --color-negro:        var(--negro);
+  --color-over-dark: var(--texto-fondo-oscuro);
+  /* Sin colores fijos: text-blanco, bg-negro/45, bg-marfil, ring-blanco/25… */
+  --color-marfil: var(--marfil);
+  --color-blanco: var(--blanco);
+  --color-negro:  var(--negro);
 
   /* Fuentes adicionales para Tailwind */
   --font-serif:  var(--font-playfair-display), Georgia, serif;
   --font-script: var(--font-great-vibes), cursive;
-
-  /* Sombras personalizadas */
-  --shadow-brand: 0 4px 24px -4px rgba(113, 0, 20, 0.25);
-  --shadow-card:  0 2px 16px -2px rgba(26, 16, 8, 0.12);
 }
 
 body {
