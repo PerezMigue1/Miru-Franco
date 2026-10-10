@@ -24,7 +24,7 @@ Tests live in `src/**/*.test.ts` (node environment, no browser APIs).
 
 `.env.local` is required:
 ```
-NEXT_PUBLIC_API_URL=https://backend-miru-franco.vercel.app   # or http://localhost:3001 for local
+NEXT_PUBLIC_API_URL=https://api.mirufranco.com   # producción; en local: http://localhost:3001
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=...   # optional
 ```

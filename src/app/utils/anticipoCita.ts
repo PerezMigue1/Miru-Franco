@@ -74,3 +74,14 @@ export function accionesAnticipo(c: CitaConAnticipo, ahora: Date, tienePermiso: 
     noAsistio: vigente && tienePermiso('citas:escritura'),
   };
 }
+
+/**
+ * Si reembolsar el anticipo saca efectivo de la caja: el backend elige el pago más reciente en revisión o,
+ * si canceló el salón, el aprobado sin retener; solo el cobrado en efectivo en el salón sale de la caja de hoy.
+ */
+export function reembolsoSaleDeCaja(c: Pick<CitaApi, 'estado' | 'pagosAnticipo'>): boolean {
+  const aReembolsar = (c.pagosAnticipo ?? [])
+    .filter((p) => p.estado === 'en_revision' || (c.estado === 'cancelada' && p.estado === 'aprobado' && !p.retenidoEn))
+    .sort((a, b) => b.id - a.id)[0];
+  return aReembolsar?.metodo === 'efectivo';
+}

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
+import { anioEnMexico } from '../utils/fechaSoloDia';
 
 function IconInstagram({ className }: { className?: string }) {
   return (
@@ -190,7 +191,7 @@ export default function Footer() {
         {/* Barra inferior */}
         <div className="border-t pt-8 flex flex-col sm:flex-row justify-between items-center gap-4" style={{ borderColor: 'var(--borde-sutil)' }}>
           <p className="text-sm text-center" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-            © {new Date().getFullYear()} Mirú Franco. Todos los derechos reservados.
+            © {anioEnMexico()} Mirú Franco. Todos los derechos reservados.
           </p>
           <div className="flex gap-6 text-sm flex-wrap justify-center">
             <Link href="/terminos-y-condiciones" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">

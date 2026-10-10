@@ -1,11 +1,15 @@
+import { esErrorServidor, textoErrorServidor } from './errorServidor';
+
 /**
  * Mensaje legible a partir de errores del API Nest (ValidationPipe + filtro global).
+ * En 5xx siempre el texto genérico: el cuerpo puede traer detalle técnico.
  */
 export function mensajeUsuarioDesdeErrorApi(err: unknown): string {
   if (!(err instanceof Error)) {
     return typeof err === 'string' ? err : 'Ocurrió un error. Intenta de nuevo.';
   }
   const withData = err as Error & {
+    status?: number;
     data?: {
       errors?: Record<string, string | string[]>;
       message?: string;
@@ -16,6 +20,7 @@ export function mensajeUsuarioDesdeErrorApi(err: unknown): string {
     };
   };
   const d = withData.data;
+  if (esErrorServidor(withData.status)) return textoErrorServidor(withData.status as number, d);
   if (d?.errors && typeof d.errors === 'object' && !Array.isArray(d.errors)) {
     const parts: string[] = [];
     for (const [k, v] of Object.entries(d.errors)) {

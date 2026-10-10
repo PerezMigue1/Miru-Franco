@@ -8,7 +8,7 @@ const { post } = vi.hoisted(() => ({
 vi.mock('./client', () => ({ apiClient: { post } }));
 vi.mock('./config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
-import { abrirCorte, crearVenta, resumenCorteTexto } from './pos';
+import { abrirCorte, crearVenta, desgloseEfectivoCorte, resumenCorteTexto } from './pos';
 
 describe('Corte de caja: la petición lleva lo que exige el backend', () => {
   afterEach(() => {
@@ -53,5 +53,47 @@ describe('Estados de venta local: solo pendiente, pagada y cancelada', () => {
   it("un estado que no existe en el enum ('abierta') nunca se muestra: cae en 'pendiente'", async () => {
     post.mockResolvedValueOnce({ data: { id: 6, estado: 'abierta', items: [] } } as never);
     expect((await crearVenta({ items: [], metodoPago: 'efectivo' } as never)).estado).toBe('pendiente');
+  });
+});
+
+describe('Corte de caja con salidas de efectivo (reembolsos)', () => {
+  const conSalida = {
+    data: {
+      id: 12, efectivoInicial: '700', efectivoFinal: '500', totalVentas: '0', totalEfectivo: '0', totalTarjeta: '0',
+      totalTransferencia: '0', totalSalidas: '200', diferencia: '0',
+      movimientos: [
+        { id: 1, concepto: 'reembolso_anticipo', monto: '200', motivo: 'Reembolso del anticipo de la cita 7', pagoId: 3, devolucionId: null, pago: { citaId: 7, pedidoId: null }, creadoEn: '2026-10-04T18:00:00.000Z' },
+        { id: 2, concepto: 'reembolso_devolucion', monto: '50', motivo: null, pagoId: null, devolucionId: 4, devolucion: { pedidoId: 30 } },
+      ],
+    },
+  };
+
+  it('normaliza el total de salidas y la lista con su concepto y referencia', async () => {
+    post.mockResolvedValueOnce(conSalida as never);
+    const corte = await abrirCorte({ efectivoInicial: 700, efectivoFinal: 500 });
+    expect(corte.totalSalidas).toBe(200);
+    expect(corte.salidas).toEqual([
+      { id: 1, concepto: 'Reembolso de anticipo', monto: 200, motivo: 'Reembolso del anticipo de la cita 7', referencia: 'Cita #7', creadoEn: '2026-10-04T18:00:00.000Z' },
+      { id: 2, concepto: 'Reembolso de devolución', monto: 50, motivo: null, referencia: 'Devolución #4 (pedido #30)', creadoEn: undefined },
+    ]);
+  });
+
+  it('el resumen menciona las salidas solo cuando las hay', async () => {
+    post.mockResolvedValueOnce(conSalida as never);
+    const corte = await abrirCorte({ efectivoInicial: 700, efectivoFinal: 500 });
+    expect(resumenCorteTexto(corte)).toBe('Corte registrado · Efectivo $0.00 · Tarjeta $0.00 · Transferencia $0.00 · Salidas $200.00 · Diferencia $0.00');
+  });
+
+  it('el desglose muestra la fórmula: esperado = inicial + efectivo cobrado − salidas', async () => {
+    post.mockResolvedValueOnce({ data: { ...conSalida.data, totalEfectivo: '300', efectivoFinal: '800' } } as never);
+    const corte = await abrirCorte({ efectivoInicial: 700, efectivoFinal: 800 });
+    expect(desgloseEfectivoCorte(corte)).toEqual([
+      { etiqueta: 'Efectivo inicial', valor: '$700.00' },
+      { etiqueta: 'Efectivo cobrado', valor: '$300.00' },
+      { etiqueta: 'Salidas de efectivo', valor: '-$200.00' },
+      { etiqueta: 'Efectivo esperado', valor: '$800.00' },
+      { etiqueta: 'Efectivo contado', valor: '$800.00' },
+      { etiqueta: 'Diferencia', valor: '$0.00' },
+    ]);
   });
 });

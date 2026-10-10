@@ -66,12 +66,32 @@ export interface CorteApi {
   totalEfectivo?: number | null;
   totalTarjeta?: number | null;
   totalTransferencia?: number | null;
-  /** efectivo contado − (efectivo inicial + efectivo esperado) */
+  /** Reembolsos en efectivo que salieron de la caja y se descuentan en este corte. */
+  totalSalidas?: number | null;
+  salidas?: SalidaCajaApi[];
+  /** efectivo contado − (efectivo inicial + efectivo cobrado − salidas) */
   diferencia?: number | null;
   notas?: string | null;
   creadoEn?: string;
   cerradoEn?: string | null;
 }
+
+/** Salida de efectivo de la caja (reembolso), lista para mostrarse en el corte. */
+export interface SalidaCajaApi {
+  id: number;
+  concepto: string;
+  monto: number;
+  motivo: string | null;
+  /** De dónde viene: "Cita #7", "Pedido #12" o "Devolución #4 (pedido #30)". */
+  referencia: string;
+  creadoEn?: string;
+}
+
+const CONCEPTOS_SALIDA: Record<string, string> = {
+  reembolso_anticipo: 'Reembolso de anticipo',
+  reembolso_pedido: 'Reembolso de pedido',
+  reembolso_devolucion: 'Reembolso de devolución',
+};
 
 interface ListadoVentasResp {
   success?: boolean;
@@ -151,6 +171,31 @@ function normalizarVenta(x: unknown): VentaLocalApi | null {
   };
 }
 
+function normalizarSalida(x: unknown): SalidaCajaApi {
+  const r = (x || {}) as Record<string, unknown>;
+  const pago = (r.pago ?? null) as Record<string, unknown> | null;
+  const devolucion = (r.devolucion ?? null) as Record<string, unknown> | null;
+  const devolucionId = n(r.devolucionId ?? r.devolucion_id);
+  const citaId = n(pago?.citaId);
+  const pedidoId = n(pago?.pedidoId ?? devolucion?.pedidoId);
+  const concepto = s(r.concepto);
+  const referencia = devolucionId != null
+    ? `Devolución #${devolucionId}${pedidoId != null ? ` (pedido #${pedidoId})` : ''}`
+    : citaId != null
+    ? `Cita #${citaId}`
+    : pedidoId != null
+    ? `Pedido #${pedidoId}`
+    : '';
+  return {
+    id: Number(n(r.id, 0) ?? 0),
+    concepto: CONCEPTOS_SALIDA[concepto] ?? 'Salida de efectivo',
+    monto: Number(n(r.monto, 0) ?? 0),
+    motivo: s(r.motivo) || null,
+    referencia,
+    creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
+  };
+}
+
 function normalizarCorte(x: unknown): CorteApi | null {
   if (!x || typeof x !== 'object') return null;
   const r = x as Record<string, unknown>;
@@ -162,6 +207,8 @@ function normalizarCorte(x: unknown): CorteApi | null {
     totalEfectivo: n(r.totalEfectivo ?? r.total_efectivo),
     totalTarjeta: n(r.totalTarjeta ?? r.total_tarjeta),
     totalTransferencia: n(r.totalTransferencia ?? r.total_transferencia),
+    totalSalidas: n(r.totalSalidas ?? r.total_salidas),
+    salidas: Array.isArray(r.movimientos) ? (r.movimientos as unknown[]).map(normalizarSalida) : [],
     diferencia: n(r.diferencia),
     notas: s(r.notas) || null,
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
@@ -175,9 +222,25 @@ function pesos(valor: number | null | undefined): string {
   return `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-/** Lo que se le muestra a quien registra el corte: cada método por separado y la diferencia. */
+/** Lo que se le muestra a quien registra el corte: cada método por separado, las salidas (si hubo) y la diferencia. */
 export function resumenCorteTexto(corte: CorteApi): string {
-  return `Corte registrado · Efectivo ${pesos(corte.totalEfectivo)} · Tarjeta ${pesos(corte.totalTarjeta)} · Transferencia ${pesos(corte.totalTransferencia)} · Diferencia ${pesos(corte.diferencia)}`;
+  const salidas = Number(corte.totalSalidas ?? 0) > 0 ? ` · Salidas ${pesos(corte.totalSalidas)}` : '';
+  return `Corte registrado · Efectivo ${pesos(corte.totalEfectivo)} · Tarjeta ${pesos(corte.totalTarjeta)} · Transferencia ${pesos(corte.totalTransferencia)}${salidas} · Diferencia ${pesos(corte.diferencia)}`;
+}
+
+/** Cuenta del efectivo del corte: esperado = inicial + efectivo cobrado − salidas; diferencia = contado − esperado. */
+export function desgloseEfectivoCorte(corte: CorteApi): { etiqueta: string; valor: string }[] {
+  const inicial = Number(corte.efectivoInicial ?? 0);
+  const cobrado = Number(corte.totalEfectivo ?? 0);
+  const salidas = Number(corte.totalSalidas ?? 0);
+  return [
+    { etiqueta: 'Efectivo inicial', valor: pesos(inicial) },
+    { etiqueta: 'Efectivo cobrado', valor: pesos(cobrado) },
+    { etiqueta: 'Salidas de efectivo', valor: pesos(-salidas) },
+    { etiqueta: 'Efectivo esperado', valor: pesos(inicial + cobrado - salidas) },
+    { etiqueta: 'Efectivo contado', valor: pesos(corte.efectivoFinal) },
+    { etiqueta: 'Diferencia', valor: pesos(corte.diferencia) },
+  ];
 }
 
 export interface ListarVentasParams {

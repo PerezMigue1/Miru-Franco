@@ -1,3 +1,4 @@
+import { quitarDatosSalud } from './datosSensiblesStorage';
 import { normalizarUrlImagenExterna } from './normalizarUrlImagen';
 
 /** Nombre visible: backend español, Google (`name`, `given_name`+`family_name`), etc. */
@@ -25,7 +26,7 @@ const CAMPOS_PERMITIDOS = ['id', 'nombre', 'email', 'rol', 'role', 'foto', 'perm
  * - Si no, usa la de proveedores OAuth (**Google envía `picture`**).
  *
  * Así el header y `/perfil` leen siempre `foto`; la de Google es respaldo hasta que el usuario suba una en Cloudinary.
- * Devuelve solo CAMPOS_PERMITIDOS.
+ * Devuelve solo CAMPOS_PERMITIDOS y, como segunda defensa, sin datos de salud anidados.
  */
 export function normalizarUsuarioAlmacenado(user: unknown): Record<string, unknown> {
   if (!user || typeof user !== 'object' || Array.isArray(user)) {
@@ -56,5 +57,5 @@ export function normalizarUsuarioAlmacenado(user: unknown): Record<string, unkno
   for (const campo of CAMPOS_PERMITIDOS) {
     if (u[campo] !== undefined) seguro[campo] = u[campo];
   }
-  return seguro;
+  return quitarDatosSalud(seguro);
 }

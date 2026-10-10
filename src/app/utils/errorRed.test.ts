@@ -23,3 +23,15 @@ describe('errores de red', () => {
     expect(mensajeDeError(new DOMException('aborted', 'AbortError'), 'otro')).toBe('Solicitud cancelada.');
   });
 });
+
+describe('mensajeDeError con errores 5xx', () => {
+  it('un error con status 5xx muestra el texto genérico, no su mensaje crudo', () => {
+    const err = Object.assign(new Error('<html>502 Bad Gateway</html>'), { status: 502 });
+    expect(mensajeDeError(err, 'otro')).toBe('Ocurrió un error interno. Intenta de nuevo en unos segundos.');
+  });
+
+  it('un 4xx conserva su mensaje', () => {
+    const err = Object.assign(new Error('Stock insuficiente'), { status: 409 });
+    expect(mensajeDeError(err, 'otro')).toBe('Stock insuficiente');
+  });
+});

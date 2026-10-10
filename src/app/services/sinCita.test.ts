@@ -8,7 +8,7 @@ const { get, post, put } = vi.hoisted(() => ({
 vi.mock('./client', () => ({ apiClient: { get, post, put, patch: vi.fn(), delete: vi.fn() } }));
 vi.mock('./config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
-import { citasPorCobrar, crearCitaSinCita, especialistasLibres, listarCitas, personalQueAtiende } from './citas';
+import { citasPorCobrar, citasPorCobrarPaginado, crearCitaSinCita, especialistasLibres, listarCitas, personalQueAtiende } from './citas';
 import { crearVenta } from './pos';
 import { guardarComisionServicio, obtenerReporteComisiones } from './comisiones';
 import { crearDevolucion } from './ecommerce';
@@ -40,6 +40,27 @@ describe('Citas sin cita', () => {
     expect(get.mock.calls[1][0]).toBe('/api/citas/personal');
     await citasPorCobrar();
     expect(get.mock.calls[2][0]).toBe('/api/citas/por-cobrar');
+  });
+
+  it('citas por cobrar paginadas: sin parámetros la ruta no cambia y conserva el total', async () => {
+    get.mockResolvedValueOnce({ success: true, count: 45, page: 1, limit: 20, totalPages: 3, data: [{ id: 4, estado: 'completada', horaCheckOut: '2026-10-04T18:00:00Z' }] } as never);
+    const r = await citasPorCobrarPaginado();
+    expect(get.mock.calls[0][0]).toBe('/api/citas/por-cobrar');
+    expect(r).toMatchObject({ count: 45, page: 1, limit: 20, totalPages: 3 });
+    expect(r.data.map((c) => c.id)).toEqual([4]);
+  });
+
+  it('citas por cobrar paginadas: manda page, limit y citaId', async () => {
+    await citasPorCobrarPaginado({ page: 2, limit: 10 });
+    expect(get.mock.calls[0][0]).toBe('/api/citas/por-cobrar?page=2&limit=10');
+    await citasPorCobrarPaginado({ citaId: 40 });
+    expect(get.mock.calls[1][0]).toBe('/api/citas/por-cobrar?citaId=40');
+  });
+
+  it('citas por cobrar paginadas: con respuesta vieja (arreglo) no truena', async () => {
+    get.mockResolvedValueOnce({ data: [{ id: 1 }, { id: 2 }] });
+    const r = await citasPorCobrarPaginado({ page: 1 });
+    expect(r).toMatchObject({ count: 2, page: 1, totalPages: 1 });
   });
 });
 
@@ -78,7 +99,9 @@ describe('Comisiones', () => {
 
 describe('Solicitud de cambio o reembolso', () => {
   it('manda tipo, causa y sellado para aplicar la política', async () => {
-    await crearDevolucion({ pedidoId: 9, pedidoItemId: 3, estado: 'pendiente', tipo: 'cambio', causa: 'sellado_sin_abrir', sellado: true, motivo: 'Otro tono' });
+    // El estado ya no se manda (B1): el backend siempre crea la solicitud como pendiente.
+    await crearDevolucion({ pedidoId: 9, pedidoItemId: 3, tipo: 'cambio', causa: 'sellado_sin_abrir', sellado: true, motivo: 'Otro tono' });
     expect(post.mock.calls[0][1]).toMatchObject({ tipo: 'cambio', causa: 'sellado_sin_abrir', sellado: true });
+    expect(post.mock.calls[0][1]).not.toHaveProperty('estado');
   });
 });

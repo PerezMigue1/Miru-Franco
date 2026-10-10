@@ -8,7 +8,6 @@ import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
 import Table, { TableRow, TableCell } from '../../../../components/ui/Table';
 import Select from '../../../../components/ui/Select';
-import Input from '../../../../components/ui/Input';
 import {
   listarFacturasDelCliente,
   listarPedidos,
@@ -26,7 +25,6 @@ export default function FacturasPage() {
   const [error, setError] = useState<string | null>(null);
   const [mostrarSolicitud, setMostrarSolicitud] = useState(false);
   const [pedidoSolicitud, setPedidoSolicitud] = useState('');
-  const [folioSolicitud, setFolioSolicitud] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   const cargar = async () => {
@@ -70,13 +68,11 @@ export default function FacturasPage() {
       await crearFactura({
         tipo: 'cfdi',
         pedidoId: pid,
-        folio: folioSolicitud.trim() || undefined,
         estado: 'solicitada',
       });
       showToast('Solicitud registrada. El administrador completará los datos fiscales.', 'success');
       setMostrarSolicitud(false);
       setPedidoSolicitud('');
-      setFolioSolicitud('');
       await cargar();
     } catch (e) {
       void showAlert(e instanceof Error ? e.message : 'No se pudo registrar la solicitud');
@@ -194,13 +190,6 @@ export default function FacturasPage() {
                       })),
                     ]}
                     fullWidth
-                  />
-                  <Input
-                    label="Referencia / folio deseado (opcional)"
-                    value={folioSolicitud}
-                    onChange={(e) => setFolioSolicitud(e.target.value)}
-                    fullWidth
-                    placeholder="Ej. prefijo interno"
                   />
                   <div className="flex gap-3">
                     <Button variant="outline" fullWidth onClick={() => setMostrarSolicitud(false)} disabled={enviando}>

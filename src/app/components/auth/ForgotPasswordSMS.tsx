@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ArrowLeft, Timer } from 'lucide-react';
 
 const PRIMARIO = {
@@ -16,6 +17,39 @@ const SECUNDARIO = {
   ['--btn-bg-hover' as string]: 'var(--nav-hover-bg)',
   ['--btn-borde-hover' as string]: 'var(--menu-texto-principal)',
 } as React.CSSProperties;
+
+const ESTILO_ENLACE = 'font-semibold underline underline-offset-4';
+
+/**
+ * Salida a la recuperación por correo. Si el número es de varias cuentas (o no está registrado)
+ * no llega ningún SMS, así que esta opción se muestra siempre junto al aviso del código.
+ */
+function RecuperarConCorreo({ onSwitchToEmail, disabled }: { onSwitchToEmail?: () => void; disabled?: boolean }) {
+  return (
+    <p className="text-sm text-center" style={{ color: 'var(--encabezados-alterno)' }}>
+      ¿No te llegó el SMS?{' '}
+      {onSwitchToEmail ? (
+        <button
+          type="button"
+          onClick={onSwitchToEmail}
+          disabled={disabled}
+          className={`${ESTILO_ENLACE} min-h-11`}
+          style={{ color: 'var(--menu-texto-principal)' }}
+        >
+          Recuperar con mi correo
+        </button>
+      ) : (
+        <Link href="/forgot-password" className={ESTILO_ENLACE} style={{ color: 'var(--menu-texto-principal)' }}>
+          Recuperar con mi correo
+        </Link>
+      )}
+    </p>
+  );
+}
+
+/** Mismo texto que responde el backend con 0, 1 o varias cuentas con ese número. */
+const MENSAJE_ENVIO =
+  'Si el número está registrado te enviamos un código por SMS. Si no te llega, recupera tu cuenta con tu correo.';
 
 interface ForgotPasswordSMSProps {
   onSwitchToLogin?: () => void;
@@ -97,7 +131,7 @@ export default function ForgotPasswordSMS({
         setCodeSent(true);
         // Mensaje genérico para evitar enumeración de cuentas.
         setErrors({
-          general: 'Si el numero esta registrado, se envio el codigo de verificacion por SMS.',
+          general: MENSAJE_ENVIO,
         });
         setTimeLeft(300);
         const interval = setInterval(() => {
@@ -111,7 +145,7 @@ export default function ForgotPasswordSMS({
         }, 1000);
       } else {
         setErrors({
-          general: result.message || 'Si el numero esta registrado, se envio el codigo de verificacion por SMS.',
+          general: result.message || MENSAJE_ENVIO,
         });
       }
     } catch (error: unknown) {
@@ -122,7 +156,7 @@ export default function ForgotPasswordSMS({
         setErrors({ phone: `Demasiados intentos. Espera ${wait} segundos.` });
       } else {
         setErrors({
-          general: 'Si el numero esta registrado, se envio el codigo de verificacion por SMS.',
+          general: MENSAJE_ENVIO,
         });
       }
       console.error('Error enviando SMS:', error);
@@ -171,7 +205,7 @@ export default function ForgotPasswordSMS({
             Código de Verificación
           </h2>
           <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-            Hemos enviado un código de 6 dígitos a <strong style={{ color: 'var(--menu-texto-principal)' }}>{phone}</strong>
+            Si el número está registrado, enviamos un código de 6 dígitos a <strong style={{ color: 'var(--menu-texto-principal)' }}>{phone}</strong>
           </p>
 
           <form onSubmit={handleVerifyCode} className="space-y-5">
@@ -180,6 +214,7 @@ export default function ForgotPasswordSMS({
                 <p className="text-sm text-center" style={{ color: 'var(--menu-texto-principal)' }}>{errors.general}</p>
               </div>
             )}
+            <RecuperarConCorreo onSwitchToEmail={onSwitchToEmail} disabled={isLoading} />
             <div>
               <label
                 htmlFor="code"
@@ -281,6 +316,9 @@ export default function ForgotPasswordSMS({
             <div className="p-3 rounded-[10px] border" role="status" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
               <p className="text-sm text-center" style={{ color: 'var(--menu-texto-principal)' }}>{errors.general}</p>
             </div>
+          )}
+          {(errors.general || !onSwitchToEmail) && (
+            <RecuperarConCorreo onSwitchToEmail={onSwitchToEmail} disabled={isLoading} />
           )}
           <div>
             <label

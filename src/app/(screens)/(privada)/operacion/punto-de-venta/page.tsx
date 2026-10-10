@@ -14,8 +14,9 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import PagoMixtoCampos from '../../../../components/operacion/PagoMixtoCampos';
-import { listarVentas, crearVenta, cancelarVenta, abrirCorte, resumenCorteTexto, type VentaLocalApi } from '../../../../services/pos';
-import { citasPorCobrar, personalQueAtiende, type CitaApi, type PersonaPersonal } from '../../../../services/citas';
+import { listarVentas, crearVenta, cancelarVenta, abrirCorte, resumenCorteTexto, type CorteApi, type VentaLocalApi } from '../../../../services/pos';
+import ResumenCorteCaja from '../../../../components/operacion/ResumenCorteCaja';
+import { citasPorCobrarPaginado, personalQueAtiende, type CitaApi, type PersonaPersonal } from '../../../../services/citas';
 import { showToast } from '../../../../utils/toast';
 import { getProductosSinRedirigir, type Producto } from '../../../../services/productos';
 import { getServicios, type Servicio } from '../../../../services/servicios';
@@ -24,7 +25,7 @@ import { usePermisos } from '../../../../utils/permisos';
 import { etiquetaEstadoVenta, varianteEstadoVenta } from '../../../../utils/estados';
 import { generarTicketVentaPdf } from '../../../../utils/ticketVenta';
 import { fmtMoneda, itemsDeVenta, pagosMixtos, totalesTicket, validarCobro, type LineaCobro, type MontosMixtos } from '../../../../utils/cobroPos';
-import { ShoppingCart, Trash2, AlertTriangle, BadgeDollarSign, Download, CheckCircle2, Check, X, Scissors, RefreshCw } from 'lucide-react';
+import { ShoppingCart, Trash2, AlertTriangle, BadgeDollarSign, Download, CheckCircle2, Check, X, Scissors, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
 
 interface LineaTicket extends LineaCobro {
@@ -69,7 +70,9 @@ function lineaDeCita(c: CitaApi, servicios: Servicio[]): LineaTicket {
   };
 }
 
-const CLASE_CAMPO_CORTO = 'w-16 rounded border border-[var(--borde-visible)] bg-fondo-general px-2 py-1 text-sm text-menu-texto-principal disabled:opacity-60';
+const POR_COBRAR_POR_PAGINA = 20;
+
+const CLASE_CAMPO_CORTO ='w-16 rounded border border-[var(--borde-visible)] bg-fondo-general px-2 py-1 text-sm text-menu-texto-principal disabled:opacity-60';
 
 export default function PuntoDeVentaPage() {
   return (
@@ -98,6 +101,9 @@ function PuntoDeVenta() {
   const [porCobrar, setPorCobrar] = useState<CitaApi[]>([]);
   const [cargandoPorCobrar, setCargandoPorCobrar] = useState(true);
   const [errorPorCobrar, setErrorPorCobrar] = useState<string | null>(null);
+  const [paginaPorCobrar, setPaginaPorCobrar] = useState(1);
+  const [totalPorCobrar, setTotalPorCobrar] = useState(0);
+  const [totalPaginasPorCobrar, setTotalPaginasPorCobrar] = useState(1);
   const [avisoCita, setAvisoCita] = useState<string | null>(null);
 
   // Ticket en construcción
@@ -134,6 +140,8 @@ function PuntoDeVenta() {
   const [formCorteNotas, setFormCorteNotas] = useState('');
   const [savingCorte, setSavingCorte] = useState(false);
   const [corteError, setCorteError] = useState<string | null>(null);
+  // Corte recién registrado: el modal muestra su cuenta del efectivo y las salidas.
+  const [corteRegistrado, setCorteRegistrado] = useState<CorteApi | null>(null);
 
   // Cancelar venta
   const [isModalCancelarOpen, setIsModalCancelarOpen] = useState(false);
@@ -151,22 +159,53 @@ function PuntoDeVenta() {
       .finally(() => setLoadingVentas(false));
   }, []);
 
-  /** Recarga los servicios por cobrar y saca del ticket las citas que ya no lo están (otra caja las cobró). */
-  const cargarPorCobrar = useCallback(() => {
+  /**
+   * Recarga una página de servicios por cobrar. Si quedó vacía (se cobró lo último de esa página),
+   * retrocede una página. No toca el ticket: sus citas pueden estar en otra página.
+   */
+  const cargarPorCobrar = useCallback((pagina: number) => {
     setCargandoPorCobrar(true);
     setErrorPorCobrar(null);
-    return citasPorCobrar()
-      .then((citas) => {
-        setPorCobrar(citas);
-        setLineas((prev) => prev.filter((l) => !l.citaId || citas.some((c) => c.id === l.citaId)));
-        return citas;
+    return citasPorCobrarPaginado({ page: pagina, limit: POR_COBRAR_POR_PAGINA })
+      .then((r) => {
+        if (r.data.length === 0 && pagina > 1) {
+          setPaginaPorCobrar(Math.max(1, Math.min(pagina - 1, r.totalPages)));
+          return;
+        }
+        setPorCobrar(r.data);
+        setTotalPorCobrar(r.count);
+        setTotalPaginasPorCobrar(r.totalPages);
       })
       .catch((e) => {
         setErrorPorCobrar(e instanceof Error ? e.message : 'No se pudieron cargar los servicios por cobrar');
-        return [] as CitaApi[];
       })
       .finally(() => setCargandoPorCobrar(false));
   }, []);
+
+  useEffect(() => {
+    cargarPorCobrar(paginaPorCobrar);
+  }, [cargarPorCobrar, paginaPorCobrar]);
+
+  /** Saca del ticket las citas que ya no están por cobrar (otra caja las cobró), revisando cada una con ?citaId=. */
+  const quitarCitasYaCobradas = useCallback(async (ids: number[]) => {
+    const sigue = await Promise.all(
+      ids.map((id) =>
+        citasPorCobrarPaginado({ citaId: id })
+          .then((r) => r.data.some((c) => c.id === id))
+          // Si no se pudo revisar, se queda en el ticket: el backend rechaza cobrarla dos veces.
+          .catch(() => true),
+      ),
+    );
+    const cobradas = new Set(ids.filter((_, i) => !sigue[i]));
+    if (cobradas.size > 0) setLineas((prev) => prev.filter((l) => !l.citaId || !cobradas.has(l.citaId)));
+  }, []);
+
+  const citaIdsEnTicket = lineas.map((l) => l.citaId).filter((id): id is number => Boolean(id));
+
+  const refrescarPorCobrar = () => {
+    cargarPorCobrar(paginaPorCobrar);
+    if (citaIdsEnTicket.length > 0) quitarCitasYaCobradas(citaIdsEnTicket);
+  };
 
   const agregarCita = useCallback((c: CitaApi, servicios: Servicio[]) => {
     setLineas((prev) => (prev.some((l) => l.citaId === c.id) ? prev : [...prev, lineaDeCita(c, servicios)]));
@@ -181,14 +220,19 @@ function PuntoDeVenta() {
     cargarVentas();
     getProductosSinRedirigir().then(({ data }) => setCatProductos(data)).catch(() => {});
     personalQueAtiende().then(setPersonal).catch(() => setPersonal([]));
-    Promise.all([getServicios(), cargarPorCobrar()]).then(([{ data: servicios }, citas]) => {
+    // La cita que llega por ?citaId= se busca directo (puede no estar en la primera página).
+    const buscarCitaInicial = citaInicial
+      ? citasPorCobrarPaginado({ citaId: citaInicial }).then((r) => r.data).catch(() => null)
+      : Promise.resolve([] as CitaApi[]);
+    Promise.all([getServicios(), buscarCitaInicial]).then(([{ data: servicios }, citas]) => {
       setCatServicios(servicios);
       if (!citaInicial) return;
-      const cita = citas.find((c) => c.id === citaInicial);
+      const cita = citas?.find((c) => c.id === citaInicial);
       if (cita) agregarCita(cita, servicios);
+      else if (citas === null) setAvisoCita(`No se pudo cargar la cita #${citaInicial}. Actualiza los servicios por cobrar e intenta de nuevo.`);
       else setAvisoCita(`La cita #${citaInicial} no está por cobrar: puede que ya se haya cobrado.`);
     });
-  }, [cargarVentas, cargarPorCobrar, agregarCita, citaInicial]);
+  }, [cargarVentas, agregarCita, citaInicial]);
 
   // Buscador de cliente por nombre o teléfono, con debounce — nada de precargar el catálogo completo.
   useEffect(() => {
@@ -336,11 +380,12 @@ function PuntoDeVenta() {
       // Ya cobrada: se quita ?citaId= para que recargar la página no la busque otra vez.
       if (citaInicial) router.replace('/operacion/punto-de-venta');
       cargarVentas();
-      cargarPorCobrar();
+      // Si la página quedó vacía, cargarPorCobrar retrocede una.
+      cargarPorCobrar(paginaPorCobrar);
     } catch (e) {
       setCobroError(e instanceof Error ? e.message : 'No se pudo procesar la venta');
-      // Si otra caja ya cobró alguna cita del ticket, se refresca la lista y se quita del ticket.
-      if (lineas.some((l) => l.citaId)) cargarPorCobrar();
+      // Si otra caja ya cobró alguna cita del ticket (el backend responde 409), se refresca la lista y se quita del ticket.
+      if (citaIdsEnTicket.length > 0) refrescarPorCobrar();
     } finally {
       setCobrando(false);
     }
@@ -358,7 +403,7 @@ function PuntoDeVenta() {
         efectivoFinal: Number(formCorteEfectivoFinal),
         notas: formCorteNotas.trim() || undefined,
       });
-      setIsModalCorteOpen(false); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas('');
+      setCorteRegistrado(corte); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas('');
       showToast(resumenCorteTexto(corte), 'success', 10000);
     } catch (e) {
       setCorteError(e instanceof Error ? e.message : 'No se pudo registrar el corte');
@@ -384,7 +429,9 @@ function PuntoDeVenta() {
   };
 
   const totalDia = ventasHoy.reduce((acc, v) => acc + (Number(v.total) || 0), 0);
-  const citasEnTicket = new Set(lineas.map((l) => l.citaId).filter(Boolean));
+  const citasEnTicket = new Set(citaIdsEnTicket);
+  const desdePorCobrar = totalPorCobrar === 0 ? 0 : (paginaPorCobrar - 1) * POR_COBRAR_POR_PAGINA + 1;
+  const hastaPorCobrar = Math.min(totalPorCobrar, (paginaPorCobrar - 1) * POR_COBRAR_POR_PAGINA + porCobrar.length);
 
   return (
     <OperacionLayout permisoRequerido="ventas:escritura">
@@ -399,7 +446,7 @@ function PuntoDeVenta() {
           {puedeCorte && (
             <Button
               variant="outline"
-              onClick={() => { setCorteError(null); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas(''); setIsModalCorteOpen(true); }}
+              onClick={() => { setCorteError(null); setCorteRegistrado(null); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas(''); setIsModalCorteOpen(true); }}
             >
               Corte de caja
             </Button>
@@ -431,9 +478,9 @@ function PuntoDeVenta() {
             <Card variant="elevated" padding="lg">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold text-menu-texto-principal">
-                  Servicios por cobrar{!cargandoPorCobrar && porCobrar.length > 0 ? ` (${porCobrar.length})` : ''}
+                  Servicios por cobrar{!cargandoPorCobrar && totalPorCobrar > 0 ? ` (${totalPorCobrar})` : ''}
                 </h2>
-                <Button size="sm" variant="outline" onClick={() => cargarPorCobrar()} disabled={cargandoPorCobrar} aria-label="Actualizar servicios por cobrar">
+                <Button size="sm" variant="outline" onClick={refrescarPorCobrar} disabled={cargandoPorCobrar} aria-label="Actualizar servicios por cobrar">
                   <RefreshCw size={16} aria-hidden className={cargandoPorCobrar ? 'animate-spin' : undefined} />
                 </Button>
               </div>
@@ -469,6 +516,36 @@ function PuntoDeVenta() {
                     );
                   })}
                 </ul>
+              )}
+              {totalPaginasPorCobrar > 1 && !errorPorCobrar && (
+                <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-[var(--fondos-suaves)] pt-4 sm:flex-row">
+                  <p className="text-xs text-encabezados-alterno">
+                    Mostrando {desdePorCobrar}–{hastaPorCobrar} de {totalPorCobrar}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="inline-flex items-center gap-1"
+                      onClick={() => setPaginaPorCobrar((p) => Math.max(1, p - 1))}
+                      disabled={paginaPorCobrar <= 1 || cargandoPorCobrar}
+                    >
+                      <ChevronLeft size={14} aria-hidden /> Anterior
+                    </Button>
+                    <span className="text-xs text-encabezados-alterno">
+                      Página {paginaPorCobrar} de {totalPaginasPorCobrar}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="inline-flex items-center gap-1"
+                      onClick={() => setPaginaPorCobrar((p) => Math.min(totalPaginasPorCobrar, p + 1))}
+                      disabled={paginaPorCobrar >= totalPaginasPorCobrar || cargandoPorCobrar}
+                    >
+                      Siguiente <ChevronRight size={14} aria-hidden />
+                    </Button>
+                  </div>
+                </div>
               )}
             </Card>
 
@@ -795,22 +872,32 @@ function PuntoDeVenta() {
       <Modal
         isOpen={isModalCorteOpen}
         onClose={() => { if (!savingCorte) setIsModalCorteOpen(false); }}
-        title="Corte de caja"
+        title={corteRegistrado ? 'Corte registrado' : 'Corte de caja'}
         size="sm"
         footer={
-          <>
-            <Button variant="outline" onClick={() => setIsModalCorteOpen(false)} disabled={savingCorte}>Cancelar</Button>
-            <Button onClick={handleAbrirCorte} disabled={savingCorte}>{savingCorte ? 'Registrando…' : 'Registrar corte'}</Button>
-          </>
+          corteRegistrado ? (
+            <Button onClick={() => setIsModalCorteOpen(false)}>Cerrar</Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setIsModalCorteOpen(false)} disabled={savingCorte}>Cancelar</Button>
+              <Button onClick={handleAbrirCorte} disabled={savingCorte}>{savingCorte ? 'Registrando…' : 'Registrar corte'}</Button>
+            </>
+          )
         }
       >
-        {corteError && <p className="mb-3 text-sm text-[var(--danger-texto)]">{corteError}</p>}
-        <div className="space-y-3">
-          <p className="text-sm text-encabezados-alterno">Corte de hoy: suma las ventas pagadas del día (los pagos mixtos se reparten por método) y compara el efectivo esperado con el que cuentas en caja.</p>
-          <Input label="Efectivo inicial ($)" type="number" min={0} step={0.01} value={formCorteEfectivo} onChange={(e) => setFormCorteEfectivo(e.target.value)} fullWidth />
-          <Input label="Efectivo contado al cierre ($)" type="number" min={0} step={0.01} inputMode="decimal" required value={formCorteEfectivoFinal} onChange={(e) => setFormCorteEfectivoFinal(e.target.value)} fullWidth />
-          <Textarea label="Notas" value={formCorteNotas} onChange={(e) => setFormCorteNotas(e.target.value)} placeholder="Observaciones del turno..." rows={2} fullWidth />
-        </div>
+        {corteRegistrado ? (
+          <ResumenCorteCaja corte={corteRegistrado} />
+        ) : (
+          <>
+            {corteError && <p className="mb-3 text-sm text-[var(--danger-texto)]">{corteError}</p>}
+            <div className="space-y-3">
+              <p className="text-sm text-encabezados-alterno">Corte de hoy: suma las ventas pagadas del día (los pagos mixtos se reparten por método) y descuenta las salidas de efectivo (reembolsos). Efectivo esperado = inicial + efectivo cobrado − salidas.</p>
+              <Input label="Efectivo inicial ($)" type="number" min={0} step={0.01} value={formCorteEfectivo} onChange={(e) => setFormCorteEfectivo(e.target.value)} fullWidth />
+              <Input label="Efectivo contado al cierre ($)" type="number" min={0} step={0.01} inputMode="decimal" required value={formCorteEfectivoFinal} onChange={(e) => setFormCorteEfectivoFinal(e.target.value)} fullWidth />
+              <Textarea label="Notas" value={formCorteNotas} onChange={(e) => setFormCorteNotas(e.target.value)} placeholder="Observaciones del turno..." rows={2} fullWidth />
+            </div>
+          </>
+        )}
       </Modal>
 
       {/* Modal: Cancelar Venta */}

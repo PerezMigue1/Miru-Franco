@@ -62,7 +62,7 @@ Crear archivo `.env.local` en la raíz del proyecto:
 
 ```env
 # URL del backend API
-NEXT_PUBLIC_API_URL=https://backend-miru-franco.vercel.app
+NEXT_PUBLIC_API_URL=https://api.mirufranco.com
 
 # URL de la aplicación (para enlaces de reset password)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -217,7 +217,7 @@ Las siguientes variables deben configurarse en `.env.local`:
 
 ```env
 # Backend API URL
-NEXT_PUBLIC_API_URL=https://backend-miru-franco.vercel.app
+NEXT_PUBLIC_API_URL=https://api.mirufranco.com
 
 # Application URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000

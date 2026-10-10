@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import Button from '../ui/Button';
-import { subirImagenesCloudinary, PRESET_PRODUCTOS } from '../../utils/cloudinary';
+import { subirImagenesCloudinary } from '../../utils/cloudinary';
 import { showToast } from '../../utils/toast';
 
-/** Solo bloquea tamaños absurdos (p. ej. ISO); el límite real lo marca Cloudinary en el preset. */
+/** Solo bloquea tamaños absurdos (p. ej. ISO); el límite real lo marca Cloudinary. */
 const MAX_BYTES_SANE = 120 * 1024 * 1024; // 120 MB
 
 /**
@@ -27,18 +27,15 @@ type Props = {
   disabled?: boolean;
   /** Texto del botón cuando no está subiendo. */
   label?: string;
-  /** Upload preset a usar. Por defecto, el de productos (comportamiento histórico). */
-  preset?: string;
 };
 
 /**
- * Selector de archivos locales → subida unsigned a Cloudinary (preset productos por defecto).
+ * Selector de archivos locales → subida firmada a Cloudinary (carpeta galeria, una firma por lote).
  */
 export function SubirImagenesCloudinaryButton({
   onUrlsAdded,
   disabled,
   label = 'Subir imágenes',
-  preset = PRESET_PRODUCTOS,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +62,7 @@ export function SubirImagenesCloudinaryButton({
       setError(null);
       setBusy(true);
       try {
-        const urls = await subirImagenesCloudinary(list, preset || '');
+        const urls = await subirImagenesCloudinary(list);
         onUrlsAdded(urls);
         if (urls.length) {
           showToast(`${urls.length} imagen(es) subida(s).`, 'success');

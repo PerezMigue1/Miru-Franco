@@ -186,6 +186,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'cola-atencion': 'Cola de atención',
       anticipos: 'Anticipos por servicio',
       comisiones: 'Comisiones',
+      devoluciones: 'Devoluciones y cambios',
       'ejecucion-servicios': 'Ejecución de servicios',
       'gestion-citas': 'Gestión de citas',
       'gestion-equipo': 'Gestión de equipo',

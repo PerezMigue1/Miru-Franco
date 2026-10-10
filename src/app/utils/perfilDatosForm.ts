@@ -1,5 +1,5 @@
 import type { ActualizarMiPerfilPayload, PerfilUsuarioCompleto, TipoCabelloValor } from '../services/perfil';
-import { sanitizarEntradaTelefono10 } from './phone';
+import { telefonoSinLada } from './phone';
 import { requiereConsentimiento } from './consentimientoDatosSensibles';
 
 /** Valores del formulario "Información personal" del perfil de la clienta (PerfilDatosForm). */
@@ -27,7 +27,7 @@ export const VALORES_PERFIL_VACIOS: ValoresPerfil = {
 export function valoresDesdePerfil(p: PerfilUsuarioCompleto): ValoresPerfil {
   return {
     nombre: p.nombre || '',
-    telefono: sanitizarEntradaTelefono10(p.telefono || ''),
+    telefono: telefonoSinLada(p.telefono || ''),
     fechaNacimiento: p.fechaNacimiento?.slice(0, 10) || '',
     tipoCabello: p.tipoCabello || '',
     colorNatural: p.colorNatural || '',
@@ -60,7 +60,7 @@ export function cuerpoGuardarPerfil(
   const tc = values.tipoCabello as TipoCabelloValor | '';
   return {
     nombre: values.nombre.trim() || perfil.nombre || '',
-    telefono: values.telefono.trim() ? sanitizarEntradaTelefono10(values.telefono) : null,
+    telefono: values.telefono.trim() ? telefonoSinLada(values.telefono) : null,
     fechaNacimiento: values.fechaNacimiento.trim() || null,
     tipoCabello: tc === '' ? null : tc,
     colorNatural: values.colorNatural.trim() || null,

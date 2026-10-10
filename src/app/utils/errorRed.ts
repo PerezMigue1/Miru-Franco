@@ -1,3 +1,5 @@
+import { esErrorServidor, textoErrorServidor } from './errorServidor';
+
 /** Lo que ve el usuario cuando un fetch no llega al servidor (sin red, servidor caído, CORS). */
 export const MENSAJE_SIN_CONEXION = 'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.';
 
@@ -14,9 +16,16 @@ export function esErrorDeRed(e: unknown): boolean {
   );
 }
 
-/** Texto para mostrar de un error atrapado: sin el texto técnico del navegador cuando falla la red. */
+/**
+ * Texto para mostrar de un error atrapado: sin el texto técnico del navegador cuando falla la red
+ * ni el cuerpo crudo del servidor en un 5xx.
+ */
 export function mensajeDeError(e: unknown, porDefecto: string): string {
   if (e instanceof DOMException && e.name === 'AbortError') return 'Solicitud cancelada.';
   if (esErrorDeRed(e)) return MENSAJE_SIN_CONEXION;
+  const conStatus = e as { status?: unknown; data?: unknown } | null;
+  if (conStatus && esErrorServidor(conStatus.status)) {
+    return textoErrorServidor(conStatus.status as number, conStatus.data);
+  }
   return e instanceof Error && e.message ? e.message : porDefecto;
 }

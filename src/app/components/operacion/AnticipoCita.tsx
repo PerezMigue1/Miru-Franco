@@ -7,7 +7,7 @@ import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import Select from '../ui/Select';
 import { marcarNoAsistio, reembolsarAnticipo, registrarAnticipo, retenerAnticipo, type CitaApi } from '../../services/citas';
-import { accionesAnticipo, estadoAnticipo, INFO_ANTICIPO, tiempoRestante } from '../../utils/anticipoCita';
+import { accionesAnticipo, estadoAnticipo, INFO_ANTICIPO, reembolsoSaleDeCaja, tiempoRestante } from '../../utils/anticipoCita';
 import { fmtMoneda } from '../../utils/cobroPos';
 import { usePermisos } from '../../utils/permisos';
 import { showToast } from '../../utils/toast';
@@ -32,7 +32,7 @@ type Accion = 'reembolsar' | 'retener' | 'noAsistio';
 const CONFIRMACION: Record<Accion, { titulo: string; texto: string; boton: string }> = {
   reembolsar: {
     titulo: 'Reembolsar anticipo',
-    texto: 'Si se pagó con Mercado Pago, se devuelve a la clienta por la misma vía. Si se pagó en el salón, solo queda registrado: entrega el dinero en caja.',
+    texto: 'Si se pagó con Mercado Pago, se devuelve a la clienta por la misma vía. Si se pagó en el salón, queda registrado y entregas el dinero tú.',
     boton: 'Reembolsar',
   },
   retener: {
@@ -174,6 +174,12 @@ export function AccionesAnticipo({ cita, ahora, onCambio, conNoAsistio = false }
             {confirmar !== 'noAsistio' && (
               <p className="text-sm text-encabezados-alterno">
                 Anticipo: <span className="mf-cifras font-semibold text-menu-texto-principal">{fmtMoneda(cita.anticipoRequerido ?? 0)}</span>
+              </p>
+            )}
+            {confirmar === 'reembolsar' && reembolsoSaleDeCaja(cita) && (
+              <p className="flex items-center gap-2 text-sm font-medium text-menu-texto-principal">
+                <Banknote size={16} aria-hidden className="shrink-0 text-encabezados-alterno" />
+                El efectivo sale de la caja de hoy.
               </p>
             )}
             {error && <p role="alert" className="text-sm font-medium text-[var(--danger-texto)]">{error}</p>}

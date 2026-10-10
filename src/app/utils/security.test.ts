@@ -29,6 +29,34 @@ describe('security utils', () => {
     }
   });
 
+  describe('datos personales: igual que el backend, solo campos de 3 o más caracteres', () => {
+    it('el día de nacimiento (1 o 2 caracteres) no rechaza contraseñas con ese dígito', () => {
+      expect(validatePassword('Gato#2471Xy', { fechaNacimiento: '1990-05-01' }).valid).toBe(true);
+    });
+
+    it('el mes de nacimiento no se compara', () => {
+      expect(validatePassword('Sol#1958Qz', { fechaNacimiento: '1990-01-15' }).valid).toBe(true);
+    });
+
+    it('un nombre de 2 letras no se compara', () => {
+      expect(validatePassword('Alto#2048Qz', { nombre: 'Al' }).valid).toBe(true);
+    });
+
+    it('una parte local del correo de 2 letras no se compara', () => {
+      expect(validatePassword('Yoga#2048Qz', { email: 'yo@x.com' }).valid).toBe(true);
+    });
+
+    it('sigue rechazando el año de nacimiento', () => {
+      const result = validatePassword('Gato#1990Xy', { fechaNacimiento: '1990-05-01' });
+      expect(result.errors).toContain('La contraseña no puede contener tu fecha de nacimiento');
+    });
+
+    it('sigue rechazando el nombre', () => {
+      const result = validatePassword('Miguel#2048Qz', { nombre: 'Miguel' });
+      expect(result.errors).toContain('La contraseña no puede contener tu nombre');
+    });
+  });
+
   it('rejects weak password patterns', () => {
     const result = validatePassword('password123');
     expect(result.valid).toBe(false);

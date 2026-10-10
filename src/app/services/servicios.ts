@@ -4,6 +4,7 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { mensajeDeError } from '../utils/errorRed';
+import { textoRespuestaFallida } from '../utils/errorServidor';
 
 /** Especialista asignado a un servicio (desde Prisma `ServicioEspecialista`). */
 export interface ServicioEspecialistaUI {
@@ -251,14 +252,7 @@ export async function getServicios(): Promise<ServiciosResult> {
     const base = getBackendBaseUrl();
     const res = await fetch(`${base}/api/servicios`, { credentials: 'include', next: { revalidate: 60 } });
     if (!res.ok) {
-      const text = await res.text();
-      let msg = `Error ${res.status}`;
-      try {
-        const j = JSON.parse(text);
-        msg = j.message ?? j.error ?? msg;
-      } catch {
-        if (text) msg = text.slice(0, 120);
-      }
+      const msg = textoRespuestaFallida(res.status, await res.text(), `${base}/api/servicios`);
       return { data: [], error: msg };
     }
     const response = await res.json();

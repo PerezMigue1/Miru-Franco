@@ -9,7 +9,7 @@ const { get, post, put, patch } = vi.hoisted(() => ({
 vi.mock('../services/client', () => ({ apiClient: { get, post, put, patch, delete: vi.fn() } }));
 vi.mock('../services/config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
-import { accionesAnticipo, estadoAnticipo, INFO_ANTICIPO, tiempoRestante } from './anticipoCita';
+import { accionesAnticipo, estadoAnticipo, INFO_ANTICIPO, reembolsoSaleDeCaja, tiempoRestante } from './anticipoCita';
 import { itemsDeVenta, totalesTicket, validarCobro, type LineaCobro } from './cobroPos';
 import { PLAZOS_TERMINOS } from './terminosCondiciones';
 import {
@@ -157,5 +157,25 @@ describe('Revisión: retener, duplicados y prioridad del anticipo pagado', () =>
   it('el pago en revisión de una cita vigente no se retiene', () => {
     const c = cita({ estado: 'pendiente', pagosAnticipo: [pago('en_revision')] });
     expect(accionesAnticipo(c, AHORA, estilista)).toMatchObject({ reembolsar: true, retener: false });
+  });
+});
+
+describe('Reembolso de un anticipo cobrado en efectivo: sale de la caja de hoy', () => {
+  const pago = (extra: Record<string, unknown>) => ({ id: 1, estado: 'aprobado', monto: 150, metodo: 'efectivo', proveedor: null, pagadoEn: AHORA.toISOString(), ...extra });
+  const cita = (estado: string, pagos: Record<string, unknown>[]) => ({ estado, pagosAnticipo: pagos } as unknown as CitaApi);
+
+  it('el anticipo en efectivo de una cita cancelada por el salón sale de la caja', () => {
+    expect(reembolsoSaleDeCaja(cita('cancelada', [pago({})]))).toBe(true);
+  });
+
+  it('con tarjeta, transferencia o Mercado Pago no sale efectivo', () => {
+    expect(reembolsoSaleDeCaja(cita('cancelada', [pago({ metodo: 'tarjeta_terminal' })]))).toBe(false);
+    expect(reembolsoSaleDeCaja(cita('cancelada', [pago({ metodo: 'mercado_pago', proveedor: 'mercadopago' })]))).toBe(false);
+  });
+
+  it('mira el pago que se reembolsa: el más reciente en revisión, o el aprobado sin retener si canceló el salón', () => {
+    expect(reembolsoSaleDeCaja(cita('confirmada', [pago({}), pago({ id: 2, estado: 'en_revision', metodo: 'mercado_pago' })]))).toBe(false);
+    expect(reembolsoSaleDeCaja(cita('cancelada', [pago({ metodo: 'mercado_pago' }), pago({ id: 2, estado: 'en_revision' })]))).toBe(true);
+    expect(reembolsoSaleDeCaja(cita('cancelada', [pago({ retenidoEn: AHORA.toISOString() })]))).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { imagenProductoMostrable, normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
 import { mensajeDeError } from '../utils/errorRed';
+import { textoRespuestaFallida } from '../utils/errorServidor';
 
 /** Producto normalizado para la UI (catálogo y detalle) */
 export interface Producto {
@@ -297,14 +298,7 @@ export async function getProductosSinRedirigir(opts?: GetProductosSinRedirigirOp
     const query = opts?.incluirNoDisponibles ? '?incluirNoDisponibles=1' : '';
     const res = await fetch(`${base}/api/productos${query}`, { credentials: 'include', ...(opts?.incluirNoDisponibles ? {} : { next: { revalidate: 60 } }) });
     if (!res.ok) {
-      const text = await res.text();
-      let msg = `Error ${res.status}`;
-      try {
-        const j = JSON.parse(text);
-        msg = j.message ?? j.error ?? msg;
-      } catch {
-        if (text) msg = text.slice(0, 120);
-      }
+      const msg = textoRespuestaFallida(res.status, await res.text(), `${base}/api/productos${query}`);
       return { data: [], error: msg };
     }
     const response = await res.json();
@@ -600,14 +594,7 @@ export async function aplicarDescuentoPorMarca(
     if (res.status === 404 || res.status === 501) {
       // Backend no tiene el endpoint: aplicar producto por producto
     } else {
-      const text = await res.text();
-      let msg = `Error ${res.status}`;
-      try {
-        const j = JSON.parse(text);
-        msg = (j.message ?? j.error ?? msg) as string;
-      } catch {
-        if (text) msg = text.slice(0, 120);
-      }
+      const msg = textoRespuestaFallida(res.status, await res.text(), `${base}/api/productos/descuento-por-marca`);
       return { success: false, error: msg };
     }
   } catch {
@@ -702,14 +689,7 @@ export async function aplicarDescuentoGlobal(params: {
     if (res.status === 404 || res.status === 501) {
       // Backend no tiene el endpoint: aplicar producto por producto
     } else {
-      const text = await res.text();
-      let msg = `Error ${res.status}`;
-      try {
-        const j = JSON.parse(text);
-        msg = (j.message ?? j.error ?? msg) as string;
-      } catch {
-        if (text) msg = text.slice(0, 120);
-      }
+      const msg = textoRespuestaFallida(res.status, await res.text(), `${base}/api/productos/descuento-global`);
       return { success: false, error: msg };
     }
   } catch {

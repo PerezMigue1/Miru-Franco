@@ -79,7 +79,7 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     items: [
       { label: 'Clientes CRM', href: '/admin/clientes-crm', icon: Users, permiso: 'clientes:lectura' },
       { label: 'Cotizaciones y eventos', href: '/admin/cotizaciones-eventos', icon: FileText },
-      { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios', icon: RotateCcw },
+      { label: 'Devoluciones y cambios', href: '/admin/devoluciones-cambios', icon: RotateCcw, permiso: 'devoluciones:gestionar' },
       { label: 'Quejas y garantías', href: '/admin/quejas-garantias', icon: ShieldCheck },
       { label: 'Notificaciones', href: '/admin/notificaciones', icon: Bell },
     ],

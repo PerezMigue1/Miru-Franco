@@ -24,7 +24,11 @@ Tokens semánticos del sistema (claro / oscuro):
 | `--texto-cuerpo` | `#2a2a2a` | `rgba(242,241,237,.88)` | Texto de diálogos y paneles |
 | `--superficie-modal` | lino | `#2a2a2a` | Diálogos, avisos, cajones |
 | `--superficie-lateral` | lino+arena | `#1b1b1b` | Menú lateral de los paneles |
-| `--campo-borde` | `#8a7667` | `#6e6e6e` | Borde de campos (≥3:1) |
+| `--campo-borde` | `#7a6658` | `#787878` | Borde de campos y botón de Google del acceso (≥3:1 en lino, campo, carbón y tarjeta) |
+| `--tabla-barra` | `#8a7667` | `#6e6e6e` | Barra de desplazamiento de `.mf-tabla-marco` (separada de `--campo-borde`) |
+| `--skeleton-bg` | arena (`--fondos-suaves`) | `#787878` | Relleno de `.mf-skeleton` (oscuro ≥3.25:1 sobre `#161616`/`#1f1f1f`/`#2a2a2a`) |
+| `--skeleton-panel-bg` | lino (`--fondo-general`) | `--skeleton-bg` | Skeletons sobre tarjeta del inicio de `/admin` |
+| `--segmentado-borde` | `transparent` | `#787878` | Contorno inset de 1px de la pista de controles segmentados (pestañas del acceso, menú del perfil en móvil) |
 | `--campo-placeholder` | `#6b5a4e` | `#b8a597` | Placeholder (≥4.5:1 sobre `--input-bg`) |
 | `--nav-activo-*` | vino 10% / vino | blanco 8% / blanco + oro | Ítem activo del menú (sin borde lateral de color) |
 | `--mf-linea`, `--mf-linea-fuerte` | vino 14%, carbón 22% | blanco 8%, 16% | Divisores y bordes |

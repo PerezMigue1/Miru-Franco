@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { RotateCw } from 'lucide-react';
 import Button from '../ui/Button';
@@ -9,7 +9,13 @@ import Select from '../ui/Select';
 import PerfilFotoBlock from './PerfilFotoBlock';
 import { getMiPerfil } from '../../services/auth';
 import { mergePerfilEnLocalStorage, patchMiPerfil, type PerfilUsuarioCompleto } from '../../services/perfil';
-import { sanitizarEntradaTelefono10, esTelefonoMexicoValido, mensajeTelefonoInvalido } from '../../utils/phone';
+import {
+  MAX_CARACTERES_CAMPO_TELEFONO,
+  esTelefonoMexicoValido,
+  mensajeTelefonoInvalido,
+  telefonoEnCampo,
+  telefonoSinLada,
+} from '../../utils/phone';
 import CasillaDatosSalud from '../legal/CasillaDatosSalud';
 import { errorConsentimientoAlergias } from '../../utils/consentimientoDatosSensibles';
 import {
@@ -39,6 +45,8 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
   const [perfil, setPerfil] = useState<PerfilUsuarioCompleto | null>(null);
   // Cada reintento vuelve a disparar la carga del perfil.
   const [intentoCarga, setIntentoCarga] = useState(0);
+  // Último valor del teléfono, para distinguir lo pegado de lo escrito tecla por tecla.
+  const telefonoAnteriorRef = useRef('');
 
   const {
     register,
@@ -57,7 +65,9 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
       .then((p) => {
         if (cancelled) return;
         setPerfil(p);
-        reset(valoresDesdePerfil(p));
+        const valores = valoresDesdePerfil(p);
+        telefonoAnteriorRef.current = valores.telefono;
+        reset(valores);
       })
       .catch((e) => {
         if (!cancelled) setLoadError(e instanceof Error ? e.message : 'No se pudo cargar el perfil.');
@@ -127,14 +137,22 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
           label="Teléfono (10 dígitos, México)"
           fullWidth
           inputMode="numeric"
-          maxLength={10}
+          maxLength={MAX_CARACTERES_CAMPO_TELEFONO}
           placeholder="5512345678"
           disabled={disabled}
           error={errors.telefono?.message}
           {...register('telefono', {
             validate: (v) => !v.trim() || esTelefonoMexicoValido(v) || mensajeTelefonoInvalido(),
-            onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue('telefono', sanitizarEntradaTelefono10(e.target.value)),
+            onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+              const telefono = telefonoEnCampo(telefonoAnteriorRef.current, e.target.value);
+              telefonoAnteriorRef.current = telefono;
+              setValue('telefono', telefono);
+            },
+            onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
+              const telefono = telefonoSinLada(e.target.value);
+              telefonoAnteriorRef.current = telefono;
+              setValue('telefono', telefono);
+            },
           })}
         />
         <Input

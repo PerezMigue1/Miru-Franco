@@ -10,7 +10,6 @@ import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import { createServicio, type ServicioPayload } from '../../../../services/servicios';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
-import { PRESET_SERVICIOS } from '../../../../utils/cloudinary';
 
 const CATEGORIAS_OPCIONES = [
   { label: 'Alaciados y Alisados', value: 'Alaciados y Alisados' },
@@ -150,7 +149,6 @@ export default function NuevoServicioPage() {
                 <EditorImagenesPresentacionCloudinary
                   urls={imagenes}
                   onChange={setImagenes}
-                  preset={PRESET_SERVICIOS}
                 />
               </div>
             </div>

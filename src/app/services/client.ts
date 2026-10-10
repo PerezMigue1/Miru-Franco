@@ -6,6 +6,10 @@ import { showAlert } from '../utils/toast';
 import { runSharedAccessTokenRefresh } from '../utils/tokenRefresh';
 import { rutaLogin } from '../utils/rutasConSesion';
 import { MENSAJE_SIN_CONEXION, esErrorDeRed } from '../utils/errorRed';
+import { esErrorServidor, referenciaDe, textoErrorServidor } from '../utils/errorServidor';
+
+/** Error que lanza el cliente: status HTTP, código del backend (si lo manda) y cuerpo. */
+export type ApiError = Error & { status?: number; code?: string; data?: unknown };
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -227,41 +231,45 @@ class ApiClient {
           const message = errorData.message || errorData.error || 'Acceso denegado';
           const lowerMessage = message.toLowerCase();
           const finalMessage = lowerMessage.includes('permisos') ? 'No tienes permisos para realizar esta acción' : message;
+          // status, code y data para que quien llama decida por el código (p. ej. CUENTA_NO_ACTIVADA), no por el texto
+          const err = new Error(finalMessage) as ApiError;
+          err.status = 403;
+          if (typeof errorData.code === 'string') err.code = errorData.code;
+          err.data = errorData;
           // No redirigir si la petición pidió mostrar el error en la misma página (ej. cambio de rol/estado en admin)
-          if (skip403Redirect) {
-            throw new Error(finalMessage);
-          }
-          if (typeof window !== 'undefined') {
+          if (!skip403Redirect && typeof window !== 'undefined') {
             window.location.replace('/403');
-            throw new Error(finalMessage);
           }
-          throw new Error(finalMessage);
+          throw err;
         }
         
-        // ✅ Manejar error 500 (Error interno del servidor)
-        if (response.status === 500) {
+        // 5xx: el usuario ve un texto genérico; el cuerpo crudo (HTML de un proxy, trazas) solo va a la consola
+        if (esErrorServidor(response.status)) {
           const errorText = await response.text();
-          let errorData: { message?: string; error?: string };
+          let errorData: unknown;
           try {
             errorData = JSON.parse(errorText);
           } catch {
-            errorData = { message: errorText };
+            errorData = undefined;
           }
-          const backendMessage =
-            errorData.message ||
-            errorData.error ||
-            'Error del servidor. Comprueba que el backend esté en marcha (ej. http://localhost:3001) e intenta de nuevo.';
-          const isProductosEndpoint = endpoint.startsWith('/api/productos');
-          const isAuthPage = typeof window !== 'undefined' && (
-            window.location.pathname === '/login' ||
-            window.location.pathname === '/register' ||
-            window.location.pathname.includes('/auth')
-          );
-          // En login/registro y edición de productos no redirigir a /500: mostrar mensaje en UI.
-          if (typeof window !== 'undefined' && !skip500Redirect && !isAuthPage && !isProductosEndpoint) {
-            window.location.replace('/500');
+          console.error('[API 5xx]', url, response.status, errorText);
+          const referencia = referenciaDe(errorData);
+          const err = new Error(textoErrorServidor(response.status, errorData)) as ApiError;
+          err.status = response.status;
+          err.data = referencia ? { statusCode: response.status, referencia } : { statusCode: response.status };
+          if (response.status === 500) {
+            const isProductosEndpoint = endpoint.startsWith('/api/productos');
+            const isAuthPage = typeof window !== 'undefined' && (
+              window.location.pathname === '/login' ||
+              window.location.pathname === '/register' ||
+              window.location.pathname.includes('/auth')
+            );
+            // En login/registro y edición de productos no redirigir a /500: mostrar mensaje en UI.
+            if (typeof window !== 'undefined' && !skip500Redirect && !isAuthPage && !isProductosEndpoint) {
+              window.location.replace('/500');
+            }
           }
-          throw new Error(backendMessage);
+          throw err;
         }
         
         // ✅ Manejar error 400 (Bad Request) - el cliente lanza error; las pantallas pueden redirigir a /400 si lo desean

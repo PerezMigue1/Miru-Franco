@@ -35,7 +35,7 @@ jobs:
         env:
           # Variables que Next puede necesitar en build (ajusta si usas env)
           NEXT_PUBLIC_APP_URL: https://www.mirufranco.com
-          NEXT_PUBLIC_API_URL: https://miru-franco.onrender.com
+          NEXT_PUBLIC_API_URL: https://api.mirufranco.com
 
   test:
     name: Pruebas

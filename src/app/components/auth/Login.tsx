@@ -29,6 +29,8 @@ export default function Login({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  // El backend dijo que la cuenta no está activada (code CUENTA_NO_ACTIVADA): mostrar "Reenviar código"
+  const [cuentaSinActivar, setCuentaSinActivar] = useState(false);
   // Guardar credenciales para reintentar login después de verificar
   const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null);
   const [formDisabled, setFormDisabled] = useState(false);
@@ -123,6 +125,7 @@ export default function Login({
     }
     
     setIsLoading(true);
+    setCuentaSinActivar(false);
     // ✅ Limpiar solo errores generales, mantener errores de campos si existen
     setErrors(prev => {
       const newErrors = { ...prev };
@@ -150,22 +153,13 @@ export default function Login({
         const vieneDeCambioPassword = typeof window !== 'undefined' && 
           new URLSearchParams(window.location.search).get('passwordChanged') === 'true';
         
-        // Detectar si la cuenta no está verificada/activada
-        // PERO solo si NO viene de un cambio de contraseña exitoso
-        const cuentaNoVerificada = !vieneDeCambioPassword && (
-          result.requiereVerificacion || 
-          lowerError.includes('no está activada') ||
-          lowerError.includes('no está activado') ||
-          lowerError.includes('no está verificada') ||
-          lowerError.includes('no está verificado') ||
-          lowerError.includes('no está confirmada') ||
-          lowerError.includes('no está confirmado') ||
-          lowerError.includes('revisa tu correo') ||
-          lowerError.includes('cuenta no activada') ||
-          lowerError.includes('activar tu cuenta')
-        );
-        
-        if (cuentaNoVerificada) {
+        // Cuenta sin activar: lo decide api.login por el código del backend, no por el texto
+        if (result.requiereVerificacion && vieneDeCambioPassword) {
+          // Ya verificó su identidad al cambiar la contraseña: no abrir la activación, solo el aviso
+          // con el botón para reenviar el código
+          setCuentaSinActivar(true);
+          setErrors(prev => ({ ...prev, general: errorMessage }));
+        } else if (result.requiereVerificacion) {
           // Guardar credenciales para reintentar login después de verificar
           setPendingCredentials({ email, password });
           // Mostrar automáticamente la pantalla de activación
@@ -254,75 +248,44 @@ export default function Login({
       // ✅ Usar utilidad de seguridad para manejar errores (ya importada arriba)
       const securityError = handleSecurityError(error);
       
-      // Verificar si el usuario viene de un cambio de contraseña exitoso
-      // Si viene de un cambio de contraseña, ya verificó su identidad, no pedir OTP
-      const vieneDeCambioPassword = typeof window !== 'undefined' && 
-        new URLSearchParams(window.location.search).get('passwordChanged') === 'true';
-      
-      // Verificar si el error es sobre cuenta no verificada
-      // PERO solo si NO viene de un cambio de contraseña exitoso
+      // La cuenta sin activar ya llega como result.requiereVerificacion (api.login, por código)
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
       const lowerError = errorMessage.toLowerCase();
       
-      const cuentaNoVerificada = !vieneDeCambioPassword && (
-        lowerError.includes('no está activada') ||
-        lowerError.includes('no está activado') ||
-        lowerError.includes('no está verificada') ||
-        lowerError.includes('no está verificado') ||
-        lowerError.includes('no está confirmada') ||
-        lowerError.includes('no está confirmado') ||
-        lowerError.includes('revisa tu correo') ||
-        lowerError.includes('cuenta no activada') ||
-        lowerError.includes('activar tu cuenta')
-      );
-      
-      if (cuentaNoVerificada) {
-        // Guardar credenciales para reintentar login después de verificar
-        setPendingCredentials({ email, password });
-        // Mostrar automáticamente la pantalla de activación
-        setShowActivation(true);
-        // No mostrar error general cuando se muestra la pantalla de activación
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.general;
-          return newErrors;
-        });
-      } else {
-        // Detectar errores específicos de email o contraseña
-        if (lowerError.includes('correo') || lowerError.includes('email') || 
-            lowerError.includes('usuario no encontrado') || 
-            lowerError.includes('no existe') ||
-            lowerError.includes('no encontrado') ||
-            lowerError.includes('no registrado')) {
-          // Mantener los valores de los campos y mostrar error específico
-          setErrors(prev => ({ 
-            ...prev,
-            email: 'El correo electrónico no está registrado o es incorrecto',
-            general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-          }));
-        } 
-        // Detectar si el error es sobre contraseña incorrecta
-        else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
-                 lowerError.includes('credenciales') || 
-                 lowerError.includes('incorrecta') ||
-                 lowerError.includes('inválida') ||
-                 lowerError.includes('inválidas')) {
-          // Mantener los valores de los campos y mostrar error específico
-          setErrors(prev => ({ 
-            ...prev,
-            password: 'La contraseña es incorrecta',
-            general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-          }));
-        } 
-        // Para otros errores, mostrar mensaje general pero mantener los campos
-        else {
-          // ✅ Usar mensaje de seguridad (no revelar detalles)
-          // NO borrar los datos del formulario, solo mostrar el error
-          setErrors(prev => ({ 
-            ...prev,
-            general: securityError.message 
-          }));
-        }
+      // Detectar errores específicos de email o contraseña
+      if (lowerError.includes('correo') || lowerError.includes('email') || 
+          lowerError.includes('usuario no encontrado') || 
+          lowerError.includes('no existe') ||
+          lowerError.includes('no encontrado') ||
+          lowerError.includes('no registrado')) {
+        // Mantener los valores de los campos y mostrar error específico
+        setErrors(prev => ({ 
+          ...prev,
+          email: 'El correo electrónico no está registrado o es incorrecto',
+          general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
+        }));
+      } 
+      // Detectar si el error es sobre contraseña incorrecta
+      else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
+               lowerError.includes('credenciales') || 
+               lowerError.includes('incorrecta') ||
+               lowerError.includes('inválida') ||
+               lowerError.includes('inválidas')) {
+        // Mantener los valores de los campos y mostrar error específico
+        setErrors(prev => ({ 
+          ...prev,
+          password: 'La contraseña es incorrecta',
+          general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
+        }));
+      } 
+      // Para otros errores, mostrar mensaje general pero mantener los campos
+      else {
+        // ✅ Usar mensaje de seguridad (no revelar detalles)
+        // NO borrar los datos del formulario, solo mostrar el error
+        setErrors(prev => ({ 
+          ...prev,
+          general: securityError.message 
+        }));
       }
     } finally {
       setIsLoading(false);
@@ -425,6 +388,7 @@ export default function Login({
             });
               onLoginSuccess?.();
             } else {
+              setCuentaSinActivar(Boolean(result.requiereVerificacion));
               setErrors({ general: result.error || 'Error al iniciar sesión. Por favor, intenta nuevamente.' });
             }
           } catch (error: unknown) {
@@ -475,9 +439,7 @@ export default function Login({
               type={errors.general.includes('✅') ? 'success' : 'error'}
               message={errors.general.replace('✅ ', '')}
             />
-            {errors.general.toLowerCase().includes('activada') || 
-             errors.general.toLowerCase().includes('activar') ||
-             errors.general.toLowerCase().includes('confirmada') ? (
+            {cuentaSinActivar ? (
               <>
                 <button
                   type="button"

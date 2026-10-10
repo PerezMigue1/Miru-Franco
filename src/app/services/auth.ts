@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, type ApiError } from './client';
 import { getBackendBaseUrl } from './config';
 import { markSessionStart } from '../utils/security';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
@@ -9,6 +9,9 @@ import {
   unwrapUsuarioPayload,
   type PerfilUsuarioCompleto,
 } from './perfil';
+
+/** Código que manda el backend (403) cuando la cuenta aún no está activada. */
+export const CODIGO_CUENTA_NO_ACTIVADA = 'CUENTA_NO_ACTIVADA';
 
 export interface LoginResponse {
   success: boolean;
@@ -197,24 +200,13 @@ export const api = {
       
       return data;
     } catch (error: unknown) {
-      // Si el error es sobre cuenta no verificada, devolver un objeto con requiereVerificacion
-      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
-      
-      // Verificar si el error indica que la cuenta no está activada/verificada
-      const lowerError = errorMessage.toLowerCase();
-      if (lowerError.includes('no está activada') || 
-          lowerError.includes('no está activado') ||
-          lowerError.includes('no está verificada') ||
-          lowerError.includes('no está verificado') ||
-          lowerError.includes('no está confirmada') ||
-          lowerError.includes('no está confirmado') ||
-          lowerError.includes('revisa tu correo') ||
-          lowerError.includes('cuenta no activada') ||
-          lowerError.includes('activar tu cuenta')) {
+      // Cuenta sin activar: el backend responde 403 con code CUENTA_NO_ACTIVADA. Se decide por el
+      // código, no por el texto (un texto parecido en otro error no debe llevar a la activación).
+      if ((error as ApiError | null)?.code === CODIGO_CUENTA_NO_ACTIVADA) {
         return {
           success: false,
-          error: errorMessage,
-          requiereVerificacion: true
+          error: error instanceof Error ? error.message : 'Tu cuenta no está activada.',
+          requiereVerificacion: true,
         };
       }
       

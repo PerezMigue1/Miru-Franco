@@ -17,6 +17,18 @@ const PERFIL = {
   aceptaAvisoPrivacidad: true,
 } as PerfilUsuarioCompleto;
 
+describe('perfil de la clienta: teléfono', () => {
+  it('guarda el teléfono pegado con +52 sin la lada', () => {
+    const cuerpo = cuerpoGuardarPerfil(PERFIL, { ...valoresDesdePerfil(PERFIL), telefono: '+52 771 123 4567' });
+    expect(cuerpo?.telefono).toBe('7711234567');
+  });
+
+  it('no recorta un teléfono con dígitos de más', () => {
+    const cuerpo = cuerpoGuardarPerfil(PERFIL, { ...valoresDesdePerfil(PERFIL), telefono: '52771123456789' });
+    expect(cuerpo?.telefono).toBe('52771123456789');
+  });
+});
+
 describe('perfil de la clienta: no guardar sin haber cargado el perfil', () => {
   it('si getMiPerfil falló (sin perfil), el formulario queda deshabilitado aunque ya no esté cargando', () => {
     expect(formularioPerfilHabilitado({ cargando: false, enviando: false, perfil: null })).toBe(false);

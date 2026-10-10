@@ -954,14 +954,14 @@ function SkeletonLista({ lineas = 3 }: { lineas?: number }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: lineas }).map((_, i) => (
-        <div key={i} className="h-9 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--fondo-general)' }} />
+        <div key={i} className="h-9 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--skeleton-panel-bg)' }} />
       ))}
     </div>
   );
 }
 
 function SkeletonGrafico() {
-  return <div className="h-[180px] rounded-lg animate-pulse" style={{ backgroundColor: 'var(--fondo-general)' }} />;
+  return <div className="h-[180px] rounded-lg animate-pulse" style={{ backgroundColor: 'var(--skeleton-panel-bg)' }} />;
 }
 
 function MensajeVacio({ texto, compacto }: { texto: string; compacto?: boolean }) {

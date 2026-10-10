@@ -3,21 +3,16 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
-import { subirImagenesCloudinary, PRESET_PRODUCTOS, PRESET_SERVICIOS } from '../../../../utils/cloudinary';
+import { subirImagenesCloudinary } from '../../../../utils/cloudinary';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 
-type Preset = 'productos' | 'servicios';
-
 export default function SubirImagenesPage() {
-  const [preset, setPreset] = useState<Preset>('productos');
   const [subiendo, setSubiendo] = useState(false);
   const [urls, setUrls] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const presetNombre = preset === 'productos' ? (PRESET_PRODUCTOS || 'ml_productos') : (PRESET_SERVICIOS || 'ml_servicios');
 
   const handleSubir = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -26,12 +21,8 @@ export default function SubirImagenesPage() {
     setUrls([]);
     setSubiendo(true);
     try {
-      const presetValue = preset === 'productos' ? PRESET_PRODUCTOS : PRESET_SERVICIOS;
-      if (!presetValue) {
-        setError(`Preset de ${preset} no configurado en .env (NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_PRODUCTOS / _SERVICIOS)`);
-        return;
-      }
-      const resultado = await subirImagenesCloudinary(files, presetValue);
+      // Subida firmada a la carpeta galeria (sirve para productos y servicios).
+      const resultado = await subirImagenesCloudinary(files);
       setUrls(resultado);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir');
@@ -61,37 +52,10 @@ export default function SubirImagenesPage() {
           Subir imágenes a Cloudinary
         </h1>
         <p className="text-sm mt-1 mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
-          Elige el tipo, selecciona una o varias imágenes y obtendrás las URLs para usar en productos o servicios.
+          Selecciona una o varias imágenes y obtendrás las URLs para usar en productos o servicios.
         </p>
 
         <Card variant="elevated" padding="lg" className="mb-6">
-          <p className="text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-            ¿Dónde guardar?
-          </p>
-          <div className="flex gap-4 mb-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="preset"
-                checked={preset === 'productos'}
-                onChange={() => setPreset('productos')}
-              />
-              <span style={{ color: 'var(--menu-texto-principal)' }}>Productos</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="preset"
-                checked={preset === 'servicios'}
-                onChange={() => setPreset('servicios')}
-              />
-              <span style={{ color: 'var(--menu-texto-principal)' }}>Servicios</span>
-            </label>
-          </div>
-          <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            Preset: <strong>{presetNombre}</strong>
-          </p>
-
           <input
             ref={inputRef}
             type="file"
@@ -111,9 +75,6 @@ export default function SubirImagenesPage() {
         {error && (
           <Card variant="elevated" padding="md" className="mb-6" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{error}</p>
-            <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-              Revisa que en tu .env tengas NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_PRODUCTOS (y _SERVICIOS si usas servicios). En Cloudinary el preset debe ser Unsigned.
-            </p>
           </Card>
         )}
 

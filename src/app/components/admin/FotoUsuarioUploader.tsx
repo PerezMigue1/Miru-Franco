@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import Button from '../ui/Button';
-import { subirFotoPerfilCloudinary } from '../../utils/cloudinary';
+import { subirFotoUsuarioCloudinary } from '../../utils/cloudinary';
 
 type Props = {
   /** URL actual de la foto, o null/vacío si no tiene. */
@@ -16,7 +16,10 @@ type Props = {
   disabled?: boolean;
 };
 
-/** Subida + previsualización de UNA sola foto (usuario), usando el preset de avatar. */
+/**
+ * Subida + previsualización de UNA sola foto de OTRA persona (admin), con firma de galería:
+ * la firma de perfil escribiría en la foto de quien sube.
+ */
 export default function FotoUsuarioUploader({ value, onChange, disabled }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +34,7 @@ export default function FotoUsuarioUploader({ value, onChange, disabled }: Props
     setError(null);
     setUploading(true);
     try {
-      const url = await subirFotoPerfilCloudinary(file);
+      const url = await subirFotoUsuarioCloudinary(file);
       setImgError(false);
       onChange(url);
     } catch (e) {

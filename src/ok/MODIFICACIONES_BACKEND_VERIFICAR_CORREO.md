@@ -129,14 +129,14 @@ router.post("/verificar-correo", verificarCorreoExistente);
 Puedes probar el endpoint con curl:
 
 ```bash
-curl -X POST https://backend-miru-franco.vercel.app/api/auth/verificar-correo \
+curl -X POST https://api.mirufranco.com/api/auth/verificar-correo \
   -H "Content-Type: application/json" \
   -d '{"correo": "test@ejemplo.com"}'
 ```
 
 O con Postman:
 - Método: POST
-- URL: `https://backend-miru-franco.vercel.app/api/auth/verificar-correo`
+- URL: `https://api.mirufranco.com/api/auth/verificar-correo`
 - Headers: `Content-Type: application/json`
 - Body (raw JSON): `{"correo": "test@ejemplo.com"}`
 

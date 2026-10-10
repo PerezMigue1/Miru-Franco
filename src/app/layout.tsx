@@ -41,6 +41,8 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: "Salón de belleza profesional en Huejutla de Reyes. Cortes, coloración, tratamientos capilares, alaciado y nanoplastía. Agenda tu cita en línea.",
+  // Safari en iPhone convertía teléfono, correo y dirección del pie en enlaces antes de hidratar (error 418 de React).
+  formatDetection: { telephone: false, email: false, address: false, date: false },
   openGraph: {
     title: "Mirú Franco — Beauty Salón",
     description: "Salón de belleza profesional. Cortes, coloración, tratamientos y más.",

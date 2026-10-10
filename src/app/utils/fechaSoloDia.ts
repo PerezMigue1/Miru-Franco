@@ -52,6 +52,14 @@ export function hoyEnMexico(ahora: Date = new Date()): string {
 }
 
 /**
+ * Año en curso en México. El servidor (UTC) y el navegador (hora local) dan el mismo valor, así que
+ * el texto que lo muestra no se desajusta al hidratar en los días cercanos al Año Nuevo.
+ */
+export function anioEnMexico(ahora: Date = new Date()): number {
+  return Number(hoyEnMexico(ahora).slice(0, 4));
+}
+
+/**
  * 'YYYY-MM-DD' del mismo día `anios` años antes (por ejemplo, la fecha de nacimiento más reciente
  * para tener 18 años hoy). Un 29 de febrero en un año no bisiesto queda en el 28.
  */

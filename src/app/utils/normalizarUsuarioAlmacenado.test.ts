@@ -40,4 +40,12 @@ describe('normalizarUsuarioAlmacenado', () => {
     expect(u.foto).toBe('https://lh3.googleusercontent.com/a/foto');
     expect(u).not.toHaveProperty('picture');
   });
+
+  it('segunda defensa: tampoco guarda datos de salud anidados en un campo permitido', () => {
+    const u = normalizarUsuarioAlmacenado({
+      id: 'u-1',
+      permisos: { tienda: true, alergias: 'Amoniaco', perfilCapilar: { tipo: 'liso' } },
+    });
+    expect(u.permisos).toEqual({ tienda: true });
+  });
 });

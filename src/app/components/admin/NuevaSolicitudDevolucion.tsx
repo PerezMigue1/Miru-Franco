@@ -22,7 +22,7 @@ function esElegible(p: PedidoApi): boolean {
 
 /**
  * Alta de una solicitud en la tabla devoluciones (POST /api/devoluciones) con tipo y causa: el backend
- * valida la política de los Términos (plazo de 7 días, producto sellado, pedido pagado) y la deja pendiente.
+ * valida la política (plazo de 7 días, producto sellado, pedido pagado), la deja pendiente y calcula el monto.
  */
 export default function NuevaSolicitudDevolucion({ pedidos, onCreada }: NuevaSolicitudDevolucionProps) {
   const elegibles = pedidos.filter(esElegible).sort((a, b) => b.id - a.id).slice(0, 100);
@@ -72,7 +72,6 @@ export default function NuevaSolicitudDevolucion({ pedidos, onCreada }: NuevaSol
         causa,
         sellado: causa === 'sellado_sin_abrir' ? sellado : undefined,
         motivo: detalle.trim() || undefined,
-        estado: 'pendiente',
       });
       showToast(`Solicitud de ${tipo} registrada para el pedido #${pedidoId}`, 'success');
       setPedidoId(''); setItems([]); setItemId(''); setSellado(false); setDetalle('');
@@ -90,7 +89,7 @@ export default function NuevaSolicitudDevolucion({ pedidos, onCreada }: NuevaSol
       <h2 className="text-lg font-semibold text-menu-texto-principal">Nueva solicitud de cambio o reembolso</h2>
       <p className="mb-4 text-sm text-encabezados-alterno">
         Cambio: producto sellado y sin abrir o con defecto de fábrica, dentro de {DIAS_CAMBIO_PRODUCTO} días naturales tras recogerlo.
-        Reembolso: defecto, producto distinto, falta de existencias o pedido en línea cancelado antes de estar listo.
+        Reembolso: solo por defecto de fábrica, error del salón (producto distinto) o falta de existencias.
       </p>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Select

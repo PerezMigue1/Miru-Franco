@@ -11,8 +11,11 @@ import {
   mensajeTelefonoInvalido,
   normalizarTelefonoRegistro,
   MENSAJE_FORMATO_TELEFONO,
-  sanitizarEntradaTelefono10,
+  MAX_CARACTERES_CAMPO_TELEFONO,
+  telefonoEnCampo,
+  telefonoSinLada,
 } from '../../utils/phone';
+import { mensajeErrorRegistro } from '../../utils/mensajeErrorRegistro';
 import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
 import { hoyEnMexico, mismoDiaHaceAnios } from '../../utils/fechaSoloDia';
@@ -91,13 +94,11 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
   const [emailForActivation, setEmailForActivation] = useState('');
-  const [verificandoCorreo, setVerificandoCorreo] = useState(false);
-  const [correoExiste, setCorreoExiste] = useState(false);
   const [generalError, setGeneralError] = useState('');
-  const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Último valor del teléfono, para distinguir lo pegado de lo escrito tecla por tecla.
+  const telefonoAnteriorRef = useRef('');
 
   const passwordValue = watch('password');
-  const emailValue = watch('email');
   const securityQuestionId = watch('securityQuestion');
   const hasAllergiesValue = watch('hasAllergies');
   const hasChemicalTreatmentsValue = watch('hasChemicalTreatments');
@@ -139,7 +140,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
     const v = validatePassword(passwordValue, {
       nombre: getValues('name'),
       email: getValues('email'),
-      telefono: getValues('phone'),
+      telefono: normalizarTelefonoRegistro(getValues('phone')),
       fechaNacimiento: getValues('birthDate'),
       preguntaSeguridad: { respuesta: getValues('securityAnswer') },
     });
@@ -147,32 +148,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
     setPasswordErrors(v.valid ? [] : (v.errors || []));
   }, [passwordValue, getValues]);
 
-  // Verificación de email con debounce
-  useEffect(() => {
-    if (emailTimeoutRef.current) clearTimeout(emailTimeoutRef.current);
-    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())) {
-      setCorreoExiste(false);
-      setVerificandoCorreo(false);
-      return;
-    }
-    emailTimeoutRef.current = setTimeout(async () => {
-      setVerificandoCorreo(true);
-      try {
-        const { api } = await import('../../services');
-        const result = await api.verificarCorreoExistente(emailValue.trim());
-        setCorreoExiste(result.existe);
-      } catch {
-        // silencioso — si falla la verificación, no bloqueamos el registro
-      } finally {
-        setVerificandoCorreo(false);
-      }
-    }, 500);
-    return () => { if (emailTimeoutRef.current) clearTimeout(emailTimeoutRef.current); };
-  }, [emailValue]);
-
   const handleNext = async () => {
     const valid = await trigger(STEP1_FIELDS);
-    if (!valid || correoExiste) return;
+    if (!valid) return;
     setCurrentStep(2);
   };
 
@@ -233,12 +211,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         throw new Error(response.error || 'Error al crear la cuenta');
       }
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Error al crear la cuenta';
-      if (msg.toLowerCase().includes('faltan campos') || msg.toLowerCase().includes('campos obligatorios')) {
-        setGeneralError('Por favor, verifica que todos los campos obligatorios estén completos.');
-      } else {
-        setGeneralError(msg);
-      }
+      // El correo duplicado se avisa aquí, con el 409 del registro.
+      setGeneralError(mensajeErrorRegistro(error));
     }
   };
 
@@ -293,45 +267,19 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       {/* Email */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Correo Electrónico</label>
-        <div className="relative">
-          <input
-            type="email"
-            id="email"
-            placeholder="tu@email.com"
-            disabled={isSubmitting}
-            className={`${inputClass(!!errors.email || correoExiste)} pr-12`}
-            style={inputStyle(!!errors.email || correoExiste)}
-            {...register('email', {
-              required: 'El correo electrónico es requerido',
-              validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizeEmail(v)) || 'El correo electrónico no es válido',
-            })}
-          />
-          {verificandoCorreo && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--logo-branding)' }} aria-label="Verificando correo" />
-            </div>
-          )}
-          {!verificandoCorreo && correoExiste && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <svg className="h-5 w-5 text-[color:var(--danger-texto)]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-          )}
-          {!verificandoCorreo && !correoExiste && emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim()) && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <svg className="h-5 w-5 text-[color:var(--success-texto)]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-          )}
-        </div>
+        <input
+          type="email"
+          id="email"
+          placeholder="tu@email.com"
+          disabled={isSubmitting}
+          className={inputClass(!!errors.email)}
+          style={inputStyle(!!errors.email)}
+          {...register('email', {
+            required: 'El correo electrónico es requerido',
+            validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizeEmail(v)) || 'El correo electrónico no es válido',
+          })}
+        />
         {errors.email && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.email.message}</p>}
-        {correoExiste && !errors.email && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">Este correo ya está registrado.</p>}
-        {!errors.email && verificandoCorreo && <p className="mt-1 text-sm text-[color:var(--warning-texto)]">Verificando correo...</p>}
-        {!errors.email && !verificandoCorreo && !correoExiste && emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim()) && (
-          <p className="mt-1 flex items-center gap-1 text-sm text-[color:var(--success-texto)]"><Check size={14} aria-hidden />Correo disponible</p>
-        )}
       </div>
 
       {/* Teléfono */}
@@ -343,15 +291,23 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           inputMode="tel"
           autoComplete="tel"
           placeholder="5512345678"
-          maxLength={10}
+          maxLength={MAX_CARACTERES_CAMPO_TELEFONO}
           disabled={isSubmitting}
           className={inputClass(!!errors.phone)}
           style={inputStyle(!!errors.phone)}
           {...register('phone', {
             required: 'El teléfono es requerido',
             validate: (v) => esTelefonoMexicoValido(v) || mensajeTelefonoInvalido(),
-            onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue('phone', sanitizarEntradaTelefono10(e.target.value)),
+            onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+              const telefono = telefonoEnCampo(telefonoAnteriorRef.current, e.target.value);
+              telefonoAnteriorRef.current = telefono;
+              setValue('phone', telefono);
+            },
+            onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
+              const telefono = telefonoSinLada(e.target.value);
+              telefonoAnteriorRef.current = telefono;
+              setValue('phone', telefono);
+            },
           })}
         />
         <p className="mt-1.5 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{MENSAJE_FORMATO_TELEFONO}</p>
@@ -374,7 +330,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               validate: (v) => {
                 const r = validatePassword(v, {
                   nombre: getValues('name'), email: getValues('email'),
-                  telefono: getValues('phone'), fechaNacimiento: getValues('birthDate'),
+                  telefono: normalizarTelefonoRegistro(getValues('phone')), fechaNacimiento: getValues('birthDate'),
                   preguntaSeguridad: { respuesta: getValues('securityAnswer') },
                 });
                 return r.valid || r.errors?.[0] || r.message || 'La contraseña no cumple los requisitos';

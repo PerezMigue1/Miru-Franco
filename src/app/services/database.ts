@@ -6,6 +6,7 @@
 import { getBackendBaseUrl } from './config';
 import { hasSession } from '../utils/security';
 import { MENSAJE_SIN_CONEXION, mensajeDeError } from '../utils/errorRed';
+import { esErrorServidor, textoErrorServidor } from '../utils/errorServidor';
 
 /** Ruta base para endpoints de base de datos (import, export). */
 const DB_API_PREFIX = '/api/db';
@@ -332,17 +333,13 @@ const EXPORT_DIRECT_PREFIX = '/api/db/export-direct';
 const getExportDirectBase = () => `${getBackendBaseUrl()}${EXPORT_DIRECT_PREFIX}`;
 
 /**
- * Texto para el usuario ante una respuesta de error. En 5xx el backend manda un mensaje
- * genérico y una referencia (el detalle queda en su log); en 4xx, el texto pensado para el usuario.
+ * Texto para el usuario ante una respuesta de error. En 5xx, el texto genérico con la referencia
+ * del backend (el detalle queda en su log); en 4xx, el texto pensado para el usuario.
  */
 export function textoErrorRespuesta(status: number, data: Record<string, unknown>): string {
+  if (esErrorServidor(status)) return textoErrorServidor(status, data);
   const texto = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null);
-  const mensaje =
-    status >= 500
-      ? texto(data.message) ?? 'Ocurrió un error interno. Intenta de nuevo en unos segundos.'
-      : texto(data.error) ?? texto(data.message) ?? `Error ${status}`;
-  const referencia = texto(data.referencia);
-  return referencia ? `${mensaje} (ref. ${referencia})` : mensaje;
+  return texto(data.error) ?? texto(data.message) ?? `Error ${status}`;
 }
 
 /** Fallo de red o petición cancelada: sin el texto técnico del navegador ("Failed to fetch"). */

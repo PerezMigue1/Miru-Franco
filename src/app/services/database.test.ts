@@ -27,6 +27,15 @@ describe('textos de error del gestor de base de datos', () => {
     expect(textoErrorRespuesta(502, {})).toBe('Ocurrió un error interno. Intenta de nuevo en unos segundos.');
   });
 
+  it('un 502 o 503 con texto propio del backend tampoco lo muestra: todo 5xx es genérico', () => {
+    expect(textoErrorRespuesta(502, { message: 'Verificador de tarjetas: ECONNRESET', referencia: 'AB12CD34' })).toBe(
+      'Ocurrió un error interno. Intenta de nuevo en unos segundos. (ref. AB12CD34)',
+    );
+    expect(textoErrorRespuesta(503, { message: 'Mantenimiento de la base 10.0.0.5' })).toBe(
+      'El servicio no está disponible en este momento. Intenta de nuevo en unos segundos.',
+    );
+  });
+
   it('un 4xx conserva el texto pensado para el usuario, como antes', () => {
     expect(textoErrorRespuesta(400, { error: 'Nombre de tabla no válido' })).toBe('Nombre de tabla no válido');
     expect(textoErrorRespuesta(404, {})).toBe('Error 404');

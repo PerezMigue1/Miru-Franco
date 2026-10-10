@@ -414,7 +414,7 @@ export default function DetalleProductoClient({ id }: Props) {
                     {Array.from({ length: Math.min(5, Math.max(0, v.puntuacion)) }, (_, i) => (
                       <Star key={i} size={13} fill="currentColor" aria-hidden style={{ color: 'var(--botones-principales)' }} />
                     ))}
-                    <span className="ml-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Pedido #{v.pedidoId}</span>
+                    {v.autor && <span className="ml-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{v.autor}</span>}
                   </div>
                   {v.comentario && <p style={{ color: 'var(--menu-texto-principal)' }}>{v.comentario}</p>}
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>{v.creadoEn ? new Date(v.creadoEn).toLocaleDateString('es-MX') : ''}</p>

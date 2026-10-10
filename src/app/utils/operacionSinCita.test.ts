@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluarPermiso } from './permisos';
 import { payloadTurnoSinCita, validarTurnoSinCita, type FormTurnoSinCita } from './turnoSinCita';
 import { itemsDeVenta, montoValido, pagosMixtos, totalesTicket, validarCobro, type LineaCobro } from './cobroPos';
-import { causasDe, etiquetaCausa, requiereArticulo } from './politicaDevolucion';
+import { causasDe, etiquetaCausa, etiquetaEstadoDevolucion, requiereArticulo } from './politicaDevolucion';
 import { rangoDelMes } from './fechaSoloDia';
 
 describe('evaluarPermiso con varias claves', () => {
@@ -81,13 +81,27 @@ describe('Cobro en el punto de venta', () => {
 describe('Política de cambios y reembolsos', () => {
   it('cada tipo tiene sus causas', () => {
     expect(causasDe('cambio')).toEqual(['sellado_sin_abrir', 'defecto_fabrica']);
+    // Reembolso por defecto, error del salón, falta de existencias o cancelación antes de estar listo (Términos).
+    expect(causasDe('reembolso')).toEqual(['defecto_fabrica', 'producto_distinto', 'sin_existencias', 'cancelacion_antes_listo']);
     expect(causasDe('reembolso')).toContain('cancelacion_antes_listo');
     expect(etiquetaCausa('sellado_sin_abrir')).toBe('Producto sellado y sin abrir');
+    expect(etiquetaCausa('producto_distinto')).toBe('Error del salón: producto distinto al pedido');
+    expect(etiquetaCausa('cancelacion_antes_listo')).toBe('Cancelado antes de estar listo');
   });
   it('el cambio y los defectos piden elegir el artículo; un reembolso por cancelación no', () => {
     expect(requiereArticulo('cambio', 'sellado_sin_abrir')).toBe(true);
     expect(requiereArticulo('reembolso', 'producto_distinto')).toBe(true);
     expect(requiereArticulo('reembolso', 'cancelacion_antes_listo')).toBe(false);
+  });
+  it('el cambio y los defectos piden elegir el artículo; un reembolso por falta de existencias no', () => {
+    expect(requiereArticulo('cambio', 'sellado_sin_abrir')).toBe(true);
+    expect(requiereArticulo('reembolso', 'producto_distinto')).toBe(true);
+    expect(requiereArticulo('reembolso', 'sin_existencias')).toBe(false);
+  });
+  it('etiqueta legible del estado; un estado antiguo se muestra tal cual', () => {
+    expect(etiquetaEstadoDevolucion('pendiente')).toBe('Pendiente');
+    expect(etiquetaEstadoDevolucion('cancelada')).toBe('Cancelada por la clienta');
+    expect(etiquetaEstadoDevolucion('completada')).toBe('completada');
   });
 });
 

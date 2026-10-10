@@ -481,11 +481,44 @@ export async function personalQueAtiende(): Promise<PersonaPersonal[]> {
   return listaPersonal(res);
 }
 
-/** GET /api/citas/por-cobrar — citas finalizadas que todavía no tienen venta. */
+/** GET /api/citas/por-cobrar — citas finalizadas que todavía no tienen venta (primera página). */
 export async function citasPorCobrar(): Promise<CitaApi[]> {
-  const res = await apiClient.get<unknown>('/api/citas/por-cobrar', { customBase: getBackendBaseUrl() });
-  const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? ((res as Record<string, unknown>).data as unknown[]) : [];
-  return arr.map(normalizarCita).filter((c): c is CitaApi => Boolean(c));
+  return (await citasPorCobrarPaginado()).data;
+}
+
+export interface CitasPorCobrarParams {
+  page?: number;
+  limit?: number;
+  /** Busca solo esa cita (p. ej. la que llega desde la agenda para cobrarla). */
+  citaId?: number;
+}
+
+export interface CitasPorCobrarPaginadas {
+  data: CitaApi[];
+  count: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/** GET /api/citas/por-cobrar?page=&limit=&citaId= — igual que citasPorCobrar, con el total y las páginas. */
+export async function citasPorCobrarPaginado(params?: CitasPorCobrarParams): Promise<CitasPorCobrarPaginadas> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.limit) sp.set('limit', String(params.limit));
+  if (params?.citaId) sp.set('citaId', String(params.citaId));
+  const qs = sp.toString();
+  const res = await apiClient.get<unknown>(`/api/citas/por-cobrar${qs ? `?${qs}` : ''}`, { customBase: getBackendBaseUrl() });
+  const o = (res && typeof res === 'object' && !Array.isArray(res) ? res : {}) as ListadoCitasResp;
+  const arr = Array.isArray(res) ? res : Array.isArray(o.data) ? o.data : [];
+  const data = arr.map(normalizarCita).filter((c): c is CitaApi => Boolean(c));
+  return {
+    data,
+    count: n(o.count, data.length) ?? data.length,
+    page: n(o.page, params?.page ?? 1) ?? 1,
+    limit: n(o.limit, params?.limit ?? 20) ?? 20,
+    totalPages: Math.max(1, n(o.totalPages, 1) ?? 1),
+  };
 }
 
 // --- Anticipo de citas ---

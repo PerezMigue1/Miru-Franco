@@ -10,7 +10,22 @@ export interface ReporteVentasApi {
     totalUnidadesVendidas: number;
     porMetodo: { efectivo: number; tarjeta: number; transferencia: number; mixto: number };
   };
+  /** Ingresos del periodo por fuente: los anticipos de citas cuentan una vez (la venta del POS solo trae el saldo). */
+  ingresos: IngresosApi;
   ventas: { id: number; folio: string; total: number; metodoPago: string; creadoEn: string }[];
+}
+
+export interface IngresosApi {
+  total: number;
+  /** Ventas pagadas del punto de venta (solo el saldo, sin el anticipo). */
+  ventasPos: number;
+  cobrosPedidosSalon: number;
+  anticipos: number;
+  anticiposEnLinea: number;
+  anticiposEnSalon: number;
+  /** Aparte, no suman al total. */
+  anticiposEnRevision: number;
+  anticiposReembolsados: number;
 }
 
 export interface ReporteServiciosApi {
@@ -53,12 +68,53 @@ function qs(desde?: string, hasta?: string): string {
   return s ? `?${s}` : '';
 }
 
+function fmtMoneda(v: number): string {
+  return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Filas del reporte por fuente de ingreso; las dos últimas se informan sin sumar al total. */
+export function filasIngresos(i: IngresosApi): { label: string; valor: string }[] {
+  return [
+    { label: 'Ventas en el punto de venta', valor: fmtMoneda(i.ventasPos) },
+    { label: 'Cobros de pedidos en el salón', valor: fmtMoneda(i.cobrosPedidosSalon) },
+    { label: 'Anticipos de citas en línea', valor: fmtMoneda(i.anticiposEnLinea) },
+    { label: 'Anticipos de citas en el salón', valor: fmtMoneda(i.anticiposEnSalon) },
+    { label: 'Ingresos totales', valor: fmtMoneda(i.total) },
+    { label: 'Anticipos en revisión (no suman)', valor: fmtMoneda(i.anticiposEnRevision) },
+    { label: 'Anticipos reembolsados (no suman)', valor: fmtMoneda(i.anticiposReembolsados) },
+  ];
+}
+
 export async function obtenerReporteVentas(desde?: string, hasta?: string): Promise<ReporteVentasApi> {
   const raw = await get<Record<string, unknown>>(`/api/reportes/ventas${qs(desde, hasta)}`);
   const resumenRaw = (raw.resumen ?? {}) as Record<string, unknown>;
   const metodoRaw = (resumenRaw.porMetodo ?? {}) as Record<string, unknown>;
   const ventasRaw = Array.isArray(raw.ventas) ? raw.ventas : [];
+  const ingresosRaw = raw.ingresos && typeof raw.ingresos === 'object' ? (raw.ingresos as Record<string, unknown>) : null;
+  // Sin ingresos (backend anterior): el total es el monto del resumen, sin desglose de anticipos.
+  const ingresos: IngresosApi = ingresosRaw
+    ? {
+        total: n(ingresosRaw.total),
+        ventasPos: n(ingresosRaw.ventasPos),
+        cobrosPedidosSalon: n(ingresosRaw.cobrosPedidosSalon),
+        anticipos: n(ingresosRaw.anticipos),
+        anticiposEnLinea: n(ingresosRaw.anticiposEnLinea),
+        anticiposEnSalon: n(ingresosRaw.anticiposEnSalon),
+        anticiposEnRevision: n(ingresosRaw.anticiposEnRevision),
+        anticiposReembolsados: n(ingresosRaw.anticiposReembolsados),
+      }
+    : {
+        total: n(resumenRaw.totalMonto),
+        ventasPos: n(resumenRaw.totalMonto),
+        cobrosPedidosSalon: 0,
+        anticipos: 0,
+        anticiposEnLinea: 0,
+        anticiposEnSalon: 0,
+        anticiposEnRevision: 0,
+        anticiposReembolsados: 0,
+      };
   return {
+    ingresos,
     resumen: {
       totalVentas: n(resumenRaw.totalVentas),
       totalMonto: n(resumenRaw.totalMonto),

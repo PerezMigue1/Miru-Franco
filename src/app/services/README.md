@@ -23,7 +23,7 @@ const response = await fetch(`${API_URL}/api/usuarios/login`, {
 Crear archivo `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=https://miru-franco.onrender.com
+NEXT_PUBLIC_API_URL=https://api.mirufranco.com
 ```
 
 O para desarrollo:

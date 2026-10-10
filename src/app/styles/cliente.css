@@ -846,6 +846,8 @@ html:has(.superficie-cliente) {
   padding: 4px;
   border-radius: 999px;
   background-color: var(--fondos-suaves);
+  /* En oscuro la pista casi no se separa del fondo: contorno de 1px (transparente en claro) */
+  box-shadow: inset 0 0 0 1px var(--segmentado-borde);
 }
 .mf-auth__pestanas button {
   position: relative;
@@ -1111,6 +1113,8 @@ html:has(.superficie-cliente) {
   font-weight: 500;
   color: var(--texto-cuerpo);
   background-color: var(--fondos-suaves);
+  /* En oscuro la píldora casi no se separa del fondo: contorno de 1px (transparente en claro) */
+  box-shadow: inset 0 0 0 1px var(--segmentado-borde);
   transition:
     background-color var(--mf-dur-hover) ease,
     color var(--mf-dur-hover) ease,
@@ -1127,6 +1131,7 @@ html:has(.superficie-cliente) {
   background-color: var(--botones-principales);
   color: #f2f1ed;
   font-weight: 600;
+  box-shadow: none;
 }
 .mf-perfil-nav__item[aria-current='page'] svg {
   color: #f2f1ed;
@@ -1134,6 +1139,7 @@ html:has(.superficie-cliente) {
 .mf-perfil-nav__item--peligro {
   color: var(--danger-texto);
   background-color: transparent;
+  box-shadow: none;
   width: 100%;
 }
 .mf-perfil-nav__item--peligro svg {
@@ -1160,6 +1166,7 @@ html:has(.superficie-cliente) {
     width: 100%;
     border-radius: var(--mf-radio-control);
     background-color: transparent;
+    box-shadow: none;
   }
   .mf-perfil-nav__separado {
     margin-top: 1rem;

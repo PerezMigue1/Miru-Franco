@@ -28,6 +28,10 @@ export const validatePassword = (
     email?: string;
     telefono?: string;
     fechaNacimiento?: string;
+    direccion?: {
+      calle?: string;
+      colonia?: string;
+    };
     preguntaSeguridad?: {
       respuesta?: string;
     };
@@ -58,45 +62,26 @@ export const validatePassword = (
     errors.push('Debe incluir al menos un carácter especial (!@#$%^&*()_+-=[]{}|;:\'",.<>?/)');
   }
 
-  // 3. No datos personales (solo si se proporcionan)
+  // 3. No datos personales (solo si se proporcionan). Misma regla que el backend
+  // (backend-miru src/common/validators/password.validator.ts): minúsculas sin quitar acentos y
+  // solo campos de 3 o más caracteres; el día o un nombre de 2 letras no bloquean la contraseña.
   if (userData) {
     const passwordLower = password.toLowerCase();
-    
-    if (userData.nombre) {
-      const nombreLower = userData.nombre.toLowerCase();
-      if (passwordLower.includes(nombreLower)) {
-        errors.push('La contraseña no puede contener tu nombre');
-      }
-    }
-    
-    if (userData.email) {
-      const emailPart = userData.email.split('@')[0].toLowerCase();
-      if (passwordLower.includes(emailPart)) {
-        errors.push('La contraseña no puede contener tu email');
-      }
-    }
-    
-    if (userData.telefono) {
-      const telefonoClean = userData.telefono.replace(/\D/g, '');
-      if (telefonoClean && password.includes(telefonoClean)) {
-        errors.push('La contraseña no puede contener tu teléfono');
-      }
-    }
-    
-    if (userData.fechaNacimiento) {
-      // Fecha solo-día (medianoche UTC o 'YYYY-MM-DD'): getters UTC para no tomar el día anterior.
-      const fecha = new Date(userData.fechaNacimiento);
-      const año = fecha.getUTCFullYear().toString();
-      const dia = fecha.getUTCDate().toString();
-      if (password.includes(año) || password.includes(dia)) {
-        errors.push('La contraseña no puede contener tu fecha de nacimiento');
-      }
-    }
-    
-    if (userData.preguntaSeguridad?.respuesta) {
-      const respuestaLower = userData.preguntaSeguridad.respuesta.toLowerCase();
-      if (passwordLower.includes(respuestaLower)) {
-        errors.push('La contraseña no puede contener la respuesta de tu pregunta de seguridad');
+    const partesFecha = userData.fechaNacimiento?.split('-');
+    const campos: Array<[string | undefined, string]> = [
+      [userData.nombre, 'La contraseña no puede contener tu nombre'],
+      [userData.email?.split('@')[0], 'La contraseña no puede contener tu email'],
+      [userData.telefono, 'La contraseña no puede contener tu teléfono'],
+      [partesFecha?.[0], 'La contraseña no puede contener tu fecha de nacimiento'],
+      [partesFecha?.[2], 'La contraseña no puede contener tu fecha de nacimiento'],
+      [userData.direccion?.calle, 'La contraseña no puede contener tu dirección'],
+      [userData.direccion?.colonia, 'La contraseña no puede contener tu dirección'],
+      [userData.preguntaSeguridad?.respuesta, 'La contraseña no puede contener la respuesta de tu pregunta de seguridad'],
+    ];
+    for (const [valor, mensaje] of campos) {
+      const campo = valor?.toLowerCase();
+      if (campo && campo.length >= 3 && passwordLower.includes(campo) && !errors.includes(mensaje)) {
+        errors.push(mensaje);
       }
     }
   }

@@ -38,6 +38,10 @@ describe('Migas del portal: ubicación real, no carpetas de la URL', () => {
     expect(getMigasPortal('/admin/inventario')).toBeNull();
     expect(getBreadcrumbsForPath('/admin/inventario').map((i) => i.label)).toEqual(['Inicio', 'Panel de administración', 'Inventario']);
   });
+
+  it('operación: devoluciones lleva su nombre legible', () => {
+    expect(getBreadcrumbsForPath('/operacion/devoluciones').map((i) => i.label)).toEqual(['Inicio', 'Panel de operación', 'Devoluciones y cambios']);
+  });
 });
 
 describe('Pestaña activa de la cabecera con el mismo mapa', () => {

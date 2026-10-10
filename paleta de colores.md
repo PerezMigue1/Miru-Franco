@@ -151,7 +151,11 @@ Colores que antes estaban escritos a mano en los componentes. Se declaran igual 
 | `--mf-foco` | `#710014` | `#c4954d` | Anillo de foco |
 | `--mf-linea` | `rgba(113, 0, 20, 0.14)` | `rgba(255, 255, 255, 0.08)` | Divisores |
 | `--mf-linea-fuerte` | `rgba(42, 42, 42, 0.22)` | `rgba(255, 255, 255, 0.16)` | Divisores marcados |
-| `--campo-borde` | `#8a7667` | `#6e6e6e` | Borde de campos |
+| `--campo-borde` | `#7a6658` | `#787878` | Borde de campos (≥3:1 sobre lino, `--input-bg` y las superficies oscuras) |
+| `--tabla-barra` | `#8a7667` | `#6e6e6e` | Barra de desplazamiento de las tablas |
+| `--skeleton-bg` | `var(--fondos-suaves)` | `#787878` | Relleno de los skeletons de carga |
+| `--skeleton-panel-bg` | `var(--fondo-general)` | `var(--skeleton-bg)` | Skeletons sobre tarjeta en el inicio de `/admin` |
+| `--segmentado-borde` | `transparent` | `#787878` | Contorno de la pista de los controles segmentados |
 | `--campo-placeholder` | `#6b5a4e` | `#b8a597` | Placeholder sobre `--input-bg` |
 | `--campo-placeholder-texto` | `#6f6a66` | `#8c8885` | Texto de ejemplo dentro de `.mf-campo` |
 | `--nav-activo-bg` | `rgba(113, 0, 20, 0.1)` | `rgba(255, 255, 255, 0.08)` | Ítem activo de navegación |

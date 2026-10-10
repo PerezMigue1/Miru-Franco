@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  anioEnMexico,
   diaEnMexico,
   diasHastaFechaSoloDia,
   formatearFechaSoloDia,
@@ -90,5 +91,13 @@ describe('mismoDiaHaceAnios (mayoría de edad en el registro)', () => {
   it('un 29 de febrero en un año no bisiesto queda en el 28', () => {
     expect(mismoDiaHaceAnios('2028-02-29', 18)).toBe('2010-02-28');
     expect(mismoDiaHaceAnios('2028-02-29', 20)).toBe('2008-02-29');
+  });
+});
+
+describe('anioEnMexico', () => {
+  it('da el año de México aunque en UTC ya sea el siguiente (servidor y navegador coinciden)', () => {
+    // 31 de diciembre a las 20:00 en México = 1 de enero 02:00 UTC.
+    expect(anioEnMexico(new Date('2027-01-01T02:00:00Z'))).toBe(2026);
+    expect(anioEnMexico(new Date('2027-01-01T07:00:00Z'))).toBe(2027);
   });
 });

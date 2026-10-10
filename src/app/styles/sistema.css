@@ -40,8 +40,16 @@
   --superficie-modal: var(--fondo-general);
   --superficie-lateral: color-mix(in srgb, var(--fondo-general) 62%, var(--fondos-suaves));
 
-  /* Campos de formulario: borde ≥3:1 y placeholder ≥4.5:1 sobre --input-bg */
-  --campo-borde: #8a7667;
+  /* Campos de formulario: borde ≥3:1 y placeholder ≥4.5:1 sobre --input-bg
+     (#7a6658: 4.80:1 sobre #F2F1ED y 3.35:1 sobre lino) */
+  --campo-borde: #7a6658;
+  /* Barra de desplazamiento de las tablas: valor propio para que no siga a --campo-borde */
+  --tabla-barra: #8a7667;
+  /* Skeletons de carga; los de los paneles de /admin van sobre tarjeta */
+  --skeleton-bg: var(--fondos-suaves);
+  --skeleton-panel-bg: var(--fondo-general);
+  /* Contorno de la pista de los controles segmentados: en claro la pista ya se distingue */
+  --segmentado-borde: transparent;
   --campo-placeholder: #6b5a4e;
   /* Texto de ejemplo dentro de .mf-campo: gris neutro, el más tenue que sigue en AA (4.73:1 sobre
      #f2f1ed), para no confundirse con lo escrito (vino, 12.3:1) */
@@ -75,7 +83,14 @@
   --texto-cuerpo: rgba(242, 241, 237, 0.88);
   --superficie-modal: var(--tarjetas-paneles);
   --superficie-lateral: #1b1b1b;
-  --campo-borde: #6e6e6e;
+  /* 4.10:1 sobre #161616, 3.73:1 sobre #1f1f1f y 3.25:1 sobre #2a2a2a */
+  --campo-borde: #787878;
+  --tabla-barra: #6e6e6e;
+  /* Un tono arriba de las superficies: 4.10:1 sobre #161616, 3.73:1 sobre #1f1f1f, 3.25:1 sobre #2a2a2a */
+  --skeleton-bg: #787878;
+  --skeleton-panel-bg: var(--skeleton-bg);
+  /* La pista #1f1f1f sobre #161616 queda en 1.10:1: el contorno la separa del fondo (4.10:1) */
+  --segmentado-borde: #787878;
   --campo-placeholder: #b8a597;
   /* 4.69:1 sobre #1f1f1f; lo escrito es blanco (16.5:1) */
   --campo-placeholder-texto: #8c8885;
@@ -278,14 +293,14 @@ table td {
   border: 1px solid var(--mf-linea-fuerte);
   background-color: var(--fondo-general);
   scrollbar-width: thin;
-  scrollbar-color: var(--campo-borde) transparent;
+  scrollbar-color: var(--tabla-barra) transparent;
 }
 .mf-tabla-marco::-webkit-scrollbar {
   display: block;
   height: 8px;
 }
 .mf-tabla-marco::-webkit-scrollbar-thumb {
-  background: var(--campo-borde);
+  background: var(--tabla-barra);
   border-radius: 999px;
 }
 .mf-tabla th {
@@ -411,7 +426,7 @@ table td {
     position: relative;
     overflow: hidden;
     border-radius: 10px;
-    background-color: var(--fondos-suaves);
+    background-color: var(--skeleton-bg);
   }
   .mf-skeleton::after {
     content: '';
@@ -420,9 +435,6 @@ table td {
     background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
     transform: translateX(-100%);
     animation: mf-brillo 1.6s linear infinite;
-  }
-  .dark .mf-skeleton {
-    background-color: #262626;
   }
   .dark .mf-skeleton::after {
     background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.05) 50%, transparent 80%);

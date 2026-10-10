@@ -748,18 +748,24 @@ export interface ValoracionApi {
   creadoEn?: string;
   usuarioId?: string;
   productoId: number;
-  pedidoId: number;
+  /** Solo en las reseñas propias o del pedido; la lista pública no lo expone. */
+  pedidoId?: number;
+  /** Nombre de pila de quien reseñó (lista pública). */
+  autor?: string;
 }
 
 function normalizarValoracion(r: Record<string, unknown>): ValoracionApi {
+  const usuarioId = r.usuarioId ?? r.usuario_id;
+  const pedidoId = r.pedidoId ?? r.pedido_id;
   return {
     id: num(r.id),
     puntuacion: num(r.puntuacion, 0),
     comentario: r.comentario != null ? str(r.comentario) : null,
     creadoEn: str(r.creadoEn ?? r.creado_en),
-    usuarioId: str(r.usuarioId ?? r.usuario_id),
+    usuarioId: usuarioId != null ? str(usuarioId) : undefined,
     productoId: num(r.productoId ?? r.producto_id),
-    pedidoId: num(r.pedidoId ?? r.pedido_id),
+    pedidoId: pedidoId != null ? num(pedidoId) : undefined,
+    autor: r.autor != null ? str(r.autor) : undefined,
   };
 }
 
@@ -921,89 +927,154 @@ export async function listarPedidosQueIncluyenProducto(productoId: number): Prom
 
 // --- Devoluciones ---
 
+export type TipoDevolucion = 'cambio' | 'reembolso';
+/** `producto_distinto` es el error del salón (entregó otro producto). */
+export type CausaDevolucion = 'sellado_sin_abrir' | 'defecto_fabrica' | 'producto_distinto' | 'sin_existencias' | 'cancelacion_antes_listo';
+export type EstadoDevolucion = 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada';
+export type MetodoReembolso = 'efectivo' | 'metodo_original';
+
 export interface DevolucionApi {
   id: number;
   motivo?: string | null;
+  /** pendiente | aprobada | rechazada | cancelada (filas antiguas pueden traer otros valores). */
   estado: string;
+  /** Lo calcula el backend; nulo en los cambios. */
   monto?: number | null;
+  tipo?: TipoDevolucion | null;
+  causa?: CausaDevolucion | null;
+  metodoReembolso?: MetodoReembolso | null;
+  notaResolucion?: string | null;
+  resueltoEn?: string | null;
+  resueltoPorNombre?: string | null;
   creadoEn?: string;
   actualizadoEn?: string;
   pedidoId: number;
   pedidoItemId?: number | null;
   pagoId?: number | null;
+  /** Solo en la lista paginada (incluye pedido, artículo y quién resolvió). */
+  clienteNombre?: string | null;
+  clienteEmail?: string | null;
+  producto?: string | null;
 }
 
+const objeto = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+
 function normalizarDevolucion(r: Record<string, unknown>): DevolucionApi {
+  const pedido = objeto(r.pedido);
+  const usuario = objeto(pedido?.usuario);
+  const item = objeto(r.pedidoItem);
+  const productoItem = objeto(item?.producto);
+  const resueltoPor = objeto(r.resueltoPor);
   return {
     id: num(r.id),
     motivo: r.motivo != null ? str(r.motivo) : null,
     estado: str(r.estado) || 'pendiente',
     monto: r.monto != null ? num(r.monto) : null,
+    tipo: r.tipo != null ? (str(r.tipo) as TipoDevolucion) : null,
+    causa: r.causa != null ? (str(r.causa) as CausaDevolucion) : null,
+    metodoReembolso: r.metodoReembolso != null ? (str(r.metodoReembolso) as MetodoReembolso) : null,
+    notaResolucion: r.notaResolucion != null ? str(r.notaResolucion) : null,
+    resueltoEn: r.resueltoEn != null ? str(r.resueltoEn) : null,
+    resueltoPorNombre: resueltoPor?.nombre != null ? str(resueltoPor.nombre) : null,
     creadoEn: str(r.creadoEn ?? r.creado_en),
     actualizadoEn: str(r.actualizadoEn ?? r.actualizado_en),
-    pedidoId: num(r.pedidoId ?? r.pedido_id),
+    pedidoId: num(r.pedidoId ?? r.pedido_id ?? pedido?.id),
     pedidoItemId:
       r.pedidoItemId != null ? num(r.pedidoItemId) : r.pedido_item_id != null ? num(r.pedido_item_id) : null,
     pagoId: r.pagoId != null ? num(r.pagoId) : r.pago_id != null ? num(r.pago_id) : null,
+    clienteNombre: usuario?.nombre != null ? str(usuario.nombre) : null,
+    clienteEmail: usuario?.email != null ? str(usuario.email) : null,
+    producto: item ? str(item.nombreProducto ?? productoItem?.nombre) || null : null,
   };
 }
 
-export async function listarDevolucionesPedido(pedidoId: number): Promise<DevolucionApi[]> {
-  const res = await apiClient.get<unknown>(`/api/devoluciones/pedido/${pedidoId}`, BASE());
+export async function listarDevolucionesPedido(pedidoId: number, opts?: OpcionesPortal): Promise<DevolucionApi[]> {
+  const res = await apiClient.get<unknown>(conPropios(`/api/devoluciones/pedido/${pedidoId}`, opts), BASE());
   return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarDevolucion(r));
 }
 
-export async function obtenerDevolucion(id: number): Promise<DevolucionApi | null> {
-  const res = await apiClient.get<unknown>(`/api/devoluciones/${id}`, BASE());
+export async function obtenerDevolucion(id: number, opts?: OpcionesPortal): Promise<DevolucionApi | null> {
+  const res = await apiClient.get<unknown>(conPropios(`/api/devoluciones/${id}`, opts), BASE());
   const o = unwrapObject<Record<string, unknown>>(res);
   return o ? normalizarDevolucion(o) : null;
 }
 
-export type TipoDevolucion = 'cambio' | 'reembolso';
-export type CausaDevolucion = 'sellado_sin_abrir' | 'defecto_fabrica' | 'producto_distinto' | 'sin_existencias' | 'cancelacion_antes_listo';
-
+/** Sin estado ni monto: la solicitud nace pendiente y el backend calcula el monto. */
 export interface CrearDevolucionPayload {
   pedidoId: number;
+  tipo: TipoDevolucion;
+  causa: CausaDevolucion;
   motivo?: string;
-  estado?: string;
-  monto?: number;
   pedidoItemId?: number;
   pagoId?: number;
-  /** Con tipo y causa, el backend aplica la política de cambios y reembolsos de los términos. */
-  tipo?: TipoDevolucion;
-  causa?: CausaDevolucion;
   sellado?: boolean;
 }
 
-export async function crearDevolucion(payload: CrearDevolucionPayload): Promise<DevolucionApi> {
-  const res = await apiClient.post<unknown>('/api/devoluciones', payload, BASE());
+export async function crearDevolucion(payload: CrearDevolucionPayload, opts?: OpcionesPortal): Promise<DevolucionApi> {
+  // Solo los campos del DTO: el backend responde 400 si llega estado o monto.
+  const { pedidoId, tipo, causa, motivo, pedidoItemId, pagoId, sellado } = payload;
+  const cuerpo = { pedidoId, tipo, causa, motivo, pedidoItemId, pagoId, sellado };
+  const res = await apiClient.post<unknown>(conPropios('/api/devoluciones', opts), cuerpo, BASE());
   const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
   if (o && o.id != null) return normalizarDevolucion(o);
   throw new Error('No se pudo crear la devolución');
 }
 
-export async function actualizarDevolucion(
+/** La clienta retira su solicitud mientras siga pendiente. */
+export async function cancelarDevolucion(id: number): Promise<void> {
+  await apiClient.post<unknown>(`/api/devoluciones/${id}/cancelar`, {}, BASE());
+}
+
+/** Personal con devoluciones:gestionar. En un reembolso, `efectivo` registra la salida en caja. */
+export async function aprobarDevolucion(
   id: number,
-  payload: Partial<CrearDevolucionPayload>
-): Promise<DevolucionApi> {
-  const res = await apiClient.put<unknown>(`/api/devoluciones/${id}`, payload, BASE());
-  const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
-  if (o && o.id != null) return normalizarDevolucion(o);
-  throw new Error('No se pudo actualizar la devolución');
+  datos: { metodoReembolso?: MetodoReembolso; nota?: string } = {}
+): Promise<void> {
+  await apiClient.post<unknown>(`/api/devoluciones/${id}/aprobar`, datos, BASE());
 }
 
-export async function eliminarDevolucion(id: number): Promise<void> {
-  await apiClient.delete<void>(`/api/devoluciones/${id}`, BASE());
+export async function rechazarDevolucion(id: number, datos: { nota?: string } = {}): Promise<void> {
+  await apiClient.post<unknown>(`/api/devoluciones/${id}/rechazar`, datos, BASE());
 }
 
+export interface DevolucionesPaginadas {
+  data: DevolucionApi[];
+  count: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/** GET /api/devoluciones (panel con devoluciones:gestionar, o `propios` para las de quien está en sesión). */
+export async function listarDevolucionesPaginado(params?: {
+  page?: number;
+  limit?: number;
+  estado?: EstadoDevolucion;
+  propios?: boolean;
+}): Promise<DevolucionesPaginadas> {
+  const sp = new URLSearchParams();
+  if (params?.propios) sp.set('propios', 'true');
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.limit) sp.set('limit', String(params.limit));
+  if (params?.estado) sp.set('estado', params.estado);
+  const qs = sp.toString();
+  const res = await apiClient.get<unknown>(`/api/devoluciones${qs ? `?${qs}` : ''}`, BASE());
+  const o = (res && typeof res === 'object' ? res : {}) as Record<string, unknown>;
+  const arr = unwrapArray<Record<string, unknown>>(res);
+  return {
+    data: arr.map((r) => normalizarDevolucion(r)),
+    count: num(o.count, arr.length),
+    page: num(o.page, params?.page ?? 1),
+    limit: num(o.limit, params?.limit ?? 20),
+    totalPages: num(o.totalPages, 1),
+  };
+}
+
+/** Mis solicitudes: una sola llamada con propios=true (antes recorría cada pedido). */
 export async function listarDevolucionesDelCliente(): Promise<DevolucionApi[]> {
-  const pedidos = await listarPedidos();
-  const todas: DevolucionApi[] = [];
-  for (const p of pedidos) {
-    const list = await listarDevolucionesPedido(p.id);
-    todas.push(...list);
-  }
-  return todas;
+  const { data } = await listarDevolucionesPaginado({ propios: true, limit: 100 });
+  return data;
 }
 
 // --- Notificaciones ---

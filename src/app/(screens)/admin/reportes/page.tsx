@@ -14,6 +14,7 @@ import {
   obtenerReporteServicios,
   obtenerReporteInventario,
   obtenerReporteClientes,
+  filasIngresos,
 } from '../../../services/reportes';
 import { exportarReportePdf, exportarReporteExcel, ReporteParaExportar } from '../../../utils/exportReportes';
 import { formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
@@ -69,7 +70,8 @@ export default function ReportesPage() {
     Promise.allSettled([obtenerReporteVentas(d, h), obtenerReporteServicios(d, h), obtenerReporteClientes(d, h)])
       .then(([ventasRes, serviciosRes, clientesRes]) => {
         if (ventasRes.status === 'fulfilled') {
-          setKpiVentasMonto(ventasRes.value.resumen.totalMonto);
+          // Ingresos: ventas del POS, cobros de pedidos y anticipos de citas, sin contar dos veces el anticipo.
+          setKpiVentasMonto(ventasRes.value.ingresos.total);
           setKpiUnidadesVendidas(ventasRes.value.resumen.totalUnidadesVendidas);
         }
         if (serviciosRes.status === 'fulfilled') setKpiServiciosCompletados(serviciosRes.value.totalCompletadas);
@@ -100,7 +102,7 @@ export default function ReportesPage() {
           filas: r.ventas.map((v) => [v.folio, fmtFecha(v.creadoEn), v.metodoPago, fmtMoneda(v.total)]),
           totales: [
             { label: 'Total de ventas', valor: String(r.resumen.totalVentas) },
-            { label: 'Monto total', valor: fmtMoneda(r.resumen.totalMonto) },
+            ...filasIngresos(r.ingresos),
             { label: 'Unidades de producto vendidas', valor: String(r.resumen.totalUnidadesVendidas) },
           ],
         };
@@ -170,7 +172,7 @@ export default function ReportesPage() {
 
         {/* KPIs (mes en curso) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <TarjetaKpi icono={BarChart3} etiqueta="Ventas del Mes" cargando={loadingKpis} valor={fmtMoneda(kpiVentasMonto)} tono="oro" />
+          <TarjetaKpi icono={BarChart3} etiqueta="Ingresos del Mes" cargando={loadingKpis} valor={fmtMoneda(kpiVentasMonto)} tono="oro" />
           <TarjetaKpi icono={Scissors} etiqueta="Servicios del Mes" cargando={loadingKpis} valor={kpiServiciosCompletados} />
           <TarjetaKpi icono={UserPlus} etiqueta="Clientes Nuevos" cargando={loadingKpis} valor={kpiClientesNuevos} />
           <TarjetaKpi icono={ShoppingBag} etiqueta="Productos Vendidos" cargando={loadingKpis} valor={kpiUnidadesVendidas} />

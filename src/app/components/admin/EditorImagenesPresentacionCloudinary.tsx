@@ -10,8 +10,6 @@ type Props = {
   disabled?: boolean;
   /** Texto del botón de subida. */
   uploadLabel?: string;
-  /** Upload preset a usar. Si no se pasa, `SubirImagenesCloudinaryButton` usa su default (productos). */
-  preset?: string;
 };
 
 /**
@@ -22,7 +20,6 @@ export function EditorImagenesPresentacionCloudinary({
   onChange,
   disabled,
   uploadLabel = 'Subir imágenes',
-  preset,
 }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const effectivePreviewUrl = previewUrl && urls.includes(previewUrl) ? previewUrl : null;
@@ -101,7 +98,6 @@ export function EditorImagenesPresentacionCloudinary({
         onUrlsAdded={add}
         disabled={disabled}
         label={uploadLabel}
-        preset={preset}
       />
 
       <Modal

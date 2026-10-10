@@ -10,7 +10,7 @@ import {
   TipoDocumentoFactura,
 } from '../../../services/ecommerce';
 import { getUsuarios } from '../../../services/usuarios';
-import { subirPdfCloudinary, PRESET_PRODUCTOS } from '../../../utils/cloudinary';
+import { subirPdfCloudinary } from '../../../utils/cloudinary';
 import { generarNotaVentaPdf } from '../../../utils/generarNotaPdf';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
@@ -134,7 +134,7 @@ export default function FacturacionPage() {
       let pdfUrl: string | undefined;
       if (formTipo === 'cfdi' && formPdfFile) {
         setSubiendoPdf(true);
-        pdfUrl = await subirPdfCloudinary(formPdfFile, PRESET_PRODUCTOS);
+        pdfUrl = await subirPdfCloudinary(formPdfFile);
         setSubiendoPdf(false);
       }
 
