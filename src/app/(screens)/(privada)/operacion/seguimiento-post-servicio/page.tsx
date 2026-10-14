@@ -11,26 +11,26 @@ import Modal from '../../../../components/ui/Modal';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
-import { listarSeguimientos, crearSeguimiento, SeguimientoApi } from '../../../../services/seguimientos';
-import { listarClientes, ClienteApi } from '../../../../services/clientes';
-import { AlertTriangle, ClipboardCheck, ThumbsUp } from 'lucide-react';
-import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
+import BuscadorClienta from '../../../../components/operacion/BuscadorClienta';
+import { listarSeguimientos, crearSeguimiento, actualizarSeguimiento, SeguimientoApi } from '../../../../services/seguimientos';
+import { AlertTriangle, Check, ClipboardCheck, ThumbsUp } from 'lucide-react';
+import { fechaCortaEnMexico, hoyEnMexico } from '../../../../utils/fechaSoloDia';
 import { usePermisos } from '../../../../utils/permisos';
 import { puedeCrearSeguimientos } from '../../../../utils/permisosCitas';
-
-function fmt(iso?: string | null): string {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-MX');
-}
+import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
+import { showToast } from '../../../../utils/toast';
+import { puedeMarcarAtendido } from '../_lib/panelOperacion';
 
 export default function SeguimientoPostServicioPage() {
   // Leer: todo el personal. Crear: solo con seguimientos:escritura (el becario no).
   const { tienePermiso } = usePermisos();
+  const puedeEscribir = tienePermiso('seguimientos:escritura');
   const [seguimientos, setSeguimientos] = useState<SeguimientoApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [clientes, setClientes] = useState<ClienteApi[]>([]);
+  // Cerrar un seguimiento que requiere acción (PUT /seguimientos/:id con requiereAccion=false)
+  const [atendiendoId, setAtendiendoId] = useState<number | null>(null);
+  const [errorAtender, setErrorAtender] = useState<string | null>(null);
 
   /** Toggle de filtro: por defecto solo lo que requiere acción (cola accionable del día). */
   const [soloRequiereAccion, setSoloRequiereAccion] = useState(true);
@@ -38,7 +38,7 @@ export default function SeguimientoPostServicioPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [fUsuarioId, setFUsuarioId] = useState('');
+  const [fCliente, setFCliente] = useState<{ id: string; nombre: string } | null>(null);
   const [fCitaId, setFCitaId] = useState('');
   const [fNotas, setFNotas] = useState('');
   const [fFecha, setFFecha] = useState(() => hoyEnMexico());
@@ -54,25 +54,39 @@ export default function SeguimientoPostServicioPage() {
       .finally(() => setLoading(false));
   }, [soloRequiereAccion]);
 
+  // La clienta se busca en el modal con BuscadorClienta, que solo abre quien puede crear seguimientos.
   useEffect(() => {
     cargar();
-    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
   }, [cargar]);
 
+  const marcarAtendido = async (s: SeguimientoApi) => {
+    setAtendiendoId(s.id);
+    setErrorAtender(null);
+    try {
+      await actualizarSeguimiento(s.id, { requiereAccion: false });
+      showToast(`Seguimiento de ${s.clienteNombre ?? 'la clienta'} marcado como atendido`, 'success');
+      cargar();
+    } catch (e) {
+      setErrorAtender(`No se pudo marcar como atendido: ${mensajeUsuarioDesdeErrorApi(e)}`);
+    } finally {
+      setAtendiendoId(null);
+    }
+  };
+
   const reset = () => {
-    setFUsuarioId(''); setFCitaId(''); setFNotas(''); setFFecha(hoyEnMexico());
+    setFCliente(null); setFCitaId(''); setFNotas(''); setFFecha(hoyEnMexico());
     setFSatisfaccion(''); setFRequiereAccion('false'); setFormError(null);
   };
 
   const handleCrear = async () => {
-    if (!fUsuarioId || !fNotas.trim() || !fFecha) {
+    if (!fCliente || !fNotas.trim() || !fFecha) {
       setFormError('Cliente, notas y fecha de contacto son obligatorios');
       return;
     }
     setSaving(true); setFormError(null);
     try {
       await crearSeguimiento({
-        usuarioId: fUsuarioId,
+        usuarioId: fCliente.id,
         citaId: fCitaId ? Number(fCitaId) : undefined,
         notas: fNotas.trim(),
         fechaContacto: new Date(`${fFecha}T09:00:00`).toISOString(),
@@ -138,6 +152,7 @@ export default function SeguimientoPostServicioPage() {
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
+          {errorAtender && <p role="alert" className="mb-4 text-sm text-[var(--danger-texto)]">{errorAtender}</p>}
           {loading ? (
             <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando seguimientos…</p>
           ) : error ? (
@@ -150,18 +165,33 @@ export default function SeguimientoPostServicioPage() {
               {soloRequiereAccion ? 'No hay seguimientos que requieran acción.' : 'No hay seguimientos registrados.'}
             </p>
           ) : (
-            <Table headers={['Cliente', 'Fecha contacto', 'Satisfacción', '¿Requiere acción?', 'Notas']} headerSutil>
+            <Table headers={['Cliente', 'Fecha contacto', 'Satisfacción', '¿Requiere acción?', 'Notas', ...(puedeEscribir ? ['Acciones'] : [])]} headerSutil>
               {seguimientos.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-semibold" rowPadding="lg">{s.clienteNombre ?? 'Cliente sin nombre'}</TableCell>
-                  <TableCell rowPadding="lg">{fmt(s.fechaContacto)}</TableCell>
+                  <TableCell rowPadding="lg">{fechaCortaEnMexico(s.fechaContacto) ?? '-'}</TableCell>
                   <TableCell rowPadding="lg">{s.satisfaccion != null ? `${s.satisfaccion}/5` : '-'}</TableCell>
                   <TableCell rowPadding="lg">
                     <Badge variant={s.requiereAccion ? 'danger' : 'success'}>
                       {s.requiereAccion ? 'Sí' : 'No'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-xs truncate" rowPadding="lg">{s.notas}</TableCell>
+                  <TableCell className="max-w-xs" rowPadding="lg">
+                    <span className="block truncate" title={s.notas}>{s.notas}</span>
+                  </TableCell>
+                  {puedeEscribir && (
+                    <TableCell rowPadding="lg">
+                      {puedeMarcarAtendido(tienePermiso, s) ? (
+                        <Button size="sm" variant="outline" onClick={() => marcarAtendido(s)} disabled={atendiendoId === s.id}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Check size={14} aria-hidden /> {atendiendoId === s.id ? 'Guardando…' : 'Marcar atendido'}
+                          </span>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-encabezados-alterno">-</span>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </Table>
@@ -183,13 +213,7 @@ export default function SeguimientoPostServicioPage() {
       >
         {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
         <div className="space-y-4">
-          <Select
-            label="Cliente *"
-            value={fUsuarioId}
-            onChange={(e) => setFUsuarioId(e.target.value)}
-            options={[{ value: '', label: 'Seleccionar cliente…' }, ...clientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
-            fullWidth
-          />
+          <BuscadorClienta seleccion={fCliente} onSeleccionar={setFCliente} label="Cliente *" />
           <Input label="Fecha de contacto *" type="date" value={fFecha} onChange={(e) => setFFecha(e.target.value)} fullWidth />
           <Input label="ID de cita (opcional)" type="number" min={1} value={fCitaId} onChange={(e) => setFCitaId(e.target.value)} placeholder="Ej. 42" fullWidth />
           <Select

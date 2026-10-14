@@ -25,17 +25,7 @@ import { normalizarUrlImagenExterna } from '../../../../utils/normalizarUrlImage
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
 import { parseCategoriaSub } from '../../../../utils/inventarioInteligente';
 import { AlertTriangle, Check, X } from 'lucide-react';
-
-function calcularPrecioDesdeDescuento(precioOriginal: number, descuento: number): string {
-  if (!precioOriginal || !descuento) return `$${precioOriginal || 0}`;
-  const final = Math.round(precioOriginal * (1 - descuento / 100));
-  return `$${final}`;
-}
-
-function parseNumero(str: string | undefined): number {
-  if (!str) return 0;
-  return parseFloat(str.replace(/[^0-9.]/g, '')) || 0;
-}
+import { preciosFilaDesdePresentacion, recalcularPreciosPorDescuento } from '../precioDescuento';
 
 function limpiarTexto(value: string | undefined): string {
   return String(value ?? '').replace(/\u0000/g, '');
@@ -79,6 +69,9 @@ export default function ProductoDetalleAdminPage() {
   const [producto, setProducto] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  /** Error al cargar el producto: reemplaza la pantalla. */
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  /** Error al guardar o eliminar: se muestra encima del formulario sin perder lo editado. */
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -138,7 +131,7 @@ export default function ProductoDetalleAdminPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setErrorCarga(null);
     getProductoPorId(id)
       .then((p) => {
         if (!cancelled && p) {
@@ -160,8 +153,8 @@ export default function ProductoDetalleAdminPage() {
           setDescuentoStr(String(p.descuento ?? 0));
           setDisponible(p.stock);
           const mappedPresentaciones: FilaPresentacion[] = (p.presentaciones ?? []).map((pr) => {
-              const base = parseNumero(pr.precioOriginal ?? pr.precio);
-              const precioConDescuento = calcularPrecioDesdeDescuento(base, p.descuento ?? 0);
+              // Precio guardado tal cual: no se recalcula desde `descuento` al cargar.
+              const precios = preciosFilaDesdePresentacion(pr);
               const fc = pr.fechaCaducidad;
               let fechaCaducidad = '';
               if (fc && typeof fc === 'string') {
@@ -179,8 +172,8 @@ export default function ProductoDetalleAdminPage() {
               return {
                 presentacionId: pr.id,
                 tamanio: pr.tamaño,
-                precioOriginal: String(base || '0'),
-                precio: String(parseNumero(precioConDescuento)),
+                precioOriginal: precios.precioOriginal,
+                precio: precios.precio,
                 stock: String(pr.stock ?? 0),
                 disponible: pr.disponible ?? true,
                 fechaCaducidad,
@@ -217,7 +210,7 @@ export default function ProductoDetalleAdminPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error al cargar el producto');
+          setErrorCarga(err instanceof Error ? err.message : 'Error al cargar el producto');
         }
       })
       .finally(() => {
@@ -323,7 +316,6 @@ export default function ProductoDetalleAdminPage() {
     }
     return [
       { value: '', label: 'Elige una opción' },
-      { value: '__sin_marca__', label: 'Sin marca' },
       ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
       { value: AGREGAR_MARCA, label: '+ Agregar otra marca' },
     ];
@@ -363,29 +355,21 @@ export default function ProductoDetalleAdminPage() {
     }
   };
 
-  // Cuando cambia el descuento global, recalcular precios de cada presentación
-  useEffect(() => {
-    const descuentoNum = parseFloat(descuentoStr) || 0;
-    setPresentaciones((prev) =>
-      prev.map((pr) => {
-        const base = parseFloat(pr.precioOriginal) || 0;
-        const nuevo = calcularPrecioDesdeDescuento(base, descuentoNum);
-        return { ...pr, precio: String(parseNumero(nuevo)) };
-      })
-    );
-  }, [descuentoStr]);
+  // Solo cuando la persona edita el descuento se recalculan los precios de cada presentación
+  // (al cargar se respeta el precio guardado).
+  const cambiarDescuento = (valor: string) => {
+    setDescuentoStr(valor);
+    setPresentaciones((prev) => recalcularPreciosPorDescuento(prev, valor));
+  };
 
   const agregarPresentacion = () => {
-    const descuentoNum = parseFloat(descuentoStr) || 0;
-    const base = 0;
-    const precioInicial = calcularPrecioDesdeDescuento(base, descuentoNum);
     setPresentaciones((prev) => [
       ...prev,
       {
         presentacionId: undefined,
         tamanio: '',
         precioOriginal: '0',
-        precio: String(parseNumero(precioInicial)),
+        precio: '0',
         stock: '0',
         disponible: true,
         fechaCaducidad: '',
@@ -400,6 +384,11 @@ export default function ProductoDetalleAdminPage() {
 
   const handleGuardar = async () => {
     if (!producto) return;
+    if (!limpiarTexto(marca).trim()) {
+      setSuccessMessage(null);
+      setError('Elige una marca.');
+      return;
+    }
     const currentSnapshot = buildSnapshot();
     if (initialSnapshotRef.current && initialSnapshotRef.current === currentSnapshot) {
       setError(null);
@@ -486,12 +475,12 @@ export default function ProductoDetalleAdminPage() {
     );
   }
 
-  if (error || !producto) {
+  if (errorCarga || !producto) {
     return (
       <AdminLayout>
         <div className="w-full max-w-none py-12">
           <p className="text-lead mb-4" style={{ color: 'var(--danger-texto)' }}>
-            {error ?? 'Producto no encontrado'}
+            {errorCarga ?? 'Producto no encontrado'}
           </p>
         </div>
       </AdminLayout>
@@ -526,6 +515,12 @@ export default function ProductoDetalleAdminPage() {
             </Button>
           </div>
         </div>
+
+        {error && (
+          <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
+            <p className="text-sm font-medium whitespace-pre-line" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
@@ -612,11 +607,11 @@ export default function ProductoDetalleAdminPage() {
                         <Select
                           label="Marca"
                           options={opcionesMarca}
-                          value={showAgregarMarca ? AGREGAR_MARCA : (marca || '__sin_marca__')}
+                          value={showAgregarMarca ? AGREGAR_MARCA : marca}
                           onChange={(e) => {
                             const v = e.target.value;
                             if (v === AGREGAR_MARCA) setShowAgregarMarca(true);
-                            else setMarca(v === '__sin_marca__' ? '' : v);
+                            else setMarca(v);
                           }}
                           fullWidth
                         />
@@ -649,12 +644,15 @@ export default function ProductoDetalleAdminPage() {
                   <Input
                     label="Descuento (%)"
                     type="number"
+                    min={0}
+                    max={100}
                     value={descuentoStr}
-                    onChange={(e) => setDescuentoStr(e.target.value)}
+                    onChange={(e) => cambiarDescuento(e.target.value)}
                     fullWidth
                   />
                   <Input
                     label="Descripción corta"
+                    maxLength={1000}
                     value={descripcion}
                     onChange={(e) => setDescripcion(e.target.value)}
                     fullWidth
@@ -695,10 +693,8 @@ export default function ProductoDetalleAdminPage() {
                       >
                       <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Tamaño
-                          </p>
                           <Input
+                            label="Tamaño"
                             value={pr.tamanio}
                             onChange={(e) => {
                               setPresentaciones((prev) =>
@@ -710,10 +706,8 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Precio original
-                          </p>
                           <Input
+                            label="Precio original"
                             type="number"
                             value={pr.precioOriginal}
                             onChange={(e) => {
@@ -726,10 +720,8 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Precio con descuento
-                          </p>
                           <Input
+                            label="Precio con descuento"
                             type="number"
                             value={pr.precio}
                             onChange={(e) => {
@@ -741,10 +733,8 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Stock
-                          </p>
                           <Input
+                            label="Stock"
                             type="number"
                             value={pr.stock}
                             onChange={(e) => {
@@ -756,10 +746,8 @@ export default function ProductoDetalleAdminPage() {
                           />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                            Fecha caducidad
-                          </p>
                           <Input
+                            label="Fecha caducidad"
                             type="date"
                             value={pr.fechaCaducidad}
                             onChange={(e) => {
@@ -797,9 +785,9 @@ export default function ProductoDetalleAdminPage() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                          Imágenes (Cloudinary; se guardan en producto_presentaciones)
-                        </label>
+                        <p className="block text-xs font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
+                          Imágenes de esta presentación
+                        </p>
                         <EditorImagenesPresentacionCloudinary
                           urls={pr.imagenes}
                           onChange={(next) => {

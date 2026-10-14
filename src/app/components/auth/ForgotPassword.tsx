@@ -145,7 +145,7 @@ export default function ForgotPassword({
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label 
-              htmlFor="email" 
+              htmlFor="recuperar-email" 
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
@@ -153,7 +153,7 @@ export default function ForgotPassword({
             </label>
             <input
               type="email"
-              id="email"
+              id="recuperar-email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);

@@ -15,7 +15,8 @@ import {
 import { obtenerMiTicketVenta } from '../../../../services/pos';
 import { generarTicketVentaPdf } from '../../../../utils/ticketVenta';
 import { hasValidToken } from '../../../../utils/security';
-import { showAlert, showToast } from '../../../../utils/toast';
+import { showAlert, showConfirm, showToast } from '../../../../utils/toast';
+import { etiquetaTipoNotificacion } from '../../../../utils/estados';
 import { MIRU_USER_STORAGE_UPDATED } from '../../../../utils/userStorageSync';
 
 export default function ClienteNotificacionesPage() {
@@ -69,6 +70,12 @@ export default function ClienteNotificacionesPage() {
   };
 
   const borrar = async (n: NotificacionApi) => {
+    const ok = await showConfirm('La notificación se borrará y no podrás recuperarla.', {
+      title: '¿Eliminar esta notificación?',
+      confirmText: 'Eliminar',
+      cancelText: 'Conservar',
+    });
+    if (!ok) return;
     try {
       await eliminarNotificacion(n.id);
       showToast('Notificación eliminada', 'info');
@@ -156,7 +163,7 @@ export default function ClienteNotificacionesPage() {
                   <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="info" size="sm">
-                        {n.tipo}
+                        {etiquetaTipoNotificacion(n.tipo)}
                       </Badge>
                       {!n.leida && (
                         <Badge variant="warning" size="sm">

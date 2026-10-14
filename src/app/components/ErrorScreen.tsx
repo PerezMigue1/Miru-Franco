@@ -12,6 +12,8 @@ interface ErrorScreenProps {
   titulo: string;
   mensaje: string;
   icono?: IconoError;
+  /** Con sesión iniciada (403) no tiene sentido ofrecer "Iniciar sesión". */
+  ocultarIniciarSesion?: boolean;
 }
 
 const ICONOS: Record<IconoError, LucideIcon> = {
@@ -28,7 +30,8 @@ const ENLACES = [
 ];
 
 /** Pantalla de error (400, 403, 404, 500): monograma, código, explicación y una salida clara. */
-export default function ErrorScreen({ codigo, titulo, mensaje, icono = 'solicitud' }: ErrorScreenProps) {
+export default function ErrorScreen({ codigo, titulo, mensaje, icono = 'solicitud', ocultarIniciarSesion = false }: ErrorScreenProps) {
+  const enlaces = ocultarIniciarSesion ? ENLACES.filter(({ href }) => href !== '/login') : ENLACES;
   const Icono = ICONOS[icono];
   return (
     <SuperficieCliente
@@ -67,7 +70,7 @@ export default function ErrorScreen({ codigo, titulo, mensaje, icono = 'solicitu
         </Link>
 
         <nav aria-label="Otras secciones" className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-1">
-          {ENLACES.map(({ href, label }) => (
+          {enlaces.map(({ href, label }) => (
             <Link
               key={href}
               href={href}

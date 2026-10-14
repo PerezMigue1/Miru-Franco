@@ -269,7 +269,7 @@ export default function ForgotPasswordSecurityQuestions({
         <form onSubmit={handleLoadQuestions} className="space-y-5">
           <div>
             <label
-              htmlFor="email"
+              htmlFor="recuperar-preguntas-email"
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
@@ -277,7 +277,7 @@ export default function ForgotPasswordSecurityQuestions({
             </label>
             <input
               type="email"
-              id="email"
+              id="recuperar-preguntas-email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);

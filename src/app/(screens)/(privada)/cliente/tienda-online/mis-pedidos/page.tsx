@@ -11,6 +11,7 @@ import Input from '../../../../../components/ui/Input';
 import Table, { TableRow, TableCell } from '../../../../../components/ui/Table';
 import { listarPedidos, etiquetaEstadoPedido, etiquetaMetodoPagoPedido, varianteBadgeEstadoPedido } from '../../../../../services/ecommerce';
 import type { PedidoApi } from '../../../../../services/ecommerce';
+import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 
 export default function MisPedidosPage() {
   const router = useRouter();
@@ -102,7 +103,7 @@ export default function MisPedidosPage() {
                 <TableCell className="font-mono font-semibold">#{pedido.id}</TableCell>
                 <TableCell>{formatearFecha(pedido.creadoEn)}</TableCell>
                 <TableCell className="font-semibold">
-                  ${pedido.total.toLocaleString()} {pedido.moneda}
+                  {formatearPrecioMXN(pedido.total)} {pedido.moneda}
                 </TableCell>
                 <TableCell>{pedido.metodoPago ? etiquetaMetodoPagoPedido(pedido.metodoPago) : '—'}</TableCell>
                 <TableCell>

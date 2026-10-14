@@ -34,6 +34,8 @@ export interface VentaLocalApi {
   notas?: string | null;
   total?: number | null;
   subtotal?: number | null;
+  /** Corte de caja en el que ya se contó la venta (null si aún no entra a ninguno). */
+  corteId?: number | null;
   creadoEn?: string;
 }
 

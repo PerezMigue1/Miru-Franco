@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -39,6 +39,18 @@ const TITULOS: Record<VistaRuta, string> = {
   register: 'Crear cuenta',
   recuperar: 'Recuperar contraseña',
 };
+
+/** Mientras carga el formulario de acceso. */
+function EsqueletoAcceso() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Cargando">
+      <div className="mf-skeleton h-9 w-3/4" />
+      <div className="mf-skeleton h-11 w-full" />
+      <div className="mf-skeleton h-11 w-full" />
+      <div className="mf-skeleton h-12 w-full" />
+    </div>
+  );
+}
 
 function vistaDesdeRuta(pathname: string | null, inicial: AuthView): VistaRuta {
   if (pathname === '/register') return 'register';
@@ -247,11 +259,14 @@ export default function AuthContainer({ initialView = 'login', onAuthSuccess }: 
         >
           <div key={vista === 'recuperar' ? recuperacion : 'login'} className="mf-auth__formulario mf-auth__cambio">
             {vista !== 'recuperar' && (
-              <Login
-                onSwitchToRegister={handleSwitchToRegister}
-                onSwitchToRecovery={handleSwitchToRecovery}
-                onLoginSuccess={handleLoginSuccess}
-              />
+              // Login lee ?passwordChanged y ?error con useSearchParams: necesita su propio Suspense.
+              <Suspense fallback={<EsqueletoAcceso />}>
+                <Login
+                  onSwitchToRegister={handleSwitchToRegister}
+                  onSwitchToRecovery={handleSwitchToRecovery}
+                  onLoginSuccess={handleLoginSuccess}
+                />
+              </Suspense>
             )}
 
             {vista === 'recuperar' && recuperacion === 'forgot-email' && (

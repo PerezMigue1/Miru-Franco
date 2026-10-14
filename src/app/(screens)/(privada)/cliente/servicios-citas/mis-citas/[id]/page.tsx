@@ -11,6 +11,9 @@ import AnticipoPortal from '../../../../../../components/cliente/AnticipoPortal'
 import { useAhora } from '../../../../../../hooks/useAhora';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
+import { citaGestionablePorClienta } from '../../../../../../components/cliente/citaGestionable';
+import { etiquetaEstadoCita } from '../../../../../../utils/estados';
+import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -88,7 +91,7 @@ export default function DetalleMiCitaPage() {
     );
   }
 
-  const puedeGestionar = cita.estado === 'confirmada' || cita.estado === 'pendiente';
+  const puedeGestionar = citaGestionablePorClienta(cita, ahora);
 
   return (
     <ModuleLayout>
@@ -102,7 +105,7 @@ export default function DetalleMiCitaPage() {
               Detalle de la Cita
             </h1>
             <Badge variant={obtenerVariantEstado(cita.estado)} size="lg">
-              {cita.estado}
+              {etiquetaEstadoCita(cita.estado)}
             </Badge>
           </div>
           {puedeGestionar && (
@@ -154,7 +157,9 @@ export default function DetalleMiCitaPage() {
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Duración
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>{servicio?.duracion ?? '—'}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>
+                      {servicio?.duracion ?? (cita.servicioDuracionMinutos ? `${cita.servicioDuracionMinutos} min` : '—')}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -164,7 +169,11 @@ export default function DetalleMiCitaPage() {
                       className="text-xl font-bold"
                       style={{ color: 'var(--menu-texto-principal)' }}
                     >
-                      {servicio?.precio ?? '—'}
+                      {servicio?.precio
+                        ? formatearPrecioMXN(servicio.precio)
+                        : cita.servicioPrecio
+                          ? formatearPrecioMXN(cita.servicioPrecio)
+                          : '—'}
                     </p>
                   </div>
                 </div>

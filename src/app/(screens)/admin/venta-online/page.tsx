@@ -31,6 +31,7 @@ import { showAlert, showConfirm, showToast } from '../../../utils/toast';
 import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
 import { emitCatalogStockChanged } from '../../../utils/catalogStockSync';
 import { accionesPedido, siguientesEstadosSinCobro, type AccionPedido } from '../../../utils/flujoPedido';
+import { elegirPagoPorAprobar, fmtMonedaPedido } from './pagoPedido';
 
 const TAMANO_PAGINA = 20;
 
@@ -86,9 +87,7 @@ function variantEstadoEnvio(estado?: string): 'default' | 'warning' | 'success' 
   }
 }
 
-function fmtMoneda(n: number, moneda = 'MXN') {
-  return `${new Intl.NumberFormat('es-MX').format(n)} ${moneda}`;
-}
+const fmtMoneda = fmtMonedaPedido;
 
 function formatearFecha(fecha?: string | null) {
   if (!fecha) return '—';
@@ -256,11 +255,17 @@ export default function VentaOnlinePage() {
     setSaving(true);
     try {
       const pagos = await listarPagosPorPedido(selectedPedido.id);
-      if (!pagos.length) {
-        throw new Error('Este pedido no tiene pagos registrados.');
+      // El pendiente más reciente (antes se tomaba el último del arreglo, que es el más antiguo).
+      const porAprobar = elegirPagoPorAprobar(pagos);
+      if (!porAprobar) {
+        void showAlert(
+          pagos.length
+            ? 'Este pedido no tiene ningún pago pendiente por aprobar.'
+            : 'Este pedido no tiene pagos registrados. Registra el pago antes de aprobarlo.'
+        );
+        return;
       }
-      const ultimo = pagos[pagos.length - 1];
-      await actualizarPagoParcial(ultimo.id, {
+      await actualizarPagoParcial(porAprobar.id, {
         estado: 'aprobado',
         monto: selectedPedido.total,
       });

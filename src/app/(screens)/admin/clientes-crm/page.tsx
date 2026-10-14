@@ -132,6 +132,7 @@ export default function ClientesCRMPage() {
       <div className="mb-6">
         <Input
           placeholder="Buscar por nombre, teléfono o email..."
+          aria-label="Buscar cliente"
           className="w-full sm:w-64"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
@@ -145,7 +146,7 @@ export default function ClientesCRMPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <Table headers={['Cliente', 'Teléfono', 'Email', 'Estado', 'Última actividad', 'Acciones']} headerSutil>
+            <Table headers={['Cliente', 'Teléfono', 'Email', 'Estado', 'Alta', 'Acciones']} headerSutil>
               {filtrados.map((cliente) => (
                 <TableRow key={cliente.id}>
                   <TableCell className="font-semibold" rowPadding="lg">{cliente.nombre}</TableCell>
@@ -156,7 +157,7 @@ export default function ClientesCRMPage() {
                       {cliente.activo ? 'Activo' : 'Inactivo'}
                     </Badge>
                   </TableCell>
-                  <TableCell rowPadding="lg">{formatearFecha(cliente.ultimaActividad ?? cliente.creadoEn)}</TableCell>
+                  <TableCell rowPadding="lg">{formatearFecha(cliente.creadoEn)}</TableCell>
                   <TableCell rowPadding="lg">
                     <div className="flex flex-wrap gap-2">
                       <Button

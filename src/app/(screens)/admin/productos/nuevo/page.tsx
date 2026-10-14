@@ -16,6 +16,7 @@ import {
 } from '../../../../services/productos';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
 import { parseCategoriaSub } from '../../../../utils/inventarioInteligente';
+import { validarProductoNuevo } from '../validacionProducto';
 
 const AGREGAR_CAT = '__agregar_cat__';
 const AGREGAR_MARCA = '__agregar_marca__';
@@ -98,7 +99,6 @@ export default function NuevoProductoAdminPage() {
     if (actual && !base.some((o) => o.value === actual) && !marcasEliminadas.includes(actual)) base.unshift({ value: actual, label: actual });
     return [
       { value: '', label: 'Elige una opción' },
-      { value: '__sin_marca__', label: 'Sin marca' },
       ...(base.length ? base : actual ? [{ value: actual, label: actual }] : []),
       { value: AGREGAR_MARCA, label: '+ Agregar otra marca' },
     ];
@@ -139,8 +139,9 @@ export default function NuevoProductoAdminPage() {
   };
 
   const handleCrear = async () => {
-    if (!nombre.trim() || !descripcion.trim() || !categoria.trim()) {
-      setError('Nombre, descripción y categoría son obligatorios.');
+    const errorValidacion = validarProductoNuevo({ nombre, descripcion, categoria, marca, precio: presPrecio });
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
     setSaving(true);
@@ -261,13 +262,13 @@ export default function NuevoProductoAdminPage() {
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <Select
-                    label="Marca"
+                    label="Marca *"
                     options={opcionesMarca}
-                    value={showAgregarMarca ? AGREGAR_MARCA : (marca || '__sin_marca__')}
+                    value={showAgregarMarca ? AGREGAR_MARCA : marca}
                     onChange={(e) => {
                       const v = e.target.value;
                       if (v === AGREGAR_MARCA) setShowAgregarMarca(true);
-                      else setMarca(v === '__sin_marca__' ? '' : v);
+                      else setMarca(v);
                     }}
                     fullWidth
                   />
@@ -308,6 +309,7 @@ export default function NuevoProductoAdminPage() {
           <div className="mb-6">
             <Input
               label="Descripción corta *"
+              maxLength={1000}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Breve descripción del producto"
@@ -328,6 +330,8 @@ export default function NuevoProductoAdminPage() {
             <Input
               label="Descuento (%)"
               type="number"
+              min={0}
+              max={100}
               value={descuento}
               onChange={(e) => setDescuento(e.target.value)}
               placeholder="0"
@@ -364,7 +368,7 @@ export default function NuevoProductoAdminPage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input label="Tamaño / presentación *" value={presTamanio} onChange={(e) => setPresTamanio(e.target.value)} placeholder="Ej. 500ml, 1L..." fullWidth />
-              <Input label="Precio *" type="number" step={0.01} min={0} value={presPrecio} onChange={(e) => setPresPrecio(e.target.value)} placeholder="0.00" fullWidth />
+              <Input label="Precio *" type="number" step={0.01} min={0.01} value={presPrecio} onChange={(e) => setPresPrecio(e.target.value)} placeholder="0.00" fullWidth />
               <Input label="Precio original (tachado)" type="number" step={0.01} min={0} value={presPrecioOrig} onChange={(e) => setPresPrecioOrig(e.target.value)} placeholder="0.00" fullWidth />
               <Input label="Stock inicial" type="number" step={1} min={0} value={presStock} onChange={(e) => setPresStock(e.target.value)} placeholder="0" fullWidth />
               <Input label="Fecha de caducidad" type="date" value={presFechaCaducidad} onChange={(e) => setPresFechaCaducidad(e.target.value)} fullWidth />
@@ -372,7 +376,7 @@ export default function NuevoProductoAdminPage() {
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              Imágenes de la presentación inicial (Cloudinary → producto_presentaciones)
+              Imágenes de la presentación inicial
             </label>
             <EditorImagenesPresentacionCloudinary
               urls={imagenesPresentacion}

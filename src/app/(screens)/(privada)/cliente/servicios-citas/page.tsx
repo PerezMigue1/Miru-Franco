@@ -148,6 +148,7 @@ export default function ListaServiciosPage() {
       <div className="mb-6 space-y-3">
         <Input
           placeholder="Buscar servicio por nombre, categoría..."
+          aria-label="Buscar servicio"
           className="w-full max-w-md"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
@@ -248,6 +249,7 @@ export default function ListaServiciosPage() {
                   <Input
                     type="number"
                     placeholder="Mín"
+                    aria-label="Precio mínimo"
                     value={precioMin}
                     onChange={(e) => setPrecioMin(e.target.value)}
                     min={0}
@@ -257,6 +259,7 @@ export default function ListaServiciosPage() {
                   <Input
                     type="number"
                     placeholder="Máx"
+                    aria-label="Precio máximo"
                     value={precioMax}
                     onChange={(e) => setPrecioMax(e.target.value)}
                     min={0}
@@ -276,6 +279,7 @@ export default function ListaServiciosPage() {
                   <Input
                     type="number"
                     placeholder="Mín"
+                    aria-label="Duración mínima en minutos"
                     value={duracionMin}
                     onChange={(e) => setDuracionMin(e.target.value)}
                     min={0}
@@ -285,6 +289,7 @@ export default function ListaServiciosPage() {
                   <Input
                     type="number"
                     placeholder="Máx"
+                    aria-label="Duración máxima en minutos"
                     value={duracionMax}
                     onChange={(e) => setDuracionMax(e.target.value)}
                     min={0}

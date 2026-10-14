@@ -13,6 +13,7 @@ import { BadgeDollarSign, ShoppingCart, Trash2 } from 'lucide-react';
 import { listarProveedores, ProveedorApi } from '../../../services/proveedores';
 import { getProductosSinRedirigir } from '../../../services/productos';
 import { listarCompras, crearCompra, CompraApi, CrearCompraItemPayload } from '../../../services/compras';
+import { leerCantidadEntera } from '../inventario/cantidadEntera';
 
 interface PresentacionOpcion {
   id: number;
@@ -77,10 +78,10 @@ export default function ComprasProveedoresPage() {
 
   const agregarLinea = () => {
     setFormError(null);
-    const cantidad = Number(formCantidad);
+    const cantidad = leerCantidadEntera(formCantidad, 1);
     const costo = Number(formCosto);
     if (!formPresentacionId) { setFormError('Selecciona una presentación'); return; }
-    if (!cantidad || cantidad < 1) { setFormError('Cantidad inválida'); return; }
+    if (cantidad === null) { setFormError('La cantidad debe ser un número entero mayor que 0.'); return; }
     if (!formCosto || costo < 0) { setFormError('Costo unitario inválido'); return; }
     const opcion = presentaciones.find((p) => String(p.id) === formPresentacionId);
     setLineas((prev) => [...prev, { presentacionId: Number(formPresentacionId), cantidad, costoUnitario: costo, label: opcion?.label ?? `Presentación ${formPresentacionId}` }]);
@@ -202,7 +203,7 @@ export default function ComprasProveedoresPage() {
               fullWidth
             />
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Cantidad" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
+              <Input label="Cantidad" type="number" min={1} step={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
               <Input label="Costo Unitario" type="number" min={0} step="0.01" value={formCosto} onChange={(e) => setFormCosto(e.target.value)} placeholder="0.00" fullWidth />
             </div>
             <Button variant="outline" fullWidth onClick={agregarLinea}>+ Agregar línea</Button>

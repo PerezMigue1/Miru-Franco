@@ -17,6 +17,8 @@ import {
   telefonoSinLada,
 } from '../../utils/phone';
 import CasillaDatosSalud from '../legal/CasillaDatosSalud';
+import { mensajeUsuarioDesdeErrorApi } from '../../utils/apiErrorMessage';
+import { hoyEnMexico } from '../../utils/fechaSoloDia';
 import { errorConsentimientoAlergias } from '../../utils/consentimientoDatosSensibles';
 import {
   VALORES_PERFIL_VACIOS,
@@ -42,6 +44,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
   const [loadingPerfil, setLoadingPerfil] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [perfil, setPerfil] = useState<PerfilUsuarioCompleto | null>(null);
   // Cada reintento vuelve a disparar la carga del perfil.
   const [intentoCarga, setIntentoCarga] = useState(0);
@@ -83,12 +86,22 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
     const cuerpo = cuerpoGuardarPerfil(perfil, values);
     if (!cuerpo) return;
     setSaveOk(null);
-    await patchMiPerfil(cuerpo);
+    setSaveError(null);
+    try {
+      await patchMiPerfil(cuerpo);
+    } catch (e) {
+      setSaveError(mensajeUsuarioDesdeErrorApi(e));
+      return;
+    }
     setSaveOk('Cambios guardados.');
-    const p = await getMiPerfil();
-    setPerfil(p);
-    if (typeof window !== 'undefined' && p) mergePerfilEnLocalStorage(p);
-    onSaved?.(p);
+    try {
+      const p = await getMiPerfil();
+      setPerfil(p);
+      if (typeof window !== 'undefined' && p) mergePerfilEnLocalStorage(p);
+      onSaved?.(p);
+    } catch {
+      // Ya se guardó; la recarga del perfil puede esperar a la próxima visita.
+    }
   };
 
   const disabled = !formularioPerfilHabilitado({ cargando: loadingPerfil, enviando: isSubmitting, perfil });
@@ -114,6 +127,11 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
         </div>
       )}
       {saveOk && <p className="text-sm mb-4" style={{ color: 'var(--success-texto)' }} role="status">{saveOk}</p>}
+      {saveError && (
+        <p className="text-sm mb-4" style={{ color: 'var(--danger-texto)' }} role="alert">
+          No se guardaron los cambios. {saveError}
+        </p>
+      )}
 
       <div className="mb-8">
         <PerfilFotoBlock
@@ -167,6 +185,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
           label="Fecha de nacimiento"
           type="date"
           fullWidth
+          max={hoyEnMexico()}
           disabled={disabled}
           {...register('fechaNacimiento')}
         />
@@ -178,11 +197,11 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
           </div>
         </div>
         <Select label="Tipo de cabello" fullWidth options={TIPO_CABELLO_OPTIONS} disabled={disabled} {...register('tipoCabello')} />
-        <Input label="Color natural" fullWidth disabled={disabled} {...register('colorNatural')} />
-        <Input label="Color actual" fullWidth disabled={disabled} {...register('colorActual')} />
-        <Input label="Productos que usas" fullWidth disabled={disabled} {...register('productosUsados')} />
+        <Input label="Color natural" maxLength={255} fullWidth disabled={disabled} {...register('colorNatural')} />
+        <Input label="Color actual" maxLength={255} fullWidth disabled={disabled} {...register('colorActual')} />
+        <Input label="Productos que usas" maxLength={1000} fullWidth disabled={disabled} {...register('productosUsados')} />
         <div className="md:col-span-2">
-          <Input label="Alergias" fullWidth disabled={disabled} {...register('alergias')} />
+          <Input label="Alergias" maxLength={1000} fullWidth disabled={disabled} {...register('alergias')} />
           <CasillaDatosSalud
             className="mt-2"
             disabled={disabled}

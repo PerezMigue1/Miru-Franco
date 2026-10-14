@@ -14,6 +14,8 @@ import { showToast } from '../../../../utils/toast';
 import { Users, UserCheck, Timer } from 'lucide-react';
 import { usePermisos } from '../../../../utils/permisos';
 import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCitas';
+import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
+import { estadoListado } from '../_lib/panelOperacion';
 
 interface TurnoFila {
   id: number;
@@ -87,16 +89,18 @@ export default function ColaAtencionPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [ahora, setAhora] = useState(() => new Date());
 
   const cargar = () => {
     const { desde, hasta } = rangoHoyISO();
     setLoading(true);
+    setErrorCarga(null);
     // Una sola consulta con todas las citas de hoy: sirve tanto para la lista de turnos
     // (pendiente/confirmada/en_curso) como para el promedio real de espera.
     listarCitas({ desde, hasta, limit: 200 })
       .then(({ data }) => setCitasHoy(data))
-      .catch(() => {})
+      .catch((e) => setErrorCarga(`No se pudo cargar la lista de turnos: ${mensajeUsuarioDesdeErrorApi(e)}`))
       .finally(() => setLoading(false));
   };
 
@@ -141,6 +145,7 @@ export default function ColaAtencionPage() {
   };
 
   const enEspera = turnos.filter((t) => t.estado === 'esperando').length;
+  const estadoTurnos = estadoListado({ cargando: loading, error: errorCarga, cantidad: turnos.length });
   const enAtencion = turnos.filter((t) => t.estado === 'en_atencion').length;
 
   const tiempoPromedioMin = useMemo(() => {
@@ -162,7 +167,7 @@ export default function ColaAtencionPage() {
             Cola de Atención
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            Registro de llegada (check-in) de clientes sin cita previa — {enEspera} turno{enEspera === 1 ? '' : 's'} en lista de espera
+            Turnos del día: citas y llegadas sin cita · {enEspera} turno{enEspera === 1 ? '' : 's'} en lista de espera
           </p>
         </div>
 
@@ -184,6 +189,12 @@ export default function ColaAtencionPage() {
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Lista de Turnos
         </h2>
+        {estadoTurnos === 'error' ? (
+          <div className="py-6 text-center">
+            <p role="alert" className="mb-3 text-sm text-[var(--danger-texto)]">{errorCarga}</p>
+            <Button variant="outline" onClick={cargar}>Reintentar</Button>
+          </div>
+        ) : (
         <Table headers={['Posición', 'Cliente', 'Hora de Llegada', 'Servicio', 'Estado', 'Tiempo de Espera', 'Acciones']} headerSutil>
           {turnos.map((turno) => (
             <TableRow key={turno.id}>
@@ -229,7 +240,8 @@ export default function ColaAtencionPage() {
             </TableRow>
           ))}
         </Table>
-        {!loading && turnos.length === 0 && (
+        )}
+        {estadoTurnos === 'vacio' && (
           <p className="py-6 text-center text-sm text-encabezados-alterno">Nadie en la lista de espera.</p>
         )}
         </Card>

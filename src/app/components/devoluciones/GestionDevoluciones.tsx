@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   aprobarDevolucion,
   listarDevolucionesPaginado,
-  listarPedidos,
+  listarTodosLosPedidos,
   rechazarDevolucion,
   type DevolucionApi,
   type EstadoDevolucion,
@@ -21,7 +21,8 @@ import Badge from '../ui/Badge';
 import Select from '../ui/Select';
 import NuevaSolicitudDevolucion from '../admin/NuevaSolicitudDevolucion';
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, RotateCcw } from 'lucide-react';
-import { diaEnMexico } from '../../utils/fechaSoloDia';
+import { fechaCortaEnMexico } from '../../utils/fechaSoloDia';
+import { fmtMoneda } from '../../utils/cobroPos';
 import { usePermisos } from '../../utils/permisos';
 import { detalleMotivoDevolucion, etiquetaCausa, etiquetaEstadoDevolucion } from '../../utils/politicaDevolucion';
 
@@ -90,7 +91,8 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
 
   useEffect(() => {
     if (!conNuevaSolicitud) return;
-    listarPedidos().then(setPedidos).catch(() => setPedidos([]));
+    // Todos los pedidos: con la primera página (20) no se podía pedir la devolución de uno anterior.
+    listarTodosLosPedidos().then(setPedidos).catch(() => setPedidos([]));
   }, [conNuevaSolicitud]);
 
   const abrirResolucion = (devolucion: DevolucionApi, accion: Resolucion['accion']) => {
@@ -212,8 +214,8 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
                         </span>
                       )}
                     </TableCell>
-                    <TableCell rowPadding="lg">{d.monto != null ? `$${d.monto.toLocaleString('es-MX')}` : '-'}</TableCell>
-                    <TableCell rowPadding="lg">{diaEnMexico(d.creadoEn) ?? '-'}</TableCell>
+                    <TableCell rowPadding="lg">{d.monto != null ? fmtMoneda(d.monto) : '-'}</TableCell>
+                    <TableCell rowPadding="lg">{fechaCortaEnMexico(d.creadoEn) ?? '-'}</TableCell>
                     <TableCell rowPadding="lg">
                       <Badge variant={varianteEstado(d.estado)}>{etiquetaEstadoDevolucion(d.estado)}</Badge>
                     </TableCell>
@@ -288,7 +290,7 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
               {resolucion.devolucion.tipo === 'reembolso' ? 'Reembolso' : resolucion.devolucion.tipo === 'cambio' ? 'Cambio' : 'Solicitud'}
               {resolucion.devolucion.causa ? ` · ${etiquetaCausa(resolucion.devolucion.causa)}` : ''} del pedido #{resolucion.devolucion.pedidoId}
               {resolucion.devolucion.monto != null && (
-                <> · Monto: <strong style={{ color: 'var(--menu-texto-principal)' }}>${resolucion.devolucion.monto.toLocaleString('es-MX')}</strong></>
+                <> · Monto: <strong style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(resolucion.devolucion.monto)}</strong></>
               )}
             </p>
             {resolucion.accion === 'aprobar' && esReembolso && (

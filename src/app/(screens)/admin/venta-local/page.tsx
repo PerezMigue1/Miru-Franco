@@ -21,6 +21,8 @@ import { BadgeDollarSign, Receipt, ShoppingCart } from 'lucide-react';
 import { hoyEnMexico } from '../../../utils/fechaSoloDia';
 import PagoMixtoCampos from '../../../components/operacion/PagoMixtoCampos';
 import { itemsDeVenta, pagosMixtos, totalesTicket, validarCobro, type LineaCobro, type MontosMixtos } from '../../../utils/cobroPos';
+import { formatearPrecioMXN } from '../../../utils/formatoPrecio';
+import { etiquetaMetodoVenta, presentacionIdDeVenta, puedeCancelarVenta, textoTotalDelDia, totalDelDia, ventasPagadasDelDia } from './ventasDia';
 
 interface VentaFila {
   id: number;
@@ -41,7 +43,7 @@ function mapearVenta(v: VentaLocalApi): VentaFila {
     clienteId: v.clienteId ?? null,
     productos: itemsDesc,
     total: v.total != null ? `$${v.total.toFixed(2)}` : '-',
-    metodo: v.metodoPago || '-',
+    metodo: etiquetaMetodoVenta(v.metodoPago),
     fecha: v.creadoEn ? new Date(v.creadoEn).toLocaleString('es-MX') : '-',
     raw: v,
   };
@@ -72,6 +74,7 @@ export default function VentaLocalPage() {
   // Formulario nueva venta
   const [formClienteId, setFormClienteId] = useState('');
   const [formProductoId, setFormProductoId] = useState('');
+  const [formPresentacionId, setFormPresentacionId] = useState('');
   const [formCantidad, setFormCantidad] = useState('1');
   const [formPrecioUnitario, setFormPrecioUnitario] = useState('');
   const [formMetodoPago, setFormMetodoPago] = useState('efectivo');
@@ -97,6 +100,7 @@ export default function VentaLocalPage() {
   const [ventaIdCancelando, setVentaIdCancelando] = useState<number | null>(null);
   const [cancelMotivoVenta, setCancelMotivoVenta] = useState('');
   const [savingCancelVenta, setSavingCancelVenta] = useState(false);
+  const [cancelVentaError, setCancelVentaError] = useState<string | null>(null);
 
   // Modal Ver Detalles (solo lectura)
   const [ventaDetalle, setVentaDetalle] = useState<VentaFila | null>(null);
@@ -118,10 +122,13 @@ export default function VentaLocalPage() {
 
   // El precio es el del catálogo (el backend cobra el de la base); solo se muestra.
   const prodVenta = catProductos.find((p) => String(p.id) === formProductoId);
-  const lineasVenta: LineaCobro[] = formProductoId && Number(formCantidad) >= 1
+  // Sin presentación (o sin elegirla cuando hay varias) no se arma la línea: nunca se manda el id del producto.
+  const presentacionVentaId = presentacionIdDeVenta(prodVenta, formProductoId, formPresentacionId);
+  const presentacionesVenta = (prodVenta?.presentaciones ?? []).filter((pr) => pr.id != null);
+  const lineasVenta: LineaCobro[] = formProductoId && presentacionVentaId != null && Number(formCantidad) >= 1
     ? [{
         tipo: 'producto',
-        presentacionId: prodVenta?.presentaciones?.[0]?.id ?? Number(formProductoId),
+        presentacionId: presentacionVentaId,
         cantidad: Number(formCantidad),
         precioUnitario: Number(String(formPrecioUnitario).replace(/[^0-9.]/g, '')) || 0,
       }]
@@ -131,6 +138,12 @@ export default function VentaLocalPage() {
   const handleCrearVenta = async () => {
     if (!formProductoId || !formCantidad) {
       setVentaError('Selecciona producto y cantidad'); return;
+    }
+    if (presentacionVentaId == null) {
+      setVentaError(presentacionesVenta.length > 1
+        ? 'Elige la presentación del producto.'
+        : 'Este producto no tiene presentaciones a la venta.');
+      return;
     }
     const problema = validarCobro({ lineas: lineasVenta, descuento: Number(formDescuento) || 0, motivoDescuento: formMotivoDescuento, metodoPago: formMetodoPago, pagos: formPagos });
     if (problema) { setVentaError(problema); return; }
@@ -145,7 +158,7 @@ export default function VentaLocalPage() {
         pagos: pagosMixtos(formMetodoPago, formPagos),
         notas: formNotas.trim() || undefined,
       });
-      setFormProductoId(''); setFormCantidad('1'); setFormPrecioUnitario('');
+      setFormProductoId(''); setFormPresentacionId(''); setFormCantidad('1'); setFormPrecioUnitario('');
       setFormClienteId(''); setFormDescuento('0'); setFormMotivoDescuento(''); setFormPagos({}); setFormNotas('');
       cargar();
     } catch (e) { setVentaError(e instanceof Error ? e.message : 'Error al procesar venta'); }
@@ -170,15 +183,18 @@ export default function VentaLocalPage() {
     finally { setSavingCorte(false); }
   };
 
-  const openCancelarVenta = (id: number) => { setVentaIdCancelando(id); setCancelMotivoVenta(''); setIsModalCancelarOpen(true); };
+  const openCancelarVenta = (id: number) => { setVentaIdCancelando(id); setCancelMotivoVenta(''); setCancelVentaError(null); setIsModalCancelarOpen(true); };
 
   const handleCancelarVenta = async () => {
     if (!ventaIdCancelando) return;
     setSavingCancelVenta(true);
+    setCancelVentaError(null);
     try {
       await cancelarVenta(ventaIdCancelando, { motivoCancelacion: cancelMotivoVenta.trim() || 'Cancelada desde panel admin' });
       setIsModalCancelarOpen(false); setVentaIdCancelando(null); cargar();
-    } catch { /* silencioso */ }
+    } catch (e) {
+      setCancelVentaError(e instanceof Error && e.message ? e.message : 'No se pudo cancelar la venta. Intenta de nuevo.');
+    }
     finally { setSavingCancelVenta(false); }
   };
 
@@ -196,7 +212,7 @@ export default function VentaLocalPage() {
     return `Presentación #${presentacionId}`;
   };
 
-  const totalDia = ventasHoy.reduce((acc, v) => acc + (parseFloat(v.total.replace(/[^0-9.]/g, '')) || 0), 0);
+  const totalDia = totalDelDia(ventasHoy.map((v) => v.raw));
 
   return (
     <AdminLayout>
@@ -209,7 +225,7 @@ export default function VentaLocalPage() {
               Venta Local
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {ventasHoy.length} venta{ventasHoy.length === 1 ? '' : 's'} hoy
+              {ventasHoy.length} venta{ventasHoy.length === 1 ? '' : 's'} registrada{ventasHoy.length === 1 ? '' : 's'} hoy
             </p>
           </div>
           <Button variant="outline" onClick={() => { setCorteError(null); setCorteRegistrado(null); setFormCorteEfectivo('0'); setFormCorteEfectivoFinal(''); setFormCorteNotas(''); setIsModalCorteOpen(true); }}>Corte de caja</Button>
@@ -217,8 +233,8 @@ export default function VentaLocalPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <TarjetaKpi icono={ShoppingCart} etiqueta="Ventas de hoy" cargando={loading} valor={ventasHoy.length} />
-          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total del día" valor={<>${totalDia.toLocaleString('es-MX')}</>} />
+          <TarjetaKpi icono={ShoppingCart} etiqueta="Ventas de hoy (pagadas)" cargando={loading} valor={ventasPagadasDelDia(ventasHoy.map((v) => v.raw))} />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total del día (pagadas)" cargando={loading} valor={textoTotalDelDia(totalDia)} />
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -240,12 +256,35 @@ export default function VentaLocalPage() {
               onChange={(e) => {
                 setFormProductoId(e.target.value);
                 const p = catProductos.find((x) => String(x.id) === e.target.value);
-                if (p) setFormPrecioUnitario(String(p.presentaciones?.[0]?.precio ?? p.precio).replace(/[^0-9.]/g, ''));
+                const presentaciones = (p?.presentaciones ?? []).filter((pr) => pr.id != null);
+                // Con una sola presentación se usa esa; con varias hay que elegirla.
+                const unica = presentaciones.length === 1 ? presentaciones[0] : undefined;
+                setFormPresentacionId(unica?.id != null ? String(unica.id) : '');
+                setFormPrecioUnitario(unica ? String(unica.precio).replace(/[^0-9.]/g, '') : '');
               }}
-              options={[{ value: '', label: 'Seleccionar producto...' }, ...catProductos.map((p) => ({ value: String(p.id), label: `${p.nombre} — $${p.presentaciones?.[0]?.precio ?? p.precio}` }))]}
+              options={[{ value: '', label: 'Seleccionar producto...' }, ...catProductos.map((p) => ({ value: String(p.id), label: `${p.nombre} - ${(p.presentaciones?.length ?? 0) > 1 ? 'desde ' : ''}${formatearPrecioMXN(p.precio)}` }))]}
               fullWidth
             />
-            <Input label="Cantidad" type="number" min={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
+            {presentacionesVenta.length > 1 && (
+              <Select
+                label="Presentación"
+                value={formPresentacionId}
+                onChange={(e) => {
+                  setFormPresentacionId(e.target.value);
+                  const pr = presentacionesVenta.find((x) => String(x.id) === e.target.value);
+                  setFormPrecioUnitario(pr ? String(pr.precio).replace(/[^0-9.]/g, '') : '');
+                }}
+                options={[
+                  { value: '', label: 'Elige la presentación...' },
+                  ...presentacionesVenta.map((pr) => ({ value: String(pr.id), label: `${pr.tamaño} - ${pr.precio} - Stock: ${pr.stock}` })),
+                ]}
+                fullWidth
+              />
+            )}
+            {prodVenta && presentacionesVenta.length === 0 && (
+              <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>Este producto no tiene presentaciones a la venta.</p>
+            )}
+            <Input label="Cantidad" type="number" min={1} step={1} value={formCantidad} onChange={(e) => setFormCantidad(e.target.value)} fullWidth />
             <Input label="Precio unitario" type="number" value={formPrecioUnitario} readOnly helperText="Precio del catálogo. Para ajustarlo usa el descuento con su motivo." placeholder="0.00" fullWidth />
             <Select
               label="Método de pago"
@@ -286,7 +325,7 @@ export default function VentaLocalPage() {
                     {producto.nombre}
                   </p>
                   <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                    ${producto.presentaciones?.[0]?.precio ?? producto.precio}
+                    {formatearPrecioMXN(producto.presentaciones?.[0]?.precio ?? producto.precio)}
                     {producto.presentaciones?.[0]?.stock != null ? ` • Stock: ${producto.presentaciones[0].stock}` : ''}
                   </p>
                 </div>
@@ -304,22 +343,29 @@ export default function VentaLocalPage() {
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Ventas de Hoy
         </h2>
-        <Table headers={['Cliente', 'Productos', 'Total', 'Método de Pago', 'Fecha', 'Acciones']} headerSutil>
+        <Table headers={['Cliente', 'Productos', 'Total', 'Método de Pago', 'Estado', 'Fecha', 'Acciones']} headerSutil>
           {ventasHoy.map((venta) => (
             <TableRow key={venta.id}>
               <TableCell rowPadding="lg">{nombreCliente(venta.clienteId)}</TableCell>
               <TableCell rowPadding="lg">{venta.productos}</TableCell>
               <TableCell className="font-semibold" rowPadding="lg">{venta.total}</TableCell>
               <TableCell rowPadding="lg">
-                <Badge variant={venta.metodo === 'efectivo' || venta.metodo === 'Efectivo' ? 'success' : 'info'}>
+                <Badge variant={venta.raw.metodoPago === 'efectivo' ? 'success' : 'info'}>
                   {venta.metodo}
+                </Badge>
+              </TableCell>
+              <TableCell rowPadding="lg">
+                <Badge variant={varianteBadgeEstadoVenta(venta.raw.estado)}>
+                  {ETIQUETA_ESTADO_VENTA[venta.raw.estado] ?? venta.raw.estado}
                 </Badge>
               </TableCell>
               <TableCell rowPadding="lg">{venta.fecha}</TableCell>
               <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setVentaDetalle(venta)}>Ver Detalles</Button>
-                  <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
+                  {puedeCancelarVenta(venta.raw.estado, venta.raw.corteId) && (
+                    <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
@@ -372,6 +418,7 @@ export default function VentaLocalPage() {
           </>
         }
       >
+        {cancelVentaError && <p role="alert" className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{cancelVentaError}</p>}
         <Textarea label="Motivo de cancelación" value={cancelMotivoVenta} onChange={(e) => setCancelMotivoVenta(e.target.value)} placeholder="Describe el motivo (opcional)..." rows={3} fullWidth />
       </Modal>
 
@@ -387,7 +434,7 @@ export default function VentaLocalPage() {
           <div className="space-y-3 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
             <p><span className="font-semibold">Cliente:</span> {nombreCliente(ventaDetalle.clienteId)}</p>
             <p><span className="font-semibold">Fecha:</span> {ventaDetalle.fecha}</p>
-            <p><span className="font-semibold">Método de pago:</span> {ventaDetalle.raw.metodoPago || '-'}</p>
+            <p><span className="font-semibold">Método de pago:</span> {ventaDetalle.metodo}</p>
             <p>
               <span className="font-semibold">Estado:</span>{' '}
               <Badge variant={varianteBadgeEstadoVenta(ventaDetalle.raw.estado)}>

@@ -21,6 +21,7 @@ import { usePermisos } from '../../../../utils/permisos';
 import { idUsuarioSesion, puedeAtenderCita } from '../../../../utils/permisosCitas';
 import RegistrarSinCita from '../../../../components/operacion/RegistrarSinCita';
 import { showToast } from '../../../../utils/toast';
+import { resultadoCargaEjecucion } from '../_lib/panelOperacion';
 
 interface ServicioFila {
   id: number;
@@ -98,6 +99,7 @@ export default function EjecucionServiciosPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   // Modal materiales
   const [isModalMaterialesOpen, setIsModalMaterialesOpen] = useState(false);
@@ -132,12 +134,15 @@ export default function EjecucionServiciosPage() {
     try {
       await registrarMateriales(citaIdMateriales, { presentacionId: Number(formPresentacionId), cantidad: Number(formCantidad), motivo: formMotivoMat.trim() || undefined });
       setIsModalMaterialesOpen(false); setCitaIdMateriales(null);
+      showToast('Materiales registrados', 'success');
+      cargar();
     } catch (e) { setMatError(e instanceof Error ? e.message : 'Error al registrar materiales'); }
     finally { setSavingMat(false); }
   };
 
   const cargar = () => {
     setLoading(true);
+    setErrorCarga(null);
     const { desde, hasta } = rangoHoyISO();
     Promise.allSettled([
       // En proceso: sin filtrar por fecha (un servicio puede seguir en_curso de un día anterior).
@@ -146,8 +151,8 @@ export default function EjecucionServiciosPage() {
       listarCitas({ desde, hasta, limit: 200 }),
     ])
       .then(([enCursoRes, hoyRes]) => {
-        const enCurso = enCursoRes.status === 'fulfilled' ? enCursoRes.value.data : [];
-        const hoy = hoyRes.status === 'fulfilled' ? hoyRes.value.data : [];
+        const { enCurso, hoy, error: fallo } = resultadoCargaEjecucion(enCursoRes, hoyRes);
+        setErrorCarga(fallo);
         setCitasHoy(hoy);
         const pendientesHoy = hoy.filter((c) => c.estado === 'pendiente' || c.estado === 'confirmada');
         const idsEnCurso = new Set(enCurso.map((c) => c.id));
@@ -209,6 +214,15 @@ export default function EjecucionServiciosPage() {
         {error && (
           <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{error}</p>
+          </Card>
+        )}
+
+        {errorCarga && (
+          <Card variant="elevated" padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{errorCarga}</p>
+              <Button size="sm" variant="outline" onClick={cargar} disabled={loading}>Reintentar</Button>
+            </div>
           </Card>
         )}
 
@@ -279,7 +293,7 @@ export default function EjecucionServiciosPage() {
             </TableRow>
           ))}
         </Table>
-        {!loading && servicios.length === 0 && (
+        {!loading && !errorCarga && servicios.length === 0 && (
           <p className="py-6 text-center text-sm text-encabezados-alterno">No hay servicios pendientes ni en curso.</p>
         )}
         </Card>

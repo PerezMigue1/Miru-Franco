@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Timer } from 'lucide-react';
+import { MENSAJE_FORMATO_TELEFONO } from '../../utils/phone';
 
 const PRIMARIO = {
   ['--btn-bg' as string]: 'var(--botones-principales)',
@@ -217,7 +218,7 @@ export default function ForgotPasswordSMS({
             <RecuperarConCorreo onSwitchToEmail={onSwitchToEmail} disabled={isLoading} />
             <div>
               <label
-                htmlFor="code"
+                htmlFor="recuperar-codigo-sms"
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--menu-texto-principal)' }}
               >
@@ -225,7 +226,7 @@ export default function ForgotPasswordSMS({
               </label>
               <input
                 type="text"
-                id="code"
+                id="recuperar-codigo-sms"
                 value={code}
                 onChange={(e) => {
                   const value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -322,7 +323,7 @@ export default function ForgotPasswordSMS({
           )}
           <div>
             <label
-              htmlFor="phone"
+              htmlFor="recuperar-telefono"
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
@@ -330,7 +331,7 @@ export default function ForgotPasswordSMS({
             </label>
             <input
               type="tel"
-              id="phone"
+              id="recuperar-telefono"
               value={phone}
               onChange={(e) => {
                 setPhone(e.target.value);
@@ -344,7 +345,7 @@ export default function ForgotPasswordSMS({
               }}
               className="mf-campo w-full px-4 py-3"
               aria-invalid={Boolean(errors.phone)}
-              placeholder="+1 234 567 8900"
+              placeholder="5512345678"
               disabled={isLoading}
             />
             {errors.phone && (
@@ -353,7 +354,7 @@ export default function ForgotPasswordSMS({
               </p>
             )}
             <p className="mt-1 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-              Incluye el código de país (ej: +1, +52)
+              {MENSAJE_FORMATO_TELEFONO}
             </p>
           </div>
 

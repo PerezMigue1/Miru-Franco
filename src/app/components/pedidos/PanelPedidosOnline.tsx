@@ -53,6 +53,7 @@ import {
 import { usePermisos } from '../../utils/permisos';
 import { mensajeUsuarioDesdeErrorApi } from '../../utils/apiErrorMessage';
 import { cargarDetallePedido } from '../../utils/detallePedido';
+import { formatearPrecioMXN } from '../../utils/formatoPrecio';
 
 export type VistaPedidos = 'cobro' | 'recoger';
 
@@ -88,9 +89,6 @@ function textoPago(p: PedidoApi): string {
   return p.estado === 'entregado' ? 'Cobrado en el salón' : 'Paga al recoger';
 }
 
-function fmtMoneda(n: number, moneda = 'MXN') {
-  return `${new Intl.NumberFormat('es-MX').format(n)} ${moneda}`;
-}
 
 function formatearFecha(fecha?: string | null) {
   if (!fecha) return '—';
@@ -378,6 +376,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
           </h2>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Input
+              aria-label="Buscar pedidos por clienta, email o número de pedido"
               placeholder="Buscar por clienta, email o # de pedido"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
@@ -422,7 +421,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
                   </TableCell>
                   <TableCell rowPadding="lg" className="!whitespace-normal min-w-[9rem] max-w-[14rem]">{nombreCliente(p)}</TableCell>
                   <TableCell rowPadding="lg">
-                    <span className="font-semibold">{fmtMoneda(p.total, p.moneda)}</span>
+                    <span className="font-semibold">{formatearPrecioMXN(p.total)}</span>
                     <span className="block text-xs mt-0.5" style={{ color: 'var(--encabezados-alterno)' }}>{textoPago(p)}</span>
                   </TableCell>
                   <TableCell rowPadding="lg">
@@ -545,14 +544,14 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
                         {it.tamanio && <span style={{ color: 'var(--encabezados-alterno)' }}> — {it.tamanio}</span>}
                         <span style={{ color: 'var(--encabezados-alterno)' }}> × {it.cantidad}</span>
                       </span>
-                      <span style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(it.subtotal, detallePedido.moneda)}</span>
+                      <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(it.subtotal)}</span>
                     </div>
                   ))}
                 </div>
               )}
               <div className="pt-3 mt-3 border-t flex justify-between font-semibold" style={{ borderColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}>
                 <span>Total</span>
-                <span>{fmtMoneda(detallePedido.total, detallePedido.moneda)}</span>
+                <span>{formatearPrecioMXN(detallePedido.total)}</span>
               </div>
             </div>
 
@@ -609,7 +608,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
             <div>
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{nombreCliente(cobro.pedido)}</p>
               <p className="mf-cifras text-3xl font-bold mt-1" style={{ color: 'var(--menu-texto-principal)' }}>
-                {fmtMoneda(cobro.pedido.total, cobro.pedido.moneda)}
+                {formatearPrecioMXN(cobro.pedido.total)}
               </p>
             </div>
             <fieldset>

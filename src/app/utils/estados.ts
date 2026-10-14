@@ -95,3 +95,42 @@ export function varianteEstadoCotizacion(estado: string | undefined | null): Bad
   if (!estado) return 'default';
   return VARIANTE_ESTADO_COTIZACION[estado] ?? 'default';
 }
+
+/**
+ * Tipo de una notificación en palabras para el portal (las claves salen del backend:
+ * pedido_creado, cita_recordatorio, venta, pago_revision...). Nunca la clave interna.
+ */
+export function etiquetaTipoNotificacion(tipo: string | undefined | null): string {
+  const clave = (tipo ?? '').trim().toLowerCase();
+  if (clave.startsWith('pedido')) return 'Pedido';
+  if (clave.startsWith('cita')) return 'Cita';
+  if (clave === 'venta') return 'Compra en salón';
+  if (clave.startsWith('pago')) return 'Pago';
+  return 'Aviso';
+}
+
+/** Estado de una factura (texto libre en el backend: solicitada | timbrada | emitida | cancelada). */
+const ETIQUETAS_ESTADO_FACTURA: Record<string, string> = {
+  solicitada: 'Solicitada',
+  timbrada: 'Timbrada',
+  emitida: 'Emitida',
+  cancelada: 'Cancelada',
+};
+
+export function etiquetaEstadoFactura(estado: string | undefined | null): string {
+  if (!estado) return '—';
+  return ETIQUETAS_ESTADO_FACTURA[estado] ?? fallbackLegible(estado);
+}
+
+/** `EstadoEnvio` del backend (prisma/schema.prisma): preparando | en_transito | entregado | fallido. */
+const ETIQUETAS_ESTADO_ENVIO: Record<string, string> = {
+  preparando: 'En preparación',
+  en_transito: 'En tránsito',
+  entregado: 'Entregado',
+  fallido: 'No se pudo entregar',
+};
+
+export function etiquetaEstadoEnvio(estado: string | undefined | null): string {
+  if (!estado) return '—';
+  return ETIQUETAS_ESTADO_ENVIO[estado] ?? fallbackLegible(estado);
+}

@@ -43,6 +43,7 @@ export default function PanelHorasExtra() {
         </h2>
         <input
           type="month"
+          aria-label="Mes de las horas extra"
           value={mesHorasExtra}
           onChange={(e) => setMesHorasExtra(e.target.value)}
           className="text-sm rounded-lg px-2 py-1.5 border"

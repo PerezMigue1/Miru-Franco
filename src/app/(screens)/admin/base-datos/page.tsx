@@ -44,6 +44,15 @@ import { getUsuarios, getUsuarioById, type Usuario } from '../../../services/usu
 import { getServicios, type Servicio } from '../../../services/servicios';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
+import Modal from '../../../components/ui/Modal';
+import {
+  MONITOREO_INTERVALO_MS,
+  PESTANAS_MONITOREO,
+  modoImportacion,
+  opcionesTablaTruncate,
+  textoIntervaloMonitoreo,
+  vistaDesdeRuta,
+} from './vistaBaseDatos';
 import {
   Activity,
   ChartNoAxesColumn,
@@ -227,8 +236,7 @@ function saveHistorialBackups(historial: BackupEntry[]): void {
   } catch { /* ignore */ }
 }
 
-/** Monitoreo: pausa mínima entre rondas automáticas y peticiones de métricas a la vez. */
-const MONITOREO_INTERVALO_MS = 30_000;
+/** Monitoreo: peticiones de métricas a la vez (la pausa entre rondas está en vistaBaseDatos). */
 const MONITOREO_PETICIONES_A_LA_VEZ = 3;
 
 // ─── Componente principal ──────────────────────────────────────────────────────
@@ -242,6 +250,8 @@ export default function BaseDatosPage() {
   const [resultadoImport, setResultadoImport] = useState<ResultadoImportacion | null>(null);
   const [tablasImportablesMeta, setTablasImportablesMeta] = useState<TablaImportable[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Confirmación antes de importar (la importación escribe en la base).
+  const [confirmarImportacion, setConfirmarImportacion] = useState(false);
 
   // ── Exportar ──
   const [tablaExport, setTablaExport] = useState('');
@@ -374,39 +384,11 @@ export default function BaseDatosPage() {
   }, []);
 
   React.useEffect(() => {
-    const base = '/admin/base-datos';
-    if (!pathname?.startsWith(base)) return;
-    const sub = pathname.slice(base.length);
-
-    if (sub === '' || sub === '/') {
-      setVistaPrincipal('operaciones');
-      setVistaOperaciones('importar');
-      return;
-    }
-    if (sub.startsWith('/operaciones')) {
-      setVistaPrincipal('operaciones');
-      if (sub.includes('/truncate')) setVistaOperaciones('truncate');
-      else setVistaOperaciones(sub.includes('/exportar') ? 'exportar' : 'importar');
-      return;
-    }
-    if (sub.startsWith('/monitoreo')) {
-      setVistaPrincipal('monitoreo');
-      if (sub.includes('/tablas')) setVistaMonitoreo('tablas');
-      else if (sub.includes('/indices')) setVistaMonitoreo('indices');
-      else setVistaMonitoreo('resumen');
-      return;
-    }
-    if (sub.startsWith('/diagrama')) {
-      setVistaPrincipal('diagrama');
-      return;
-    }
-    if (sub.startsWith('/consultar')) {
-      setVistaPrincipal('consultar');
-      return;
-    }
-    if (sub.startsWith('/backup') || sub.startsWith('/Backup')) {
-      setVistaPrincipal('backup');
-    }
+    const vista = vistaDesdeRuta(pathname);
+    if (!vista) return;
+    setVistaPrincipal(vista.principal);
+    if (vista.operaciones) setVistaOperaciones(vista.operaciones);
+    if (vista.monitoreo) setVistaMonitoreo(vista.monitoreo);
   }, [pathname]);
 
   // Cargar columnas al elegir una tabla de exportación
@@ -528,12 +510,20 @@ export default function BaseDatosPage() {
     }
   };
 
-  const handleImportar = async (e: React.FormEvent) => {
+  /** Valida el formulario y abre la confirmación; la importación corre al confirmar. */
+  const handleImportar = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tablaImport) { setResultadoImport({ success: false, error: 'Selecciona una tabla de destino' }); return; }
     if (!archivoImport) { setResultadoImport({ success: false, error: 'Selecciona un archivo CSV o JSON' }); return; }
     const ext = archivoImport.name.toLowerCase().split('.').pop();
     if (ext !== 'csv' && ext !== 'json') { setResultadoImport({ success: false, error: 'El archivo debe ser CSV o JSON' }); return; }
+    setConfirmarImportacion(true);
+  };
+
+  const ejecutarImportacion = async () => {
+    setConfirmarImportacion(false);
+    if (!tablaImport || !archivoImport) return;
+    const ext = archivoImport.name.toLowerCase().split('.').pop();
     setImportando(true);
     setResultadoImport(null);
     if (tablaImport === '__todas__') {
@@ -566,14 +556,7 @@ export default function BaseDatosPage() {
         let actualizadosTotal = 0;
         let omitidosTotal = 0;
         const erroresTotal: Array<{ fila: number; mensaje: string }> = [];
-        const modoPorTabla = (tabla: string): ModoImportacion => {
-          const meta = tablasImportablesMeta.find((t) => t.tabla === tabla);
-          const permitidos = meta?.modosPermitidos ?? [];
-          if (permitidos.includes('missing_only')) return 'missing_only';
-          if (permitidos.includes('upsert')) return 'upsert';
-          if (permitidos.includes('append')) return 'append';
-          return 'append';
-        };
+        const modoPorTabla = (tabla: string): ModoImportacion => modoImportacion(tablasImportablesMeta, tabla);
 
         for (const tabla of tablasDestino) {
           const rows = (parsed as Record<string, unknown[]>)[tabla];
@@ -614,7 +597,8 @@ export default function BaseDatosPage() {
       return;
     }
 
-    const res = await importarDatos(tablaImport, archivoImport);
+    // El modo sale de la metadata del backend (p. ej. productos solo admite append).
+    const res = await importarDatos(tablaImport, archivoImport, modoImportacion(tablasImportablesMeta, tablaImport));
     setResultadoImport(res);
     setImportando(false);
     if (res.success) {
@@ -1026,7 +1010,7 @@ export default function BaseDatosPage() {
     return null;
   };
 
-  const handleDiagramaClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleDiagramaClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!previewSvg) return;
     const entidad = extraerEntidadDelNodo(e.target);
     if (!entidad) return;
@@ -1145,11 +1129,8 @@ export default function BaseDatosPage() {
       return `${x.toFixed(2)},${Math.max(0, Math.min(chartHeight, y)).toFixed(2)}`;
     }).join(' ');
   };
-  const tabsMonitoreo = [
-    { id: 'resumen' as const, label: 'Monitoreo y rendimiento', icon: Database, hint: 'Estado global' },
-    { id: 'tablas' as const, label: 'Tablas', icon: Table2, hint: 'Salud de tablas' },
-    { id: 'indices' as const, label: 'Índices', icon: ChartNoAxesColumn, hint: 'Eficiencia' },
-  ];
+  const ICONOS_MONITOREO = { resumen: Database, tablas: Table2, indices: ChartNoAxesColumn, actividad: Activity, locks: Lock } as const;
+  const tabsMonitoreo = PESTANAS_MONITOREO.map((p) => ({ ...p, icon: ICONOS_MONITOREO[p.id] }));
   const tabMonitoreoActual = tabsMonitoreo.find((t) => t.id === vistaMonitoreo);
   const totalIndices = Math.max(1, indexStats.length);
   const indicesOptimos = indexStats.filter((i) => Number(i.eficiencia || 0) >= 80).length;
@@ -1239,7 +1220,7 @@ export default function BaseDatosPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Secciones</p>
-                <button type="button" onClick={() => setMenuLateralOculto(true)}
+                <button type="button" aria-label="Cerrar" onClick={() => setMenuLateralOculto(true)}
                   className="text-sm px-2 py-1 rounded border"
                   style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}><X size={14} className="mx-auto" /></button>
               </div>
@@ -1314,13 +1295,14 @@ export default function BaseDatosPage() {
                             .map((t) => ({ value: t, label: t }))]
                       }
                       value={tablaImport}
+                      aria-label="Tabla de destino"
                       onChange={(e) => setTablaImport(e.target.value)}
                       disabled={(tablasImportablesMeta.length > 0 ? tablasImportablesMeta : tablasDirectas).length === 0}
                     />
                   </div>
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Archivo (CSV o JSON)</label>
-                    <input ref={fileInputRef} type="file" accept=".csv,.json"
+                    <input ref={fileInputRef} type="file" accept=".csv,.json" aria-label="Archivo a importar (CSV o JSON)"
                       onChange={(e) => setArchivoImport(e.target.files?.[0] ?? null)}
                       className="mf-campo w-full px-4 py-2.5" />
                     {tablaImport === 'usuarios' && (
@@ -1365,7 +1347,7 @@ export default function BaseDatosPage() {
                   <Download size={18} /> Exportar datos
                 </h2>
                 <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Conexión directa a la BD con <code className="text-xs bg-[var(--badge-base)] px-1 rounded">DATABASE_URL</code>. Lista las tablas del schema <code className="text-xs bg-[var(--badge-base)] px-1 rounded">public</code>.
+                  Conexión directa a la base de datos del salón. Lista las tablas del esquema principal.
                 </p>
                 <form onSubmit={handleExportar} className="space-y-4">
                   <div>
@@ -1381,6 +1363,7 @@ export default function BaseDatosPage() {
                           ? [{ value: '', label: '— Carga las tablas primero —' }]
                           : [{ value: '__todas__', label: 'Todas las tablas' }, ...tablasDirectas.map((t) => ({ value: t, label: t }))]}
                         value={tablasDirectas.length === 0 ? '' : tablaExport}
+                        aria-label="Tabla a exportar"
                         onChange={(e) => setTablaExport(e.target.value)}
                         disabled={tablasDirectas.length === 0}
                       />
@@ -1390,6 +1373,7 @@ export default function BaseDatosPage() {
                       <Select
                         options={FORMATOS_EXPORT.map((f) => ({ value: f.value, label: f.label }))}
                         value={formatoExport}
+                        aria-label="Formato de exportación"
                         onChange={(e) => setFormatoExport(e.target.value as 'csv' | 'json')}
                       />
                     </div>
@@ -1426,13 +1410,13 @@ export default function BaseDatosPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label className="block mb-1 text-xs font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Fecha desde</label>
-                              <input type="date" value={exportFechaDesde} onChange={(e) => setExportFechaDesde(e.target.value)}
+                              <input type="date" aria-label="Fecha desde" value={exportFechaDesde} onChange={(e) => setExportFechaDesde(e.target.value)}
                                 className="w-full rounded border px-3 py-2 text-sm"
                                 style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)', backgroundColor: 'var(--fondo-general)' }} />
                             </div>
                             <div>
                               <label className="block mb-1 text-xs font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Fecha hasta</label>
-                              <input type="date" value={exportFechaHasta} onChange={(e) => setExportFechaHasta(e.target.value)}
+                              <input type="date" aria-label="Fecha hasta" value={exportFechaHasta} onChange={(e) => setExportFechaHasta(e.target.value)}
                                 className="w-full rounded border px-3 py-2 text-sm"
                                 style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)', backgroundColor: 'var(--fondo-general)' }} />
                             </div>
@@ -1521,10 +1505,9 @@ export default function BaseDatosPage() {
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Tabla objetivo</label>
                     <Select
-                      options={tablasDirectas.length === 0
-                        ? [{ value: '', label: '— Carga las tablas de la BD —' }]
-                        : tablasDirectas.map((t) => ({ value: t, label: t }))}
+                      options={opcionesTablaTruncate(tablasDirectas)}
                       value={tablaTruncate}
+                      aria-label="Tabla objetivo"
                       onChange={(e) => setTablaTruncate(e.target.value)}
                       disabled={tablasDirectas.length === 0}
                     />
@@ -1546,6 +1529,7 @@ export default function BaseDatosPage() {
                     <input
                       type="text"
                       value={truncateConfirmText}
+                      aria-label="Confirmación del TRUNCATE"
                       onChange={(e) => setTruncateConfirmText(e.target.value)}
                       className="mf-campo w-full px-4 py-2.5"
                       placeholder={tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}
@@ -1611,6 +1595,7 @@ export default function BaseDatosPage() {
                           { value: 'csv', label: 'CSV (ZIP con un archivo por tabla)' },
                         ]}
                         value={formatoBackup}
+                        aria-label="Formato de salida"
                         onChange={(e) => setFormatoBackup(e.target.value as 'json' | 'sql' | 'csv')}
                       />
                     </div>
@@ -1857,7 +1842,7 @@ export default function BaseDatosPage() {
 
                       {/* Serie temporal */}
                       <div className="rounded-lg border p-3 mb-3" style={{ borderColor: 'var(--encabezados-alterno)' }}>
-                        <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Serie temporal (actualiza cada 10s)</p>
+                        <p className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Serie temporal (actualiza {textoIntervaloMonitoreo()})</p>
                         {realtimeSeries.length > 1 ? (
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {[
@@ -1908,10 +1893,10 @@ export default function BaseDatosPage() {
                   <div className="rounded-lg border p-3 mb-4" style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'transparent' }}>
                     <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Alertas activas</p>
                     <ul className="text-sm space-y-1" style={{ color: 'var(--menu-texto-principal)' }}>
-                      {locksPendientes > 0 && <li className="inline-flex items-center gap-1"><ShieldAlert size={14} />Critico: hay {locksPendientes} lock(s) en espera.</li>}
-                      {tablasConDead > 0 && <li className="inline-flex items-center gap-1"><CircleAlert size={14} />Atencion: {tablasConDead} tabla(s) con registros obsoletos altos.</li>}
-                      {indicesBajos > 0 && <li className="inline-flex items-center gap-1"><CircleAlert size={14} />Atencion: {indicesBajos} indice(s) con eficiencia baja (&lt;40%).</li>}
-                      {locksPendientes === 0 && tablasConDead === 0 && indicesBajos === 0 && <li className="inline-flex items-center gap-1"><CircleCheck size={14} />Sin alertas criticas en este momento.</li>}
+                      {locksPendientes > 0 && <li className="inline-flex items-center gap-1"><ShieldAlert size={14} />Crítico: hay {locksPendientes} lock(s) en espera.</li>}
+                      {tablasConDead > 0 && <li className="inline-flex items-center gap-1"><CircleAlert size={14} />Atención: {tablasConDead} tabla(s) con registros obsoletos altos.</li>}
+                      {indicesBajos > 0 && <li className="inline-flex items-center gap-1"><CircleAlert size={14} />Atención: {indicesBajos} índice(s) con eficiencia baja (&lt;40%).</li>}
+                      {locksPendientes === 0 && tablasConDead === 0 && indicesBajos === 0 && <li className="inline-flex items-center gap-1"><CircleCheck size={14} />Sin alertas críticas en este momento.</li>}
                     </ul>
                   </div>
                 )}
@@ -2260,6 +2245,7 @@ export default function BaseDatosPage() {
                     <Select
                       options={FORMATOS_DIAGRAMA.map((f) => ({ value: f.value, label: f.label }))}
                       value={formatoDiagrama}
+                      aria-label="Formato del diagrama"
                       onChange={(e) => setFormatoDiagrama(e.target.value as FormatoDescargaDiagrama)}
                     />
                   </div>
@@ -2281,10 +2267,10 @@ export default function BaseDatosPage() {
                         <p className="text-xs mb-2" style={{ color: 'var(--encabezados-alterno)' }}>
                           Haz clic en una entidad (tabla) para ver sus datos en la sección Consultar datos.
                         </p>
-                        <div role="button" tabIndex={0}
+                        <button type="button"
+                          aria-label="Diagrama ER: haz clic en una entidad para consultar sus datos"
                           onClick={handleDiagramaClick}
-                          onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') ev.preventDefault(); }}
-                          className="max-w-full cursor-pointer select-none"
+                          className="block w-full max-w-full text-left cursor-pointer select-none bg-transparent"
                           style={{ minHeight: '150px' }}
                           dangerouslySetInnerHTML={{ __html: previewSvg }}
                         />
@@ -2538,6 +2524,35 @@ export default function BaseDatosPage() {
           </div>{/* fin div.space-y-6 */}
         </div>{/* fin div.relative */}
       </div>
+
+      <Modal
+        isOpen={confirmarImportacion}
+        onClose={() => setConfirmarImportacion(false)}
+        title="Confirmar importación"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setConfirmarImportacion(false)}>Cancelar</Button>
+            <Button variant="primary" onClick={ejecutarImportacion} disabled={importando}>Importar</Button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--menu-texto-principal)' }}>
+          {tablaImport === '__todas__'
+            ? `Se importarán los datos de "${archivoImport?.name ?? ''}" en todas las tablas que contenga. `
+            : `Se importarán los datos de "${archivoImport?.name ?? ''}" en la tabla ${tablaImport}. `}
+          Esta acción escribe en la base de datos. ¿Continuar?
+        </p>
+        {tablaImport && tablaImport !== '__todas__' && (
+          <p className="text-sm mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
+            {{
+              append: 'Cada fila del archivo se agrega como un registro nuevo.',
+              missing_only: 'Solo se agregan las filas que todavía no existen.',
+              upsert: 'Las filas nuevas se agregan y las existentes se actualizan.',
+            }[modoImportacion(tablasImportablesMeta, tablaImport)]}
+          </p>
+        )}
+      </Modal>
     </AdminLayout>
   );
 }

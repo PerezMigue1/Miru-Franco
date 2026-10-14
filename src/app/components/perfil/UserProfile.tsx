@@ -32,6 +32,7 @@ import PerfilDatosForm from './PerfilDatosForm';
 import { mergePerfilEnLocalStorage, patchMiPerfil } from '../../services/perfil';
 import { subirFotoPerfilCloudinary } from '../../utils/cloudinary';
 import { normalizarUrlImagenExterna } from '../../utils/normalizarUrlImagen';
+import { filasDatosCuenta } from './datosCuenta';
 
 interface UserInfo {
   id?: string;
@@ -43,6 +44,8 @@ interface UserInfo {
   rol: string;
   rolRaw?: string;
   desde: string;
+  /** Correo confirmado según GET /auth/me (solo entonces se muestra "Validado"). */
+  confirmado?: boolean;
 }
 
 type NormalizedRole = 'admin' | 'estilista' | 'empleado' | 'becario' | 'cliente';
@@ -121,6 +124,7 @@ export default function UserProfile() {
           rol: displayRole,
           rolRaw: rawRole,
           desde,
+          confirmado: result.data.confirmado,
         });
         // Header y menú leen `localStorage.user`; tras Google a veces solo hay token hasta que /me responde.
         mergePerfilEnLocalStorage(result.data);
@@ -505,11 +509,7 @@ export default function UserProfile() {
             </h2>
             <Card padding="sm" className="!p-0">
               <dl>
-                {[
-                  { etiqueta: 'E-mail', valor: user.email || '—', accion: () => router.push('/forgot-password'), romper: true },
-                  { etiqueta: 'Teléfono', valor: user.telefono?.trim() ? user.telefono : '—', accion: () => setActiveSection('informacion-personal') },
-                  { etiqueta: 'ID de cuenta', valor: user.id || '—', accion: () => setActiveSection('informacion-personal'), romper: true },
-                ].map((fila, i) => (
+                {filasDatosCuenta(user).map((fila, i) => (
                   <div
                     key={fila.etiqueta}
                     className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
@@ -518,7 +518,7 @@ export default function UserProfile() {
                     <div className="min-w-0">
                       <dt className="flex items-center gap-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                         {fila.etiqueta}
-                        <Badge variant="success" size="sm">Validado</Badge>
+                        {fila.validado && <Badge variant="success" size="sm">Validado</Badge>}
                       </dt>
                       <dd
                         className={`mt-0.5 text-base font-semibold ${fila.romper ? 'break-all' : ''}`}
@@ -527,9 +527,18 @@ export default function UserProfile() {
                         {fila.valor}
                       </dd>
                     </div>
-                    <Button size="sm" variant="outline" onClick={fila.accion} className="self-start sm:self-auto">
-                      Modificar
-                    </Button>
+                    {fila.modificar && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          fila.modificar === 'correo' ? router.push('/forgot-password') : setActiveSection('informacion-personal')
+                        }
+                        className="self-start sm:self-auto"
+                      >
+                        Modificar
+                      </Button>
+                    )}
                   </div>
                 ))}
               </dl>

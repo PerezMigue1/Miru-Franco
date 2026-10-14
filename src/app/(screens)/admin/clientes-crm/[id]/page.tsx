@@ -19,6 +19,8 @@ import { historialCitasCliente, historialComprasCliente } from '../../../../serv
 import { listarQuejasPorCliente, type QuejaApi } from '../../../../services/quejas';
 import { listarSeguimientosPorCliente, type SeguimientoApi } from '../../../../services/seguimientos';
 import { formatearFechaSoloDia } from '../../../../utils/fechaSoloDia';
+import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
+import { etiquetaEstadoPedido, varianteBadgeEstadoPedido } from '../../../../services/ecommerce';
 
 const FECHA_CORTA: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
@@ -270,7 +272,7 @@ export default function ClienteDetallePage() {
                           <TableCell className="font-semibold">
                             {servicio.precio != null ? `$${Number(servicio.precio).toFixed(2)}` : '—'}
                           </TableCell>
-                          <TableCell><Badge variant="info">{String(c.estado ?? '—')}</Badge></TableCell>
+                          <TableCell><Badge variant={varianteEstadoCita(c.estado as string | undefined)}>{etiquetaEstadoCita(c.estado as string | undefined)}</Badge></TableCell>
                         </TableRow>
                       );
                     })}
@@ -300,7 +302,7 @@ export default function ClienteDetallePage() {
                           <TableCell className="font-semibold">
                             {p.total != null ? `$${Number(p.total).toFixed(2)}` : '—'}
                           </TableCell>
-                          <TableCell><Badge variant="info">{String(p.estado ?? '—')}</Badge></TableCell>
+                          <TableCell>{p.estado ? <Badge variant={varianteBadgeEstadoPedido(String(p.estado))}>{etiquetaEstadoPedido(String(p.estado), p.metodoPago as string | null | undefined)}</Badge> : '—'}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -435,7 +437,7 @@ export default function ClienteDetallePage() {
                   <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Última actividad:</span>
                     <span className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                      {formatearFecha(cliente.ultimaActividad ?? cliente.creadoEn)}
+                      {cliente.ultimaActividad ? formatearFecha(cliente.ultimaActividad) : 'Sin registro'}
                     </span>
                   </div>
                   <div className="flex justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>

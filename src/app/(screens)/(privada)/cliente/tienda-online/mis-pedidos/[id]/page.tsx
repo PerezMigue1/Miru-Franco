@@ -17,6 +17,7 @@ import {
   textoConfirmarCancelacion,
 } from '../../../../../../utils/detallePedido';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
+import { etiquetaEstadoEnvio, etiquetaEstadoFactura } from '../../../../../../utils/estados';
 import {
   obtenerPedido,
   listarPedidoItems,
@@ -31,6 +32,7 @@ import {
   METODO_PAGO_MERCADOPAGO,
   etiquetaEstadoPedido,
   etiquetaMetodoPagoPedido,
+  etiquetaEstadoPago,
   varianteBadgeEstadoPedido,
 } from '../../../../../../services/ecommerce';
 import type {
@@ -186,6 +188,8 @@ export default function DetallePedidoPage() {
       setReembolso(r.reembolso);
       const { mensaje, tipo } = resultadoCancelacion(r.reembolso);
       showToast(mensaje, tipo, r.reembolso ? 8000 : undefined);
+      // El historial de estados también cambió: se recarga (si falla, se queda el anterior).
+      listarHistorialPedido(pedido.id, { propios: true }).then(setHistorial).catch(() => {});
     } catch (e) {
       showToast(mensajeUsuarioDesdeErrorApi(e), 'error');
     } finally {
@@ -343,7 +347,7 @@ export default function DetallePedidoPage() {
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Estado del envío
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>{envio.estadoEnvio}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{etiquetaEstadoEnvio(envio.estadoEnvio)}</p>
                   </div>
                 </div>
               </Card>
@@ -394,7 +398,7 @@ export default function DetallePedidoPage() {
                     <li key={f.id} className="flex flex-wrap gap-2 items-center" style={{ color: 'var(--menu-texto-principal)' }}>
                       <span className="font-mono">#{f.id}</span>
                       <span>{[f.serie, f.folio].filter(Boolean).join(' ') || '—'}</span>
-                      <Badge variant="info" size="sm">{f.estado ?? '—'}</Badge>
+                      <Badge variant="info" size="sm">{etiquetaEstadoFactura(f.estado)}</Badge>
                       {f.pdfUrl && (
                         <a href={f.pdfUrl} target="_blank" rel="noreferrer" className="underline text-xs">
                           PDF
@@ -504,7 +508,7 @@ export default function DetallePedidoPage() {
                     <ul className="text-sm space-y-1">
                       {pagos.map((pg) => (
                         <li key={pg.id} style={{ color: 'var(--menu-texto-principal)' }}>
-                          {pg.metodo} — {formatearPrecioMXN(pg.monto)} ({pg.estado})
+                          {etiquetaMetodoPagoPedido(pg.metodo)} · {formatearPrecioMXN(pg.monto)} ({etiquetaEstadoPago(pg.estado)})
                         </li>
                       ))}
                     </ul>

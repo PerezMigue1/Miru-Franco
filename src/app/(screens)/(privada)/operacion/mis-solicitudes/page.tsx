@@ -20,6 +20,7 @@ import {
   type TipoSolicitudPermiso,
 } from '../../../../services/solicitudesPermiso';
 import { ClipboardList } from 'lucide-react';
+import { estadoListado, MAX_MOTIVO_SOLICITUD, validarSolicitudPermiso } from '../_lib/panelOperacion';
 
 /**
  * fechaInicio/fechaFin son fechas puras guardadas como medianoche UTC — formatear con
@@ -66,9 +67,8 @@ export default function MisSolicitudesPage() {
   };
 
   const handleCrear = async () => {
-    if (!formFechaInicio || !formFechaFin) { setFormError('Selecciona el rango de fechas'); return; }
-    if (formFechaFin < formFechaInicio) { setFormError('La fecha de fin no puede ser anterior a la de inicio'); return; }
-    if (!formMotivo.trim()) { setFormError('Ingresa el motivo'); return; }
+    const problema = validarSolicitudPermiso({ fechaInicio: formFechaInicio, fechaFin: formFechaFin, motivo: formMotivo });
+    if (problema) { setFormError(problema); return; }
 
     setSaving(true);
     setFormError(null);
@@ -87,6 +87,8 @@ export default function MisSolicitudesPage() {
       setSaving(false);
     }
   };
+
+  const estado = estadoListado({ cargando: loading, error, cantidad: solicitudes.length });
 
   return (
     <OperacionLayout>
@@ -112,9 +114,13 @@ export default function MisSolicitudesPage() {
         )}
 
         <Card variant="elevated" padding="lg">
-          {loading ? (
+          {estado === 'cargando' ? (
             <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
-          ) : solicitudes.length === 0 ? (
+          ) : estado === 'error' ? (
+            <div className="text-center py-8">
+              <Button variant="outline" onClick={cargar}>Reintentar</Button>
+            </div>
+          ) : estado === 'vacio' ? (
             <div className="text-center py-8">
               <ClipboardList size={28} className="mx-auto mb-2" style={{ color: 'var(--encabezados-alterno)' }} />
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Aún no has registrado ninguna solicitud.</p>
@@ -166,9 +172,19 @@ export default function MisSolicitudesPage() {
             ]}
             fullWidth
           />
-          <Input label="Desde" type="date" value={formFechaInicio} onChange={(e) => setFormFechaInicio(e.target.value)} fullWidth />
-          <Input label="Hasta" type="date" value={formFechaFin} onChange={(e) => setFormFechaFin(e.target.value)} fullWidth />
-          <Textarea label="Motivo" value={formMotivo} onChange={(e) => setFormMotivo(e.target.value)} placeholder="Describe el motivo de tu solicitud..." rows={3} fullWidth />
+          <Input label="Desde *" type="date" required value={formFechaInicio} onChange={(e) => setFormFechaInicio(e.target.value)} fullWidth />
+          <Input label="Hasta *" type="date" required min={formFechaInicio || undefined} value={formFechaFin} onChange={(e) => setFormFechaFin(e.target.value)} fullWidth />
+          <Textarea
+            label="Motivo *"
+            required
+            maxLength={MAX_MOTIVO_SOLICITUD}
+            value={formMotivo}
+            onChange={(e) => setFormMotivo(e.target.value)}
+            placeholder="Describe el motivo de tu solicitud..."
+            helperText={`${formMotivo.length}/${MAX_MOTIVO_SOLICITUD} caracteres`}
+            rows={3}
+            fullWidth
+          />
         </div>
       </Modal>
     </OperacionLayout>

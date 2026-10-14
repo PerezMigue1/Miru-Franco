@@ -22,6 +22,8 @@ import {
 } from '../../../services/cotizaciones';
 import { etiquetaEstadoCotizacion, varianteEstadoCotizacion } from '../../../utils/estados';
 import { formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
+import { showConfirm } from '../../../utils/toast';
+import { montoTotalCotizaciones, textoCotizacionesRegistradas } from './resumenCotizaciones';
 
 interface PaqueteOpcion {
   id: number;
@@ -49,6 +51,8 @@ export default function CotizacionesEventosPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  /** Cotización cuyo estado se está cambiando (deshabilita sus botones mientras tanto). */
+  const [cambiandoEstadoId, setCambiandoEstadoId] = useState<number | null>(null);
 
   const [formCliente, setFormCliente] = useState('');
   const [formPaqueteId, setFormPaqueteId] = useState('');
@@ -155,17 +159,25 @@ export default function CotizacionesEventosPage() {
   };
 
   const handleCambiarEstado = async (c: CotizacionApi, estado: EstadoCotizacion) => {
+    if (cambiandoEstadoId !== null) return;
+    const confirmar = estado === 'cancelada'
+      ? await showConfirm(`¿Cancelar la cotización de ${c.clienteNombre}?`, { title: 'Cancelar cotización', confirmText: 'Sí, cancelar', cancelText: 'Volver' })
+      : await showConfirm(`¿Confirmar la cotización de ${c.clienteNombre}?`, { title: 'Confirmar cotización', confirmText: 'Sí, confirmar', cancelText: 'Volver' });
+    if (!confirmar) return;
+    setCambiandoEstadoId(c.id);
     try {
       await actualizarCotizacion(c.id, { estado });
       cargar();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cambiar el estado');
+    } finally {
+      setCambiandoEstadoId(null);
     }
   };
 
   const confirmadas = cotizaciones.filter((c) => c.estado === 'confirmada').length;
   const pendientes = cotizaciones.filter((c) => c.estado === 'pendiente').length;
-  const montoTotal = cotizaciones.reduce((acc, c) => acc + c.monto, 0);
+  const montoTotal = montoTotalCotizaciones(cotizaciones);
 
   return (
     <AdminLayout>
@@ -178,7 +190,7 @@ export default function CotizacionesEventosPage() {
               Cotizaciones y Eventos
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {cotizaciones.length} cotización{cotizaciones.length === 1 ? '' : 'es'} registradas
+              {textoCotizacionesRegistradas(cotizaciones.length)}
             </p>
           </div>
           <Button onClick={openNueva}>+ Nueva Cotización</Button>
@@ -198,7 +210,7 @@ export default function CotizacionesEventosPage() {
 
           <TarjetaKpi icono={Clock3} etiqueta="Pendientes" cargando={loading} valor={pendientes} />
 
-          <TarjetaKpi icono={FileText} etiqueta="Monto total" cargando={loading} valor={fmtMoneda(montoTotal)} />
+          <TarjetaKpi icono={FileText} etiqueta="Monto total (sin canceladas)" cargando={loading} valor={fmtMoneda(montoTotal)} />
         </div>
 
         {/* Paquetes disponibles */}
@@ -245,10 +257,14 @@ export default function CotizacionesEventosPage() {
                 <div className="flex gap-2 flex-wrap">
                   <Button size="sm" variant="outline" onClick={() => openEditar(cotizacion)}>Editar</Button>
                   {cotizacion.estado === 'pendiente' && (
-                    <Button size="sm" onClick={() => handleCambiarEstado(cotizacion, 'confirmada')}>Confirmar</Button>
+                    <Button size="sm" onClick={() => handleCambiarEstado(cotizacion, 'confirmada')} disabled={cambiandoEstadoId !== null}>
+                      {cambiandoEstadoId === cotizacion.id ? 'Guardando...' : 'Confirmar'}
+                    </Button>
                   )}
                   {cotizacion.estado !== 'cancelada' && (
-                    <Button size="sm" variant="danger" onClick={() => handleCambiarEstado(cotizacion, 'cancelada')}>Cancelar</Button>
+                    <Button size="sm" variant="danger" onClick={() => handleCambiarEstado(cotizacion, 'cancelada')} disabled={cambiandoEstadoId !== null}>
+                      Cancelar
+                    </Button>
                   )}
                 </div>
               </TableCell>

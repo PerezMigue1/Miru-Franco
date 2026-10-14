@@ -11,30 +11,8 @@ import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
-import { CheckCircle2, Clock3, PackageX } from 'lucide-react';
-
-interface ProductoCaducidad {
-  id: number;
-  nombre: string;
-  fechaApertura: string;
-  fechaCaducidad: string;
-  estado: 'vigente' | 'proximo' | 'vencido';
-  diasRestantes: number;
-}
-
-function mapearCaducidad(c: CaducidadApi, idx: number): ProductoCaducidad {
-  let estado: 'vigente' | 'proximo' | 'vencido' = 'vigente';
-  if (c.diasRestantes < 0) estado = 'vencido';
-  else if (c.diasRestantes <= 30) estado = 'proximo';
-  return {
-    id: c.presentacionId || idx,
-    nombre: [c.productoNombre, c.tamanio].filter(Boolean).join(' ') || '-',
-    fechaApertura: '-',
-    fechaCaducidad: c.fechaCaducidad ?? '-',
-    estado,
-    diasRestantes: c.diasRestantes,
-  };
-}
+import { Clock3, PackageX } from 'lucide-react';
+import { mapearCaducidad, textoMonitoreados, type ProductoCaducidad } from './caducidad';
 
 export default function ControlCaducidadPage() {
   const [productos, setProductos] = useState<ProductoCaducidad[]>([]);
@@ -87,7 +65,6 @@ export default function ControlCaducidadPage() {
     vencido: { label: 'Vencido', variant: 'danger' as const },
   };
 
-  const vigentes = productos.filter((p) => p.estado === 'vigente').length;
   const proximos = productos.filter((p) => p.estado === 'proximo').length;
   const vencidos = productos.filter((p) => p.estado === 'vencido').length;
 
@@ -101,7 +78,7 @@ export default function ControlCaducidadPage() {
             Control de Caducidad
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            {productos.length} producto{productos.length === 1 ? '' : 's'} monitoreados
+            {textoMonitoreados(productos.length)} (vencidos o por vencer en 30 días)
           </p>
         </div>
 
@@ -112,9 +89,8 @@ export default function ControlCaducidadPage() {
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <TarjetaKpi icono={CheckCircle2} etiqueta="Vigentes" cargando={loading} valor={vigentes} />
-
+        {/* Sin KPI "Vigentes": el backend solo devuelve lo vencido o por vencer en 30 días, siempre sería 0. */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <TarjetaKpi
             icono={Clock3}
             etiqueta="Próximos a vencer"
@@ -141,11 +117,10 @@ export default function ControlCaducidadPage() {
           ) : productos.length === 0 ? (
             <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay productos en control de caducidad.</p>
           ) : (
-          <Table headers={['Producto', 'Fecha de Apertura', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']} headerSutil>
+          <Table headers={['Producto', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']} headerSutil>
             {productos.map((producto) => (
               <TableRow key={producto.id}>
                 <TableCell className="font-semibold" rowPadding="lg">{producto.nombre}</TableCell>
-                <TableCell rowPadding="lg">{producto.fechaApertura}</TableCell>
                 <TableCell rowPadding="lg">{producto.fechaCaducidad}</TableCell>
                 <TableCell rowPadding="lg">
                   <span style={{ color: producto.diasRestantes < 0 ? 'var(--danger-texto)' : producto.diasRestantes < 30 ? 'var(--warning-texto)' : 'var(--success-texto)' }}>

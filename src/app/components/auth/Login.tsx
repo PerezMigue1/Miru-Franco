@@ -1,13 +1,38 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { handleSecurityError } from '../../utils/security';
 import { Eye, EyeOff, Timer } from 'lucide-react';
 import Notification from '../ui/Notification';
 import ActivateAccount from './ActivateAccount';
 import { guardarRegresoParaGoogle } from './redireccionTrasLogin';
 import LogoGoogle from './LogoGoogle';
+
+const MENSAJE_CREDENCIALES = 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.';
+
+/**
+ * Errores a mostrar para un rechazo del login, o null si no es de correo ni de credenciales.
+ * "Credenciales inválidas" llega igual si el correo no existe, así que no se marca la contraseña.
+ */
+export function erroresDeLogin(errorMessage: string): { email?: string; general: string } | null {
+  const lowerError = errorMessage.toLowerCase();
+  if (lowerError.includes('correo') || lowerError.includes('email') ||
+      lowerError.includes('usuario no encontrado') ||
+      lowerError.includes('no existe') ||
+      lowerError.includes('no encontrado') ||
+      lowerError.includes('no registrado')) {
+    return { email: 'El correo electrónico no está registrado o es incorrecto', general: MENSAJE_CREDENCIALES };
+  }
+  if (lowerError.includes('contraseña') || lowerError.includes('password') ||
+      lowerError.includes('credenciales') ||
+      lowerError.includes('incorrecta') ||
+      lowerError.includes('inválida') ||
+      lowerError.includes('inválidas')) {
+    return { general: MENSAJE_CREDENCIALES };
+  }
+  return null;
+}
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -21,6 +46,10 @@ export default function Login({
   onLoginSuccess 
 }: LoginProps) {
   const router = useRouter();
+  // Avisos que llegan por la URL: con useSearchParams el servidor y el cliente pintan lo mismo.
+  const searchParams = useSearchParams();
+  const vieneDeCambioPassword = searchParams.get('passwordChanged') === 'true';
+  const falloGoogle = searchParams.get('error') === 'google';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -112,6 +141,9 @@ export default function Login({
       }
     }
     
+    // Enter repetido mientras se envía: un solo intento
+    if (isLoading || formDisabled) return false;
+
     // Obtener valores directamente de los inputs usando refs
     const emailValue = emailRef.current?.value || email;
     const passwordValue = passwordRef.current?.value || password;
@@ -148,11 +180,7 @@ export default function Login({
         console.error('[Login] Error en login:', errorMessage);
         const lowerError = errorMessage.toLowerCase();
         
-        // Verificar si el usuario viene de un cambio de contraseña exitoso
-        // Si viene de un cambio de contraseña, ya verificó su identidad, no pedir OTP
-        const vieneDeCambioPassword = typeof window !== 'undefined' && 
-          new URLSearchParams(window.location.search).get('passwordChanged') === 'true';
-        
+        // Si viene de un cambio de contraseña (?passwordChanged=true), ya verificó su identidad: no pedir OTP
         // Cuenta sin activar: lo decide api.login por el código del backend, no por el texto
         if (result.requiereVerificacion && vieneDeCambioPassword) {
           // Ya verificó su identidad al cambiar la contraseña: no abrir la activación, solo el aviso
@@ -193,33 +221,11 @@ export default function Login({
             });
           }, minutos * 60 * 1000);
         } else {
-          // Detectar errores específicos de email o contraseña
-          const lowerError = errorMessage.toLowerCase();
-          
-          // Detectar si el error es sobre email incorrecto o no encontrado
-          if (lowerError.includes('correo') || lowerError.includes('email') || 
-              lowerError.includes('usuario no encontrado') || 
-              lowerError.includes('no existe') ||
-              lowerError.includes('no encontrado') ||
-              lowerError.includes('no registrado')) {
-            setErrors(prev => ({ 
-              ...prev,
-              email: 'El correo electrónico no está registrado o es incorrecto',
-              general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-            }));
-          } 
-          // Detectar si el error es sobre contraseña incorrecta
-          else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
-                   lowerError.includes('credenciales') || 
-                   lowerError.includes('incorrecta') ||
-                   lowerError.includes('inválida') ||
-                   lowerError.includes('inválidas')) {
-            setErrors(prev => ({ 
-              ...prev,
-              password: 'La contraseña es incorrecta',
-              general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-            }));
-          } 
+          // Correo o credenciales: solo el aviso general (y el campo de correo si el backend lo dice)
+          const erroresCampos = erroresDeLogin(errorMessage);
+          if (erroresCampos) {
+            setErrors(prev => ({ ...prev, ...erroresCampos }));
+          }
           // Para otros errores, mostrar mensaje general pero mantener los campos
           else {
             const securityError = handleSecurityError(new Error(errorMessage));
@@ -250,34 +256,11 @@ export default function Login({
       
       // La cuenta sin activar ya llega como result.requiereVerificacion (api.login, por código)
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
-      const lowerError = errorMessage.toLowerCase();
-      
-      // Detectar errores específicos de email o contraseña
-      if (lowerError.includes('correo') || lowerError.includes('email') || 
-          lowerError.includes('usuario no encontrado') || 
-          lowerError.includes('no existe') ||
-          lowerError.includes('no encontrado') ||
-          lowerError.includes('no registrado')) {
-        // Mantener los valores de los campos y mostrar error específico
-        setErrors(prev => ({ 
-          ...prev,
-          email: 'El correo electrónico no está registrado o es incorrecto',
-          general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-        }));
-      } 
-      // Detectar si el error es sobre contraseña incorrecta
-      else if (lowerError.includes('contraseña') || lowerError.includes('password') || 
-               lowerError.includes('credenciales') || 
-               lowerError.includes('incorrecta') ||
-               lowerError.includes('inválida') ||
-               lowerError.includes('inválidas')) {
-        // Mantener los valores de los campos y mostrar error específico
-        setErrors(prev => ({ 
-          ...prev,
-          password: 'La contraseña es incorrecta',
-          general: 'Credenciales incorrectas. Verifica tu correo electrónico y contraseña.'
-        }));
-      } 
+      // Correo o credenciales: mantener los campos y mostrar el aviso general
+      const erroresCampos = erroresDeLogin(errorMessage);
+      if (erroresCampos) {
+        setErrors(prev => ({ ...prev, ...erroresCampos }));
+      }
       // Para otros errores, mostrar mensaje general pero mantener los campos
       else {
         // ✅ Usar mensaje de seguridad (no revelar detalles)
@@ -423,7 +406,7 @@ export default function Login({
         </p>
         
         {/* Mensaje de éxito si se cambió la contraseña */}
-        {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('passwordChanged') === 'true' && (
+        {vieneDeCambioPassword && (
           <div className="mb-4">
             <Notification
               type="success"
@@ -432,7 +415,17 @@ export default function Login({
           </div>
         )}
         
-        {/* ✅ Mensaje de error en la parte superior */}
+        {/* Volvió de /auth/callback tras un fallo con Google */}
+        {falloGoogle && (
+          <div className="mb-4">
+            <Notification
+              type="error"
+              message="No pudimos iniciar sesión con Google. Intenta de nuevo o entra con tu correo."
+            />
+          </div>
+        )}
+
+        {/* Mensaje de error en la parte superior */}
         {errors.general && (
           <div className="mb-4">
             <Notification
@@ -473,14 +466,14 @@ export default function Login({
           </div>
         )}
         
-        <div className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
-            <label htmlFor="email" className="mf-etiqueta">
+            <label htmlFor="login-email" className="mf-etiqueta">
               Correo Electrónico
             </label>
             <input
               type="email"
-              id="email"
+              id="login-email"
               value={email}
               onChange={(e) => {
                 const nuevoEmail = e.target.value;
@@ -507,13 +500,13 @@ export default function Login({
           </div>
 
           <div>
-            <label htmlFor="password" className="mf-etiqueta">
+            <label htmlFor="login-password" className="mf-etiqueta">
               Contraseña
             </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                id="password"
+                id="login-password"
                 ref={passwordRef}
                 value={password}
                 onChange={(e) => {
@@ -567,12 +560,7 @@ export default function Login({
           {/* ✅ Errores de campos específicos ya se muestran debajo de cada campo */}
 
           <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSubmit();
-            }}
+            type="submit"
             disabled={isLoading || isGoogleLoading || formDisabled}
             className="mf-btn mf-btn-color w-full min-h-12 py-3 px-4 rounded-[10px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
@@ -585,7 +573,7 @@ export default function Login({
               {isLoading ? 'Iniciando sesión…' : 'Iniciar Sesión'}
             </span>
           </button>
-        </div>
+        </form>
 
         {/* Divider */}
         <div className="my-6 flex items-center">

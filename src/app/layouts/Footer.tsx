@@ -48,6 +48,7 @@ export default function Footer() {
   const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
   const fbUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;
   const twUrl = process.env.NEXT_PUBLIC_TWITTER_URL;
+  const hayRedes = Boolean(igUrl || fbUrl || twUrl);
 
   return (
     <footer className="mt-auto" style={{ backgroundColor: 'var(--header-footer)' }}>
@@ -64,50 +65,46 @@ export default function Footer() {
             <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               Salón de belleza profesional dedicado a realzar tu belleza natural con productos y servicios de alta calidad.
             </p>
-            <div className="flex gap-3">
-              {igUrl && (
-                <a
-                  href={igUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram"
-                  className="p-2 rounded-full hover:opacity-80 transition-opacity"
-                  style={{ background: 'var(--marca-instagram)' }}
-                >
-                  <IconInstagram className="w-5 h-5 text-blanco" />
-                </a>
-              )}
-              {fbUrl && (
-                <a
-                  href={fbUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Facebook"
-                  className="p-2 rounded-full hover:opacity-80 transition-opacity"
-                  style={{ backgroundColor: 'var(--marca-facebook)' }}
-                >
-                  <IconFacebook className="w-5 h-5 text-blanco" />
-                </a>
-              )}
-              {twUrl && (
-                <a
-                  href={twUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Twitter / X"
-                  className="p-2 rounded-full hover:opacity-80 transition-opacity"
-                  style={{ backgroundColor: 'var(--marca-twitter)' }}
-                >
-                  <IconTwitter className="w-5 h-5 text-blanco" />
-                </a>
-              )}
-              {!igUrl && !fbUrl && !twUrl && (
-                <p className="text-xs italic" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-                  {/* TODO: Agregar NEXT_PUBLIC_INSTAGRAM_URL, NEXT_PUBLIC_FACEBOOK_URL, NEXT_PUBLIC_TWITTER_URL al .env */}
-                  Redes sociales próximamente.
-                </p>
-              )}
-            </div>
+            {hayRedes && (
+              <div className="flex gap-3">
+                {igUrl && (
+                  <a
+                    href={igUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    className="p-3 rounded-full hover:opacity-80 transition-opacity"
+                    style={{ background: 'var(--marca-instagram)' }}
+                  >
+                    <IconInstagram className="w-5 h-5 text-blanco" />
+                  </a>
+                )}
+                {fbUrl && (
+                  <a
+                    href={fbUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                    className="p-3 rounded-full hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: 'var(--marca-facebook)' }}
+                  >
+                    <IconFacebook className="w-5 h-5 text-blanco" />
+                  </a>
+                )}
+                {twUrl && (
+                  <a
+                    href={twUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Twitter / X"
+                    className="p-3 rounded-full hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: 'var(--marca-twitter)' }}
+                  >
+                    <IconTwitter className="w-5 h-5 text-blanco" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Columna 2: Enlaces rápidos */}
@@ -115,12 +112,12 @@ export default function Footer() {
             <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
               Enlaces
             </h2>
-            <ul className="space-y-3">
+            <ul>
               {LINKS_RAPIDOS.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="text-sm flex items-center gap-2 group transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                    className="text-sm flex min-h-11 items-center gap-2 group transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                   >
                     <ArrowRight size={14} aria-hidden className="shrink-0 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" style={{ color: 'var(--logo-branding)' }} />
                     {item.label}
@@ -158,7 +155,7 @@ export default function Footer() {
                 <Mail size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 <a
                   href="mailto:contacto@mirufranco.com"
-                  className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                  className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                 >
                   contacto@mirufranco.com
                 </a>
@@ -168,7 +165,7 @@ export default function Footer() {
                   <Phone size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                   <a
                     href={TELEFONO_SALON.enlace}
-                    className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                    className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                   >
                     {TELEFONO_SALON.visible}
                   </a>
@@ -194,10 +191,10 @@ export default function Footer() {
             © {anioEnMexico()} Mirú Franco. Todos los derechos reservados.
           </p>
           <div className="flex gap-6 text-sm flex-wrap justify-center">
-            <Link href="/terminos-y-condiciones" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
+            <Link href="/terminos-y-condiciones" className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Términos y Condiciones
             </Link>
-            <Link href="/aviso-de-privacidad" className="transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
+            <Link href="/aviso-de-privacidad" className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
               Aviso de Privacidad
             </Link>
           </div>

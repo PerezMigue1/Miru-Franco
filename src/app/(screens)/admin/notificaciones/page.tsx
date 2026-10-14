@@ -20,6 +20,7 @@ import {
 import { getUsuarios, type Usuario } from '../../../services/usuarios';
 import { showAlert, showToast } from '../../../utils/toast';
 import { Bell, BellOff, CheckCheck } from 'lucide-react';
+import { textoTotalNotificaciones } from './textoNotificaciones';
 
 export default function NotificacionesPage() {
   const [items, setItems] = useState<NotificacionApi[]>([]);
@@ -119,7 +120,7 @@ export default function NotificacionesPage() {
             Notificaciones
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            {items.length} notificación{items.length === 1 ? '' : 'es'} en el sistema
+            {textoTotalNotificaciones(items.length)}. Aquí ves solo las de tu cuenta; las que envías le llegan a quien elijas.
           </p>
         </div>
 
@@ -159,7 +160,7 @@ export default function NotificacionesPage() {
             {items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Sin notificaciones en la respuesta del servidor.
+                  No tienes notificaciones.
                 </TableCell>
               </TableRow>
             ) : (

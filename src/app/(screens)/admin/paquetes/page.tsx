@@ -13,6 +13,8 @@ import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import Textarea from '../../../components/ui/Textarea';
 import { Gift } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
+import { leerPrecioPaquete } from './precioPaquete';
 
 type PaqueteRow = {
   id?: string | number;
@@ -55,6 +57,7 @@ export default function PaquetesPage() {
   // Estados para el Modal de eliminación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [idParaEliminar, setIdParaEliminar] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
   // Estados para el Modal de creación
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
@@ -86,6 +89,11 @@ export default function PaquetesPage() {
       setCrearError('Tipo de evento y precio son requeridos');
       return;
     }
+    const precioNum = leerPrecioPaquete(formPrecioEspecial);
+    if (precioNum === null) {
+      setCrearError('Indica un precio válido (0 o mayor).');
+      return;
+    }
     setSavingCrear(true);
     setCrearError(null);
     try {
@@ -94,7 +102,7 @@ export default function PaquetesPage() {
         : [];
       await createPaquete({
         tipoEvento: formTipoEvento.trim(),
-        precioEspecial: Number(formPrecioEspecial),
+        precioEspecial: precioNum,
         descripcion: formDescripcion.trim() || undefined,
         serviciosVinculados: serviciosArr,
       });
@@ -112,18 +120,21 @@ export default function PaquetesPage() {
   };
 
   const manejarEliminacion = async () => {
-    if (!idParaEliminar) return;
+    if (!idParaEliminar || eliminando) return;
 
+    setEliminando(true);
     try {
       await deletePaquete(idParaEliminar);
       // Filtramos la lista local para que desaparezca de la tabla de inmediato
       setPaquetes(paquetes.filter((p) => getPaqueteId(p) !== idParaEliminar));
       setShowDeleteModal(false);
       setIdParaEliminar(null);
-      alert("Paquete eliminado correctamente");
+      showToast('Paquete eliminado correctamente', 'success');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
-      alert(`No se pudo eliminar: ${message}`);
+      showToast(`No se pudo eliminar: ${message}`, 'error');
+    } finally {
+      setEliminando(false);
     }
   };
 
@@ -227,7 +238,7 @@ export default function PaquetesPage() {
         {crearError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{crearError}</p>}
         <div className="space-y-4">
           <Input label="Tipo de evento *" value={formTipoEvento} onChange={(e) => setFormTipoEvento(e.target.value)} placeholder="Ej. Quinceañera, Boda..." fullWidth />
-          <Input label="Precio especial *" type="number" min={0} value={formPrecioEspecial} onChange={(e) => setFormPrecioEspecial(e.target.value)} placeholder="0.00" fullWidth />
+          <Input label="Precio especial *" type="number" min={0} step={0.01} value={formPrecioEspecial} onChange={(e) => setFormPrecioEspecial(e.target.value)} placeholder="0.00" fullWidth />
           <Input label="Servicios vinculados (separados por coma)" value={formServiciosVinculados} onChange={(e) => setFormServiciosVinculados(e.target.value)} placeholder="Corte, Tinte, Peinado..." fullWidth />
           <Textarea label="Descripción" value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="Descripción del paquete..." rows={3} fullWidth />
         </div>
@@ -236,14 +247,14 @@ export default function PaquetesPage() {
       {/* Modal de Confirmación */}
       <Modal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => { if (!eliminando) setShowDeleteModal(false); }}
         title="Confirmar eliminación"
       >
         <div className="p-4">
           <p className="mb-6 text-lg" style={{ color: 'var(--menu-texto-principal)' }}>¿Estás seguro de que deseas borrar este paquete? Esta acción es permanente.</p>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancelar</Button>
-            <Button variant="danger" onClick={manejarEliminacion}>Sí, eliminar ahora</Button>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={eliminando}>Cancelar</Button>
+            <Button variant="danger" onClick={manejarEliminacion} disabled={eliminando}>{eliminando ? 'Eliminando...' : 'Sí, eliminar ahora'}</Button>
           </div>
         </div>
       </Modal>

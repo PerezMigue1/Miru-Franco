@@ -329,6 +329,9 @@ export default function BackupPage() {
 
   return (
     <AdminLayout>
+      <header className="mb-6">
+        <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>Respaldos de la base de datos</h1>
+      </header>
       <div className="relative pl-11 space-y-6 overflow-hidden">
         <button
           type="button"
@@ -354,6 +357,7 @@ export default function BackupPage() {
               <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Secciones</p>
               <button
                 type="button"
+                aria-label="Cerrar"
                 onClick={() => setMenuLateralOculto(true)}
                 className="text-sm px-2 py-1 rounded border"
                 style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
@@ -390,7 +394,7 @@ export default function BackupPage() {
         <div className="space-y-6">
           <Card variant="elevated" padding="lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-            <Save size={18} /> Gestion de Backups
+            <Save size={18} /> Gestión de backups
           </h2>
           <p className="text-sm mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
             Genera respaldos completos o selectivos de la base de datos. Los archivos se descargan directamente en tu equipo.
@@ -413,6 +417,7 @@ export default function BackupPage() {
                   { value: 'csv', label: 'CSV (ZIP con un archivo por tabla)' },
                 ]}
                 value={formatoBackup}
+                aria-label="Formato de salida"
                 onChange={(e) => setFormatoBackup(e.target.value as FormatoBackup)}
               />
             </div>
@@ -474,10 +479,11 @@ export default function BackupPage() {
 
           <Card variant="elevated" padding="lg">
           <h2 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--menu-texto-principal)' }}>
-            <Timer size={18} /> Automatizacion de Backups
+            <Timer size={18} /> Backup automático
           </h2>
           <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            Configura backups automáticos para que se ejecuten sin intervención manual.
+            Solo funciona mientras esta pestaña está abierta: el respaldo lo genera este navegador a la hora
+            indicada y el historial se guarda solo en este equipo. Si cierras la pestaña o apagas el equipo, no se ejecuta.
           </p>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -495,7 +501,7 @@ export default function BackupPage() {
                   </label>
                 </div>
                 <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Los backups se ejecutarán según la configuración establecida.
+                  Se ejecutan según la configuración, solo con esta pestaña abierta.
                 </p>
               </div>
               <div>
@@ -509,6 +515,7 @@ export default function BackupPage() {
                     { value: 'mensual', label: 'Mensual' },
                   ]}
                   value={autoFrequency}
+                  aria-label="Frecuencia"
                   onChange={(e) => updateAutoFrequency(e.target.value as FrecuenciaBackup)}
                 />
               </div>
@@ -522,6 +529,7 @@ export default function BackupPage() {
                   type="number"
                   min={0}
                   max={23}
+                  aria-label="Hora"
                   value={autoTime.split(':')[0]}
                   onChange={(e) => updateAutoTime(`${String(Math.max(0, Math.min(23, Number(e.target.value) || 0))).padStart(2, '0')}:${autoTime.split(':')[1]}`)}
                   className="w-16 p-2 rounded border text-center"
@@ -532,6 +540,7 @@ export default function BackupPage() {
                   type="number"
                   min={0}
                   max={59}
+                  aria-label="Minuto"
                   value={autoTime.split(':')[1]}
                   onChange={(e) => updateAutoTime(`${autoTime.split(':')[0]}:${String(Math.max(0, Math.min(59, Number(e.target.value) || 0))).padStart(2, '0')}`)}
                   className="w-16 p-2 rounded border text-center"
@@ -542,6 +551,7 @@ export default function BackupPage() {
                   type="number"
                   min={0}
                   max={59}
+                  aria-label="Segundo"
                   value={autoSecond}
                   onChange={(e) => updateAutoSecond(e.target.value)}
                   className="w-16 p-2 rounded border text-center"
@@ -568,6 +578,7 @@ export default function BackupPage() {
                     { value: '0', label: 'Domingo' },
                   ]}
                   value={autoWeekday}
+                  aria-label="Día de la semana"
                   onChange={(e) => updateAutoWeekday(e.target.value)}
                 />
               </div>
@@ -581,6 +592,7 @@ export default function BackupPage() {
                   type="number"
                   min={1}
                   max={31}
+                  aria-label="Día del mes"
                   value={autoMonthday}
                   onChange={(e) => updateAutoMonthday(e.target.value)}
                   className="w-full p-2 rounded border"
@@ -647,12 +659,12 @@ export default function BackupPage() {
             </div>
           ) : (
             <p className="text-center py-8 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-              No hay registros de backups todavia.
+              No hay registros de backups todavía.
             </p>
           )}
 
           <p className="text-xs mt-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            Se conservan los ultimos {MAX_HISTORIAL_BACKUP} registros.
+            Se conservan los últimos {MAX_HISTORIAL_BACKUP} registros.
           </p>
           </Card>
         </div>

@@ -8,7 +8,8 @@ import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
-import { createUsuario, patchUsuarioRol, getRoles, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
+import { createUsuario, patchUsuarioRol, getRoles, validarAltaUsuario, TIPOS_CABELLO, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
+import { normalizarTelefonoRegistro, MENSAJE_FORMATO_TELEFONO } from '../../../../utils/phone';
 import { api as authApi } from '../../../../services/auth';
 import CasillaDatosSalud from '../../../../components/legal/CasillaDatosSalud';
 import { errorConsentimientoAlergias, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
@@ -28,6 +29,10 @@ export default function NuevoUsuarioPage() {
   const router = useRouter();
   const [roles, setRoles] = useState<RolCatalogoItem[]>([]);
   const [saving, setSaving] = useState(false);
+  // Evita un segundo envío mientras el primero sigue en curso (el estado tarda un render en reflejarse).
+  const enviandoRef = useRef(false);
+  // Si el usuario ya se creó pero el rol falló, no se permite volver a crear.
+  const [usuarioCreado, setUsuarioCreado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [nombre, setNombre] = useState('');
@@ -43,7 +48,7 @@ export default function NuevoUsuarioPage() {
   const [verificandoEmail, setVerificandoEmail] = useState(false);
   const [emailYaRegistrado, setEmailYaRegistrado] = useState(false);
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [tipoCabello, setTipoCabello] = useState('liso');
+  const [tipoCabello, setTipoCabello] = useState('');
   const [tieneAlergias, setTieneAlergias] = useState(false);
   const [alergias, setAlergias] = useState('');
   // Consentimiento de la clienta para datos de salud: se confirma al registrar alergias y no se guarda.
@@ -51,7 +56,7 @@ export default function NuevoUsuarioPage() {
   const [errorConsentimiento, setErrorConsentimiento] = useState<string | null>(null);
   const [tratamientosQuimicos, setTratamientosQuimicos] = useState(false);
   const [tratamientos, setTratamientos] = useState('');
-  const [aceptaAviso, setAceptaAviso] = useState(true);
+  const [aceptaAviso, setAceptaAviso] = useState(false);
   const [recibePromo, setRecibePromo] = useState(false);
 
   useEffect(() => {
@@ -112,8 +117,10 @@ export default function NuevoUsuarioPage() {
       : opcionesRolPermitidas;
 
   const handleCrear = async () => {
-    if (!nombre.trim() || !email.trim() || !password.trim()) {
-      setError('Nombre, email y contraseña son obligatorios.');
+    if (enviandoRef.current || usuarioCreado) return;
+    const errorValidacion = validarAltaUsuario({ nombre, email, password, telefono, fechaNacimiento, pregunta, respuesta, tipoCabello, aceptaAviso });
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
     // Solo se mandan alergias si la casilla "Tiene alergias" está marcada.
@@ -121,25 +128,25 @@ export default function NuevoUsuarioPage() {
     const faltaConsentimiento = errorConsentimientoAlergias(alergiasEnviadas, consienteDatosSensibles, 'personal');
     setErrorConsentimiento(faltaConsentimiento);
     if (faltaConsentimiento) return;
-    const emailTrimmed = email.trim().toLowerCase();
-    const resVerify = await authApi.verificarCorreoExistente(emailTrimmed);
-    if (resVerify.existe) {
-      setError('Este correo ya está registrado. Usa otro correo.');
-      return;
-    }
+    enviandoRef.current = true;
     setSaving(true);
     setError(null);
+    const emailTrimmed = email.trim().toLowerCase();
     try {
+      const resVerify = await authApi.verificarCorreoExistente(emailTrimmed);
+      if (resVerify.existe) {
+        setError('Este correo ya está registrado. Usa otro correo.');
+        return;
+      }
       const nuevoUsuario = await createUsuario({
         nombre: nombre.trim(),
         email: emailTrimmed,
         password,
-        telefono: telefono.trim() || undefined,
+        telefono: normalizarTelefonoRegistro(telefono),
         rol: rol as RolValor,
-        fechaNacimiento: fechaNacimiento || undefined,
-        preguntaSeguridad: pregunta.trim()
-          ? { pregunta: pregunta.trim(), respuesta: respuesta.trim() }
-          : undefined,
+        fechaNacimiento,
+        // Sin pregunta elegida no se manda nada: nunca una respuesta por defecto.
+        preguntaSeguridad: pregunta.trim() ? { pregunta: pregunta.trim(), respuesta: respuesta.trim() } : undefined,
         perfilCapilar: {
           tipoCabello,
           tieneAlergias,
@@ -154,8 +161,12 @@ export default function NuevoUsuarioPage() {
       if (rol && rol !== 'cliente') {
         try {
           await patchUsuarioRol(nuevoUsuario.id, rol as RolValor);
-        } catch {
-          // el usuario ya se creó; si el rol no se aplicó, se puede corregir desde la lista
+        } catch (errRol) {
+          // El usuario ya se creó: se avisa y no se permite crearlo otra vez.
+          setUsuarioCreado(true);
+          const detalle = errRol instanceof Error && errRol.message ? ` (${errRol.message})` : '';
+          setError(`El usuario se creó, pero no se pudo asignar el rol${detalle}. Corrígelo desde la lista de usuarios.`);
+          return;
         }
       }
       router.push('/admin/usuarios-roles');
@@ -167,6 +178,7 @@ export default function NuevoUsuarioPage() {
       }
       setError(msg);
     } finally {
+      enviandoRef.current = false;
       setSaving(false);
     }
   };
@@ -187,7 +199,11 @@ export default function NuevoUsuarioPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push('/admin/usuarios-roles')} disabled={saving}>Cancelar</Button>
-            <Button variant="primary" onClick={handleCrear} disabled={saving || emailYaRegistrado}>{saving ? 'Creando...' : 'Crear usuario'}</Button>
+            {usuarioCreado ? (
+              <Button variant="primary" onClick={() => router.push('/admin/usuarios-roles')}>Ir a la lista</Button>
+            ) : (
+              <Button variant="primary" onClick={handleCrear} disabled={saving || emailYaRegistrado}>{saving ? 'Creando...' : 'Crear usuario'}</Button>
+            )}
           </div>
         </div>
 
@@ -219,9 +235,19 @@ export default function NuevoUsuarioPage() {
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Verificando...</p>
                 )}
               </div>
-              <Input label="Contraseña *" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} fullWidth required minLength={6} />
-              <Input label="Teléfono" type="tel" placeholder="Opcional" value={telefono} onChange={(e) => setTelefono(e.target.value)} fullWidth />
-              <Input label="Fecha de nacimiento" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} fullWidth />
+              <Input
+                label="Contraseña *"
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                fullWidth
+                required
+                minLength={8}
+                helperText="Mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial."
+              />
+              <Input label="Teléfono *" type="tel" placeholder="10 dígitos" value={telefono} onChange={(e) => setTelefono(e.target.value)} fullWidth required helperText={MENSAJE_FORMATO_TELEFONO} />
+              <Input label="Fecha de nacimiento *" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} fullWidth required />
               <Select label="Rol *" value={rol} onChange={(e) => setRol(e.target.value)} options={opcionesRol} fullWidth required />
             </div>
           </div>
@@ -233,35 +259,35 @@ export default function NuevoUsuarioPage() {
                 <Select
                   label="Pregunta de seguridad"
                   value={pregunta}
-                  onChange={(e) => setPregunta(e.target.value)}
+                  onChange={(e) => {
+                    setPregunta(e.target.value);
+                    if (!e.target.value) setRespuesta('');
+                  }}
                   options={[
-                    { value: '', label: 'Selecciona una pregunta' },
+                    { value: '', label: 'Sin pregunta de seguridad' },
                     ...preguntasSeguridad.filter((q) => q.pregunta).map((q) => ({ value: q.pregunta, label: q.pregunta })),
                   ]}
                   fullWidth
+                  helperText="Opcional. Sin pregunta, la cuenta no podrá recuperarse por este medio."
                 />
                 {loadingPreguntas && (
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Cargando preguntas...</p>
                 )}
               </div>
-              <Input label="Respuesta" placeholder="Respuesta secreta" value={respuesta} onChange={(e) => setRespuesta(e.target.value)} fullWidth />
+              <Input label={pregunta ? 'Respuesta *' : 'Respuesta'} placeholder="Respuesta secreta" value={respuesta} onChange={(e) => setRespuesta(e.target.value)} fullWidth required={Boolean(pregunta)} disabled={!pregunta} />
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar (opcional)</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar</h3>
             <div className={gridForm}>
               <Select
-                label="Tipo de cabello"
+                label="Tipo de cabello *"
                 value={tipoCabello}
                 onChange={(e) => setTipoCabello(e.target.value)}
-                options={[
-                  { value: 'liso', label: 'Liso' },
-                  { value: 'ondulado', label: 'Ondulado' },
-                  { value: 'rizado', label: 'Rizado' },
-                  { value: 'afro', label: 'Afro' },
-                ]}
+                options={[{ value: '', label: 'Selecciona el tipo de cabello' }, ...TIPOS_CABELLO]}
                 fullWidth
+                required
               />
               <div className="flex flex-col gap-4 sm:col-span-2">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -296,7 +322,7 @@ export default function NuevoUsuarioPage() {
           <div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={aceptaAviso} onChange={(e) => setAceptaAviso(e.target.checked)} className="rounded" />
-              <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Acepta aviso de privacidad</span>
+              <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>La persona leyó y aceptó el aviso de privacidad</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer mt-2">
               <input type="checkbox" checked={recibePromo} onChange={(e) => setRecibePromo(e.target.checked)} className="rounded" />

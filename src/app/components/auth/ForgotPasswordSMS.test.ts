@@ -19,11 +19,21 @@ vi.mock('react', async (original) => {
 });
 
 const { default: ForgotPasswordSMS } = await import('./ForgotPasswordSMS');
+const { MENSAJE_FORMATO_TELEFONO } = await import('../../utils/phone');
 
 const ENLACE_CORREO = /Recuperar con mi correo/;
 
 afterEach(() => {
   forzarCodigoEnviado = false;
+});
+
+describe('ForgotPasswordSMS: mismo formato de teléfono que el registro', () => {
+  it('ayuda de 10 dígitos sin +52 y placeholder de 10 dígitos', () => {
+    const html = renderToStaticMarkup(createElement(ForgotPasswordSMS));
+    expect(html).toContain(MENSAJE_FORMATO_TELEFONO);
+    expect(html).toContain('placeholder="5512345678"');
+    expect(html).not.toContain('código de país');
+  });
 });
 
 describe('ForgotPasswordSMS: siempre ofrece recuperar con el correo', () => {

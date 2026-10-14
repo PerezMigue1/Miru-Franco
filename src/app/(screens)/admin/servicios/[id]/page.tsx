@@ -12,7 +12,7 @@ import Textarea from '../../../../components/ui/Textarea';
 import Modal from '../../../../components/ui/Modal';
 import { getCategoryColor } from '../../../../utils/categoryColors';
 import {
-  getServicioPorId,
+  obtenerServicioPorIdOError,
   updateServicio,
   deleteServicio,
   type Servicio,
@@ -73,7 +73,7 @@ export default function ServicioDetalleAdminPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    getServicioPorId(id)
+    obtenerServicioPorIdOError(id)
       .then((s) => {
         if (cancelled) return;
         if (s) {
@@ -95,8 +95,10 @@ export default function ServicioDetalleAdminPage() {
           setError('Servicio no encontrado');
         }
       })
-      .catch(() => {
-        if (!cancelled) setError('Error al cargar el servicio');
+      .catch((err) => {
+        if (!cancelled) {
+          setError(`No se pudo cargar el servicio${err instanceof Error && err.message ? `: ${err.message}` : '.'}`);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -155,7 +157,7 @@ export default function ServicioDetalleAdminPage() {
       await deleteServicio(servicio.id);
       router.push('/admin/servicios');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar');
+      setError(err instanceof Error ? err.message : 'Error al desactivar el servicio');
       setShowDeleteModal(false);
     } finally {
       setDeleting(false);
@@ -207,7 +209,7 @@ export default function ServicioDetalleAdminPage() {
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </Button>
             <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-              Eliminar
+              Desactivar
             </Button>
           </div>
         </div>
@@ -272,7 +274,7 @@ export default function ServicioDetalleAdminPage() {
       <Modal
         isOpen={showDeleteModal}
         onClose={() => !deleting && setShowDeleteModal(false)}
-        title="Eliminar servicio"
+        title="Desactivar servicio"
         size="sm"
         footer={
           <>
@@ -280,13 +282,13 @@ export default function ServicioDetalleAdminPage() {
               Cancelar
             </Button>
             <Button variant="danger" onClick={handleEliminar} disabled={deleting}>
-              {deleting ? 'Eliminando...' : 'Eliminar'}
+              {deleting ? 'Desactivando...' : 'Desactivar'}
             </Button>
           </>
         }
       >
         <p style={{ color: 'var(--menu-texto-principal)' }}>
-          ¿Estás seguro de que deseas eliminar el servicio &quot;{servicio.nombre}&quot;?
+          ¿Desactivar el servicio &quot;{servicio.nombre}&quot;? Dejará de mostrarse en el catálogo y podrás reactivarlo después.
         </p>
       </Modal>
     </AdminLayout>

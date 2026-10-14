@@ -27,6 +27,9 @@ import { generarTicketVentaPdf } from '../../../../utils/ticketVenta';
 import { fmtMoneda, itemsDeVenta, pagosMixtos, totalesTicket, validarCobro, type LineaCobro, type MontosMixtos } from '../../../../utils/cobroPos';
 import { ShoppingCart, Trash2, AlertTriangle, BadgeDollarSign, Download, CheckCircle2, Check, X, Scissors, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
+import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
+import { etiquetaMetodoPagoVenta, resumenVentasCobradas } from '../_lib/panelOperacion';
+import { puedeCancelarVenta } from '../../../admin/venta-local/ventasDia';
 
 interface LineaTicket extends LineaCobro {
   key: string;
@@ -85,6 +88,8 @@ export default function PuntoDeVentaPage() {
 function PuntoDeVenta() {
   const { tienePermiso } = usePermisos();
   const puedeCorte = tienePermiso('caja:escritura');
+  // Sin el permiso de la página OperacionLayout manda a /403: no se piden datos antes.
+  const puedeVender = tienePermiso('ventas:escritura');
   // ?citaId= llega desde "Finalizar" en ejecución de servicios o en la cola de atención.
   const citaInicial = Number(useSearchParams().get('citaId')) || null;
   const router = useRouter();
@@ -92,6 +97,7 @@ function PuntoDeVenta() {
   const [catProductos, setCatProductos] = useState<Producto[]>([]);
   const [catServicios, setCatServicios] = useState<Servicio[]>([]);
   const [personal, setPersonal] = useState<PersonaPersonal[]>([]);
+  const [errorCatalogo, setErrorCatalogo] = useState<string | null>(null);
 
   const [ventasHoy, setVentasHoy] = useState<VentaLocalApi[]>([]);
   const [loadingVentas, setLoadingVentas] = useState(true);
@@ -148,6 +154,7 @@ function PuntoDeVenta() {
   const [ventaIdCancelando, setVentaIdCancelando] = useState<number | null>(null);
   const [cancelMotivo, setCancelMotivo] = useState('');
   const [savingCancel, setSavingCancel] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const cargarVentas = useCallback(() => {
     const hoy = hoyEnMexico();
@@ -183,8 +190,9 @@ function PuntoDeVenta() {
   }, []);
 
   useEffect(() => {
+    if (!puedeVender) return;
     cargarPorCobrar(paginaPorCobrar);
-  }, [cargarPorCobrar, paginaPorCobrar]);
+  }, [cargarPorCobrar, paginaPorCobrar, puedeVender]);
 
   /** Saca del ticket las citas que ya no están por cobrar (otra caja las cobró), revisando cada una con ?citaId=. */
   const quitarCitasYaCobradas = useCallback(async (ids: number[]) => {
@@ -216,9 +224,20 @@ function PuntoDeVenta() {
     }
   }, []);
 
+  const avisarCatalogo = useCallback(() => {
+    setErrorCatalogo('No se pudo cargar el catálogo de productos y servicios.');
+  }, []);
+
+  const recargarCatalogo = () => {
+    setErrorCatalogo(null);
+    getProductosSinRedirigir().then(({ data }) => setCatProductos(data)).catch(avisarCatalogo);
+    getServicios().then(({ data }) => setCatServicios(data)).catch(avisarCatalogo);
+  };
+
   useEffect(() => {
+    if (!puedeVender) return;
     cargarVentas();
-    getProductosSinRedirigir().then(({ data }) => setCatProductos(data)).catch(() => {});
+    getProductosSinRedirigir().then(({ data }) => setCatProductos(data)).catch(avisarCatalogo);
     personalQueAtiende().then(setPersonal).catch(() => setPersonal([]));
     // La cita que llega por ?citaId= se busca directo (puede no estar en la primera página).
     const buscarCitaInicial = citaInicial
@@ -231,8 +250,11 @@ function PuntoDeVenta() {
       if (cita) agregarCita(cita, servicios);
       else if (citas === null) setAvisoCita(`No se pudo cargar la cita #${citaInicial}. Actualiza los servicios por cobrar e intenta de nuevo.`);
       else setAvisoCita(`La cita #${citaInicial} no está por cobrar: puede que ya se haya cobrado.`);
+    }).catch(() => {
+      avisarCatalogo();
+      if (citaInicial) setAvisoCita(`No se pudo cargar la cita #${citaInicial}. Actualiza los servicios por cobrar e intenta de nuevo.`);
     });
-  }, [cargarVentas, agregarCita, citaInicial]);
+  }, [cargarVentas, agregarCita, citaInicial, puedeVender, avisarCatalogo]);
 
   // Buscador de cliente por nombre o teléfono, con debounce — nada de precargar el catálogo completo.
   useEffect(() => {
@@ -412,23 +434,25 @@ function PuntoDeVenta() {
     }
   };
 
-  const openCancelar = (id: number) => { setVentaIdCancelando(id); setCancelMotivo(''); setIsModalCancelarOpen(true); };
+  const openCancelar = (id: number) => { setVentaIdCancelando(id); setCancelMotivo(''); setCancelError(null); setIsModalCancelarOpen(true); };
 
   const handleCancelar = async () => {
     if (!ventaIdCancelando) return;
     setSavingCancel(true);
+    setCancelError(null);
     try {
       await cancelarVenta(ventaIdCancelando, { motivoCancelacion: cancelMotivo.trim() || 'Cancelada desde punto de venta' });
       setIsModalCancelarOpen(false); setVentaIdCancelando(null);
       cargarVentas();
-    } catch {
-      // el modal se queda abierto para reintentar
+    } catch (e) {
+      // El modal se queda abierto con el motivo del rechazo para reintentar.
+      setCancelError(mensajeUsuarioDesdeErrorApi(e));
     } finally {
       setSavingCancel(false);
     }
   };
 
-  const totalDia = ventasHoy.reduce((acc, v) => acc + (Number(v.total) || 0), 0);
+  const { cantidad: ventasCobradas, total: totalDia } = resumenVentasCobradas(ventasHoy);
   const citasEnTicket = new Set(citaIdsEnTicket);
   const desdePorCobrar = totalPorCobrar === 0 ? 0 : (paginaPorCobrar - 1) * POR_COBRAR_POR_PAGINA + 1;
   const hastaPorCobrar = Math.min(totalPorCobrar, (paginaPorCobrar - 1) * POR_COBRAR_POR_PAGINA + porCobrar.length);
@@ -455,8 +479,8 @@ function PuntoDeVenta() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <TarjetaKpi icono={ShoppingCart} etiqueta="Ventas de hoy" cargando={loadingVentas} valor={ventasHoy.length} />
-          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total del día" valor={fmtMoneda(totalDia)} />
+          <TarjetaKpi icono={ShoppingCart} etiqueta="Ventas de hoy" cargando={loadingVentas} valor={ventasCobradas} detalle="Pagadas, sin canceladas" />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total del día" cargando={loadingVentas} valor={fmtMoneda(totalDia)} />
         </div>
 
         {avisoCita && (
@@ -596,6 +620,12 @@ function PuntoDeVenta() {
                 <Button onClick={handleAgregarLinea}>Agregar al ticket</Button>
               </div>
               {lineaError && <p role="alert" className="mt-2 text-sm text-[var(--danger-texto)]">{lineaError}</p>}
+              {errorCatalogo && (
+                <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--danger-texto)]">
+                  <span>{errorCatalogo}</span>
+                  <Button size="sm" variant="outline" onClick={recargarCatalogo}>Reintentar</Button>
+                </div>
+              )}
             </Card>
 
             <Card variant="elevated" padding="lg">
@@ -846,7 +876,7 @@ function PuntoDeVenta() {
                   <TableCell rowPadding="lg">{v.folio || `#${v.id}`}</TableCell>
                   <TableCell rowPadding="lg">{v.clienteNombre || (v.clienteId ? 'Cliente' : 'Público en general')}</TableCell>
                   <TableCell rowPadding="lg">{v.items.length}</TableCell>
-                  <TableCell rowPadding="lg">{v.metodoPago || '-'}</TableCell>
+                  <TableCell rowPadding="lg">{etiquetaMetodoPagoVenta(v.metodoPago)}</TableCell>
                   <TableCell rowPadding="lg" className="font-semibold">{fmtMoneda(Number(v.total) || 0)}</TableCell>
                   <TableCell rowPadding="lg">
                     <Badge variant={varianteEstadoVenta(v.estado)}>{etiquetaEstadoVenta(v.estado)}</Badge>
@@ -856,7 +886,7 @@ function PuntoDeVenta() {
                       <Button size="sm" variant="outline" onClick={() => generarTicketVentaPdf(v)}>
                         <span className="inline-flex items-center gap-1"><Download size={13} aria-hidden /> Ticket</span>
                       </Button>
-                      {v.estado !== 'cancelada' && (
+                      {puedeCancelarVenta(v.estado, v.corteId) && (
                         <Button size="sm" variant="danger" onClick={() => openCancelar(v.id)}>Cancelar</Button>
                       )}
                     </div>
@@ -913,6 +943,7 @@ function PuntoDeVenta() {
           </>
         }
       >
+        {cancelError && <p role="alert" className="mb-3 text-sm text-[var(--danger-texto)]">{cancelError}</p>}
         <Textarea label="Motivo de cancelación" value={cancelMotivo} onChange={(e) => setCancelMotivo(e.target.value)} placeholder="Describe el motivo (opcional)..." rows={3} fullWidth />
       </Modal>
     </OperacionLayout>

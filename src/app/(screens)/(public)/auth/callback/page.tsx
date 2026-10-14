@@ -14,6 +14,7 @@ import { emitMiruUserStorageUpdated } from '../../../../utils/userStorageSync';
 import { api } from '../../../../services/auth';
 import { mergePerfilEnLocalStorage } from '../../../../services/perfil';
 import { tomarRegresoDeGoogle } from '../../../../components/auth/redireccionTrasLogin';
+import { mensajeErrorGoogle, RUTA_ERROR_GOOGLE } from './erroresGoogle';
 
 /** Retraso sin `setTimeout(() => { ... })` para no disparar taint (URL → setTimeout) en Semgrep. */
 function sleep(ms: number): Promise<void> {
@@ -41,30 +42,16 @@ function AuthCallbackContent() {
         setStatus('error');
         setMessage('Error de configuración: La URL de callback no coincide con el deployment. Por favor, verifica la configuración de Google OAuth en el backend.');
         await sleep(3000);
-        router.push('/?error=callback_config_error');
+        router.push(RUTA_ERROR_GOOGLE);
         return;
       }
 
       // Si hay error de OAuth (ej: usuario canceló)
       if (errorParam) {
         setStatus('error');
-        let errorMessage = 'Error en la autenticación. Por favor intenta de nuevo.';
-        switch (errorParam) {
-          case 'authentication_failed':
-            errorMessage = 'No se pudo completar la autenticación';
-            break;
-          case 'access_denied':
-            errorMessage = 'Autorización cancelada';
-            break;
-          case 'callback_config_error':
-            errorMessage = 'Error de configuración: La URL de callback no está correctamente configurada. Por favor, contacta al administrador.';
-            break;
-          default:
-            errorMessage = `Error: ${errorParam}`;
-        }
-        setMessage(errorMessage);
+        setMessage(mensajeErrorGoogle(errorParam));
         await sleep(3000);
-        router.push('/?error=google_auth_failed');
+        router.push(RUTA_ERROR_GOOGLE);
         return;
       }
 
@@ -116,7 +103,7 @@ function AuthCallbackContent() {
             setStatus('error');
             setMessage(data.message || data.error || 'Error al obtener token');
             await sleep(3000);
-            router.push('/?error=auth_failed');
+            router.push(RUTA_ERROR_GOOGLE);
           }
         } catch (error: unknown) {
           console.error('Error intercambiando código:', error);
@@ -126,14 +113,14 @@ function AuthCallbackContent() {
             : 'Error al intercambiar código por token';
           setMessage(errorMessage);
           await sleep(3000);
-          router.push('/?error=auth_failed');
+          router.push(RUTA_ERROR_GOOGLE);
         }
       } else {
         // No hay código ni error, redirigir al login
         setStatus('error');
         setMessage('Código de autenticación no proporcionado');
         await sleep(2000);
-        router.push('/');
+        router.push(RUTA_ERROR_GOOGLE);
       }
     };
 

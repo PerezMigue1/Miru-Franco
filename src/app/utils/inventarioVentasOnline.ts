@@ -1,5 +1,5 @@
 import {
-  listarPedidos,
+  listarTodosLosPedidos,
   listarPedidoItems,
   type EstadoPedidoUi,
   type PedidoApi,
@@ -147,20 +147,23 @@ export function proyeccionDemandaUnidades(promedioDiario: number, dias: number):
 }
 
 /**
- * Descarga líneas de pedidos online con fecha del pedido. Llama a `/api/pedidos/:id/items` en lotes.
+ * Líneas de pedidos online con fecha del pedido. Usa las que trae el listado; solo si faltan llama a
+ * `/api/pedidos/:id/items` en lotes.
  */
 export async function cargarLineasVentasDesdePedidosOnline(opts?: {
   estadosIncluir?: EstadoPedidoUi[];
 }): Promise<{ lineas: LineaVentaProducto[]; pedidosAnalizados: number; error?: string }> {
   const estados = opts?.estadosIncluir ?? ESTADOS_PEDIDO_CONTABLES_VENTA;
   try {
-    const pedidos = await listarPedidos();
+    // Todas las páginas: `listarPedidos()` solo trae las 20 primeras.
+    const pedidos = await listarTodosLosPedidos();
     const contables: PedidoApi[] = pedidos.filter((p) => estados.includes(p.estado));
     const lineas: LineaVentaProducto[] = [];
     const chunk = 6;
     for (let i = 0; i < contables.length; i += chunk) {
       const slice = contables.slice(i, i + chunk);
-      const itemsPorPedido = await Promise.all(slice.map((ped) => listarPedidoItems(ped.id)));
+      // El listado ya trae las líneas: solo se piden a /items las de un pedido que no las incluya.
+      const itemsPorPedido = await Promise.all(slice.map((ped) => ped.items ?? listarPedidoItems(ped.id)));
       itemsPorPedido.forEach((items, j) => {
         const ped = slice[j];
         const fechaIso = ped.creadoEn || ped.actualizadoEn || new Date().toISOString();

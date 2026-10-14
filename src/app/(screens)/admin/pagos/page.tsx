@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  listarPedidos,
+  listarPedidosPaginado,
   listarPagosPorPedido,
   PedidoApi,
   PagoApi,
   etiquetaEstadoPago,
+  etiquetaMetodoPagoPedido,
   varianteBadgeEstadoPago,
 } from '../../../services/ecommerce';
+import { enParaleloLimitado } from '../../../utils/enParaleloLimitado';
+import { resumenPagos } from './resumenPagos';
 import { getUsuarios } from '../../../services/usuarios';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
@@ -42,11 +45,13 @@ export default function PagosPage() {
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const [usuarios, pedidos] = await Promise.all([getUsuarios(), listarPedidos()]);
+      // Los pagos se consultan pedido por pedido (no hay listado de pagos en el API): se acota a los
+      // últimos 100 pedidos para no lanzar miles de peticiones, y el encabezado lo dice.
+      const [usuarios, { data: pedidos }] = await Promise.all([getUsuarios(), listarPedidosPaginado({ page: 1, limit: 100 })]);
       const nombresClientes = new Map(usuarios.map((u) => [u.id, u.nombre]));
       const rows: PagoFila[] = [];
-      await Promise.all(
-        pedidos.map(async (pedido: PedidoApi) => {
+      await enParaleloLimitado(
+        pedidos.map((pedido: PedidoApi) => async () => {
           const ps = await listarPagosPorPedido(pedido.id);
           ps.forEach((p) => {
             rows.push({
@@ -54,7 +59,8 @@ export default function PagosPage() {
               cliente: (pedido.usuarioId && nombresClientes.get(pedido.usuarioId)) || 'Cliente sin nombre',
             });
           });
-        })
+        }),
+        8
       );
       rows.sort((a, b) => (b.creadoEn ?? '').localeCompare(a.creadoEn ?? ''));
       setPagos(rows);
@@ -67,10 +73,7 @@ export default function PagosPage() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const totalPagos = pagos.length;
-  const montoTotal = pagos.reduce((acc, p) => acc + p.monto, 0);
-  const pendientes = pagos.filter((p) => p.estado === 'pendiente').length;
-  const rechazados = pagos.filter((p) => p.estado === 'rechazado' || p.estado === 'cancelado').length;
+  const { totalPagos, montoAprobado, pendientes, rechazados } = resumenPagos(pagos);
 
   return (
     <AdminLayout>
@@ -83,7 +86,7 @@ export default function PagosPage() {
               Pagos
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {pagos.length} pago{pagos.length === 1 ? '' : 's'} registrados — historial de la pasarela de e-commerce
+              {pagos.length} pago{pagos.length === 1 ? '' : 's'} de los últimos 100 pedidos de la tienda en línea
             </p>
           </div>
         </div>
@@ -97,7 +100,7 @@ export default function PagosPage() {
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <TarjetaKpi icono={Receipt} etiqueta="Total de pagos" cargando={loading} valor={totalPagos} />
-          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto total" cargando={loading} valor={fmtMoneda(montoTotal)} />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto aprobado" cargando={loading} valor={fmtMoneda(montoAprobado)} />
           <TarjetaKpi icono={Clock3} etiqueta="Pendientes" cargando={loading} valor={pendientes} tono="aviso" />
           <TarjetaKpi icono={XCircle} etiqueta="Rechazados/cancelados" cargando={loading} valor={rechazados} tono="peligro" />
         </div>
@@ -115,7 +118,7 @@ export default function PagosPage() {
               <TableCell className="font-semibold" rowPadding="lg">{pago.cliente}</TableCell>
               <TableCell rowPadding="lg">#{pago.pedidoId}</TableCell>
               <TableCell className="font-semibold" rowPadding="lg">{fmtMoneda(pago.monto)}</TableCell>
-              <TableCell rowPadding="lg">{pago.metodo || '-'}</TableCell>
+              <TableCell rowPadding="lg">{pago.metodo ? etiquetaMetodoPagoPedido(pago.metodo) : '-'}</TableCell>
               <TableCell rowPadding="lg">
                 <Badge variant={varianteBadgeEstadoPago(pago.estado)}>
                   {etiquetaEstadoPago(pago.estado)}
@@ -145,7 +148,7 @@ export default function PagosPage() {
             <p><span className="font-semibold">Cliente:</span> {pagoDetalle.cliente}</p>
             <p><span className="font-semibold">Pedido:</span> #{pagoDetalle.pedidoId}</p>
             <p><span className="font-semibold">Monto:</span> {fmtMoneda(pagoDetalle.monto)} {pagoDetalle.moneda}</p>
-            <p><span className="font-semibold">Método:</span> {pagoDetalle.metodo || '-'}</p>
+            <p><span className="font-semibold">Método:</span> {pagoDetalle.metodo ? etiquetaMetodoPagoPedido(pagoDetalle.metodo) : '-'}</p>
             <p><span className="font-semibold">Proveedor:</span> {pagoDetalle.proveedor || '-'}</p>
             <p>
               <span className="font-semibold">Estado:</span>{' '}

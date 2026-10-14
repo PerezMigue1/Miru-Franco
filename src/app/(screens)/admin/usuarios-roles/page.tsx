@@ -273,12 +273,14 @@ export default function UsuariosRolesPage() {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <Input
           placeholder="Buscar por nombre, email o teléfono..."
+          aria-label="Buscar usuario"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           className="w-full sm:w-64"
         />
         <Select
           value={rolFiltro}
+          aria-label="Filtrar por rol"
           onChange={(e) => setRolFiltro(e.target.value)}
           options={opcionesFiltroRol}
           className="w-full sm:w-48"
@@ -319,6 +321,7 @@ export default function UsuariosRolesPage() {
                           </Badge>
                           <Select
                             value={rolValorParaSelect(usuario.rol)}
+                            aria-label={`Rol de ${usuario.nombre}`}
                             onChange={(e) => solicitarCambioRol(usuario, e.target.value)}
                             options={opcionesRol}
                             className="min-w-[120px] sm:min-w-[130px] w-full max-w-[140px]"

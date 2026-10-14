@@ -92,6 +92,7 @@ export default function AgendaCalendarioPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [especialistas, setEspecialistas] = useState<EmpleadoApi[]>([]);
+  const [errorEspecialistas, setErrorEspecialistas] = useState(false);
   const [filtroEspecialistaId, setFiltroEspecialistaId] = useState('');
 
   const celdas = useMemo(() => construirCeldas(mesActual.year, mesActual.month), [mesActual]);
@@ -117,14 +118,17 @@ export default function AgendaCalendarioPage() {
     setDiaSeleccionado(null);
   };
 
-  // El selector de especialistas solo se llena si el rol tiene empleados:lectura; sin él, el
-  // backend responde 403 y la petición no aporta nada (el selector queda vacío igual).
+  // El selector de especialistas solo existe si el rol tiene empleados:lectura; sin él, el
+  // backend responde 403 y el selector se oculta. Si la carga falla se avisa con Reintentar.
   const { tienePermiso } = usePermisos();
   const puedeListarEmpleados = tienePermiso('empleados:lectura');
-  useEffect(() => {
+  const cargarEspecialistas = useCallback(() => {
     if (!puedeListarEmpleados) return;
-    listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
+    listarEmpleados({ limit: 200 })
+      .then(({ data }) => { setEspecialistas(data); setErrorEspecialistas(false); })
+      .catch(() => setErrorEspecialistas(true));
   }, [puedeListarEmpleados]);
+  useEffect(() => { cargarEspecialistas(); }, [cargarEspecialistas]);
 
   const diasConCitas = useMemo(() => {
     const set = new Set<string>();
@@ -173,7 +177,7 @@ export default function AgendaCalendarioPage() {
                 type="button"
                 onClick={irMesAnterior}
                 aria-label="Mes anterior"
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:opacity-80"
+                className="min-h-11 min-w-11 rounded-lg flex items-center justify-center transition-colors hover:opacity-80"
                 style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}
               >
                 <ChevronLeft size={16} />
@@ -185,24 +189,32 @@ export default function AgendaCalendarioPage() {
                 type="button"
                 onClick={irMesSiguiente}
                 aria-label="Mes siguiente"
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:opacity-80"
+                className="min-h-11 min-w-11 rounded-lg flex items-center justify-center transition-colors hover:opacity-80"
                 style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}
               >
                 <ChevronRight size={16} />
               </button>
             </div>
-            <Select
-              value={filtroEspecialistaId}
-              onChange={(e) => {
-                reiniciarVista();
-                setFiltroEspecialistaId(e.target.value);
-              }}
-              options={[
-                { value: '', label: 'Todos los especialistas' },
-                ...especialistas.map((esp) => ({ value: esp.usuarioId, label: esp.nombre ?? esp.puesto ?? 'Especialista sin nombre' })),
-              ]}
-              className="sm:w-56"
-            />
+            {errorEspecialistas ? (
+              <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-[var(--danger-texto)]">
+                <span>No se pudo cargar la lista de especialistas.</span>
+                <Button size="sm" variant="outline" onClick={cargarEspecialistas}>Reintentar</Button>
+              </div>
+            ) : especialistas.length > 0 && (
+              <Select
+                aria-label="Filtrar por especialista"
+                value={filtroEspecialistaId}
+                onChange={(e) => {
+                  reiniciarVista();
+                  setFiltroEspecialistaId(e.target.value);
+                }}
+                options={[
+                  { value: '', label: 'Todos los especialistas' },
+                  ...especialistas.map((esp) => ({ value: esp.usuarioId, label: esp.nombre ?? esp.puesto ?? 'Especialista sin nombre' })),
+                ]}
+                className="sm:w-56"
+              />
+            )}
           </div>
 
           {error ? (

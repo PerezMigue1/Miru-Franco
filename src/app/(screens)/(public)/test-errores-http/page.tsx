@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { notFound } from 'next/navigation';
 import { apiClient } from '../../../services/client';
 import { getBackendBaseUrl } from '../../../services/config';
 import Button from '../../../components/ui/Button';
@@ -16,8 +17,14 @@ import Card from '../../../components/ui/Card';
  *
  * Si no existen, verás error de red o 404; cuando las implementes, al pulsar cada botón
  * deberías ser redirigido a /400, /403 o /500 según corresponda.
+ * Solo existe en desarrollo: en producción responde 404.
  */
 export default function TestErroresHttpPage() {
+  if (process.env.NODE_ENV === 'production') notFound();
+  return <TestErroresHttp />;
+}
+
+function TestErroresHttp() {
   const [loading, setLoading] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string>('');
 

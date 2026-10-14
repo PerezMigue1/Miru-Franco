@@ -110,3 +110,36 @@ export function diasHastaFechaSoloDia(
   const hoy = Date.UTC(anio, mes - 1, diaHoy);
   return Math.round((dia - hoy) / MS_POR_DIA);
 }
+
+const PARTES_EN_MEXICO = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ZONA_MEXICO,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+function partesEnMexico(instante: string | Date | null | undefined): Record<string, string> | null {
+  if (!instante) return null;
+  const d = instante instanceof Date ? instante : new Date(instante);
+  if (Number.isNaN(d.getTime())) return null;
+  return Object.fromEntries(PARTES_EN_MEXICO.formatToParts(d).map((p) => [p.type, p.value]));
+}
+
+/**
+ * Día ('YYYY-MM-DD') y hora de 24 h ('HH:mm') en México de un instante, para precargar un input
+ * date y uno time. `null` si no hay fecha o no es válida.
+ */
+export function fechaYHora24EnMexico(instante: string | Date | null | undefined): { fecha: string; hora: string } | null {
+  const p = partesEnMexico(instante);
+  if (!p) return null;
+  return { fecha: `${p.year}-${p.month}-${p.day}`, hora: `${p.hour}:${p.minute}` };
+}
+
+/** 'dd/mm/aaaa' del día en México de un instante (creadoEn, fecha de contacto). `null` si no es válida. */
+export function fechaCortaEnMexico(instante: string | Date | null | undefined): string | null {
+  const p = partesEnMexico(instante);
+  return p ? `${p.day}/${p.month}/${p.year}` : null;
+}

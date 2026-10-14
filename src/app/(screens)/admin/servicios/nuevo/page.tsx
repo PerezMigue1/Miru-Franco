@@ -9,6 +9,7 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import { createServicio, type ServicioPayload } from '../../../../services/servicios';
+import { validarServicio } from '../validacionServicio';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
 
 const CATEGORIAS_OPCIONES = [
@@ -50,8 +51,9 @@ export default function NuevoServicioPage() {
   const categoriaOptions = [{ value: '', label: 'Elegir categoría...' }, ...CATEGORIAS_OPCIONES];
 
   const handleCrear = async () => {
-    if (!nombre.trim() || !categoria || !duracion) {
-      setError('Rellena los campos obligatorios (nombre, categoría y duración).');
+    const errorValidacion = validarServicio({ nombre, categoria, duracion, precio: precioStr });
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
     setSaving(true);
@@ -61,7 +63,7 @@ export default function NuevoServicioPage() {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || nombre.trim(),
         descripcionLarga: descripcionLarga.trim() || undefined,
-        precio: parseFloat(precioStr) || 0,
+        precio: parseFloat(precioStr),
         duracionMinutos: parseInt(duracion),
         categoria,
         incluye: incluye.trim() ? incluye.split(',').map((i) => i.trim()).filter(Boolean) : [],
@@ -127,7 +129,7 @@ export default function NuevoServicioPage() {
               <div className="md:col-span-2">
                 <Input label="Recomendaciones (separar por coma)" value={recomendaciones} onChange={(e) => setRecomendaciones(e.target.value)} placeholder="Evitar lavar el cabello 48h..." fullWidth />
               </div>
-              <Input label="Precio ($) *" value={precioStr} onChange={(e) => setPrecioStr(e.target.value)} placeholder="0" type="number" fullWidth />
+              <Input label="Precio ($) *" value={precioStr} onChange={(e) => setPrecioStr(e.target.value)} placeholder="0" type="number" min={0.01} step={0.01} fullWidth />
               <Select label="Duración *" value={duracion} onChange={(e) => setDuracion(e.target.value)} options={duracionOptions} fullWidth />
               <Select label="Categoría *" value={categoria} onChange={(e) => setCategoria(e.target.value)} options={categoriaOptions} fullWidth />
               <div className="flex flex-wrap items-center gap-4">

@@ -54,9 +54,25 @@ function normalizar(x: unknown): ConfiguracionSalonApi {
   };
 }
 
+/** true si la respuesta trae el horario de lunes a viernes y de sábado (no solo valores por defecto). */
+function traeHorario(x: unknown): boolean {
+  const r = (x ?? {}) as Record<string, unknown>;
+  return [
+    r.entradaLunesViernes ?? r.entrada_lunes_viernes,
+    r.salidaLunesViernes ?? r.salida_lunes_viernes,
+    r.entradaSabado ?? r.entrada_sabado,
+    r.salidaSabado ?? r.salida_sabado,
+  ].every((v) => typeof v === 'string' && v.length > 0);
+}
+
+/**
+ * Configuración del salón. Si la respuesta no trae el horario se lanza un error: mostrar 09:00 a
+ * 18:00 por defecto permitiría guardar encima del horario aprobado sin haberlo visto.
+ */
 export async function obtenerConfiguracionSalon(): Promise<ConfiguracionSalonApi> {
   const res = await apiClient.get<unknown>('/api/configuracion', getBackendBaseUrl());
   const o = (res as Record<string, unknown>)?.data ?? res;
+  if (!traeHorario(o)) throw new Error('No se pudo cargar el horario del salón');
   return normalizar(o);
 }
 

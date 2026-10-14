@@ -407,8 +407,10 @@ export function productoPayloadToApiBody(payload: ProductoPayload): Record<strin
     nombre: payload.nombre,
     descripcion: payload.descripcion,
     categoria: (payload.categoria ?? '').trim(),
-    marca: (payload.marca ?? '').trim(),
   };
+  // Marca vacía no se manda: al crear el backend la exige (y respondería en inglés), al editar es opcional.
+  const marca = (payload.marca ?? '').trim();
+  if (marca) body.marca = marca;
   if (payload.descuento !== undefined) {
     body.descuento = Math.round(Number(payload.descuento)) || 0;
   }
@@ -562,6 +564,76 @@ export type DescuentoPorMarcaResult =
   | { success: false; error: string };
 
 /**
+ * Presentaciones de un producto con el porcentaje aplicado, listas para PUT /productos/:id.
+ * Conserva el id de cada presentación (el backend exige los ids de las existentes y borra las que
+ * no vengan), sus imágenes y su caducidad (si no se mandan, el backend las deja vacías).
+ */
+function presentacionesConPorcentaje(
+  p: Producto,
+  pct: number
+): NonNullable<ProductoPayload['presentaciones']> {
+  return (p.presentaciones ?? []).map((pr) => {
+    const precioOrig = precioANumero(pr.precioOriginal ?? undefined) || precioANumero(pr.precio);
+    const nuevoPrecio = Math.round(precioOrig * (1 - pct / 100) * 100) / 100;
+    return {
+      ...(pr.id != null ? { id: pr.id } : {}),
+      tamanio: pr.tamaño,
+      precio: nuevoPrecio,
+      precioOriginal: precioOrig,
+      stock: pr.stock,
+      disponible: pr.disponible,
+      imagenes: pr.imagenes ?? (pr.imagen ? [pr.imagen] : []),
+      ...(pr.fechaCaducidad ? { fechaCaducidad: pr.fechaCaducidad } : {}),
+    };
+  });
+}
+
+/** Aplica el porcentaje producto por producto; cualquier fallo o 0 actualizados se devuelve como error. */
+async function aplicarPorcentajeAProductos(
+  productos: Producto[],
+  pct: number
+): Promise<{ success: true; actualizados: number } | { success: false; error: string }> {
+  let actualizados = 0;
+  let sinPresentaciones = 0;
+  let primerError: string | null = null;
+  for (const p of productos) {
+    if (!p.presentaciones?.length) {
+      sinPresentaciones++;
+      continue;
+    }
+    const payload: ProductoPayload = {
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      descuento: pct,
+      categoria: p.categoria,
+      marca: p.marca,
+      presentaciones: presentacionesConPorcentaje(p, pct),
+    };
+    try {
+      await updateProducto(p.id, payload);
+      actualizados++;
+    } catch (e) {
+      primerError ??= mensajeDeError(e, 'Error desconocido');
+    }
+  }
+  const total = productos.length;
+  if (actualizados === total) return { success: true, actualizados };
+  const detalle = [
+    sinPresentaciones ? `${sinPresentaciones} sin presentaciones` : '',
+    primerError ? `error: ${primerError}` : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
+  if (actualizados === 0) {
+    return { success: false, error: `No se pudo aplicar el descuento a ningún producto${detalle ? ` (${detalle})` : ''}.` };
+  }
+  return {
+    success: false,
+    error: `El descuento solo se aplicó a ${actualizados} de ${total} productos${detalle ? ` (${detalle})` : ''}.`,
+  };
+}
+
+/**
  * Aplica un porcentaje de descuento a todos los productos de una marca.
  * Si el backend expone POST /api/productos/descuento-por-marca, lo usa; si no,
  * obtiene el listado, filtra por marca y actualiza cada producto (precio y descuento).
@@ -610,36 +682,7 @@ export async function aplicarDescuentoPorMarca(
     return { success: false, error: `No hay productos con la marca "${marcaTrim}".` };
   }
 
-  let actualizados = 0;
-  for (const p of filtrados) {
-    if (!p.presentaciones?.length) continue;
-    const presentacionesConDescuento = p.presentaciones.map((pr) => {
-      const precioOrig = precioANumero(pr.precioOriginal ?? undefined) || precioANumero(pr.precio);
-      const nuevoPrecio = Math.round(precioOrig * (1 - pct / 100) * 100) / 100;
-      return {
-        tamanio: pr.tamaño,
-        precio: nuevoPrecio,
-        precioOriginal: precioOrig,
-        stock: pr.stock,
-        disponible: pr.disponible,
-      };
-    });
-    const payload: ProductoPayload = {
-      nombre: p.nombre,
-      descripcion: p.descripcion,
-      descuento: pct,
-      categoria: p.categoria,
-      marca: p.marca,
-      presentaciones: presentacionesConDescuento,
-    };
-    try {
-      await updateProducto(p.id, payload);
-      actualizados++;
-    } catch {
-      // Siguiente producto
-    }
-  }
-  return { success: true, actualizados };
+  return aplicarPorcentajeAProductos(filtrados, pct);
 }
 
 export type DescuentoGlobalResult =
@@ -651,14 +694,13 @@ export type DescuentoGlobalResult =
  * - Solo marca: descuento a todos los productos de esa marca.
  * - Solo categoría: descuento a todos los productos de esa categoría.
  * - Marca y categoría: descuento solo a productos que cumplan ambos (ej. AVYNA + Cuidado del cabello).
- * Si el backend tiene POST /api/productos/descuento-global con { marca?, categoria?, porcentaje }, lo usa; si no, aplica producto por producto.
+ * Se aplica producto por producto (PUT /productos/:id); si alguno falla o ninguno se actualiza, devuelve error.
  */
 export async function aplicarDescuentoGlobal(params: {
   marca?: string;
   categoria?: string;
   porcentaje: number;
 }): Promise<DescuentoGlobalResult> {
-  const base = getBackendBaseUrl();
   const marcaTrim = params.marca?.trim() ?? '';
   const categoriaTrim = params.categoria?.trim() ?? '';
   if (!marcaTrim && !categoriaTrim) {
@@ -667,35 +709,7 @@ export async function aplicarDescuentoGlobal(params: {
   const pct = Math.max(0, Math.min(100, Number(params.porcentaje) || 0));
   if (pct === 0) return { success: false, error: 'El porcentaje debe ser mayor que 0.' };
 
-  try {
-    const res = await fetch(`${base}/api/productos/descuento-global`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        marca: marcaTrim || undefined,
-        categoria: categoriaTrim || undefined,
-        porcentaje: pct,
-      }),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { actualizados?: number; message?: string };
-      return {
-        success: true,
-        actualizados: typeof data.actualizados === 'number' ? data.actualizados : 0,
-        mensaje: data.message,
-      };
-    }
-    if (res.status === 404 || res.status === 501) {
-      // Backend no tiene el endpoint: aplicar producto por producto
-    } else {
-      const msg = textoRespuestaFallida(res.status, await res.text(), `${base}/api/productos/descuento-global`);
-      return { success: false, error: msg };
-    }
-  } catch {
-    // Red de fallo: continuar con fallback
-  }
-
+  // El backend no expone POST /productos/descuento-global: se aplica producto por producto.
   const { data: productos, error: listError } = await getProductosSinRedirigir({ incluirNoDisponibles: true });
   if (listError) return { success: false, error: listError };
   const filtrados = productos.filter((p) => {
@@ -710,34 +724,5 @@ export async function aplicarDescuentoGlobal(params: {
     return { success: false, error: `No hay productos con ${filtros.join(' y ')}.` };
   }
 
-  let actualizados = 0;
-  for (const p of filtrados) {
-    if (!p.presentaciones?.length) continue;
-    const presentacionesConDescuento = p.presentaciones.map((pr) => {
-      const precioOrig = precioANumero(pr.precioOriginal ?? undefined) || precioANumero(pr.precio);
-      const nuevoPrecio = Math.round(precioOrig * (1 - pct / 100) * 100) / 100;
-      return {
-        tamanio: pr.tamaño,
-        precio: nuevoPrecio,
-        precioOriginal: precioOrig,
-        stock: pr.stock,
-        disponible: pr.disponible,
-      };
-    });
-    const payload: ProductoPayload = {
-      nombre: p.nombre,
-      descripcion: p.descripcion,
-      descuento: pct,
-      categoria: p.categoria,
-      marca: p.marca,
-      presentaciones: presentacionesConDescuento,
-    };
-    try {
-      await updateProducto(p.id, payload);
-      actualizados++;
-    } catch {
-      // Siguiente producto
-    }
-  }
-  return { success: true, actualizados };
+  return aplicarPorcentajeAProductos(filtrados, pct);
 }

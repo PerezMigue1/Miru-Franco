@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { listarQuejas, crearQueja, actualizarQueja, QuejaApi, EstadoQueja } from '../../../services/quejas';
-import { listarClientes, type ClienteApi } from '../../../services/clientes';
+import BuscadorClienta from '../../../components/operacion/BuscadorClienta';
+import { mensajeDeError } from '../../../utils/errorRed';
 import Modal from '../../../components/ui/Modal';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
@@ -10,7 +11,6 @@ import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Table, { TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
-import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
 import { AlertTriangle, CheckCircle2, ClipboardList, Inbox } from 'lucide-react';
@@ -60,8 +60,8 @@ export default function QuejasGarantiasPage() {
   const [savingId, setSavingId] = useState<number | null>(null);
 
   // Formulario inline creación
-  const [catClientes, setCatClientes] = useState<ClienteApi[]>([]);
-  const [formUsuarioId, setFormUsuarioId] = useState('');
+  // La clienta se busca por nombre o teléfono (el catálogo completo tiene cientos de registros).
+  const [formCliente, setFormCliente] = useState<{ id: string; nombre: string } | null>(null);
   const [formAsunto, setFormAsunto] = useState('');
   const [formDescripcion, setFormDescripcion] = useState('');
 
@@ -76,12 +76,13 @@ export default function QuejasGarantiasPage() {
 
   useEffect(() => {
     cargar();
-    listarClientes().then(({ data }) => setCatClientes(data)).catch(() => {});
   }, []);
 
   const resolver = async (id: number) => {
     setSavingId(id);
+    setError(null);
     try { await actualizarQueja(id, { estado: 'resuelta' }); cargar(); }
+    catch (e) { setError(mensajeDeError(e, 'No se pudo marcar el caso como resuelto. Intenta de nuevo.')); }
     finally { setSavingId(null); }
   };
 
@@ -110,8 +111,8 @@ export default function QuejasGarantiasPage() {
     }
     setSavingQueja(true); setQuejaError(null);
     try {
-      await crearQueja({ asunto: formAsunto.trim(), descripcion: formDescripcion.trim(), usuarioId: formUsuarioId || undefined });
-      setFormAsunto(''); setFormDescripcion(''); setFormUsuarioId(''); cargar();
+      await crearQueja({ asunto: formAsunto.trim(), descripcion: formDescripcion.trim(), usuarioId: formCliente?.id || undefined });
+      setFormAsunto(''); setFormDescripcion(''); setFormCliente(null); cargar();
     } catch (e) { setQuejaError(e instanceof Error ? e.message : 'Error al crear caso'); }
     finally { setSavingQueja(false); }
   };
@@ -210,16 +211,7 @@ export default function QuejasGarantiasPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Select
-              label="Cliente"
-              value={formUsuarioId}
-              onChange={(e) => setFormUsuarioId(e.target.value)}
-              options={[
-                { value: '', label: 'Sin asignar / anónimo' },
-                ...catClientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id })),
-              ]}
-              fullWidth
-            />
+            <BuscadorClienta seleccion={formCliente} onSeleccionar={setFormCliente} label="Cliente" />
           </div>
           <Select
             label="Tipo"
@@ -233,7 +225,6 @@ export default function QuejasGarantiasPage() {
             ]}
             fullWidth
           />
-          <Input label="Fecha del Servicio" type="date" fullWidth />
           <div className="md:col-span-2">
             <Textarea label="Descripción" value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="Detalles del caso..." rows={4} fullWidth />
           </div>

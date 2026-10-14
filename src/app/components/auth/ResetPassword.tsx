@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ArrowLeft, Check, Eye, EyeOff, Timer, TriangleAlert } from 'lucide-react';
 import { validatePassword, removeToken } from '../../utils/security';
 import Notification from '../ui/Notification';
@@ -17,14 +18,25 @@ interface ResetPasswordProps {
   identifier?: string; // email o teléfono
   token?: string; // Token de la URL (para enlace de recuperación)
   email?: string; // Email de la URL (para enlace de recuperación)
+  /** Abierto desde el enlace del correo (/reset-password): sin token o sin email no hay formulario. */
+  desdeEnlace?: boolean;
 }
 
-export default function ResetPassword({ 
+/** Minutos de validez del enlace de recuperación; los mismos que el backend. */
+const MINUTOS_ENLACE_RECUPERACION = 10;
+
+/** Momento (ms) en que vence localmente el enlace validado. */
+export function expiracionEnlaceRecuperacion(ahora: number): number {
+  return ahora + MINUTOS_ENLACE_RECUPERACION * 60 * 1000;
+}
+
+export default function ResetPassword({
   onSwitchToLogin,
   onPasswordReset,
   identifier,
   token: tokenFromProps,
-  email: emailFromProps
+  email: emailFromProps,
+  desdeEnlace = false,
 }: ResetPasswordProps) {
   const [formData, setFormData] = useState({
     password: '',
@@ -41,9 +53,12 @@ export default function ResetPassword({
   const [tokenValidado, setTokenValidado] = useState(false);
   const [validandoToken, setValidandoToken] = useState(false);
   const [nombreUsuario, setNombreUsuario] = useState<string>('');
+  // Enlace del correo cortado o editado: sin token o sin email no se puede restablecer.
+  const enlaceIncompleto = desdeEnlace && !(tokenFromProps && emailFromProps);
 
   // Validar token si viene de la URL (enlace de recuperación)
   useEffect(() => {
+    if (enlaceIncompleto) return;
     if (tokenFromProps && emailFromProps) {
       validarTokenRecuperacion(emailFromProps, tokenFromProps);
     } else {
@@ -70,7 +85,7 @@ export default function ResetPassword({
         setTokenValidado(true);
       }
     }
-  }, [tokenFromProps, emailFromProps]);
+  }, [tokenFromProps, emailFromProps, enlaceIncompleto]);
 
   const validarTokenRecuperacion = async (email: string, token: string) => {
     setValidandoToken(true);
@@ -88,8 +103,7 @@ export default function ResetPassword({
         // Guardar token para usarlo después
         localStorage.setItem('resetPasswordToken', token);
         localStorage.setItem('resetPasswordEmail', email);
-        // El token del enlace expira en 60 minutos según el backend
-        localStorage.setItem('resetPasswordExpires', String(Date.now() + 60 * 60 * 1000));
+        localStorage.setItem('resetPasswordExpires', String(expiracionEnlaceRecuperacion(Date.now())));
       } else {
         setErrors({ 
           general: result.error || result.message || 'Token inválido, expirado o ya utilizado' 
@@ -106,7 +120,7 @@ export default function ResetPassword({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // ✅ Usar validación centralizada de seguridad completa
+    // Usar validación centralizada de seguridad completa
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
     } else {
@@ -197,9 +211,7 @@ export default function ResetPassword({
         throw new Error(result.error || result.message || 'Error al cambiar la contraseña');
       }
       
-      console.log('✅ Contraseña cambiada exitosamente');
-
-      // ✅ Limpiar TODOS los tokens después de cambiar la contraseña
+      // Limpiar TODOS los tokens después de cambiar la contraseña
       // Esto incluye tokens de autenticación y tokens temporales de recuperación
       removeToken(); // Limpia token y authToken
       localStorage.removeItem('resetPasswordToken');
@@ -243,7 +255,7 @@ export default function ResetPassword({
         setErrors(prev => ({ 
           ...prev,
           password: 'La nueva contraseña debe ser diferente a la contraseña anterior',
-          general: '⚠️ La nueva contraseña debe ser diferente a la contraseña anterior'
+          general: 'La nueva contraseña debe ser diferente a la contraseña anterior'
         }));
       } else {
         // NO borrar los datos del formulario, solo mostrar el error
@@ -256,6 +268,32 @@ export default function ResetPassword({
       setIsLoading(false);
     }
   };
+
+  if (enlaceIncompleto) {
+    return (
+      <div className="w-full max-w-md mx-auto text-center">
+        <span
+          className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--danger-texto) 14%, transparent)', color: 'var(--danger-texto)' }}
+        >
+          <TriangleAlert size={26} aria-hidden />
+        </span>
+        <h2 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          Enlace inválido o incompleto
+        </h2>
+        <p className="mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+          Abre el enlace completo del correo o solicita uno nuevo.
+        </p>
+        <Link
+          href="/forgot-password"
+          className="mf-btn mf-btn-color inline-flex w-full min-h-12 items-center justify-center py-3 px-4 rounded-[10px] font-semibold"
+          style={PRIMARIO}
+        >
+          Solicitar un nuevo enlace
+        </Link>
+      </div>
+    );
+  }
 
   // Si viene token de URL y aún no está validado, mostrar loading
   if (tokenFromProps && !tokenValidado) {
@@ -368,7 +406,7 @@ export default function ResetPassword({
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label
-              htmlFor="password"
+              htmlFor="nueva-password"
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
@@ -377,7 +415,7 @@ export default function ResetPassword({
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                id="password"
+                id="nueva-password"
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 className="mf-campo w-full px-4 py-3 pr-12"
@@ -454,7 +492,7 @@ export default function ResetPassword({
 
           <div>
             <label
-              htmlFor="confirmPassword"
+              htmlFor="confirmar-nueva-password"
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--menu-texto-principal)' }}
             >
@@ -463,7 +501,7 @@ export default function ResetPassword({
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                id="confirmPassword"
+                id="confirmar-nueva-password"
                 value={formData.confirmPassword}
                 onChange={(e) => handleChange('confirmPassword', e.target.value)}
                 className="mf-campo w-full px-4 py-3 pr-12"

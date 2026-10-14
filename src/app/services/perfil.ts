@@ -60,6 +60,8 @@ export interface PerfilUsuarioCompleto {
   alergias?: string | null;
   aceptaAvisoPrivacidad?: boolean;
   recibePromociones?: boolean;
+  /** Correo confirmado (código o Google); GET /auth/me lo manda como `confirmado`. */
+  confirmado?: boolean;
   creadoEn?: string;
   actualizadoEn?: string;
   direcciones?: DireccionUsuarioDTO[];
@@ -188,6 +190,7 @@ export function normalizarPerfilUsuario(raw: Record<string, unknown>): PerfilUsu
     alergias: raw.alergias != null ? String(raw.alergias) : null,
     aceptaAvisoPrivacidad: pickBool(raw, 'aceptaAvisoPrivacidad', 'acepta_aviso_privacidad'),
     recibePromociones: pickBool(raw, 'recibePromociones', 'recibe_promociones'),
+    confirmado: pickBool(raw, 'confirmado'),
     creadoEn: pickStr(raw, 'creadoEn', 'creado_en'),
     actualizadoEn: pickStr(raw, 'actualizadoEn', 'actualizado_en'),
     direcciones,
@@ -213,7 +216,7 @@ export interface ActualizarMiPerfilPayload {
 
 /**
  * Claves permitidas en PATCH `/api/auth/me` según el DTO del backend (ValidationPipe whitelist).
- * Las alergias van con su consentimiento; el resto del perfil capilar todavía no se envía.
+ * El perfil capilar va como campos directos (el DTO acepta null para borrarlos) y las alergias con su consentimiento.
  */
 function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, unknown> {
   const body: Record<string, unknown> = {};
@@ -221,6 +224,10 @@ function cuerpoPatchAuthMe(payload: ActualizarMiPerfilPayload): Record<string, u
   if (payload.telefono !== undefined) body.telefono = payload.telefono;
   if (payload.foto !== undefined) body.foto = payload.foto;
   if (payload.recibePromociones !== undefined) body.recibePromociones = payload.recibePromociones;
+  if (payload.tipoCabello !== undefined) body.tipoCabello = payload.tipoCabello;
+  if (payload.colorNatural !== undefined) body.colorNatural = payload.colorNatural;
+  if (payload.colorActual !== undefined) body.colorActual = payload.colorActual;
+  if (payload.productosUsados !== undefined) body.productosUsados = payload.productosUsados;
   // Alergias (dato de salud): viajan con el consentimiento expreso; el backend rechaza (400) alergias sin él.
   if (payload.alergias !== undefined) body.alergias = payload.alergias;
   if (payload.consienteDatosSensibles !== undefined) body.consienteDatosSensibles = payload.consienteDatosSensibles;

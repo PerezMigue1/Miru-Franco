@@ -5,7 +5,8 @@ import { Check } from 'lucide-react';
 /**
  * Indicador de pasos de un flujo (reservar cita, comprar). La persona ve dónde está y qué
  * falta antes de comprometerse (ui-ux-pro-max: multi-step-progress). Solo presentación: no
- * navega ni cambia la lógica del flujo.
+ * navega ni cambia la lógica del flujo. En pantallas angostas las etiquetas envuelven entre palabras
+ * y los separadores se ocultan, así los tres pasos caben completos (a 375 px "Confirmar" quedaba en "Con").
  */
 export default function PasosFlujo({
   pasos,
@@ -19,15 +20,15 @@ export default function PasosFlujo({
 }) {
   return (
     <nav aria-label={etiqueta} className="mb-8">
-      <ol className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
+      <ol className="flex items-center gap-2 sm:gap-3">
         {pasos.map((paso, i) => {
           const hecho = i < actual;
           const activo = i === actual;
           return (
-            <li key={paso} className="flex items-center gap-2 sm:gap-3 shrink-0" aria-current={activo ? 'step' : undefined}>
+            <li key={paso} className="flex items-center gap-2 sm:gap-3" aria-current={activo ? 'step' : undefined}>
               <span className="flex items-center gap-2">
                 <span
-                  className="mf-cifras w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold"
+                  className="mf-cifras w-7 h-7 shrink-0 rounded-full inline-flex items-center justify-center text-xs font-bold"
                   style={{
                     backgroundColor: hecho || activo ? 'var(--botones-principales)' : 'transparent',
                     color: hecho || activo ? 'var(--texto-fondo-oscuro)' : 'var(--encabezados-alterno)',
@@ -42,7 +43,7 @@ export default function PasosFlujo({
                   {hecho ? <Check size={14} aria-hidden /> : i + 1}
                 </span>
                 <span
-                  className={`text-sm ${activo ? 'font-semibold' : ''}`}
+                  className={`text-sm leading-tight ${activo ? 'font-semibold' : ''}`}
                   style={{ color: activo ? 'var(--menu-texto-principal)' : 'var(--encabezados-alterno)' }}
                 >
                   {paso}
@@ -50,7 +51,7 @@ export default function PasosFlujo({
               </span>
               {i < pasos.length - 1 && (
                 <span
-                  className="w-6 sm:w-10 h-px"
+                  className="hidden sm:block w-10 h-px shrink-0"
                   style={{ backgroundColor: hecho ? 'var(--botones-principales)' : 'var(--mf-linea)' }}
                   aria-hidden
                 />

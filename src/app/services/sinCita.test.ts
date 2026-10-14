@@ -8,7 +8,7 @@ const { get, post, put } = vi.hoisted(() => ({
 vi.mock('./client', () => ({ apiClient: { get, post, put, patch: vi.fn(), delete: vi.fn() } }));
 vi.mock('./config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
-import { citasPorCobrar, citasPorCobrarPaginado, crearCitaSinCita, especialistasLibres, listarCitas, personalQueAtiende } from './citas';
+import { citasPorCobrar, citasPorCobrarPaginado, crearCitaSinCita, especialistasLibres, listarCitas, obtenerCita, personalQueAtiende } from './citas';
 import { crearVenta } from './pos';
 import { guardarComisionServicio, obtenerReporteComisiones } from './comisiones';
 import { crearDevolucion } from './ecommerce';
@@ -103,5 +103,13 @@ describe('Solicitud de cambio o reembolso', () => {
     await crearDevolucion({ pedidoId: 9, pedidoItemId: 3, tipo: 'cambio', causa: 'sellado_sin_abrir', sellado: true, motivo: 'Otro tono' });
     expect(post.mock.calls[0][1]).toMatchObject({ tipo: 'cambio', causa: 'sellado_sin_abrir', sellado: true });
     expect(post.mock.calls[0][1]).not.toHaveProperty('estado');
+  });
+});
+
+describe('Detalle de una cita', () => {
+  it('conserva el precio y la duración del servicio que trae la cita (aunque el servicio ya no esté activo)', async () => {
+    get.mockResolvedValueOnce({ data: { id: 9, clienteId: 'c', especialistaId: 'e', servicioId: 96, fechaHoraInicio: '2026-07-01T16:00:00Z', fechaHoraFin: '2026-07-01T17:00:00Z', estado: 'completada', servicio: { id: 96, nombre: 'Corte', duracionMinutos: 60, precio: '250.00' } } });
+    const cita = await obtenerCita(9, { propios: true });
+    expect(cita).toMatchObject({ servicioNombre: 'Corte', servicioPrecio: 250, servicioDuracionMinutos: 60 });
   });
 });

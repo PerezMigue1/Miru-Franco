@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   listarFacturas,
-  listarPedidos,
+  listarTodosLosPedidos,
   crearFactura,
   PedidoApi,
   FacturaApi,
@@ -67,7 +67,7 @@ export default function FacturacionPage() {
     try {
       const [usuarios, listaPedidos, listaFacturas] = await Promise.all([
         getUsuarios(),
-        listarPedidos(),
+        listarTodosLosPedidos(),
         listarFacturas(),
       ]);
       setNombresClientes(new Map(usuarios.map((u) => [u.id, u.nombre])));

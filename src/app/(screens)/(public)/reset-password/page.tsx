@@ -43,6 +43,7 @@ function ResetPasswordContent() {
 
   return (
     <ResetPassword
+      desdeEnlace
       token={token || undefined}
       email={email || undefined}
       onPasswordReset={handlePasswordReset}

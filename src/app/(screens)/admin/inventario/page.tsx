@@ -31,6 +31,7 @@ import {
   aplicarDescuentoGlobal,
   type Producto,
 } from '../../../services/productos';
+import { leerCantidadEntera } from './cantidadEntera';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../utils/catalogStockSync';
 import { registrarEntrada, registrarSalida, registrarAjuste } from '../../../services/inventarioMovimientos';
 import { diasHastaFechaSoloDia, formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
@@ -237,10 +238,12 @@ export default function InventarioPage() {
 
   const handleEntrada = async () => {
     if (!movPresentacionId || !movCantidad) { setMovError('Presentación y cantidad son requeridas'); return; }
+    const cantidad = leerCantidadEntera(movCantidad, 1);
+    if (cantidad === null) { setMovError('La cantidad debe ser un número entero mayor que 0.'); return; }
     setMovSaving(true);
     setMovError(null);
     try {
-      await registrarEntrada({ presentacionId: Number(movPresentacionId), cantidad: Number(movCantidad), motivo: movMotivo || undefined });
+      await registrarEntrada({ presentacionId: Number(movPresentacionId), cantidad, motivo: movMotivo || undefined });
       setIsModalEntradaOpen(false);
       resetMovForm();
       await recargarProductos();
@@ -253,10 +256,12 @@ export default function InventarioPage() {
 
   const handleSalida = async () => {
     if (!movPresentacionId || !movCantidad) { setMovError('Presentación y cantidad son requeridas'); return; }
+    const cantidad = leerCantidadEntera(movCantidad, 1);
+    if (cantidad === null) { setMovError('La cantidad debe ser un número entero mayor que 0.'); return; }
     setMovSaving(true);
     setMovError(null);
     try {
-      await registrarSalida({ presentacionId: Number(movPresentacionId), cantidad: Number(movCantidad), motivo: movMotivo || undefined });
+      await registrarSalida({ presentacionId: Number(movPresentacionId), cantidad, motivo: movMotivo || undefined });
       setIsModalSalidaOpen(false);
       resetMovForm();
       await recargarProductos();
@@ -269,10 +274,12 @@ export default function InventarioPage() {
 
   const handleAjuste = async () => {
     if (!movPresentacionId || !movStockReal || !movMotivo.trim()) { setMovError('Todos los campos son requeridos'); return; }
+    const stockReal = leerCantidadEntera(movStockReal, 0);
+    if (stockReal === null) { setMovError('El stock real debe ser un número entero de 0 o más.'); return; }
     setMovSaving(true);
     setMovError(null);
     try {
-      await registrarAjuste({ presentacionId: Number(movPresentacionId), stockReal: Number(movStockReal), motivo: movMotivo });
+      await registrarAjuste({ presentacionId: Number(movPresentacionId), stockReal, motivo: movMotivo });
       setIsModalAjusteOpen(false);
       resetMovForm();
       await recargarProductos();
@@ -639,7 +646,7 @@ export default function InventarioPage() {
             options={[{ value: '', label: 'Seleccionar...' }, ...presentacionesOptions]}
             fullWidth
           />
-          <Input label="Cantidad *" type="number" min={1} value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} fullWidth />
+          <Input label="Cantidad *" type="number" min={1} step={1} value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} fullWidth />
           <Input label="Motivo" value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder="Ej. Compra a proveedor" fullWidth />
         </div>
       </Modal>
@@ -672,7 +679,7 @@ export default function InventarioPage() {
           {movCantidad && stockPresentacionSeleccionada != null && Number(movCantidad) > stockPresentacionSeleccionada && (
             <p className="text-sm" style={{ color: 'var(--warning-texto)' }}>Aviso: la cantidad supera el stock disponible.</p>
           )}
-          <Input label="Cantidad *" type="number" min={1} value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} fullWidth />
+          <Input label="Cantidad *" type="number" min={1} step={1} value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} fullWidth />
           <Input label="Motivo" value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder="Ej. Uso en servicio" fullWidth />
         </div>
       </Modal>
@@ -702,7 +709,7 @@ export default function InventarioPage() {
           {stockPresentacionSeleccionada != null && (
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Stock actual: <strong>{stockPresentacionSeleccionada}</strong></p>
           )}
-          <Input label="Stock real (conteo físico) *" type="number" min={0} value={movStockReal} onChange={(e) => setMovStockReal(e.target.value)} fullWidth />
+          <Input label="Stock real (conteo físico) *" type="number" min={0} step={1} value={movStockReal} onChange={(e) => setMovStockReal(e.target.value)} fullWidth />
           <Input label="Motivo *" value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder="Ej. Conteo físico mensual" fullWidth />
         </div>
       </Modal>

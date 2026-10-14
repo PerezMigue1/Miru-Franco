@@ -26,6 +26,9 @@ export interface CitaApi {
   especialistaNombre?: string | null;
   servicioId: number;
   servicioNombre?: string | null;
+  /** Precio y duración del servicio que vienen con la cita (sirven aunque el servicio ya esté inactivo). */
+  servicioPrecio?: number | null;
+  servicioDuracionMinutos?: number | null;
   fechaHoraInicio: string;
   fechaHoraFin: string;
   estado: EstadoCita;
@@ -129,6 +132,8 @@ function normalizarCita(x: unknown): CitaApi | null {
     especialistaNombre: s(r.especialistaNombre ?? r.especialista_nombre ?? (r.especialista as Record<string, unknown>)?.nombre) || null,
     servicioId: Number(n(r.servicioId ?? r.servicio_id, 0) ?? 0),
     servicioNombre: s(r.servicioNombre ?? r.servicio_nombre ?? (r.servicio as Record<string, unknown>)?.nombre) || null,
+    servicioPrecio: n((r.servicio as Record<string, unknown>)?.precio, null),
+    servicioDuracionMinutos: n((r.servicio as Record<string, unknown>)?.duracionMinutos, null),
     fechaHoraInicio: s(r.fechaHoraInicio ?? r.fecha_hora_inicio),
     fechaHoraFin: s(r.fechaHoraFin ?? r.fecha_hora_fin),
     estado,

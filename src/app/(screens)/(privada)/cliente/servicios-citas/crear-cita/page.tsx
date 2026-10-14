@@ -157,7 +157,7 @@ function CrearCitaContent() {
                     onChange={(e) => setNotas(e.target.value)}
                     rows={4}
                     fullWidth
-                    placeholder="Indica cualquier preferencia, alergia o información relevante..."
+                    placeholder="Indica tus preferencias para la cita. Si tienes alergias, regístralas en Mi perfil, en Información personal."
                   />
                 </div>
               </Card>

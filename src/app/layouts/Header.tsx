@@ -25,6 +25,9 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const fixedBarRef = useRef<HTMLDivElement>(null);
+  const menuBotonRef = useRef<HTMLButtonElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const menuAbiertoAntes = useRef(false);
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('Usuario');
@@ -159,6 +162,13 @@ export default function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [isMenuOpen]);
 
+  // Foco: al abrir el menú va al panel; al cerrarlo vuelve al botón que lo abrió
+  useEffect(() => {
+    if (isMenuOpen) menuPanelRef.current?.focus();
+    else if (menuAbiertoAntes.current) menuBotonRef.current?.focus();
+    menuAbiertoAntes.current = isMenuOpen;
+  }, [isMenuOpen]);
+
   // Cerrar menú con Escape
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -228,9 +238,13 @@ export default function Header() {
             {/* Izquierda: Menu + Logo (apilado: imagen arriba, nombre abajo) */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
+                ref={menuBotonRef}
+                type="button"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="flex items-center justify-center hover:opacity-80 transition-opacity text-texto-fondo-oscuro shrink-0"
-                aria-label="Menu"
+                aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+                aria-expanded={isMenuOpen}
+                aria-controls="menu-movil"
                 style={{ minHeight: '44px', minWidth: '44px' }}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +286,7 @@ export default function Header() {
               {/* Carrito */}
               <Link
                 href="/cliente/tienda-online/carrito"
-                className="relative p-1.5 sm:p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro shrink-0"
+                className="relative inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 sm:p-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro shrink-0"
                 aria-label="Carrito"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,25 +301,28 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-              {/* Notificaciones */}
-              <div className="relative shrink-0">
-                <button
-                  onClick={() => router.push('/cliente/notificaciones')}
-                  className="p-1.5 sm:p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
-                  aria-label="Notificaciones"
-                >
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  {notificationsCount > 0 && (
-                    <span 
-                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-danger text-texto-fondo-oscuro"
-                    >
-                      {notificationsCount}
-                    </span>
-                  )}
-                </button>
-              </div>
+              {/* Notificaciones: solo con sesión (a un visitante no le llegan) */}
+              {isLoggedIn && (
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/cliente/notificaciones')}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 sm:p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
+                    aria-label="Notificaciones"
+                  >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {notificationsCount > 0 && (
+                      <span 
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-danger text-texto-fondo-oscuro"
+                      >
+                        {notificationsCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* Usuario: Iniciar sesión si no está logueado, menú con perfil y cerrar sesión si sí */}
               {isLoggedIn ? (
@@ -481,7 +498,7 @@ export default function Header() {
               ) : (
                 <Link
                   href={rutaDeRegreso(pathname) ? rutaLogin(pathname as string) : '/login'}
-                  className="flex items-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro shrink-0"
+                  className="flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-texto-fondo-oscuro shrink-0"
                   style={{ backgroundColor: 'var(--hover)' }}
                   aria-label="Iniciar sesión"
                 >
@@ -513,7 +530,13 @@ export default function Header() {
       {isMenuOpen && (
         <>
           <div
-            className="mf-menu-movil fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide"
+            ref={menuPanelRef}
+            id="menu-movil"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menú"
+            tabIndex={-1}
+            className="mf-menu-movil fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide outline-none"
             style={{ backgroundColor: 'var(--header-footer)' }}
           >
             <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />

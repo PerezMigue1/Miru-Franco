@@ -18,12 +18,16 @@ import { getServiciosAdmin, updateServicio, deleteServicio, type Servicio } from
 import { createPaquete, serializarPaqueteParaApi } from '../../../services/paquetes';
 import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
 import { IMG_SERVICIO_PLACEHOLDER } from '../../../utils/serviceImagePlaceholder';
+import { formatearPrecioMXN } from '../../../utils/formatoPrecio';
+import { leerPrecioPaquete } from '../paquetes/precioPaquete';
 
 export default function ServiciosPage() {
   const router = useRouter();
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** Error al cargar el catálogo: se queda visible (no se confunde con "no hay servicios"). */
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [servicioToDelete, setServicioToDelete] = useState<Servicio | null>(null);
@@ -46,8 +50,9 @@ export default function ServiciosPage() {
     try {
       const result = await getServiciosAdmin(true);
       setServicios(result.data || []);
+      setErrorCarga(result.error ? `No se pudieron cargar los servicios: ${result.error}` : null);
     } catch {
-      setError("Error al cargar servicios");
+      setErrorCarga('No se pudieron cargar los servicios.');
     } finally {
       setLoading(false);
     }
@@ -93,8 +98,8 @@ export default function ServiciosPage() {
       setError('Rellena los campos obligatorios del paquete.');
       return;
     }
-    const precioNum = parseFloat(formPaquetePrecio.replace(/[^0-9.]/g, ''));
-    if (!Number.isFinite(precioNum) || precioNum < 0) {
+    const precioNum = leerPrecioPaquete(formPaquetePrecio);
+    if (precioNum === null) {
       setError('Indica un precio válido para el paquete.');
       return;
     }
@@ -145,11 +150,11 @@ export default function ServiciosPage() {
     if (!id) return;
     try {
       await deleteServicio(id);
-      setSuccess("Servicio eliminado correctamente");
+      setSuccess('Servicio desactivado correctamente');
       setShowDeleteModal(false);
       loadServicios();
-    } catch {
-      setError("Error al eliminar");
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : 'Error al desactivar el servicio');
     }
   };
 
@@ -249,6 +254,11 @@ export default function ServiciosPage() {
 
           {loading ? (
             <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando servicios…</p>
+          ) : errorCarga ? (
+            <div role="alert" className="py-8 text-center space-y-3">
+              <p className="text-sm font-semibold" style={{ color: 'var(--danger-texto)' }}>{errorCarga}</p>
+              <Button variant="outline" size="sm" onClick={loadServicios}>Reintentar</Button>
+            </div>
           ) : serviciosVisibles.length === 0 ? (
             <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
               {mostrarInactivos ? 'No hay servicios inactivos.' : 'No hay servicios que coincidan con la búsqueda.'}
@@ -283,7 +293,7 @@ export default function ServiciosPage() {
                             {reactivandoId === id ? 'Reactivando...' : 'Reactivar'}
                           </Button>
                         ) : (
-                          <Button variant="danger" size="sm" onClick={() => { setServicioToDelete(s); setShowDeleteModal(true); }}>Eliminar</Button>
+                          <Button variant="danger" size="sm" onClick={() => { setServicioToDelete(s); setShowDeleteModal(true); }}>Desactivar</Button>
                         )}
                       </>
                     }
@@ -292,7 +302,7 @@ export default function ServiciosPage() {
                       {s.categoria ?? 'General'}
                     </Badge>
                     <div className="flex items-center justify-between text-sm mt-auto pt-1">
-                      <span className="font-bold text-lg" style={{ color: 'var(--oro-texto)' }}>${s.precio}</span>
+                      <span className="font-bold text-lg" style={{ color: 'var(--oro-texto)' }}>{formatearPrecioMXN(s.precio)}</span>
                       <span style={{ color: 'var(--encabezados-alterno)' }}>{s.duracionMinutos || s.duracion} min</span>
                     </div>
                   </CatalogoCard>
@@ -387,7 +397,7 @@ export default function ServiciosPage() {
             </div>
           )}
 
-          <Input label="Precio del Paquete ($) *" type="number" value={formPaquetePrecio} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPaquetePrecio(e.target.value)} fullWidth />
+          <Input label="Precio del Paquete ($) *" type="number" min={0} step={0.01} value={formPaquetePrecio} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPaquetePrecio(e.target.value)} fullWidth />
 
           <div className="flex justify-end gap-2 mt-2">
              <Button variant="outline" onClick={() => setShowPaqueteForm(false)}>Cancelar</Button>
@@ -397,12 +407,12 @@ export default function ServiciosPage() {
       </Modal>
 
       {/* MODAL ELIMINAR */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Confirmar eliminación">
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Desactivar servicio">
         <div className="flex flex-col gap-4">
-          <p style={{ color: 'var(--menu-texto-principal)' }}>¿Estás seguro de que deseas borrar este servicio?</p>
+          <p style={{ color: 'var(--menu-texto-principal)' }}>¿Desactivar este servicio? Dejará de mostrarse en el catálogo y podrás reactivarlo desde &quot;Mostrar solo inactivos&quot;.</p>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancelar</Button>
-            <Button variant="danger" onClick={handleConfirmarEliminar}>Eliminar definitivamente</Button>
+            <Button variant="danger" onClick={handleConfirmarEliminar}>Desactivar</Button>
           </div>
         </div>
       </Modal>

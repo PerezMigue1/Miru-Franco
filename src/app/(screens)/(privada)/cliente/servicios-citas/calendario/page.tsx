@@ -9,7 +9,7 @@ import Button from '../../../../../components/ui/Button';
 import Card from '../../../../../components/ui/Card';
 import Select from '../../../../../components/ui/Select';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, RotateCw } from 'lucide-react';
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
 import {
   obtenerEspecialistas,
@@ -36,6 +36,9 @@ function CalendarioContent() {
   const [especialistas, setEspecialistas] = useState<EspecialistaApi[]>([]);
   const [loadingEspecialistas, setLoadingEspecialistas] = useState(true);
   const [especialistaId, setEspecialistaId] = useState('');
+  const [errorEspecialistas, setErrorEspecialistas] = useState<string | null>(null);
+  // Cada reintento vuelve a pedir la lista de especialistas.
+  const [intentoEspecialistas, setIntentoEspecialistas] = useState(0);
 
   const [mesActual, setMesActual] = useState(new Date());
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | null>(null);
@@ -46,11 +49,18 @@ function CalendarioContent() {
   const [errorSlots, setErrorSlots] = useState<string | null>(null);
 
   useEffect(() => {
+    queueMicrotask(() => {
+      setLoadingEspecialistas(true);
+      setErrorEspecialistas(null);
+    });
     obtenerEspecialistas()
       .then(setEspecialistas)
-      .catch(() => setEspecialistas([]))
+      .catch(() => {
+        setEspecialistas([]);
+        setErrorEspecialistas('No pudimos cargar la lista de especialistas. Revisa tu conexión e intenta de nuevo.');
+      })
       .finally(() => setLoadingEspecialistas(false));
-  }, []);
+  }, [intentoEspecialistas]);
 
   useEffect(() => {
     if (!especialistaId || !diaSeleccionado || !servicioId) {
@@ -159,6 +169,21 @@ function CalendarioContent() {
             ]}
             fullWidth
           />
+          {errorEspecialistas && (
+            <div className="mt-3 flex flex-wrap items-center gap-3" role="alert">
+              <p className="text-sm" style={{ color: 'var(--danger-texto)' }}>{errorEspecialistas}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="inline-flex items-center gap-2"
+                onClick={() => setIntentoEspecialistas((n) => n + 1)}
+              >
+                <RotateCw size={16} aria-hidden />
+                Reintentar
+              </Button>
+            </div>
+          )}
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

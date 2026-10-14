@@ -22,8 +22,9 @@ import {
 } from '../../../../services/comisiones';
 import { PERMISOS_COMISIONES, usePermisos } from '../../../../utils/permisos';
 import { hoyEnMexico, rangoDelMes } from '../../../../utils/fechaSoloDia';
-import { fmtMoneda, montoValido } from '../../../../utils/cobroPos';
+import { fmtMoneda } from '../../../../utils/cobroPos';
 import { showToast } from '../../../../utils/toast';
+import { MONTO_MAXIMO_COMISION, validarMontoComision } from '../_lib/panelOperacion';
 
 const ETIQUETA_ROL: Record<string, string> = { estilista: 'Estilista', empleado: 'Empleado', becario: 'Becario', admin: 'Administración' };
 
@@ -199,8 +200,9 @@ function MontosPorServicio() {
   const guardar = async (s: ComisionServicioApi) => {
     const b = borradores[s.servicioId];
     const monto = Number(b.monto);
-    if (!montoValido(b.monto)) {
-      setErrores((e) => ({ ...e, [s.servicioId]: 'Monto inválido: cero o más, con hasta 2 decimales' }));
+    const problema = validarMontoComision(b.monto);
+    if (problema) {
+      setErrores((e) => ({ ...e, [s.servicioId]: problema }));
       return;
     }
     setGuardandoId(s.servicioId);
@@ -263,6 +265,7 @@ function MontosPorServicio() {
                         label="Comisión ($)"
                         type="number"
                         min={0}
+                        max={MONTO_MAXIMO_COMISION}
                         step={0.01}
                         inputMode="decimal"
                         value={b.monto}

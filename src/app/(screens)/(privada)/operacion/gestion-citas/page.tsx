@@ -27,17 +27,19 @@ import {
   RiesgoCancelacionApi,
   NivelRiesgoCancelacion,
 } from '../../../../services/citas';
-import { listarClientes, ClienteApi } from '../../../../services/clientes';
+import BuscadorClienta from '../../../../components/operacion/BuscadorClienta';
 import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
 import { usePermisos } from '../../../../utils/permisos';
 import { getServicios, Servicio } from '../../../../services/servicios';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
 import { PLAZOS_TERMINOS } from '../../../../utils/terminosCondiciones';
+import { fechaYHora24EnMexico } from '../../../../utils/fechaSoloDia';
+import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
+import { showToast } from '../../../../utils/toast';
+import { isoDesdeFechaHoraMexico, resumenCitasPagina, validarMotivoCancelacionCita } from '../_lib/panelOperacion';
 
-/** Combina fecha (YYYY-MM-DD) + hora (HH:mm) en un ISO string. */
-function combinar(fecha: string, hora: string): string {
-  return new Date(`${fecha}T${hora}:00`).toISOString();
-}
+/** Combina fecha (YYYY-MM-DD) + hora (HH:mm) de México en un ISO string. */
+const combinar = isoDesdeFechaHoraMexico;
 
 function fmtFecha(iso: string): string {
   if (!iso) return '-';
@@ -69,10 +71,11 @@ export default function GestionCitasPage() {
   const [loadingRiesgos, setLoadingRiesgos] = useState(false);
   const [errorRiesgos, setErrorRiesgos] = useState<string | null>(null);
 
-  // Catálogos para selects
-  const [clientes, setClientes] = useState<ClienteApi[]>([]);
+  // Catálogos para selects (la clienta se busca con BuscadorClienta: el backend topa la lista en 100)
   const [especialistas, setEspecialistas] = useState<EmpleadoApi[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [errorServicios, setErrorServicios] = useState(false);
+  const [errorEspecialistas, setErrorEspecialistas] = useState(false);
 
   // Filtro: ver citas de todos los especialistas o solo de uno
   const [filtroEspecialistaId, setFiltroEspecialistaId] = useState('');
@@ -84,7 +87,7 @@ export default function GestionCitasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [fClienteId, setFClienteId] = useState('');
+  const [fCliente, setFCliente] = useState<{ id: string; nombre: string } | null>(null);
   const [fEspecialistaId, setFEspecialistaId] = useState('');
   const [fServicioId, setFServicioId] = useState('');
   const [fFecha, setFFecha] = useState('');
@@ -104,6 +107,12 @@ export default function GestionCitasPage() {
   const [rHoraFin, setRHoraFin] = useState('');
   const [reprogError, setReprogError] = useState<string | null>(null);
   const [reprogSaving, setReprogSaving] = useState(false);
+
+  // Modal cancelar
+  const [cancelId, setCancelId] = useState<number | null>(null);
+  const [cancelMotivo, setCancelMotivo] = useState('');
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSaving, setCancelSaving] = useState(false);
 
   const TAMANO_PAGINA_CITAS = 100;
   const [pagina, setPagina] = useState(1);
@@ -165,26 +174,43 @@ export default function GestionCitasPage() {
 
   useEffect(() => {
     cargar();
-    // Catálogos (no bloquean la tabla; si fallan, los selects quedan vacíos)
-    getServicios().then(({ data }) => setServicios(data)).catch(() => {});
   }, [cargar]);
 
-  useEffect(() => {
-    if (!puedeListarClientes) return;
-    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
-  }, [puedeListarClientes]);
+  // Catálogos: no bloquean la tabla; si fallan se avisa con Reintentar en vez de dejar selects vacíos.
+  const cargarServicios = useCallback(() => {
+    getServicios()
+      .then(({ data }) => { setServicios(data); setErrorServicios(false); })
+      .catch(() => setErrorServicios(true));
+  }, []);
 
-  useEffect(() => {
+  const cargarEspecialistas = useCallback(() => {
     if (!puedeListarEmpleados) return;
-    listarEmpleados({ limit: 200 }).then(({ data }) => setEspecialistas(data)).catch(() => {});
+    listarEmpleados({ limit: 200 })
+      .then(({ data }) => { setEspecialistas(data); setErrorEspecialistas(false); })
+      .catch(() => setErrorEspecialistas(true));
   }, [puedeListarEmpleados]);
+
+  useEffect(() => { cargarServicios(); }, [cargarServicios]);
+  useEffect(() => { cargarEspecialistas(); }, [cargarEspecialistas]);
+
+  const catalogosFallidos = [errorServicios && 'servicios', errorEspecialistas && 'especialistas'].filter(Boolean).join(' y ');
+  const reintentarCatalogos = () => {
+    if (errorServicios) cargarServicios();
+    if (errorEspecialistas) cargarEspecialistas();
+  };
+  const avisoCatalogos = catalogosFallidos ? (
+    <div role="alert" className="flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--danger-texto)]">
+      <span>No se pudo cargar la lista de {catalogosFallidos}.</span>
+      <Button size="sm" variant="outline" onClick={reintentarCatalogos}>Reintentar</Button>
+    </div>
+  ) : null;
 
   const totalPaginasCitas = Math.max(1, Math.ceil(totalCitas / TAMANO_PAGINA_CITAS));
   const desdeCitas = totalCitas === 0 ? 0 : (pagina - 1) * TAMANO_PAGINA_CITAS + 1;
   const hastaCitas = Math.min((pagina - 1) * TAMANO_PAGINA_CITAS + citas.length, totalCitas);
 
   const resetForm = () => {
-    setFClienteId(''); setFEspecialistaId(''); setFServicioId('');
+    setFCliente(null); setFEspecialistaId(''); setFServicioId('');
     setFFecha(''); setFHoraInicio(''); setFHoraFin(''); setFNotas(''); setFPedirAnticipo(false); setFPagoAnticipo('salon');
     setFormError(null);
   };
@@ -192,7 +218,7 @@ export default function GestionCitasPage() {
   const anticipoServicioForm = servicios.find((s) => String(s.id) === fServicioId)?.anticipoMonto ?? 0;
 
   const handleCrear = async () => {
-    if (!fClienteId || !fEspecialistaId || !fServicioId || !fFecha || !fHoraInicio || !fHoraFin) {
+    if (!fCliente || !fEspecialistaId || !fServicioId || !fFecha || !fHoraInicio || !fHoraFin) {
       setFormError('Cliente, especialista, servicio, fecha y horas son obligatorios');
       return;
     }
@@ -203,7 +229,7 @@ export default function GestionCitasPage() {
     setSaving(true); setFormError(null);
     try {
       await crearCita({
-        clienteId: fClienteId,
+        clienteId: fCliente.id,
         especialistaId: fEspecialistaId,
         servicioId: Number(fServicioId),
         fechaHoraInicio: combinar(fFecha, fHoraInicio),
@@ -221,32 +247,45 @@ export default function GestionCitasPage() {
     }
   };
 
-  const handleCancelar = async (id: number) => {
-    const motivo = window.prompt('Motivo de cancelación:');
-    if (!motivo) return;
+  const openCancelar = (id: number) => {
+    setCancelId(id); setCancelMotivo(''); setCancelError(null);
+  };
+  const cerrarCancelar = () => { setCancelId(null); setCancelMotivo(''); setCancelError(null); };
+
+  const handleCancelar = async () => {
+    if (!cancelId) return;
+    const problema = validarMotivoCancelacionCita(cancelMotivo);
+    if (problema) { setCancelError(problema); return; }
+    setCancelSaving(true); setCancelError(null);
     try {
-      await cancelarCita(id, { motivoCancelacion: motivo });
+      await cancelarCita(cancelId, { motivoCancelacion: cancelMotivo.trim() });
+      cerrarCancelar();
+      showToast('Cita cancelada', 'success');
       cargar();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'No se pudo cancelar la cita');
+      setCancelError(mensajeUsuarioDesdeErrorApi(e));
+    } finally {
+      setCancelSaving(false);
     }
   };
 
   const handleCheckIn = async (id: number) => {
     try { await checkInCita(id); cargar(); }
-    catch (e) { alert(e instanceof Error ? e.message : 'No se pudo hacer check-in'); }
+    catch (e) { showToast(`No se pudo hacer check-in: ${mensajeUsuarioDesdeErrorApi(e)}`, 'error', 6000); }
   };
   const handleCheckOut = async (id: number) => {
     try { await checkOutCita(id); cargar(); }
-    catch (e) { alert(e instanceof Error ? e.message : 'No se pudo hacer check-out'); }
+    catch (e) { showToast(`No se pudo hacer check-out: ${mensajeUsuarioDesdeErrorApi(e)}`, 'error', 6000); }
   };
 
   const openReprogramar = (c: CitaApi) => {
     setReprogId(c.id);
-    const d = new Date(c.fechaHoraInicio);
-    setRFecha(isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10));
-    setRHoraInicio(fmtHora(c.fechaHoraInicio).replace(/[^0-9:]/g, '') || '');
-    setRHoraFin(fmtHora(c.fechaHoraFin).replace(/[^0-9:]/g, '') || '');
+    // Fecha y hora en México con reloj de 24 h: así lo esperan los inputs date y time.
+    const inicio = fechaYHora24EnMexico(c.fechaHoraInicio);
+    const fin = fechaYHora24EnMexico(c.fechaHoraFin);
+    setRFecha(inicio?.fecha ?? '');
+    setRHoraInicio(inicio?.hora ?? '');
+    setRHoraFin(fin?.hora ?? '');
     setReprogError(null);
     setIsReprogOpen(true);
   };
@@ -273,9 +312,8 @@ export default function GestionCitasPage() {
 
   const esFinal = (e: EstadoCita) => ['cancelada', 'completada', 'no_asistio'].includes(e);
 
-  const pendientes = citas.filter((c) => c.estado === 'pendiente' || c.estado === 'confirmada').length;
-  const enCurso = citas.filter((c) => c.estado === 'en_curso').length;
-  const canceladas = citas.filter((c) => c.estado === 'cancelada').length;
+  // Solo la página visible (hasta 100 citas): las etiquetas lo dicen para no leerse como totales.
+  const resumenPagina = resumenCitasPagina(citas);
   const altoRiesgo = Object.values(riesgos).filter((r) => r.nivelRiesgo === 'alto').length;
 
   return (
@@ -297,9 +335,9 @@ export default function GestionCitasPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-          <TarjetaKpi icono={Clock3} etiqueta="Pendientes / confirmadas" cargando={loading} valor={pendientes} />
-          <TarjetaKpi icono={CheckCircle2} etiqueta="En curso" cargando={loading} valor={enCurso} />
-          <TarjetaKpi icono={XCircle} etiqueta="Canceladas" cargando={loading} valor={canceladas} />
+          <TarjetaKpi icono={Clock3} etiqueta={resumenPagina.pendientes.etiqueta} cargando={loading} valor={resumenPagina.pendientes.valor} />
+          <TarjetaKpi icono={CheckCircle2} etiqueta={resumenPagina.enCurso.etiqueta} cargando={loading} valor={resumenPagina.enCurso.valor} />
+          <TarjetaKpi icono={XCircle} etiqueta={resumenPagina.canceladas.etiqueta} cargando={loading} valor={resumenPagina.canceladas.valor} />
           <TarjetaKpi
             icono={BrainCircuit}
             etiqueta="Riesgo alto previsto"
@@ -309,6 +347,8 @@ export default function GestionCitasPage() {
             alerta={altoRiesgo > 0}
           />
         </div>
+
+        {avisoCatalogos}
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-4">
@@ -423,7 +463,7 @@ export default function GestionCitasPage() {
                     {!esFinal(cita.estado) && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => openReprogramar(cita)}>Reprogramar</Button>
-                        <Button size="sm" variant="danger" onClick={() => handleCancelar(cita.id)}>Cancelar</Button>
+                        <Button size="sm" variant="danger" onClick={() => openCancelar(cita.id)}>Cancelar</Button>
                       </>
                     )}
                     <AccionesAnticipo cita={cita} ahora={ahora} onCambio={() => { void cargar(); }} conNoAsistio />
@@ -477,15 +517,14 @@ export default function GestionCitasPage() {
           </>
         }
       >
-        {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
+        {formError && <p role="alert" className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
         <div className="space-y-4">
-          <Select
-            label="Cliente *"
-            value={fClienteId}
-            onChange={(e) => setFClienteId(e.target.value)}
-            options={[{ value: '', label: 'Seleccionar cliente…' }, ...clientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
-            fullWidth
-          />
+          {avisoCatalogos}
+          {puedeListarClientes ? (
+            <BuscadorClienta seleccion={fCliente} onSeleccionar={setFCliente} label="Cliente *" />
+          ) : (
+            <p className="text-sm text-encabezados-alterno">Tu rol no puede buscar clientas en el directorio: pide a quien tenga acceso que agende la cita.</p>
+          )}
           <Select
             label="Especialista *"
             value={fEspecialistaId}
@@ -538,6 +577,32 @@ export default function GestionCitasPage() {
             />
           )}
         </div>
+      </Modal>
+
+      {/* Modal: Cancelar cita */}
+      <Modal
+        isOpen={cancelId !== null}
+        onClose={() => { if (!cancelSaving) cerrarCancelar(); }}
+        title="Cancelar cita"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={cerrarCancelar} disabled={cancelSaving}>Volver</Button>
+            <Button variant="danger" onClick={handleCancelar} disabled={cancelSaving}>{cancelSaving ? 'Cancelando…' : 'Cancelar cita'}</Button>
+          </>
+        }
+      >
+        {cancelError && <p role="alert" className="mb-3 text-sm text-[var(--danger-texto)]">{cancelError}</p>}
+        <Textarea
+          label="Motivo de cancelación *"
+          value={cancelMotivo}
+          onChange={(e) => setCancelMotivo(e.target.value)}
+          placeholder="Ej. La clienta avisó que no puede asistir"
+          rows={3}
+          maxLength={500}
+          required
+          fullWidth
+        />
       </Modal>
 
       {/* Modal: Reprogramar */}

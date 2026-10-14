@@ -14,6 +14,7 @@ import {
   type CitaApi,
   type SlotDisponible,
 } from '../../../../../../services/citas';
+import { hoyEnMexico } from '../../../../../../utils/fechaSoloDia';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -123,6 +124,8 @@ export default function ReprogramarCitaPage() {
   }
 
   const opcionesHora = disponibilidad?.slots.map((s) => ({ value: s.inicio, label: s.horaLocal })) ?? [];
+  // La nueva fecha no puede ser un día que ya pasó (día de hoy en México).
+  const hoy = hoyEnMexico();
 
   return (
     <ModuleLayout>
@@ -196,13 +199,16 @@ export default function ReprogramarCitaPage() {
                 <div className="space-y-4">
                   <div>
                     <label
+                      htmlFor="nueva-fecha"
                       className="block mb-2 font-medium"
                       style={{ color: 'var(--menu-texto-principal)' }}
                     >
                       Nueva Fecha
                     </label>
                     <input
+                      id="nueva-fecha"
                       type="date"
+                      min={hoy}
                       value={nuevaFecha}
                       onChange={(e) => setNuevaFecha(e.target.value)}
                       className="mf-campo w-full px-4 py-2.5"

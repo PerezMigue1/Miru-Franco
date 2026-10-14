@@ -9,18 +9,9 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import FotoUsuarioUploader from '../../../../components/admin/FotoUsuarioUploader';
-import { getUsuarioById, updateUsuario, getRoles, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
+import { getUsuarioById, updateUsuario, getRoles, opcionesRolEdicion, telefonoEdicionUsuario, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
 import CasillaDatosSalud from '../../../../components/legal/CasillaDatosSalud';
 import { errorConsentimientoAlergias, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
-
-const ROLES_PERMITIDOS = ['admin', 'estilista', 'empleado', 'becario'] as const;
-
-const opcionesRolPermitidas = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'estilista', label: 'Estilista' },
-  { value: 'empleado', label: 'Empleado' },
-  { value: 'becario', label: 'Becado' },
-];
 
 function rolValorParaSelect(rol: string): string {
   const r = String(rol || '').toLowerCase().trim();
@@ -83,17 +74,17 @@ export default function EditarUsuarioPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const rolesFiltrados = roles.filter((r) =>
-    ROLES_PERMITIDOS.includes(r.valor as (typeof ROLES_PERMITIDOS)[number])
-  );
-  const opcionesRol =
-    rolesFiltrados.length > 0
-      ? rolesFiltrados.map((r) => ({ value: r.valor, label: r.nombre === 'Becario' ? 'Becado' : r.nombre }))
-      : opcionesRolPermitidas;
+  // Incluye cliente: sin esa opción, una clienta aparecía como el primer rol de la lista (Admin).
+  const opcionesRol = opcionesRolEdicion(roles);
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
       setError('El nombre es obligatorio.');
+      return;
+    }
+    const tel = telefonoEdicionUsuario(telefono);
+    if ('error' in tel) {
+      setError(tel.error);
       return;
     }
     const faltaConsentimiento = errorConsentimientoAlergias(alergias, consienteDatosSensibles, 'personal');
@@ -105,7 +96,7 @@ export default function EditarUsuarioPage() {
       // email NO se envía: no es editable desde este formulario.
       await updateUsuario(id, {
         nombre: nombre.trim(),
-        telefono: telefono.trim() || null,
+        telefono: tel.telefono,
         rol: rol as RolValor,
         fechaNacimiento: fechaNacimiento || null,
         foto: foto,

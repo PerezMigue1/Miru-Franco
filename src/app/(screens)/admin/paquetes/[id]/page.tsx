@@ -8,6 +8,8 @@ import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Textarea from '../../../../components/ui/Textarea';
+import { showToast } from '../../../../utils/toast';
+import { leerPrecioPaquete } from '../precioPaquete';
 
 export default function DetallePaquetePage() {
   const { id } = useParams();
@@ -15,7 +17,9 @@ export default function DetallePaquetePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  const [errorGuardar, setErrorGuardar] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     tipo_evento: '',
     precio_especial: '',
@@ -35,29 +39,32 @@ export default function DetallePaquetePage() {
             servicios_vinculados: c.serviciosVinculados,
           });
         })
-        .catch(() => console.error("Error al cargar"))
+        .catch((err) => {
+          setErrorCarga(`No se pudo cargar el paquete${err instanceof Error && err.message ? `: ${err.message}` : '.'}`);
+        })
         .finally(() => setLoading(false));
     }
   }, [id]);
 
   const handleGuardar = async () => {
+    const precioNum = leerPrecioPaquete(form.precio_especial);
+    if (precioNum === null) {
+      setErrorGuardar('Indica un precio válido (0 o mayor).');
+      return;
+    }
+    setErrorGuardar(null);
     setSaving(true);
     try {
-      const precioNum = parseFloat(String(form.precio_especial).replace(/[^0-9.]/g, ''));
-      if (!Number.isFinite(precioNum) || precioNum < 0) {
-        alert('Precio no válido');
-        return;
-      }
       await updatePaquete(id as string, {
         tipoEvento: form.tipo_evento.trim(),
         descripcion: form.descripcion.trim(),
         precioEspecial: precioNum,
         serviciosVinculados: form.servicios_vinculados.map((x) => String(x).trim()).filter(Boolean),
       });
-      alert("¡Paquete actualizado!");
+      showToast('Paquete actualizado', 'success');
       router.push('/admin/paquetes');
-    } catch {
-      alert("Error al actualizar");
+    } catch (err) {
+      setErrorGuardar(err instanceof Error && err.message ? err.message : 'Error al actualizar el paquete');
     } finally {
       setSaving(false);
     }
@@ -70,6 +77,22 @@ export default function DetallePaquetePage() {
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>Editar Paquete</h1>
           <Card variant="elevated" padding="lg">
             <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando paquete…</p>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (errorCarga) {
+    return (
+      <AdminLayout>
+        <div className="w-full max-w-none space-y-8">
+          <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>Editar Paquete</h1>
+          <Card variant="elevated" padding="lg">
+            <div role="alert" className="text-center py-8 space-y-3">
+              <p className="font-semibold" style={{ color: 'var(--danger-texto)' }}>{errorCarga}</p>
+              <Button variant="outline" onClick={() => router.push('/admin/paquetes')}>Volver a paquetes</Button>
+            </div>
           </Card>
         </div>
       </AdminLayout>
@@ -98,6 +121,12 @@ export default function DetallePaquetePage() {
           </div>
         </div>
 
+        {errorGuardar && (
+          <Card padding="md" role="alert" style={{ backgroundColor: 'color-mix(in srgb, var(--danger) 10%, var(--badge-base))', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--danger-texto) 35%, transparent)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--danger-texto)' }}>{errorGuardar}</p>
+          </Card>
+        )}
+
         <Card variant="elevated" padding="lg">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -110,6 +139,8 @@ export default function DetallePaquetePage() {
               <Input
                 label="Precio Especial ($)"
                 type="number"
+                min={0}
+                step={0.01}
                 value={form.precio_especial}
                 onChange={(e) => setForm({...form, precio_especial: e.target.value})}
                 fullWidth

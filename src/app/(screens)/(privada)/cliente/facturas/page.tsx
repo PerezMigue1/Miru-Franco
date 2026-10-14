@@ -17,6 +17,8 @@ import {
 } from '../../../../services/ecommerce';
 import { hasValidToken } from '../../../../utils/security';
 import { showAlert, showToast } from '../../../../utils/toast';
+import { formatearPrecioMXN } from '../../../../utils/formatoPrecio';
+import { etiquetaEstadoFactura } from '../../../../utils/estados';
 
 export default function FacturasPage() {
   const [facturas, setFacturas] = useState<FacturaApi[]>([]);
@@ -130,7 +132,7 @@ export default function FacturasPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={doc.estado === 'timbrada' || doc.estado === 'emitida' ? 'success' : 'warning'}>
-                          {doc.estado ?? '—'}
+                          {etiquetaEstadoFactura(doc.estado)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
@@ -186,7 +188,7 @@ export default function FacturasPage() {
                       { value: '', label: 'Selecciona pedido…' },
                       ...pedidos.map((p) => ({
                         value: String(p.id),
-                        label: `#${p.id} — ${new Date(p.creadoEn ?? '').toLocaleDateString('es-MX')} — $${p.total}`,
+                        label: `#${p.id} · ${new Date(p.creadoEn ?? '').toLocaleDateString('es-MX')} · ${formatearPrecioMXN(p.total)}`,
                       })),
                     ]}
                     fullWidth

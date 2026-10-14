@@ -14,6 +14,7 @@ import {
   varianteBadgeEstadoSolicitud,
   type SolicitudPermisoApi,
 } from '../../services/solicitudesPermiso';
+import { mensajeDeError } from '../../utils/errorRed';
 
 /**
  * fechaInicio/fechaFin son fechas puras (sin hora) guardadas como medianoche UTC.
@@ -38,14 +39,18 @@ export default function PanelSolicitudes() {
   const [resolverModal, setResolverModal] = useState<{ id: number; estado: 'aprobada' | 'rechazada' } | null>(null);
   const [comentarioResolucion, setComentarioResolucion] = useState('');
   const [resolviendo, setResolviendo] = useState(false);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  const [errorResolver, setErrorResolver] = useState<string | null>(null);
 
   const cargarSolicitudes = async () => {
     setLoadingSolicitudes(true);
+    setErrorCarga(null);
     try {
       const data = await listarSolicitudesPermiso();
       setSolicitudes(data);
-    } catch {
+    } catch (e) {
       setSolicitudes([]);
+      setErrorCarga(mensajeDeError(e, 'No se pudieron cargar las solicitudes.'));
     } finally {
       setLoadingSolicitudes(false);
     }
@@ -56,11 +61,13 @@ export default function PanelSolicitudes() {
   const abrirResolver = (id: number, estado: 'aprobada' | 'rechazada') => {
     setResolverModal({ id, estado });
     setComentarioResolucion('');
+    setErrorResolver(null);
   };
 
   const confirmarResolver = async () => {
     if (!resolverModal) return;
     setResolviendo(true);
+    setErrorResolver(null);
     try {
       await resolverSolicitudPermiso(resolverModal.id, {
         estado: resolverModal.estado,
@@ -68,8 +75,9 @@ export default function PanelSolicitudes() {
       });
       setResolverModal(null);
       await cargarSolicitudes();
-    } catch {
-      // el modal se queda abierto para reintentar
+    } catch (e) {
+      // El modal se queda abierto para reintentar, con el motivo a la vista.
+      setErrorResolver(mensajeDeError(e, 'No se pudo guardar la resolución. Intenta de nuevo.'));
     } finally {
       setResolviendo(false);
     }
@@ -84,6 +92,8 @@ export default function PanelSolicitudes() {
         <div className="space-y-3 max-h-[420px] overflow-y-auto">
           {loadingSolicitudes ? (
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Cargando solicitudes…</p>
+          ) : errorCarga ? (
+            <p role="alert" className="text-sm" style={{ color: 'var(--danger-texto)' }}>{errorCarga}</p>
           ) : solicitudes.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>No hay solicitudes registradas.</p>
           ) : (
@@ -137,6 +147,9 @@ export default function PanelSolicitudes() {
           </>
         }
       >
+        {errorResolver && (
+          <p role="alert" className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{errorResolver}</p>
+        )}
         <Textarea
           label="Comentario (opcional)"
           value={comentarioResolucion}

@@ -6,6 +6,7 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { normalizarUrlImagenExterna } from '../utils/normalizarUrlImagen';
+import { enParaleloLimitado } from '../utils/enParaleloLimitado';
 
 const BASE = () => getBackendBaseUrl();
 
@@ -221,6 +222,8 @@ export interface PedidoApi {
   usuarioNombre?: string | null;
   usuarioEmail?: string | null;
   direccionEnvioId?: string | null;
+  /** Líneas del pedido si el listado las incluyó (GET /api/pedidos las trae); así no hace falta pedir /items. */
+  items?: PedidoItemApi[];
 }
 
 function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
@@ -245,6 +248,15 @@ function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
     usuarioNombre: usuarioObj?.nombre != null ? str(usuarioObj.nombre) : null,
     usuarioEmail: usuarioObj?.email != null ? str(usuarioObj.email) : null,
     direccionEnvioId: raw.direccionEnvioId != null ? str(raw.direccionEnvioId) : raw.direccion_envio_id != null ? str(raw.direccion_envio_id) : null,
+    ...(Array.isArray(raw.items)
+      ? {
+          items: (raw.items as Record<string, unknown>[]).map((it) => {
+            const producto = (it.producto && typeof it.producto === 'object' ? it.producto : null) as Record<string, unknown> | null;
+            const linea = normalizarPedidoItem(it);
+            return { ...linea, nombreProducto: linea.nombreProducto ?? (producto?.nombre != null ? str(producto.nombre) : null) };
+          }),
+        }
+      : {}),
   };
 }
 
@@ -304,6 +316,25 @@ export async function listarPedidosPaginado(
     limit: num(o.limit, params?.limit ?? 20),
     totalPages: num(o.totalPages, 1),
   };
+}
+
+/** Máximo de pedidos por página que acepta GET /api/pedidos (el backend recorta `limit` a 100). */
+const LIMITE_MAX_PEDIDOS = 100;
+
+/**
+ * Todos los pedidos (panel): recorre todas las páginas de GET /api/pedidos con el máximo por página.
+ * `listarPedidos()` solo trae la primera página (20); los reportes, pagos y facturación usan esta.
+ */
+export async function listarTodosLosPedidos(
+  params?: Omit<ListarPedidosPaginadoParams, 'page' | 'limit'>
+): Promise<PedidoApi[]> {
+  const primera = await listarPedidosPaginado({ ...params, page: 1, limit: LIMITE_MAX_PEDIDOS });
+  const restantes = Array.from({ length: Math.max(0, primera.totalPages - 1) }, (_, i) => i + 2);
+  const paginas = await enParaleloLimitado(
+    restantes.map((page) => () => listarPedidosPaginado({ ...params, page, limit: LIMITE_MAX_PEDIDOS })),
+    4
+  );
+  return [...primera.data, ...paginas.flatMap((p) => p.data)];
 }
 
 export async function obtenerPedido(id: number, opts?: OpcionesPortal): Promise<PedidoApi | null> {

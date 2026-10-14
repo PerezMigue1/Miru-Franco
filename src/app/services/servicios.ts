@@ -314,16 +314,33 @@ export interface ServicioPayload {
 }
 
 /**
- * Obtiene un servicio por id. Usa apiClient (requiere auth).
+ * Servicio por id para el panel: devuelve null solo si no existe (404 o id que no es un número);
+ * cualquier otro fallo se lanza para que la pantalla muestre el error en vez de "no encontrado".
  */
-export async function getServicioPorId(id: string | number): Promise<Servicio | null> {
+export async function obtenerServicioPorIdOError(id: string | number): Promise<Servicio | null> {
+  const idNum = Number(id);
+  // Un id no numérico hace fallar al backend con 500: es "no encontrado", sin pedirlo.
+  if (!Number.isInteger(idNum) || idNum < 1) return null;
   const base = getBackendBaseUrl();
   try {
-    const res = await apiClient.get<unknown>(`/api/servicios/${id}`, base);
+    const res = await apiClient.get<unknown>(`/api/servicios/${idNum}`, { customBase: base, skip500Redirect: true });
     const obj = res as Record<string, unknown>;
     const data = (obj?.data ?? obj) as ApiServicioRaw;
     if (data && typeof data === 'object') return normalizarServicio(data);
     return null;
+  } catch (e) {
+    if ((e as { status?: number })?.status === 404) return null;
+    throw e;
+  }
+}
+
+/**
+ * Obtiene un servicio por id. Usa apiClient (requiere auth).
+ * Nunca lanza: ante cualquier fallo devuelve null (lo usan el portal y metadatos de página).
+ */
+export async function getServicioPorId(id: string | number): Promise<Servicio | null> {
+  try {
+    return await obtenerServicioPorIdOError(id);
   } catch {
     return null;
   }

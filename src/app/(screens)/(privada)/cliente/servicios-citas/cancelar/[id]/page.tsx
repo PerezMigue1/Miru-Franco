@@ -11,6 +11,12 @@ import Textarea from '../../../../../../components/ui/Textarea';
 import { obtenerCita, cancelarCita, type CitaApi } from '../../../../../../services/citas';
 import { estadoAnticipo } from '../../../../../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
+import { showToast } from '../../../../../../utils/toast';
+import {
+  MENSAJE_CITA_NO_CANCELABLE,
+  citaGestionablePorClienta,
+  mensajeErrorCancelarCita,
+} from '../../../../../../components/cliente/citaGestionable';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -52,7 +58,7 @@ export default function CancelarCitaPage() {
   const motivos = [
     'Cambio de planes',
     'Emergencia personal',
-    'Problemas de salud',
+    'Motivo personal',
     'Conflicto de horario',
     'Otro',
   ];
@@ -68,9 +74,10 @@ export default function CancelarCitaPage() {
     try {
       const motivoCancelacion = [motivo, comentarios].filter(Boolean).join(' — ') || 'Sin motivo especificado';
       await cancelarCita(Number(id), { motivoCancelacion }, { propios: true });
+      showToast('Tu cita quedó cancelada.', 'success');
       router.push('/cliente/servicios-citas/mis-citas');
     } catch (err) {
-      setErrorCancelar(err instanceof Error ? err.message : 'No se pudo cancelar la cita.');
+      setErrorCancelar(mensajeErrorCancelarCita(err));
       setCancelando(false);
     }
   };
@@ -87,12 +94,13 @@ export default function CancelarCitaPage() {
     );
   }
 
-  if (error || !cita) {
+  // Una cita cancelada, completada o que ya pasó no muestra el formulario (el backend la rechazaría).
+  if (error || !cita || !citaGestionablePorClienta(cita)) {
     return (
       <ModuleLayout>
         <div className="max-w-3xl mx-auto">
           <Card className="text-center py-16">
-            <p style={{ color: 'var(--danger-texto)' }}>{error ?? 'Cita no encontrada.'}</p>
+            <p style={{ color: 'var(--danger-texto)' }}>{error ?? (cita ? MENSAJE_CITA_NO_CANCELABLE : 'Cita no encontrada.')}</p>
             <Button className="mt-4" onClick={() => router.push('/cliente/servicios-citas/mis-citas')}>
               Volver a Mis Citas
             </Button>
@@ -236,12 +244,14 @@ export default function CancelarCitaPage() {
             <div className="space-y-4">
               <div>
                 <label
+                  htmlFor="motivo-cancelacion"
                   className="block mb-2 font-medium"
                   style={{ color: 'var(--menu-texto-principal)' }}
                 >
                   Motivo de Cancelación
                 </label>
                 <select
+                  id="motivo-cancelacion"
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
                   className="mf-campo w-full px-4 py-2.5"

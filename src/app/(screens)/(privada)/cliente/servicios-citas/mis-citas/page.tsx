@@ -13,6 +13,7 @@ import { listarCitas, type CitaApi } from '../../../../../services/citas';
 import AnticipoPortal from '../../../../../components/cliente/AnticipoPortal';
 import { useAhora } from '../../../../../hooks/useAhora';
 import { etiquetaEstadoCita } from '../../../../../utils/estados';
+import { citaGestionablePorClienta } from '../../../../../components/cliente/citaGestionable';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -147,7 +148,7 @@ export default function MisCitasPage() {
                     >
                       Ver
                     </Button>
-                    {(cita.estado === 'confirmada' || cita.estado === 'pendiente') && (
+                    {citaGestionablePorClienta(cita, ahora) && (
                       <>
                         <Button
                           size="sm"

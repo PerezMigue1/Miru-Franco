@@ -14,6 +14,7 @@ import SelloConfirmacion from '../../../../../components/cliente/SelloConfirmaci
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import EncabezadoAnticipo from '../../../../../components/cliente/EncabezadoAnticipo';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../../utils/estados';
+import { tituloConfirmacionCita } from '../../../../../components/cliente/citaGestionable';
 
 /** Parámetros con los que Mercado Pago regresa: solo indican que vale la pena esperar, nunca el estado. */
 const PARAMS_REGRESO_MP = ['payment_id', 'collection_id', 'collection_status', 'status', 'preference_id'];
@@ -106,7 +107,7 @@ function ConfirmacionContent() {
               <SelloConfirmacion />
             </div>
             <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-              ¡Cita Confirmada!
+              {tituloConfirmacionCita(cita.estado)}
             </h1>
             <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
               Tu cita ha sido agendada exitosamente

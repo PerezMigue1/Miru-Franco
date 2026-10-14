@@ -17,27 +17,8 @@ import Select from '../../../components/ui/Select';
 import PanelSolicitudes from '../../../components/personal/PanelSolicitudes';
 import PanelAsistencia from '../../../components/personal/PanelAsistencia';
 import PanelHorasExtra from '../../../components/personal/PanelHorasExtra';
-import { BadgeDollarSign, Clock3, ClipboardList, Users } from 'lucide-react';
-
-interface EmpleadoFila {
-  id: string;
-  nombre: string;
-  rol: string;
-  horario: string;
-  servicios: string;
-  comisiones: string;
-}
-
-function mapearEmpleado(e: EmpleadoApi): EmpleadoFila {
-  return {
-    id: e.id || e.usuarioId,
-    nombre: e.nombre ?? '-',
-    rol: e.puesto ?? 'Empleado',
-    horario: '-',
-    servicios: '-',
-    comisiones: e.comisionPorcentaje != null ? `${e.comisionPorcentaje}%` : '-',
-  };
-}
+import { Clock3, UserCheck, Users } from 'lucide-react';
+import { TEXTO_CONFIRMAR_BAJA, mapearEmpleado, puedeGuardarHorario, resumenEmpleados, type EmpleadoFila } from './empleadosPersonal';
 
 export default function GestionPersonalPage() {
   const [empleados, setEmpleados] = useState<EmpleadoFila[]>([]);
@@ -68,6 +49,8 @@ export default function GestionPersonalPage() {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  // true solo cuando se cargó el horario aprobado: si la carga falla no se permite guardar encima.
+  const [configCargada, setConfigCargada] = useState(false);
   const [configEntradaLV, setConfigEntradaLV] = useState('09:00');
   const [configSalidaLV, setConfigSalidaLV] = useState('18:00');
   const [configEntradaSab, setConfigEntradaSab] = useState('09:00');
@@ -94,14 +77,17 @@ export default function GestionPersonalPage() {
       setConfigMargen(String(config.margenGraciaMinutos));
       setConfigTarifa(String(config.tarifaHoraExtra));
       setTarifaConfigurada(config.tarifaHoraExtra > 0);
+      setConfigCargada(true);
     } catch {
-      setConfigError('Error al cargar la configuración');
+      setConfigCargada(false);
+      setConfigError('No se pudo cargar el horario del salón. Recarga la página para verlo y editarlo; mientras tanto no se puede guardar.');
     } finally {
       setLoadingConfig(false);
     }
   };
 
   const handleGuardarConfig = async () => {
+    if (!configCargada) return;
     if (domingoActivo && (!configEntradaDom || !configSalidaDom)) {
       setConfigError('Si el salón abre domingo, completa entrada y salida de ese día');
       return;
@@ -201,6 +187,7 @@ export default function GestionPersonalPage() {
 
   const openBaja = (emp: EmpleadoApi) => {
     setEmpleadoEditando(emp);
+    setFormError(null);
     setIsModalBajaOpen(true);
   };
 
@@ -283,7 +270,7 @@ export default function GestionPersonalPage() {
               Gestión de Personal
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {empleados.length} empleado{empleados.length === 1 ? '' : 's'} activos
+              {resumenEmpleados(empleados).texto}
             </p>
           </div>
           <Button onClick={openCrear}>+ Agregar Empleado</Button>
@@ -296,10 +283,9 @@ export default function GestionPersonalPage() {
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <TarjetaKpi icono={Users} etiqueta="Total empleados" cargando={loading} valor={empleados.length} />
-          <TarjetaKpi icono={ClipboardList} etiqueta="Servicios del mes" valor={<>-</>} />
-          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Comisiones del mes" valor={<>-</>} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TarjetaKpi icono={UserCheck} etiqueta="Empleados activos" cargando={loading} valor={resumenEmpleados(empleados).activos} />
+          <TarjetaKpi icono={Users} etiqueta="Perfiles registrados" cargando={loading} valor={empleados.length} />
         </div>
 
         {/* Listado */}
@@ -309,7 +295,7 @@ export default function GestionPersonalPage() {
         ) : empleados.length === 0 ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay empleados registrados.</p>
         ) : (
-        <Table headers={['Nombre', 'Rol', 'Horario', 'Servicios del Mes', 'Comisiones', 'Acciones']} headerSutil>
+        <Table headers={['Nombre', 'Rol', 'Estado', 'Comisión', 'Acciones']} headerSutil>
           {empleados.map((empleado) => (
             <TableRow key={empleado.id}>
               <TableCell className="font-semibold" rowPadding="lg">{empleado.nombre}</TableCell>
@@ -318,8 +304,9 @@ export default function GestionPersonalPage() {
                   {empleado.rol}
                 </Badge>
               </TableCell>
-              <TableCell rowPadding="lg">{empleado.horario}</TableCell>
-              <TableCell rowPadding="lg">{empleado.servicios}</TableCell>
+              <TableCell rowPadding="lg">
+                <Badge variant={empleado.activo ? 'success' : 'danger'}>{empleado.activo ? 'Activo' : 'Inactivo'}</Badge>
+              </TableCell>
               <TableCell className="font-semibold" rowPadding="lg">{empleado.comisiones}</TableCell>
               <TableCell rowPadding="lg">
                 <div className="flex gap-2">
@@ -327,10 +314,12 @@ export default function GestionPersonalPage() {
                     const raw = empleadosRaw.find((e) => (e.id || e.usuarioId) === empleado.id);
                     if (raw) openEditar(raw);
                   }}>Editar</Button>
-                  <Button size="sm" variant="danger" onClick={() => {
-                    const raw = empleadosRaw.find((e) => (e.id || e.usuarioId) === empleado.id);
-                    if (raw) openBaja(raw);
-                  }}>Dar de baja</Button>
+                  {empleado.activo && (
+                    <Button size="sm" variant="danger" onClick={() => {
+                      const raw = empleadosRaw.find((e) => (e.id || e.usuarioId) === empleado.id);
+                      if (raw) openBaja(raw);
+                    }}>Dar de baja</Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
@@ -358,7 +347,7 @@ export default function GestionPersonalPage() {
 
           {loadingConfig ? (
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Cargando configuración…</p>
-          ) : (
+          ) : !configCargada ? null : (
             <div className="space-y-5">
               <div>
                 <p className="text-sm font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Lunes a viernes</p>
@@ -436,7 +425,7 @@ export default function GestionPersonalPage() {
 
           {esAdmin && (
             <div className="mt-4">
-              <Button size="sm" onClick={handleGuardarConfig} disabled={savingConfig || loadingConfig}>
+              <Button size="sm" onClick={handleGuardarConfig} disabled={!puedeGuardarHorario({ cargado: configCargada, cargando: loadingConfig, guardando: savingConfig })}>
                 {savingConfig ? 'Guardando...' : 'Guardar configuración'}
               </Button>
             </div>
@@ -537,8 +526,9 @@ export default function GestionPersonalPage() {
         }
       >
         <p style={{ color: 'var(--menu-texto-principal)' }}>
-          ¿Dar de baja a <strong>{empleadoEditando?.nombre ?? empleadoEditando?.usuarioId}</strong>? Se eliminará su perfil de empleado.
+          ¿Dar de baja a <strong>{empleadoEditando?.nombre ?? empleadoEditando?.usuarioId}</strong>? {TEXTO_CONFIRMAR_BAJA}
         </p>
+        {formError && isModalBajaOpen && <p className="text-sm mt-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
       </Modal>
     </AdminLayout>
   );

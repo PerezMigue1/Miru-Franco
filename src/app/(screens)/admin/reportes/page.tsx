@@ -18,6 +18,8 @@ import {
 } from '../../../services/reportes';
 import { exportarReportePdf, exportarReporteExcel, ReporteParaExportar } from '../../../utils/exportReportes';
 import { formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
+import { etiquetaMetodoVenta } from '../venta-local/ventasDia';
+import { kpisDesdeResultados } from './kpisReportes';
 
 type TipoReporte = 'ventas' | 'servicios' | 'inventario' | 'clientes';
 
@@ -54,10 +56,7 @@ export default function ReportesPage() {
   const [{ desde, hasta }, setRango] = useState(rangoMesActual());
 
   const [loadingKpis, setLoadingKpis] = useState(true);
-  const [kpiVentasMonto, setKpiVentasMonto] = useState(0);
-  const [kpiUnidadesVendidas, setKpiUnidadesVendidas] = useState(0);
-  const [kpiServiciosCompletados, setKpiServiciosCompletados] = useState(0);
-  const [kpiClientesNuevos, setKpiClientesNuevos] = useState(0);
+  const [kpis, setKpis] = useState<ReturnType<typeof kpisDesdeResultados> | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,13 +68,9 @@ export default function ReportesPage() {
     // loadingKpis ya arranca en true (estado inicial) y este effect solo corre al montar.
     Promise.allSettled([obtenerReporteVentas(d, h), obtenerReporteServicios(d, h), obtenerReporteClientes(d, h)])
       .then(([ventasRes, serviciosRes, clientesRes]) => {
-        if (ventasRes.status === 'fulfilled') {
-          // Ingresos: ventas del POS, cobros de pedidos y anticipos de citas, sin contar dos veces el anticipo.
-          setKpiVentasMonto(ventasRes.value.ingresos.total);
-          setKpiUnidadesVendidas(ventasRes.value.resumen.totalUnidadesVendidas);
-        }
-        if (serviciosRes.status === 'fulfilled') setKpiServiciosCompletados(serviciosRes.value.totalCompletadas);
-        if (clientesRes.status === 'fulfilled') setKpiClientesNuevos(clientesRes.value.totalNuevos);
+        // Ingresos: ventas del POS, cobros de pedidos y anticipos de citas, sin contar dos veces el anticipo.
+        // Una consulta que falla se marca como error en su tarjeta (antes se veía $0.00 o 0).
+        setKpis(kpisDesdeResultados(ventasRes, serviciosRes, clientesRes));
       })
       .finally(() => setLoadingKpis(false));
   }, []);
@@ -99,7 +94,7 @@ export default function ReportesPage() {
           titulo: 'Reporte de Ventas',
           subtitulo,
           columnas: ['Folio', 'Fecha', 'Método de Pago', 'Total'],
-          filas: r.ventas.map((v) => [v.folio, fmtFecha(v.creadoEn), v.metodoPago, fmtMoneda(v.total)]),
+          filas: r.ventas.map((v) => [v.folio, fmtFecha(v.creadoEn), etiquetaMetodoVenta(v.metodoPago), fmtMoneda(v.total)]),
           totales: [
             { label: 'Total de ventas', valor: String(r.resumen.totalVentas) },
             ...filasIngresos(r.ingresos),
@@ -172,10 +167,10 @@ export default function ReportesPage() {
 
         {/* KPIs (mes en curso) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <TarjetaKpi icono={BarChart3} etiqueta="Ingresos del Mes" cargando={loadingKpis} valor={fmtMoneda(kpiVentasMonto)} tono="oro" />
-          <TarjetaKpi icono={Scissors} etiqueta="Servicios del Mes" cargando={loadingKpis} valor={kpiServiciosCompletados} />
-          <TarjetaKpi icono={UserPlus} etiqueta="Clientes Nuevos" cargando={loadingKpis} valor={kpiClientesNuevos} />
-          <TarjetaKpi icono={ShoppingBag} etiqueta="Productos Vendidos" cargando={loadingKpis} valor={kpiUnidadesVendidas} />
+          <TarjetaKpi icono={BarChart3} etiqueta="Ingresos del Mes" cargando={loadingKpis} valor={fmtMoneda(kpis?.ventasMonto ?? 0)} error={kpis?.errorVentas ? 'No se pudo cargar' : false} tono="oro" />
+          <TarjetaKpi icono={Scissors} etiqueta="Servicios del Mes" cargando={loadingKpis} valor={kpis?.serviciosCompletados ?? 0} error={kpis?.errorServicios ? 'No se pudo cargar' : false} />
+          <TarjetaKpi icono={UserPlus} etiqueta="Clientes Nuevos" cargando={loadingKpis} valor={kpis?.clientesNuevos ?? 0} error={kpis?.errorClientes ? 'No se pudo cargar' : false} />
+          <TarjetaKpi icono={ShoppingBag} etiqueta="Productos Vendidos" cargando={loadingKpis} valor={kpis?.unidadesVendidas ?? 0} error={kpis?.errorVentas ? 'No se pudo cargar' : false} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

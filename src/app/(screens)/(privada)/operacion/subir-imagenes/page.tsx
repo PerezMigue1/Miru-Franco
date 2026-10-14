@@ -6,6 +6,10 @@ import OperacionLayout from '../../../../components/layouts/OperacionLayout';
 import { subirImagenesCloudinary } from '../../../../utils/cloudinary';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
+import { showToast } from '../../../../utils/toast';
+import { copiarAlPortapapeles } from '../_lib/panelOperacion';
+
+const AVISO_NO_COPIADO = 'No se pudo copiar. Selecciona la URL y cópiala a mano.';
 
 export default function SubirImagenesPage() {
   const [subiendo, setSubiendo] = useState(false);
@@ -32,24 +36,24 @@ export default function SubirImagenesPage() {
     }
   };
 
-  const copiarUrl = (url: string, index: number) => {
-    navigator.clipboard.writeText(url);
-    setCopiado(index);
+  const copiar = async (texto: string, indice: number) => {
+    if (!(await copiarAlPortapapeles(texto, navigator.clipboard))) {
+      showToast(AVISO_NO_COPIADO, 'error');
+      return;
+    }
+    setCopiado(indice);
     setTimeout(() => setCopiado(null), 2000);
   };
 
-  const copiarTodas = () => {
-    const texto = urls.join('\n');
-    navigator.clipboard.writeText(texto);
-    setCopiado(-1);
-    setTimeout(() => setCopiado(null), 2000);
-  };
+  const copiarUrl = (url: string, index: number) => { void copiar(url, index); };
+
+  const copiarTodas = () => { void copiar(urls.join('\n'), -1); };
 
   return (
     <OperacionLayout>
       <div className="max-w-2xl mx-auto py-4">
         <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-          Subir imágenes a Cloudinary
+          Subir imágenes
         </h1>
         <p className="text-sm mt-1 mb-6" style={{ color: 'var(--encabezados-alterno)' }}>
           Selecciona una o varias imágenes y obtendrás las URLs para usar en productos o servicios.
@@ -110,7 +114,7 @@ export default function SubirImagenesPage() {
                   </div>
                   <Image
                     src={url}
-                    alt={`Preview ${i + 1}`}
+                    alt={`Vista previa ${i + 1}`}
                     width={80}
                     height={80}
                     className="h-20 w-20 object-cover rounded border"
@@ -121,7 +125,7 @@ export default function SubirImagenesPage() {
               ))}
             </ul>
             <p className="text-xs mt-4" style={{ color: 'var(--encabezados-alterno)' }}>
-              Usa estas URLs en el campo <strong>imagenes</strong> al crear o editar un producto en tu backend.
+              Pega estas URLs en el campo de imágenes al crear o editar un producto o un servicio.
             </p>
           </Card>
         )}

@@ -74,3 +74,17 @@ describe('Pestaña activa de la cabecera con el mismo mapa', () => {
     expect(esSeccionActiva('/contacto', '/home')).toBe(false);
   });
 });
+
+describe('Migas del panel admin: subpantallas con su nombre real', () => {
+  const migas = (ruta: string) => getBreadcrumbsForPath(ruta).map((i) => i.label);
+
+  it('segmentación de clientes no se presenta como perfil de cliente', () => {
+    expect(migas('/admin/clientes-crm/segmentacion')).toEqual(['Inicio', 'Panel de administración', 'Clientes (CRM)', 'Segmentación de clientes']);
+    expect(migas('/admin/clientes-crm/abc-123')).toEqual(['Inicio', 'Panel de administración', 'Clientes (CRM)', 'Perfil de cliente']);
+  });
+
+  it('nuevo servicio no se presenta como detalle de servicio', () => {
+    expect(migas('/admin/servicios/nuevo')).toEqual(['Inicio', 'Panel de administración', 'Servicios', 'Nuevo servicio']);
+    expect(migas('/admin/servicios/12')).toEqual(['Inicio', 'Panel de administración', 'Servicios', 'Detalle de servicio']);
+  });
+});

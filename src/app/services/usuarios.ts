@@ -6,6 +6,8 @@
 
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { validatePassword } from '../utils/security';
+import { esTelefonoMexicoValido, mensajeTelefonoInvalido, normalizarTelefonoRegistro, telefonoSinLada } from '../utils/phone';
 
 /** Valores de rol en BD (alineado con backend ROLES_DB). */
 export const ROLES_VALORES = ['cliente', 'becario', 'empleado', 'estilista', 'admin'] as const;
@@ -366,7 +368,84 @@ export async function getRoles(): Promise<RolCatalogoItem[]> {
   return list;
 }
 
-/** Payload mínimo para crear usuario desde admin. El backend puede exigir más campos (mismos que registro). */
+/** Tipos de cabello que acepta el backend (enum TipoCabello). */
+export const TIPOS_CABELLO = [
+  { value: 'liso', label: 'Liso' },
+  { value: 'ondulado', label: 'Ondulado' },
+  { value: 'rizado', label: 'Rizado' },
+] as const;
+
+/** Roles que se pueden asignar al editar un usuario: incluye cliente para no mostrar otro rol por defecto. */
+const ROLES_EDICION = ['cliente', 'admin', 'estilista', 'empleado', 'becario'] as const;
+
+const OPCIONES_ROL_EDICION_POR_DEFECTO = [
+  { value: 'cliente', label: 'Cliente' },
+  { value: 'admin', label: 'Administrador' },
+  { value: 'estilista', label: 'Estilista' },
+  { value: 'empleado', label: 'Empleado' },
+  { value: 'becario', label: 'Becado' },
+];
+
+/** Opciones del Select de rol en la edición de usuario (catálogo del backend o lista por defecto). */
+export function opcionesRolEdicion(roles: RolCatalogoItem[]): Array<{ value: string; label: string }> {
+  const filtrados = roles.filter((r) => (ROLES_EDICION as readonly string[]).includes(r.valor));
+  if (filtrados.length === 0) return OPCIONES_ROL_EDICION_POR_DEFECTO;
+  return filtrados.map((r) => ({ value: r.valor, label: r.nombre === 'Becario' ? 'Becado' : r.nombre }));
+}
+
+/** Datos que captura el formulario de alta de usuario del admin. */
+export interface DatosAltaUsuario {
+  nombre: string;
+  email: string;
+  password: string;
+  telefono: string;
+  fechaNacimiento: string;
+  pregunta: string;
+  respuesta: string;
+  tipoCabello: string;
+  /** La persona leyó y aceptó el aviso de privacidad (el backend rechaza el alta sin esto). */
+  aceptaAviso: boolean;
+}
+
+/**
+ * Valida el alta de usuario del admin. El backend exige teléfono, fecha de nacimiento y tipo de
+ * cabello: se piden en el formulario en vez de inventarlos. La pregunta de seguridad es opcional.
+ * La contraseña sigue la misma regla que el registro. Devuelve el primer error o null.
+ */
+export function validarAltaUsuario(d: DatosAltaUsuario): string | null {
+  if (!d.nombre.trim() || !d.email.trim() || !d.password) {
+    return 'Nombre, email y contraseña son obligatorios.';
+  }
+  if (!d.telefono.trim()) return 'El teléfono es obligatorio.';
+  if (!esTelefonoMexicoValido(d.telefono)) return mensajeTelefonoInvalido();
+  if (!d.fechaNacimiento) return 'La fecha de nacimiento es obligatoria.';
+  // La pregunta de seguridad es opcional; si se usa, van las dos partes.
+  if (d.pregunta.trim() && !d.respuesta.trim()) return 'Escribe la respuesta de la pregunta de seguridad.';
+  if (!d.pregunta.trim() && d.respuesta.trim()) return 'Elige una pregunta de seguridad para esa respuesta.';
+  if (!TIPOS_CABELLO.some((t) => t.value === d.tipoCabello)) return 'Elige el tipo de cabello.';
+  if (!d.aceptaAviso) return 'Confirma que la persona leyó y aceptó el aviso de privacidad.';
+  const v = validatePassword(d.password, {
+    nombre: d.nombre.trim(),
+    email: d.email.trim().toLowerCase(),
+    telefono: normalizarTelefonoRegistro(d.telefono),
+    fechaNacimiento: d.fechaNacimiento,
+    preguntaSeguridad: { respuesta: d.respuesta.trim() },
+  });
+  if (!v.valid) return v.errors?.[0] ?? v.message ?? 'La contraseña no cumple los requisitos.';
+  return null;
+}
+
+/**
+ * Teléfono al editar un usuario desde admin: el backend exige 10 dígitos, así que se manda sin lada
+ * ni espacios; vacío se guarda como null y lo que no es un número de México se rechaza aquí.
+ */
+export function telefonoEdicionUsuario(valor: string): { telefono: string | null } | { error: string } {
+  if (!valor.trim()) return { telefono: null };
+  if (!esTelefonoMexicoValido(valor)) return { error: mensajeTelefonoInvalido() };
+  return { telefono: telefonoSinLada(valor) };
+}
+
+/** Payload para crear usuario desde admin. Lo que no se captura no se envía. */
 export interface CrearUsuarioPayload {
   nombre: string;
   email: string;
@@ -386,35 +465,30 @@ export interface CrearUsuarioPayload {
 }
 
 /**
- * Crear usuario. POST /api/usuarios (admin).
- * Si el backend exige los mismos campos que el registro, se envían valores por defecto para los no proporcionados.
+ * Crear usuario. POST /api/usuarios/registro (admin).
+ * Solo se envía lo que el admin capturó: nunca valores inventados (una respuesta de seguridad por
+ * defecto permitiría cambiar la contraseña de la cuenta con el endpoint público de recuperación).
  */
 export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuario> {
-  const {
-    nombre,
-    email,
-    password,
-    telefono = '',
-    fechaNacimiento = '2000-01-01',
-    preguntaSeguridad = { pregunta: '¿Cuál es el nombre de tu mascota favorita?', respuesta: 'Por definir' },
-    perfilCapilar = { tipoCabello: 'liso', tieneAlergias: false, tratamientosQuimicos: false },
-    aceptaAvisoPrivacidad = true,
-    recibePromociones = false,
-  } = payload;
+  const { nombre, email, password, telefono, fechaNacimiento, preguntaSeguridad, perfilCapilar } = payload;
 
   const body: Record<string, unknown> = {
     nombre,
     email,
     password,
-    telefono: telefono || 'Por definir',
-    fechaNacimiento: fechaNacimiento.includes('T') ? fechaNacimiento : `${fechaNacimiento}T00:00:00.000Z`,
-    preguntaSeguridad,
-    perfilCapilar,
-    aceptaAvisoPrivacidad: Boolean(aceptaAvisoPrivacidad),
-    recibePromociones: Boolean(recibePromociones),
     confirmado: payload.confirmado ?? true, // Usuarios creados por admin pueden iniciar sesión sin verificación
-    ...(payload.consienteDatosSensibles !== undefined ? { consienteDatosSensibles: payload.consienteDatosSensibles } : {}),
   };
+  if (telefono?.trim()) body.telefono = telefono.trim();
+  if (fechaNacimiento) {
+    body.fechaNacimiento = fechaNacimiento.includes('T') ? fechaNacimiento : `${fechaNacimiento}T00:00:00.000Z`;
+  }
+  if (preguntaSeguridad?.pregunta.trim() && preguntaSeguridad.respuesta.trim()) {
+    body.preguntaSeguridad = { pregunta: preguntaSeguridad.pregunta.trim(), respuesta: preguntaSeguridad.respuesta.trim() };
+  }
+  if (perfilCapilar?.tipoCabello) body.perfilCapilar = perfilCapilar;
+  if (payload.aceptaAvisoPrivacidad !== undefined) body.aceptaAvisoPrivacidad = payload.aceptaAvisoPrivacidad;
+  if (payload.recibePromociones !== undefined) body.recibePromociones = payload.recibePromociones;
+  if (payload.consienteDatosSensibles !== undefined) body.consienteDatosSensibles = payload.consienteDatosSensibles;
   // No enviar dirección embebida: DireccionUsuario se gestiona aparte tras crear el usuario.
   // No enviar "rol" si el backend lo rechaza en el POST; asignar rol después con PATCH /api/usuarios/:id/rol
 
@@ -502,15 +576,6 @@ function toArray(value: unknown): Record<string, unknown>[] {
   return [];
 }
 
-function normalizarPedidoRelacionado(raw: Record<string, unknown>): UsuarioPedidoRelacionado {
-  return {
-    id: Number(raw.id ?? 0),
-    estado: String(raw.estado ?? 'desconocido'),
-    total: Number(raw.total ?? 0),
-    creadoEn: raw.creadoEn != null ? String(raw.creadoEn) : raw.creado_en != null ? String(raw.creado_en) : undefined,
-  };
-}
-
 function normalizarNotificacionRelacionada(raw: Record<string, unknown>): UsuarioNotificacionRelacionada {
   return {
     id: String(raw.id ?? ''),
@@ -551,19 +616,17 @@ async function tryGetArray(endpoint: string): Promise<Record<string, unknown>[]>
   }
 }
 
+/**
+ * Datos secundarios de la ficha de cliente: notificaciones y direcciones. Los pedidos no se piden aquí
+ * (/api/pedidos exige caja:lectura y da 403 a otros roles): las fichas usan el historial de compras
+ * del cliente. `pedidos` se conserva vacío por compatibilidad con quien lea el tipo.
+ */
 export async function getUsuarioDatosRelacionados(id: string): Promise<UsuarioDatosRelacionados> {
-  const [pedidosDirectos, pedidosTodos, notificacionesDirectas, notificacionesTodas, direccionesDirectas] = await Promise.all([
-    tryGetArray(`/api/pedidos?usuarioId=${encodeURIComponent(id)}`),
-    tryGetArray('/api/pedidos'),
+  const [notificacionesDirectas, notificacionesTodas, direccionesDirectas] = await Promise.all([
     tryGetArray(`/api/notificaciones?usuarioId=${encodeURIComponent(id)}`),
     tryGetArray('/api/notificaciones'),
     tryGetArray(`/api/direcciones-usuario?usuarioId=${encodeURIComponent(id)}`),
   ]);
-
-  const pedidosBase = pedidosDirectos.length > 0 ? pedidosDirectos : pedidosTodos.filter((p) => {
-    const usuarioId = p.usuarioId ?? p.usuario_id;
-    return usuarioId != null && String(usuarioId) === id;
-  });
 
   const notificacionesBase = notificacionesDirectas.length > 0 ? notificacionesDirectas : notificacionesTodas.filter((n) => {
     const usuarioId = n.usuarioId ?? n.usuario_id;
@@ -573,7 +636,7 @@ export async function getUsuarioDatosRelacionados(id: string): Promise<UsuarioDa
   const direccionesBase = direccionesDirectas;
 
   return {
-    pedidos: pedidosBase.map(normalizarPedidoRelacionado).filter((p) => Number.isFinite(p.id) && p.id > 0),
+    pedidos: [],
     notificaciones: notificacionesBase.map(normalizarNotificacionRelacionada).filter((n) => n.id.length > 0),
     direcciones: direccionesBase.map(normalizarDireccionRelacionada).filter((d) => d.id.length > 0),
   };

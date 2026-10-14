@@ -275,6 +275,7 @@ export default function CatalogoProductosPage() {
                 <Input
                   type="number"
                   placeholder="Mín"
+                  aria-label="Precio mínimo"
                   value={precioMin}
                   onChange={(e) => setPrecioMin(e.target.value)}
                   min={0}
@@ -284,6 +285,7 @@ export default function CatalogoProductosPage() {
                 <Input
                   type="number"
                   placeholder="Máx"
+                  aria-label="Precio máximo"
                   value={precioMax}
                   onChange={(e) => setPrecioMax(e.target.value)}
                   min={0}

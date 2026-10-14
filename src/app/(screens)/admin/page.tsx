@@ -25,7 +25,7 @@ import { listarCitasDelDia, listarCitas, type CitaApi } from '../../services/cit
 import { listarClientes, type ClienteApi } from '../../services/clientes';
 import { getUsuarios } from '../../services/usuarios';
 import { listarQuejas, type QuejaApi } from '../../services/quejas';
-import { listarPedidos, etiquetaEstadoPedido, type PedidoApi } from '../../services/ecommerce';
+import { listarPedidosPaginado, etiquetaEstadoPedido, type EstadoPedidoUi, type PedidoApi } from '../../services/ecommerce';
 import {
   obtenerAlertasStock,
   obtenerCaducidades,
@@ -144,6 +144,9 @@ type ItemActividad = {
   creadoEn: string;
 };
 
+/** Estados que se cuentan en "Pedidos online por estado" (los mismos de EstadoPedidoUi). */
+const ESTADOS_PEDIDO_DASHBOARD: EstadoPedidoUi[] = ['borrador', 'pendiente_pago', 'pagado', 'preparando', 'listo_recoger', 'enviado', 'entregado', 'cancelado'];
+
 export default function AdminDashboardPage() {
   const reducedMotion = usePrefersReducedMotion();
 
@@ -157,7 +160,9 @@ export default function AdminDashboardPage() {
   const [alertasStock, setAlertasStock] = useState<Seccion<AlertaStockApi[]>>(seccionInicial([]));
   const [caducidades, setCaducidades] = useState<Seccion<CaducidadApi[]>>(seccionInicial([]));
   const [clientesRecientes, setClientesRecientes] = useState<Seccion<ClienteApi[]>>(seccionInicial([]));
-  const [pedidosOnline, setPedidosOnline] = useState<Seccion<PedidoApi[]>>(seccionInicial([]));
+  const [pedidosOnline, setPedidosOnline] = useState<Seccion<{ conteos: [EstadoPedidoUi, number][]; recientes: PedidoApi[] }>>(
+    seccionInicial({ conteos: [], recientes: [] })
+  );
   /**
    * Conteo real por estado, sobre las 4001 citas completas — NO sobre `citasTodas`
    * (que sigue truncada a 200 a propósito, solo para los widgets "top 5" de abajo,
@@ -211,8 +216,13 @@ export default function AdminDashboardPage() {
         .then((res) => { if (!cancelled) setClientesRecientes({ loading: false, error: false, data: res.data }); })
         .catch(() => { if (!cancelled) setClientesRecientes((p) => ({ ...p, loading: false, error: true })); }),
 
-      listarPedidos()
-        .then((data) => { if (!cancelled) setPedidosOnline({ loading: false, error: false, data }); })
+      // Conteo real por estado (una petición ligera por estado) y los 5 más recientes: el conteo sobre
+      // los 20 primeros no reflejaba la tienda y bajar todo el historial en cada visita no escala.
+      Promise.all([
+        Promise.all(ESTADOS_PEDIDO_DASHBOARD.map(async (estado) => [estado, (await listarPedidosPaginado({ estado, limit: 1 })).count] as [EstadoPedidoUi, number])),
+        listarPedidosPaginado({ page: 1, limit: 5 }),
+      ])
+        .then(([conteos, recientes]) => { if (!cancelled) setPedidosOnline({ loading: false, error: false, data: { conteos, recientes: recientes.data } }); })
         .catch(() => { if (!cancelled) setPedidosOnline((p) => ({ ...p, loading: false, error: true })); }),
 
       obtenerAlertasStock(5)
@@ -302,17 +312,18 @@ export default function AdminDashboardPage() {
   const maxEspecialistas = Math.max(1, ...especialistasTop.map((e) => e.valor));
 
   // ── Pedidos online por estado (canal e-commerce, separado del POS local) ─
-  const pedidosPorEstado = useMemo(() => {
-    const conteo = new Map<string, number>();
-    pedidosOnline.data.forEach((p) => conteo.set(p.estado, (conteo.get(p.estado) ?? 0) + 1));
-    return Array.from(conteo.entries())
-      .map(([estado, valor]) => ({ nombre: etiquetaEstadoPedido(estado), valor }))
-      .sort((a, b) => b.valor - a.valor);
-  }, [pedidosOnline.data]);
+  const pedidosPorEstado = useMemo(
+    () =>
+      pedidosOnline.data.conteos
+        .filter(([, valor]) => valor > 0)
+        .map(([estado, valor]) => ({ nombre: etiquetaEstadoPedido(estado), valor }))
+        .sort((a, b) => b.valor - a.valor),
+    [pedidosOnline.data]
+  );
   const maxPedidos = Math.max(1, ...pedidosPorEstado.map((p) => p.valor));
 
   const pedidosRecientes = useMemo(
-    () => [...pedidosOnline.data].sort((a, b) => new Date(b.creadoEn ?? 0).getTime() - new Date(a.creadoEn ?? 0).getTime()).slice(0, 5),
+    () => [...pedidosOnline.data.recientes].sort((a, b) => new Date(b.creadoEn ?? 0).getTime() - new Date(a.creadoEn ?? 0).getTime()).slice(0, 5),
     [pedidosOnline.data]
   );
 

@@ -13,15 +13,15 @@ import Select from '../../../../components/ui/Select';
 import { BadgeDollarSign, ShoppingBag } from 'lucide-react';
 import { listarVentas, crearVenta, VentaLocalApi } from '../../../../services/pos';
 import { getServicios, Servicio } from '../../../../services/servicios';
-import { listarClientes, ClienteApi } from '../../../../services/clientes';
+import BuscadorClienta from '../../../../components/operacion/BuscadorClienta';
 import { etiquetaEstadoVenta, varianteEstadoVenta } from '../../../../utils/estados';
 import { hoyEnMexico } from '../../../../utils/fechaSoloDia';
+import { fmtMoneda } from '../../../../utils/cobroPos';
+import { usePermisos } from '../../../../utils/permisos';
+import { etiquetaMetodoPagoVenta, folioVenta, resumenVentasCobradas } from '../_lib/panelOperacion';
 
 function precioNum(p?: string): number {
   return Number(String(p ?? '').replace(/[^0-9.]/g, '')) || 0;
-}
-function fmtMoneda(v?: number | null): string {
-  return `$${Number(v ?? 0).toFixed(2)}`;
 }
 function hora(iso?: string): string {
   if (!iso) return '-';
@@ -30,11 +30,13 @@ function hora(iso?: string): string {
 }
 
 export default function CobroSinCitaPage() {
+  // Sin el permiso de la página OperacionLayout manda a /403: no se piden datos antes.
+  const { tienePermiso } = usePermisos();
+  const puedeVender = tienePermiso('ventas:escritura');
   const [ventas, setVentas] = useState<VentaLocalApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [servicios, setServicios] = useState<Servicio[]>([]);
-  const [clientes, setClientes] = useState<ClienteApi[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,7 +44,7 @@ export default function CobroSinCitaPage() {
   const [fServicioId, setFServicioId] = useState('');
   const [fCantidad, setFCantidad] = useState('1');
   const [fMetodoPago, setFMetodoPago] = useState('efectivo');
-  const [fClienteId, setFClienteId] = useState('');
+  const [fCliente, setFCliente] = useState<{ id: string; nombre: string } | null>(null);
 
   const hoy = hoyEnMexico();
 
@@ -56,13 +58,13 @@ export default function CobroSinCitaPage() {
   }, [hoy]);
 
   useEffect(() => {
+    if (!puedeVender) return;
     cargar();
     getServicios().then(({ data }) => setServicios(data)).catch(() => {});
-    listarClientes({ limit: 200 }).then(({ data }) => setClientes(data)).catch(() => {});
-  }, [cargar]);
+  }, [cargar, puedeVender]);
 
   const reset = () => {
-    setFServicioId(''); setFCantidad('1'); setFMetodoPago('efectivo'); setFClienteId('');
+    setFServicioId(''); setFCantidad('1'); setFMetodoPago('efectivo'); setFCliente(null);
     setFormError(null);
   };
 
@@ -81,7 +83,7 @@ export default function CobroSinCitaPage() {
           cantidad: Number(fCantidad),
         }],
         metodoPago: fMetodoPago,
-        clienteId: fClienteId || undefined,
+        clienteId: fCliente?.id || undefined,
       });
       setIsOpen(false); reset(); cargar();
     } catch (e) {
@@ -91,7 +93,7 @@ export default function CobroSinCitaPage() {
     }
   };
 
-  const totalCobrado = ventas.reduce((s, v) => s + (Number(v.total) || 0), 0);
+  const { cantidad: ventasCobradas, total: totalCobrado } = resumenVentasCobradas(ventas);
 
   return (
     <OperacionLayout permisoRequerido="ventas:escritura">
@@ -112,7 +114,7 @@ export default function CobroSinCitaPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <TarjetaKpi icono={ShoppingBag} etiqueta="Ventas de hoy" cargando={loading} valor={ventas.length} />
+          <TarjetaKpi icono={ShoppingBag} etiqueta="Ventas de hoy" cargando={loading} valor={ventasCobradas} detalle="Pagadas, sin canceladas" />
           <TarjetaKpi icono={BadgeDollarSign} etiqueta="Total cobrado" cargando={loading} valor={fmtMoneda(totalCobrado)} tono="oro" />
         </div>
 
@@ -133,11 +135,11 @@ export default function CobroSinCitaPage() {
           <Table headers={['Folio', 'Hora', 'Items', 'Método', 'Total', 'Estado']} headerSutil>
             {ventas.map((v) => (
               <TableRow key={v.id}>
-                <TableCell rowPadding="lg">{v.id}</TableCell>
+                <TableCell rowPadding="lg">{folioVenta(v)}</TableCell>
                 <TableCell rowPadding="lg">{hora(v.creadoEn)}</TableCell>
                 <TableCell rowPadding="lg">{v.items.length}</TableCell>
-                <TableCell rowPadding="lg">{v.metodoPago}</TableCell>
-                <TableCell rowPadding="lg">{fmtMoneda(v.total)}</TableCell>
+                <TableCell rowPadding="lg">{etiquetaMetodoPagoVenta(v.metodoPago)}</TableCell>
+                <TableCell rowPadding="lg">{fmtMoneda(Number(v.total) || 0)}</TableCell>
                 <TableCell rowPadding="lg">
                   <Badge variant={varianteEstadoVenta(v.estado)}>
                     {etiquetaEstadoVenta(v.estado)}
@@ -183,13 +185,10 @@ export default function CobroSinCitaPage() {
             ]}
             fullWidth
           />
-          <Select
-            label="Cliente (opcional)"
-            value={fClienteId}
-            onChange={(e) => setFClienteId(e.target.value)}
-            options={[{ value: '', label: 'Público general' }, ...clientes.map((c) => ({ value: c.id, label: c.nombre ?? c.email ?? c.id }))]}
-            fullWidth
-          />
+          <div>
+            <BuscadorClienta seleccion={fCliente} onSeleccionar={setFCliente} label="Cliente (opcional)" />
+            {!fCliente && <p className="mt-1 text-xs text-encabezados-alterno">Déjalo vacío para cobrar a Público en general.</p>}
+          </div>
         </div>
       </Modal>
     </OperacionLayout>

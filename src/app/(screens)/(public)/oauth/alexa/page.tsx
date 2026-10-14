@@ -9,12 +9,19 @@ import Button from '../../../../components/ui/Button';
 import { api } from '../../../../services/auth';
 import { apiClient } from '../../../../services/client';
 import { getBackendBaseUrl } from '../../../../services/config';
+import {
+  cuerpoSolicitudCodigo,
+  destinoVinculacion,
+  mensajeErrorVinculacion,
+  type RespuestaCodigoOauth,
+} from './vinculacion';
 
 /** Página de login para el Account Linking de la Skill de Alexa (Auth Code Grant). */
 function OauthAlexaContent() {
   const searchParams = useSearchParams();
   const redirectUri = searchParams.get('redirect_uri');
   const state = searchParams.get('state') ?? '';
+  const clientId = searchParams.get('client_id');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,22 +46,22 @@ function OauthAlexaContent() {
         return;
       }
 
-      const codeResult = await apiClient.post<{ success: boolean; code?: string }>(
+      // El backend valida redirect_uri (y client_id) y devuelve el destino; un 400 cae en el catch.
+      const codeResult = await apiClient.post<RespuestaCodigoOauth>(
         '/api/oauth/code',
-        {},
+        cuerpoSolicitudCodigo(redirectUri, state, clientId),
         getBackendBaseUrl(),
       );
 
-      if (!codeResult.success || !codeResult.code) {
+      const destino = destinoVinculacion(codeResult, state);
+      if (!destino) {
         setError('No se pudo completar la vinculación de la cuenta.');
         return;
       }
 
-      const destino = `${redirectUri}?code=${encodeURIComponent(codeResult.code)}&state=${encodeURIComponent(state)}`;
-      window.location.href = destino;
+      window.location.assign(destino);
     } catch (err: unknown) {
-      const mensaje = err instanceof Error ? err.message : 'No se pudo iniciar sesión.';
-      setError(mensaje);
+      setError(mensajeErrorVinculacion(err));
     } finally {
       setCargando(false);
     }

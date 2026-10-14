@@ -745,11 +745,13 @@ export default function PanelSegmentacionClientes({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <Input
             placeholder="Buscar por nombre o correo…"
+            aria-label="Buscar cliente por nombre o correo"
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
             fullWidth
           />
           <Select
+            aria-label="Filtrar por segmento"
             value={segmento}
             onChange={(event) => setSegmento(event.target.value)}
             options={[

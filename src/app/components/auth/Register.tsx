@@ -230,7 +230,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           setShowActivation(false);
           setEmailForActivation('');
           if (onSwitchToLogin) onSwitchToLogin();
-          else if (typeof window !== 'undefined') window.location.href = '/auth?view=login';
+          else router.push('/login');
         }}
       />
     );
@@ -245,10 +245,10 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
     <div className="space-y-5">
       {/* Nombre */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Nombre Completo</label>
+        <label htmlFor="registro-nombre" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Nombre Completo</label>
         <input
           type="text"
-          id="name"
+          id="registro-nombre"
           placeholder="Juan Pérez"
           disabled={isSubmitting}
           className={inputClass(!!errors.name)}
@@ -266,10 +266,10 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Correo Electrónico</label>
+        <label htmlFor="registro-email" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Correo Electrónico</label>
         <input
           type="email"
-          id="email"
+          id="registro-email"
           placeholder="tu@email.com"
           disabled={isSubmitting}
           className={inputClass(!!errors.email)}
@@ -284,10 +284,10 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Teléfono */}
       <div>
-        <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Teléfono</label>
+        <label htmlFor="registro-telefono" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Teléfono</label>
         <input
           type="tel"
-          id="phone"
+          id="registro-telefono"
           inputMode="tel"
           autoComplete="tel"
           placeholder="5512345678"
@@ -316,11 +316,11 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Contraseña */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Contraseña</label>
+        <label htmlFor="registro-password" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Contraseña</label>
         <div className="relative">
           <input
             type={showPassword ? 'text' : 'password'}
-            id="password"
+            id="registro-password"
             placeholder="••••••••"
             disabled={isSubmitting}
             className={`${inputClass(!!errors.password)} pr-12`}
@@ -363,16 +363,16 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             )}
           </div>
         )}
-        {!passwordValue && <p className="mt-1.5 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Mínimo 8 caracteres, con mayúsculas, minúsculas y números</p>}
+        {!passwordValue && <p className="mt-1.5 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>Mínimo 8 caracteres, con mayúsculas, minúsculas, números y caracteres especiales</p>}
       </div>
 
       {/* Confirmar contraseña */}
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Confirmar Contraseña</label>
+        <label htmlFor="registro-confirmar-password" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Confirmar Contraseña</label>
         <div className="relative">
           <input
             type={showConfirmPassword ? 'text' : 'password'}
-            id="confirmPassword"
+            id="registro-confirmar-password"
             placeholder="••••••••"
             disabled={isSubmitting}
             className={`${inputClass(!!errors.confirmPassword)} pr-12`}
@@ -391,10 +391,10 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Fecha de nacimiento */}
       <div>
-        <label htmlFor="birthDate" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Fecha de Nacimiento</label>
+        <label htmlFor="registro-fecha-nacimiento" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Fecha de Nacimiento</label>
         <input
           type="date"
-          id="birthDate"
+          id="registro-fecha-nacimiento"
           disabled={isSubmitting}
           className={inputClass(!!errors.birthDate)}
           style={inputStyle(!!errors.birthDate)}
@@ -411,7 +411,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Pregunta de seguridad */}
       <div>
-        <label htmlFor="securityQuestion" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        <label htmlFor="registro-pregunta" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Pregunta de Seguridad para Recuperación de Contraseña
         </label>
         {loadingQuestions ? (
@@ -421,7 +421,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         ) : (
           <>
             <select
-              id="securityQuestion"
+              id="registro-pregunta"
               disabled={isSubmitting || loadingQuestions}
               className={inputClass(!!errors.securityQuestion)}
               style={inputStyle(!!errors.securityQuestion)}
@@ -444,12 +444,12 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       {/* Respuesta de seguridad */}
       {securityQuestionId && (
         <div>
-          <label htmlFor="securityAnswer" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+          <label htmlFor="registro-respuesta" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
             Respuesta a la Pregunta de Seguridad
           </label>
           <input
             type="text"
-            id="securityAnswer"
+            id="registro-respuesta"
             placeholder="Tu respuesta"
             disabled={isSubmitting}
             className={inputClass(!!errors.securityAnswer)}
@@ -473,8 +473,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>Cuéntanos sobre tu cabello</h3>
 
       {/* Tipo de cabello */}
-      <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Tipo de cabello</label>
+      <fieldset>
+        <legend className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Tipo de cabello</legend>
         <Controller
           name="hairType"
           control={control}
@@ -502,29 +502,29 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           )}
         />
         {errors.hairType && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.hairType.message}</p>}
-      </div>
+      </fieldset>
 
       {/* Color natural */}
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Color natural (opcional)</label>
-        <input type="text" placeholder="Ej. Castaño oscuro" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('colorNatural')} />
+        <label htmlFor="registro-color-natural" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Color natural (opcional)</label>
+        <input type="text" id="registro-color-natural" placeholder="Ej. Castaño oscuro" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('colorNatural')} />
       </div>
 
       {/* Color actual */}
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Color actual (opcional)</label>
-        <input type="text" placeholder="Ej. Rubio cenizo" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('colorActual')} />
+        <label htmlFor="registro-color-actual" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Color actual (opcional)</label>
+        <input type="text" id="registro-color-actual" placeholder="Ej. Rubio cenizo" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('colorActual')} />
       </div>
 
       {/* Productos usados */}
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Productos usados (opcional)</label>
-        <input type="text" placeholder="Ej. Shampoo sin sulfatos" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('productosUsados')} />
+        <label htmlFor="registro-productos" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Productos usados (opcional)</label>
+        <input type="text" id="registro-productos" placeholder="Ej. Shampoo sin sulfatos" disabled={isSubmitting} className={inputClass(false)} style={inputStyle(false)} {...register('productosUsados')} />
       </div>
 
       {/* Alergias */}
-      <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>¿Tienes alergias a productos?</label>
+      <fieldset>
+        <legend className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>¿Tienes alergias a productos?</legend>
         <div className="space-y-3">
           <Controller
             name="hasAllergies"
@@ -591,11 +591,11 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             />
           )}
         </div>
-      </div>
+      </fieldset>
 
       {/* Tratamientos químicos */}
-      <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>¿Tratamientos químicos previos?</label>
+      <fieldset>
+        <legend className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>¿Tratamientos químicos previos?</legend>
         <div className="space-y-3">
           <Controller
             name="hasChemicalTreatments"
@@ -642,7 +642,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           {errors.hasChemicalTreatments && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.hasChemicalTreatments.message}</p>}
           {errors.chemicalTreatments && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.chemicalTreatments.message}</p>}
         </div>
-      </div>
+      </fieldset>
 
       {/* Aviso de Privacidad (se guarda como aceptaAvisoPrivacidad) */}
       <div className="space-y-3 pt-4">

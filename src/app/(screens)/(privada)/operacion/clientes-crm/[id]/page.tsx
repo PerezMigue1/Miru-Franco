@@ -20,6 +20,11 @@ import {
 import { listarQuejasPorCliente, type QuejaApi } from '../../../../../services/quejas';
 import { listarSeguimientosPorCliente, type SeguimientoApi } from '../../../../../services/seguimientos';
 import { formatearFechaSoloDia } from '../../../../../utils/fechaSoloDia';
+import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../../utils/estados';
+import { etiquetaEstadoPedido, varianteBadgeEstadoPedido } from '../../../../../services/ecommerce';
+import { fmtMoneda } from '../../../../../utils/cobroPos';
+import { usePermisos } from '../../../../../utils/permisos';
+import { etiquetaTipoNotificacion } from '../../_lib/panelOperacion';
 
 const FECHA_CORTA: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
@@ -67,6 +72,9 @@ export default function ClienteDetalleOperacionPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  // Gestión de citas exige citas:escritura: sin él, los botones de agendar llevarían a /403.
+  const { tienePermiso } = usePermisos();
+  const puedeAgendar = tienePermiso('citas:escritura');
 
   const [cliente, setCliente] = useState<ClienteApi | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,9 +170,11 @@ export default function ClienteDetalleOperacionPage() {
               Perfil del cliente
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="primary" onClick={() => router.push('/operacion/gestion-citas')}>Nueva Cita</Button>
-          </div>
+          {puedeAgendar && (
+            <div className="flex gap-2">
+              <Button variant="primary" onClick={() => router.push('/operacion/gestion-citas')}>Nueva Cita</Button>
+            </div>
+          )}
         </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -197,8 +207,14 @@ export default function ClienteDetalleOperacionPage() {
                     <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFechaSoloDia(cliente.fechaNacimiento, FECHA_CORTA) ?? '—'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Foto (URL)</label>
-                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.foto || '—'}</p>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Foto de perfil</label>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                      {cliente.foto && /^https:\/\//i.test(cliente.foto) ? (
+                        <a href={cliente.foto} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--texto-enlace-sobre-calido)' }}>
+                          Ver foto
+                        </a>
+                      ) : cliente.foto ? 'Con foto' : 'Sin foto'}
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Recibe promociones</label>
@@ -254,9 +270,9 @@ export default function ClienteDetalleOperacionPage() {
                           <TableCell>{formatearFecha(c.fechaHoraInicio as string | undefined)}</TableCell>
                           <TableCell>{String(especialista.nombre ?? '—')}</TableCell>
                           <TableCell className="font-semibold">
-                            {servicio.precio != null ? `$${Number(servicio.precio).toFixed(2)}` : '—'}
+                            {servicio.precio != null ? fmtMoneda(Number(servicio.precio) || 0) : '—'}
                           </TableCell>
-                          <TableCell><Badge variant="info">{String(c.estado ?? '—')}</Badge></TableCell>
+                          <TableCell><Badge variant={varianteEstadoCita(c.estado as string | undefined)}>{etiquetaEstadoCita(c.estado as string | undefined)}</Badge></TableCell>
                         </TableRow>
                       );
                     })}
@@ -284,9 +300,15 @@ export default function ClienteDetalleOperacionPage() {
                           <TableCell>{formatearFecha(p.creadoEn as string | undefined)}</TableCell>
                           <TableCell>{items.length}</TableCell>
                           <TableCell className="font-semibold">
-                            {p.total != null ? `$${Number(p.total).toFixed(2)}` : '—'}
+                            {p.total != null ? fmtMoneda(Number(p.total) || 0) : '—'}
                           </TableCell>
-                          <TableCell><Badge variant="info">{String(p.estado ?? '—')}</Badge></TableCell>
+                          <TableCell>
+                            {p.estado ? (
+                              <Badge variant={varianteBadgeEstadoPedido(String(p.estado))}>
+                                {etiquetaEstadoPedido(String(p.estado), p.metodoPago as string | null | undefined)}
+                              </Badge>
+                            ) : '—'}
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -382,7 +404,7 @@ export default function ClienteDetalleOperacionPage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Observaciones Importantes
+                  Notificaciones recientes
                 </h2>
                 {rel.notificaciones.length > 0 ? (
                   <div className="space-y-2">
@@ -390,14 +412,14 @@ export default function ClienteDetalleOperacionPage() {
                       <div key={n.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                         <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{n.titulo}</p>
                         <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                          {n.tipo} · {formatearFecha(n.creadoEn)} · {n.leida ? 'Leída' : 'No leída'}
+                          {etiquetaTipoNotificacion(n.tipo)} · {formatearFecha(n.creadoEn)} · {n.leida ? 'Leída' : 'No leída'}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                    No hay observaciones/notificaciones registradas.
+                    No hay notificaciones registradas.
                   </p>
                 )}
               </Card>
@@ -447,9 +469,11 @@ export default function ClienteDetalleOperacionPage() {
                   Acciones Rápidas
                 </h3>
                 <div className="space-y-2">
-                  <Button fullWidth onClick={() => router.push('/operacion/gestion-citas')}>
-                    Agendar Nueva Cita
-                  </Button>
+                  {puedeAgendar && (
+                    <Button fullWidth onClick={() => router.push('/operacion/gestion-citas')}>
+                      Agendar Nueva Cita
+                    </Button>
+                  )}
                   <Button fullWidth variant="outline" onClick={() => router.push('/operacion/segmentacion-clientes')}>
                     Volver al listado
                   </Button>

@@ -20,6 +20,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import { hoyEnMexico } from '../../../utils/fechaSoloDia';
+import { rutaVerTodasLasCitas } from './_lib/panelOperacion';
 
 /** Cualquiera de estas claves permite leer citas (mismas que exige GET /api/citas/dia en el backend). */
 const PERMISOS_CITAS = ['citas:propias', 'citas:asignadas', 'citas:escritura', 'citas:propia'];
@@ -57,7 +58,7 @@ export default function OperacionPage() {
 
   // Permisos del rol (de /auth/me, que OperacionLayout repuebla en localStorage). Como clave
   // estable para no recargar el dashboard cada vez que se reescribe el usuario guardado.
-  const { permisos } = usePermisos();
+  const { permisos, tienePermiso } = usePermisos();
   const permisosClave = permisos.join(',');
 
   // Cuando cambian los permisos se vuelve a cargar: el estado de carga se pone aquí, en render,
@@ -202,7 +203,7 @@ export default function OperacionPage() {
             </div>
           )}
           <div className="mt-4">
-            <Button variant="outline" size="sm" onClick={() => router.push('/operacion/gestion-citas')}>
+            <Button variant="outline" size="sm" onClick={() => router.push(rutaVerTodasLasCitas(tienePermiso))}>
               Ver todas las citas
             </Button>
           </div>
