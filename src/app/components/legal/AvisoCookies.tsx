@@ -97,7 +97,7 @@ export function BannerCookies({ onEntendido, ref, lado = 'izquierda', enFlujoEnM
       ref={ref}
       role="region"
       aria-label="Aviso de cookies"
-      className={`mf-dialogo z-40 ${fijo} flex items-center gap-2 px-3 py-1.5 sm:block sm:inset-x-auto ${esquina} sm:bottom-6 sm:w-[26rem] sm:p-5`}
+      className={`mf-dialogo z-40 lg:z-[56] ${fijo} flex items-center gap-2 px-3 py-1.5 sm:block sm:inset-x-auto ${esquina} sm:bottom-6 sm:w-[26rem] sm:p-5`}
       style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="hidden sm:flex items-start gap-3">

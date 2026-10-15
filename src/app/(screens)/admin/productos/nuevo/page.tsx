@@ -379,6 +379,7 @@ export default function NuevoProductoAdminPage() {
               Imágenes de la presentación inicial
             </label>
             <EditorImagenesPresentacionCloudinary
+              uso="productos"
               urls={imagenesPresentacion}
               onChange={setImagenesPresentacion}
               disabled={saving}

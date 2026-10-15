@@ -1,5 +1,9 @@
 import { Suspense, type ReactNode } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { CONFIGURACION_POR_OMISION, type ContenidoInicio } from '../../services/configuracionSitio';
+import type { PromocionPublica } from '../../services/contenido';
+import type { FotoGaleria } from '../../utils/galeria';
 import type { Producto } from '../../services/productos';
 import type { Servicio } from '../../services/servicios';
 import { ArrowRight, Clock3 } from 'lucide-react';
@@ -22,6 +26,12 @@ import CarruselProductosHome from './CarruselProductosHome';
 interface Props {
   initialProductos: Producto[];
   initialServicios: Servicio[];
+  /** Textos e imagen de Configuración del sitio (contenido del inicio). */
+  contenido?: ContenidoInicio;
+  /** Fotos publicadas en Operaciones > Galería; sin ellas, las fotos reales de los servicios. */
+  fotosGaleria?: FotoGaleria[];
+  /** Promoción marcada como destacada en Admin > Contenido: banner arriba de las secciones. */
+  promocionDestacada?: PromocionPublica | null;
 }
 
 /** Encabezado de sección alineado a la izquierda con su acción a la derecha (sin eyebrow). */
@@ -117,9 +127,15 @@ function BotonPrimario({ href, children, claro = false }: { href: string; childr
   );
 }
 
-export default function SeccionesHome({ initialProductos, initialServicios }: Props) {
+export default function SeccionesHome({
+  initialProductos,
+  initialServicios,
+  contenido = CONFIGURACION_POR_OMISION.contenido.inicio,
+  fotosGaleria,
+  promocionDestacada = null,
+}: Props) {
   const servicios = initialServicios.slice(0, 6);
-  const fotos = fotosDeServicios(initialServicios).slice(0, 7);
+  const fotos = (fotosGaleria ?? fotosDeServicios(initialServicios)).slice(0, 7);
   // Solo cifras con respaldo: el conteo real del catálogo (sin servicios, o si el API falló, se oculta).
   // Años de experiencia y número de clientas no tienen fuente: no se anuncian.
   const cifraServicios = cifraServiciosDisponibles(initialServicios);
@@ -127,13 +143,37 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
 
   return (
     <>
+      {promocionDestacada && (
+        <section aria-label="Promoción" className="layout-gutter-x pt-10" style={{ backgroundColor: 'var(--fondo-general)' }}>
+          <div className="container-max flex flex-col gap-4 rounded-[14px] p-6 sm:flex-row sm:items-center sm:justify-between" style={{ backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-1)' }}>
+            <div className="max-w-2xl">
+              <p className="text-xl font-semibold" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
+                {promocionDestacada.titulo}
+              </p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                {promocionDestacada.descripcion}
+              </p>
+            </div>
+            {promocionDestacada.enlace && (
+              <Link
+                href={promocionDestacada.enlace}
+                className="mf-btn inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--botones-principales)] px-6 text-sm font-semibold hover:bg-[var(--hover)]"
+                style={{ color: 'var(--texto-fondo-oscuro)' }}
+              >
+                Ver promoción <ArrowRight size={16} aria-hidden />
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ── Productos ── (en móvil arranca más cerca: el destino del Goji ya deja aire) */}
       <Suspense fallback={null}>
         <section className="mf-diferido pt-10 pb-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
           <div className="container-max">
             <EncabezadoSeccion
               titulo="Nuestros Productos"
-              descripcion="Lo que usamos en el salón, para que lo sigas en casa."
+              descripcion={contenido.productosDescripcion}
               accion={{ href: '/cliente/tienda-online', label: 'Ver tienda completa' }}
             />
 
@@ -159,7 +199,7 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
           <div className="container-max">
             <EncabezadoSeccion
               titulo="Nuestros Servicios"
-              descripcion="Nuestra carta: elige un servicio para ver qué incluye y reservar tu horario."
+              descripcion={contenido.serviciosDescripcion}
               accion={{ href: '/cliente/servicios-citas', label: 'Todos los servicios' }}
               sobreOscuro
             />
@@ -192,14 +232,14 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
         </section>
       </Suspense>
 
-      {/* ── Nuestro trabajo: fotos reales de los servicios (mismas que sube el equipo desde
-          /operacion/subir-imagenes). Sin fotos, estado vacío honesto; nunca relleno. ── */}
+      {/* ── Nuestro trabajo: fotos reales de la galería y de los servicios (las sube el equipo desde
+          sus formularios con "Subir foto"). Sin fotos, estado vacío honesto; nunca relleno. ── */}
       <Suspense fallback={null}>
         <section className="mf-diferido py-20 md:py-28 layout-gutter-x" style={{ backgroundColor: 'var(--fondo-general)' }}>
           <div className="container-max">
             <EncabezadoSeccion
               titulo="Nuestro trabajo"
-              descripcion="Fotos de servicios hechos en el salón. Tócalas para verlas en grande."
+              descripcion={contenido.trabajoDescripcion}
               accion={fotos.length > 0 ? { href: '/cliente/galeria', label: 'Ver galería completa' } : undefined}
             />
             <div className="mf-revelar">
@@ -227,21 +267,28 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
                   aria-hidden
                 />
                 <div className="relative h-full w-full overflow-hidden rounded-t-full" style={{ boxShadow: 'var(--mf-sombra-2)' }}>
-                  <ServicioImagenPlaceholder />
+                  {contenido.sobreNosotrosImagen ? (
+                    <Image src={contenido.sobreNosotrosImagen} alt="El salón" fill sizes="(min-width: 640px) 320px, 256px" className="object-cover" />
+                  ) : (
+                    <ServicioImagenPlaceholder />
+                  )}
                 </div>
               </div>
             </div>
 
             <div>
               <h2 className="mf-revelar text-elegant-title mb-6 hyphens-none" style={{ color: 'var(--encabezados-alterno)', letterSpacing: '-0.02em' }}>
-                Sobre Nosotros
+                Sobre nosotros
               </h2>
-              <p className="mf-revelar text-base md:text-lg leading-relaxed mb-4 max-w-[62ch]" style={{ color: 'var(--encabezados-alterno)' }}>
-                En Mirú Franco, nos dedicamos a realzar tu belleza natural con productos y servicios de la más alta calidad. Nuestro equipo de profesionales está comprometido a brindarte una experiencia excepcional en cada visita.
-              </p>
-              <p className="mf-revelar text-base leading-relaxed mb-10 max-w-[62ch]" style={{ color: 'var(--texto-secundario)' }}>
-                Estamos en Huejutla de Reyes, Hidalgo. Aquí puedes agendar tus servicios en línea, comprar productos profesionales para el cuidado de tu cabello y recogerlos en el salón.
-              </p>
+              {contenido.sobreNosotrosParrafos.map((parrafo, i) => (
+                <p
+                  key={i}
+                  className={`mf-revelar text-base leading-relaxed max-w-[62ch] ${i === 0 ? 'md:text-lg' : ''} ${i === contenido.sobreNosotrosParrafos.length - 1 ? 'mb-10' : 'mb-4'}`}
+                  style={{ color: i === 0 ? 'var(--encabezados-alterno)' : 'var(--texto-secundario)' }}
+                >
+                  {parrafo}
+                </p>
+              ))}
               {cifraServicios && (
                 <dl className="mf-revelar border-t pt-6" style={{ borderColor: 'var(--mf-linea)' }}>
                   <dt className="sr-only">{cifraServicios.label}</dt>
@@ -270,10 +317,10 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
                 className="text-elegant-title hyphens-none"
                 style={{ color: 'var(--texto-fondo-oscuro)', letterSpacing: '-0.02em' }}
               >
-                ¿Lista para tu cambio de look?
+                {contenido.cierreTitulo}
               </h2>
               <p className="mt-3 text-base md:text-lg" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
-                Agenda una cita con nosotros y descubre la diferencia que hace la calidad profesional.
+                {contenido.cierreTexto}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-x-7 gap-y-3">

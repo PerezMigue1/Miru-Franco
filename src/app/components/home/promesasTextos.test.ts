@@ -66,8 +66,8 @@ describe('Home: la carta de servicios sale del catálogo', () => {
 });
 
 describe('Contacto: la reserva no se confirma al instante', () => {
-  it('no promete "Confirmación instantánea" y explica cuándo se confirma', () => {
-    const t = texto(renderToStaticMarkup(createElement(ContactoPage)));
+  it('no promete "Confirmación instantánea" y explica cuándo se confirma', async () => {
+    const t = texto(renderToStaticMarkup((await ContactoPage()) as ReactElement));
     expect(t).not.toMatch(/instant[áa]ne/i);
     expect(t).toContain('Si el servicio pide anticipo, tu cita se confirma al pagarlo.');
   });

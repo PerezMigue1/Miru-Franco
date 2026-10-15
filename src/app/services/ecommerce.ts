@@ -1199,6 +1199,8 @@ export interface NotificacionApi {
   metadata?: Record<string, unknown> | null;
   creadoEn?: string;
   usuarioId?: string;
+  /** Pantalla relacionada (ruta interna) que abre el aviso; null si no tiene. */
+  urlAccion?: string | null;
 }
 
 function normalizarNotificacion(r: Record<string, unknown>): NotificacionApi {
@@ -1212,11 +1214,14 @@ function normalizarNotificacion(r: Record<string, unknown>): NotificacionApi {
     metadata: metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : null,
     creadoEn: str(r.creadoEn ?? r.creado_en),
     usuarioId: str(r.usuarioId ?? r.usuario_id),
+    urlAccion: r.urlAccion != null || r.url_accion != null ? str(r.urlAccion ?? r.url_accion) : null,
   };
 }
 
-export async function listarNotificaciones(): Promise<NotificacionApi[]> {
-  const res = await apiClient.get<unknown>('/api/notificaciones', BASE());
+/** Las notificaciones propias; con `leida: false`, solo las no leídas (campana y consulta de respaldo). */
+export async function listarNotificaciones(opciones: { leida?: boolean } = {}): Promise<NotificacionApi[]> {
+  const qs = opciones.leida === undefined ? '' : `?leida=${opciones.leida}`;
+  const res = await apiClient.get<unknown>(`/api/notificaciones${qs}`, BASE());
   return unwrapArray<Record<string, unknown>>(res).map((r) => normalizarNotificacion(r));
 }
 
@@ -1249,6 +1254,13 @@ export async function actualizarNotificacion(
   const o = unwrapObject<Record<string, unknown>>(res) ?? (res as Record<string, unknown>);
   if (o && o.id != null) return normalizarNotificacion(o);
   throw new Error('No se pudo actualizar la notificación');
+}
+
+/** Campana: marca como leídas todas las no leídas propias en una sola llamada. Devuelve cuántas marcó. */
+export async function marcarTodasNotificacionesLeidas(): Promise<number> {
+  const res = await apiClient.patch<unknown>('/api/notificaciones/leidas', undefined, BASE());
+  const count = res && typeof res === 'object' ? Number((res as Record<string, unknown>).count) : 0;
+  return Number.isFinite(count) ? count : 0;
 }
 
 export async function eliminarNotificacion(id: string): Promise<void> {

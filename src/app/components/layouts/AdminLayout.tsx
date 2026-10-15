@@ -17,6 +17,9 @@ import {
   BarChart3,
   Bell,
   Database,
+  Newspaper,
+  HandCoins,
+  Settings2,
   FileText,
   Inbox,
   Package,
@@ -32,6 +35,9 @@ import {
   User,
   Users,
   type LucideIcon,
+  Gift,
+  Warehouse,
+  ShieldUser,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -57,13 +63,13 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     titulo: 'Catálogo',
     items: [
       { label: 'Servicios', href: '/admin/servicios', icon: Scissors, permiso: 'servicios:lectura' },
-      { label: 'Paquetes', href: '/admin/paquetes', icon: Package, permiso: 'servicios:lectura' },
+      { label: 'Paquetes', href: '/admin/paquetes', icon: Gift, permiso: 'servicios:lectura' },
     ],
   },
   {
     titulo: 'Inventario y abasto',
     items: [
-      { label: 'Inventario', href: '/admin/inventario', icon: Package, permiso: 'inventario:lectura' },
+      { label: 'Inventario', href: '/admin/inventario', icon: Warehouse, permiso: 'inventario:lectura' },
       { label: 'Proveedores', href: '/admin/proveedores', icon: Truck },
       // Control de caducidad → acceso desde Inventario
       // Compras a proveedores → acceso desde Proveedores
@@ -76,6 +82,7 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
       { label: 'Venta online', href: '/admin/venta-online', icon: ShoppingCart },
       { label: 'Pedidos por recoger', href: '/admin/pedidos-por-recoger', icon: PackageCheck, permiso: 'pedidos:entregar' },
       { label: 'Facturación', href: '/admin/facturacion', icon: Receipt },
+      { label: 'Reembolsos pendientes', href: '/admin/reembolsos-pendientes', icon: HandCoins, permiso: 'reembolsos:gestionar' },
       // Pagos y Devoluciones → acceso desde Venta online
     ],
   },
@@ -98,7 +105,7 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
   {
     titulo: 'Personal y accesos',
     items: [
-      { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: ShieldCheck },
+      { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: ShieldUser },
       { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: User, permiso: 'empleados:lectura' },
     ],
   },
@@ -113,6 +120,8 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     titulo: 'Sistema',
     items: [
       { label: 'Base de datos', href: '/admin/base-datos', icon: Database },
+      { label: 'Configuración del sitio', href: '/admin/configuracion-sitio', icon: Settings2, permiso: 'configuracion:editar' },
+      { label: 'Contenido del sitio', href: '/admin/contenido', icon: Newspaper, permiso: 'configuracion:editar' },
     ],
   },
 ];
@@ -271,6 +280,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       inicioHref="/admin"
       grupos={grupos}
       esActivo={(href) => esItemActivoAdmin(pathname, href)}
+      notificacionesHref="/admin/notificaciones"
       pie={(colapsado) =>
         perfilUsuario ? (
           <div className={`flex items-center gap-2.5 ${colapsado ? 'lg:justify-center' : ''}`}>

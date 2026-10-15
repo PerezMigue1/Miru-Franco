@@ -7,9 +7,10 @@ vi.mock('../services/config', () => ({ getBackendBaseUrl: () => 'https://api.eje
 import {
   subirFirmado,
   subirFotoPerfilCloudinary,
-  subirFotoUsuarioCloudinary,
-  subirImagenesCloudinary,
+  subirImagenSegura,
+  subirImagenesSeguras,
   subirPdfCloudinary,
+  vistaPreviaDe,
 } from './cloudinary';
 
 const UPLOAD_URL = 'https://api.cloudinary.com/v1_1/nube/image/upload';
@@ -18,7 +19,6 @@ function firma(params: Record<string, string>) {
   return { success: true, data: { uploadUrl: UPLOAD_URL, apiKey: '123', params, signature: 'f1rma' } };
 }
 
-const PARAMS_GALERIA = { allowed_formats: 'jpg,jpeg,png,webp,gif,avif,heic,heif', folder: 'galeria', timestamp: '1791374400' };
 const PARAMS_PERFIL = {
   allowed_formats: 'jpg,jpeg,png,webp,gif,avif,heic',
   folder: 'avatares',
@@ -55,32 +55,35 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('subirFirmado', () => {
-  it('pide la firma de galería al backend y manda a Cloudinary file, api_key, signature y los params tal cual', async () => {
-    post.mockResolvedValue(firma(PARAMS_GALERIA));
-    const url = await subirFirmado(imagen(), 'galeria');
+const panel = (uso: string, n: number, ilus = false) => `${uso}/${ilus ? 'ilustrativas/' : ''}panel_${String(n).padStart(32, '0')}`;
+const PARAMS_PANEL = (publicId: string) => ({ allowed_formats: 'jpg,jpeg,png,webp', overwrite: 'false', public_id: publicId, timestamp: '1791374400' });
 
-    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria' }, 'https://api.ejemplo.test');
+describe('subirFirmado', () => {
+  it('pide la firma al backend y manda a Cloudinary file, api_key, signature y los params tal cual', async () => {
+    post.mockResolvedValue(firma(PARAMS_PERFIL));
+    const url = await subirFirmado(imagen(), 'perfil');
+
+    expect(post).toHaveBeenCalledWith('/api/auth/me/foto/firma', undefined, 'https://api.ejemplo.test');
     const { url: destino, datos } = enviado();
     expect(destino).toBe(UPLOAD_URL);
     expect(datos.get('upload_preset')).toBeNull();
     expect(datos.get('api_key')).toBe('123');
     expect(datos.get('signature')).toBe('f1rma');
     expect(datos.get('timestamp')).toBe('1791374400');
-    expect(datos.get('folder')).toBe('galeria');
-    expect(datos.get('allowed_formats')).toBe('jpg,jpeg,png,webp,gif,avif,heic,heif');
+    expect(datos.get('folder')).toBe('avatares');
+    expect(datos.get('allowed_formats')).toBe('jpg,jpeg,png,webp,gif,avif,heic');
     expect(datos.get('file')).toBeInstanceOf(File);
     expect(url).toMatch(/^https:\/\/res\.cloudinary\.com\/nube\/image\/upload\//);
   });
 
   it('si Cloudinary rechaza, muestra un mensaje amable y deja el detalle en la consola', async () => {
-    post.mockResolvedValue(firma(PARAMS_GALERIA));
+    post.mockResolvedValue(firma(PARAMS_PERFIL));
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ error: { message: 'Invalid Signature 0123. String to sign - ...' } }), { status: 401 }),
     );
     const consola = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    const error = await subirFirmado(imagen(), 'galeria').catch((e: Error) => e);
+    const error = await subirFirmado(imagen(), 'perfil').catch((e: Error) => e);
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).not.toContain('Signature');
     expect((error as Error).message).toMatch(/No se pudo subir/);
@@ -88,58 +91,56 @@ describe('subirFirmado', () => {
   });
 });
 
-describe('subirImagenesCloudinary (lotes)', () => {
-  it('pide una sola firma de galería para todo el lote', async () => {
-    post.mockResolvedValue(firma(PARAMS_GALERIA));
-    const urls = await subirImagenesCloudinary([imagen('a.jpg'), imagen('b.jpg'), imagen('c.jpg')]);
+describe('Subida segura de imágenes de los formularios', () => {
+  it.each(['servicios', 'productos', 'equipo', 'promociones', 'sitio', 'usuarios'] as const)(
+    '%s: pide a POST /api/subidas/imagen/firma la firma de su carpeta, sube con los params tal cual y devuelve el public_id del servidor',
+    async (uso) => {
+      const id = panel(uso, 1);
+      post.mockResolvedValueOnce(firma(PARAMS_PANEL(id)));
+      const r = await subirImagenSegura(imagen(), uso);
+      expect(post).toHaveBeenCalledWith('/api/subidas/imagen/firma', { uso }, 'https://api.ejemplo.test');
+      expect(enviado().datos.get('public_id')).toBe(id);
+      expect(enviado().datos.get('folder')).toBeNull();
+      expect(r.publicId).toBe(id);
+      expect(r.vistaPrevia).toMatch(/^https:\/\/res\.cloudinary\.com\//);
+    },
+  );
 
-    expect(post).toHaveBeenCalledTimes(1);
-    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria' }, 'https://api.ejemplo.test');
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(urls).toHaveLength(3);
-    for (let i = 0; i < 3; i++) expect(enviado(i).datos.get('upload_preset')).toBeNull();
+  it('ilustrativa (servicios y sitio) pide la bandera; la vista previa del public_id queda disponible para el formulario', async () => {
+    const id = panel('servicios', 2, true);
+    post.mockResolvedValueOnce(firma(PARAMS_PANEL(id)));
+    const r = await subirImagenSegura(imagen(), 'servicios', { ilustrativa: true });
+    expect(post.mock.calls[0][1]).toEqual({ uso: 'servicios', ilustrativa: true });
+    expect(vistaPreviaDe(id)).toBe(r.vistaPrevia);
   });
 
-  it('un lote vacío no pide firma', async () => {
-    expect(await subirImagenesCloudinary([])).toEqual([]);
-    expect(post).not.toHaveBeenCalled();
+  it('una firma sin public_id de su carpeta (por ejemplo galeria/ o con folder) se rechaza sin subir nada', async () => {
+    post.mockResolvedValueOnce(firma(PARAMS_PANEL(panel('galeria', 3))));
+    await expect(subirImagenSegura(imagen(), 'servicios')).rejects.toThrow();
+    post.mockResolvedValueOnce(firma({ folder: 'servicios', timestamp: '1' }));
+    await expect(subirImagenSegura(imagen(), 'servicios')).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('un lote de imágenes ilustrativas pide la firma con ilustrativa: true (carpeta galeria/ilustrativas)', async () => {
-    post.mockResolvedValue(firma({ ...PARAMS_GALERIA, folder: 'galeria/ilustrativas' }));
-    await subirImagenesCloudinary([imagen('a.jpg'), imagen('b.jpg')], 'ilustrativa');
-
-    expect(post).toHaveBeenCalledTimes(1);
-    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria', ilustrativa: true }, 'https://api.ejemplo.test');
-    expect(enviado(0).datos.get('folder')).toBe('galeria/ilustrativas');
+  it('varias imágenes: una firma por archivo (cada una con su public_id)', async () => {
+    post.mockResolvedValueOnce(firma(PARAMS_PANEL(panel('productos', 4)))).mockResolvedValueOnce(firma(PARAMS_PANEL(panel('productos', 5))));
+    const r = await subirImagenesSeguras([imagen('a.jpg'), imagen('b.jpg')], 'productos');
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(r.map((x) => x.publicId)).toEqual([panel('productos', 4), panel('productos', 5)]);
   });
 
-  it('un lote de fotos reales del salón pide la firma de galería sin la bandera', async () => {
-    post.mockResolvedValue(firma(PARAMS_GALERIA));
-    await subirImagenesCloudinary([imagen('a.jpg')], 'real');
-    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria' }, 'https://api.ejemplo.test');
+  it('vistaPreviaDe: una URL guardada se muestra tal cual; un texto que no es URL ni subida conocida no se muestra', () => {
+    expect(vistaPreviaDe('https://res.cloudinary.com/nube/image/upload/v1/servicios/a.jpg')).toBe('https://res.cloudinary.com/nube/image/upload/v1/servicios/a.jpg');
+    expect(vistaPreviaDe(panel('equipo', 99))).toBeNull();
+    expect(vistaPreviaDe('')).toBeNull();
   });
 });
 
-describe('foto de perfil propia y foto de otra persona', () => {
+describe('foto de perfil propia', () => {
   it('la foto propia usa la firma de perfil (POST /api/auth/me/foto/firma)', async () => {
-    post.mockResolvedValue(firma(PARAMS_PERFIL));
+    post.mockResolvedValueOnce(firma(PARAMS_PERFIL));
     await subirFotoPerfilCloudinary(imagen());
-
-    expect(post).toHaveBeenCalledWith('/api/auth/me/foto/firma', undefined, 'https://api.ejemplo.test');
-    const { datos } = enviado();
-    expect(datos.get('public_id')).toBe('usuario_u1');
-    expect(datos.get('folder')).toBe('avatares');
-    expect(datos.get('upload_preset')).toBeNull();
-  });
-
-  it('la foto de otra persona (admin) usa galería, nunca la firma de perfil del admin', async () => {
-    post.mockResolvedValue(firma(PARAMS_GALERIA));
-    await subirFotoUsuarioCloudinary(imagen());
-
-    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria' }, 'https://api.ejemplo.test');
-    expect(post).not.toHaveBeenCalledWith('/api/auth/me/foto/firma', expect.anything(), expect.anything());
-    expect(enviado().datos.get('public_id')).toBeNull();
+    expect(post.mock.calls[0][0]).toBe('/api/auth/me/foto/firma');
   });
 });
 

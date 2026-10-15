@@ -10,14 +10,21 @@ import IntroGrieta from '../components/home/IntroGrieta';
 import { SRCSET_GOJI_AVIF, TAMANO_GOJI, seleccionarFluidos } from '../utils/fluidosHero';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 import { metadataPublica } from '../utils/seo';
+import { obtenerConfiguracionPublica } from '../services/configuracionSitio';
+import { aFotosGaleria, listarGaleriaPublica } from '../services/galeria';
+import { listarPromocionesActivas } from '../services/contenido';
 
-export const metadata = metadataPublica({
-  title: 'Mirú Franco — Beauty Salón en Huejutla de Reyes',
-  description:
-    'Salón de belleza profesional en Huejutla de Reyes: cortes, coloración, tratamientos capilares, alaciado y nanoplastía. Agenda tu cita en línea y compra productos profesionales.',
-  path: '/home',
-  absoluteTitle: true,
-});
+/** Título y descripción: nombre, ciudad y descripción de Configuración del sitio. */
+export async function generateMetadata() {
+  const { salon } = await obtenerConfiguracionPublica();
+  const ciudad = salon.ciudad.split(',')[0].trim();
+  return metadataPublica({
+    title: ciudad ? `${salon.nombre} en ${ciudad}` : salon.nombre,
+    description: salon.descripcionSeo,
+    path: '/home',
+    absoluteTitle: true,
+  });
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -36,14 +43,21 @@ function conFotoPrimero(productos: Producto[]): Producto[] {
 
 /** Carga productos/servicios en streaming: el hero no espera al backend (mejora TTFB/FCP/LCP). */
 async function HomeDataSections() {
-  const [{ data: productos }, { data: servicios }] = await Promise.all([
+  const [{ data: productos }, { data: servicios }, config, galeria, promociones] = await Promise.all([
     getProductosSinRedirigir(),
     getServicios(),
+    obtenerConfiguracionPublica(),
+    listarGaleriaPublica(),
+    listarPromocionesActivas(),
   ]);
   return (
     <SeccionesHome
       initialProductos={conFotoPrimero(shuffle(productos)).slice(0, 10)}
       initialServicios={shuffle(servicios)}
+      contenido={config.contenido.inicio}
+      // Galería de Operaciones > Galería; si su API falla, las fotos reales de los servicios como hasta ahora.
+      fotosGaleria={galeria.error ? undefined : aFotosGaleria(galeria.data)}
+      promocionDestacada={promociones.data.find((p) => p.destacada) ?? null}
     />
   );
 }
@@ -64,7 +78,7 @@ export default async function Home() {
     fetchPriority: 'high',
   });
   // Nombre y precio de los fluidos del hero: mismo fetch que la tienda (Next lo deduplica).
-  const { data: catalogo } = await getProductosSinRedirigir();
+  const [{ data: catalogo }, config] = await Promise.all([getProductosSinRedirigir(), obtenerConfiguracionPublica()]);
   const fluidos = seleccionarFluidos(catalogo);
 
   return (
@@ -84,7 +98,7 @@ export default async function Home() {
         {/* Hero 2.5D: los cuatro fluidos AVYNA del catálogo (nombre/precio del API, renders propios).
             Un solo CTA primario: reservar empieza eligiendo el servicio. */}
         <Suspense fallback={null}>
-          <HeroFluidos fluidos={fluidos} />
+          <HeroFluidos fluidos={fluidos} texto={config.contenido.inicio.heroTexto} destacado={config.contenido.inicio.heroDestacado} />
         </Suspense>
 
         <Suspense fallback={<div aria-hidden style={{ minHeight: '100vh' }} />}>

@@ -84,3 +84,20 @@ describe('H5 una foto que no carga muestra el placeholder de marca', () => {
     expect(html).toContain('aria-label="Ver foto de Servicio 1 en grande"');
   });
 });
+
+describe('Fotos de la galería administrada (GET /api/galeria)', () => {
+  const administradas: FotoGaleria[] = [
+    { url: 'https://res.cloudinary.com/demo/image/upload/galeria/a.jpg', alt: 'Bob corto con raya al lado', servicioId: 3, servicio: 'Corte' },
+    { url: 'https://res.cloudinary.com/demo/image/upload/galeria/b.jpg', alt: 'Recogido para boda', servicioId: null, servicio: 'Mirú Franco' },
+  ];
+  const html = () => renderToStaticMarkup(createElement(GaleriaTrabajo, { fotos: administradas, etiqueta: 'Fotos' }));
+
+  it('usa el texto alternativo que escribió el equipo', () => {
+    expect(html()).toContain('alt="Bob corto con raya al lado"');
+    expect(html()).toContain('alt="Recogido para boda"');
+  });
+
+  it('el botón de cada foto se nombra con su texto alternativo', () => {
+    expect(html()).toContain('aria-label="Ver en grande: Recogido para boda"');
+  });
+});

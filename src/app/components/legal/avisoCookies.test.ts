@@ -105,6 +105,14 @@ describe('BannerCookies', () => {
     expect(region).toContain('sm:left-6');
     expect(region).not.toContain('sm:right-6');
   });
+
+  it('en escritorio queda encima del menú lateral de los paneles (z-index 55) y debajo de su barra (60): no se corta detrás del menú', () => {
+    const region = html.match(/<div[^>]*role="region"[^>]*>/)?.[0] ?? '';
+    expect(region).toContain('lg:z-[56]');
+    const css = readFileSync(join(__dirname, '..', '..', 'styles', 'sistema.css'), 'utf8');
+    expect(css).toMatch(/\.mf-panel-lateral \{[^}]*z-index: 55;/);
+    expect(css).toMatch(/\.mf-panel-barra \{[^}]*z-index: 60;/);
+  });
 });
 
 describe('Posición del aviso en las pantallas de acceso (revisión visual pública H1 y H5)', () => {
@@ -126,5 +134,24 @@ describe('Posición del aviso en las pantallas de acceso (revisión visual públ
     const region = renderToStaticMarkup(createElement(BannerCookies, { onEntendido: () => undefined, enFlujoEnMovil: true })).match(/<div[^>]*role="region"[^>]*>/)?.[0] ?? '';
     expect(region).toContain('max-sm:static');
     expect(region).toContain('sm:fixed');
+  });
+});
+
+describe('Política de cookies 1.1: mf_registro_google, estrictamente necesaria, sin volver a pedir el aviso', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    reiniciarAvisoCookiesEnMemoria();
+  });
+
+  it('la política nombra la cookie mf_registro_google, para qué sirve y cuánto dura', () => {
+    const pagina = readFileSync(join(__dirname, '..', '..', 'politica-de-cookies', 'page.tsx'), 'utf8');
+    expect(pagina).toContain("nombres={['mf_registro_google']}");
+    expect(pagina).toMatch(/15 minutos/);
+  });
+
+  it('quien ya vio el aviso con la versión 1.0 no lo vuelve a ver: el cambio es una cookie estrictamente necesaria', () => {
+    const almacen = almacenFalso();
+    almacen.set(CLAVE_AVISO_COOKIES, '1.0');
+    expect(avisoCookiesVisto()).toBe(true);
   });
 });

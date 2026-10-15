@@ -20,19 +20,20 @@ describe('Registro de documentos legales', () => {
     );
   });
 
-  it('cada entrada tiene título, versión X.Y, vigencia 2026-10-14 y ruta absoluta', () => {
+  it('cada entrada tiene título, versión X.Y, vigencia (cookies 1.1 desde el 16, los demás desde el 14 de octubre) y ruta absoluta', () => {
     for (const d of DOCUMENTOS_LEGALES) {
       expect(d.titulo.trim().length, d.slug).toBeGreaterThan(0);
       expect(d.version, d.slug).toMatch(/^\d+\.\d+$/);
-      expect(d.vigenteDesde, d.slug).toBe('2026-10-14');
+      expect(d.vigenteDesde, d.slug).toBe(d.slug === 'cookies' ? '2026-10-16' : '2026-10-14');
       expect(d.ruta.startsWith('/'), d.slug).toBe(true);
     }
   });
 
-  it('términos y aviso quedan en versión 2.0; cookies y reembolsos en 1.0', () => {
+  it('términos y aviso quedan en versión 2.0; cookies en 1.1 (agrega mf_registro_google); reembolsos en 1.0', () => {
     expect(documentoLegal('terminos').version).toBe('2.0');
     expect(documentoLegal('aviso-privacidad').version).toBe('2.0');
-    expect(documentoLegal('cookies').version).toBe('1.0');
+    expect(documentoLegal('cookies').version).toBe('1.1');
+    expect(documentoLegal('cookies').vigenteDesde).toBe('2026-10-16');
     expect(documentoLegal('reembolsos').version).toBe('1.0');
   });
 
@@ -55,7 +56,7 @@ describe('Registro de documentos legales', () => {
 
   it('leyendaVersion arma el encabezado visible con la versión y la fecha en español', () => {
     expect(leyendaVersion('terminos')).toBe('Versión 2.0. Vigente desde el 14 de octubre de 2026.');
-    expect(leyendaVersion('cookies')).toBe('Versión 1.0. Vigente desde el 14 de octubre de 2026.');
+    expect(leyendaVersion('cookies')).toBe('Versión 1.1. Vigente desde el 16 de octubre de 2026.');
   });
 });
 

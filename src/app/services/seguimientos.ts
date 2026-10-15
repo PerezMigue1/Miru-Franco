@@ -86,6 +86,23 @@ export async function listarSeguimientos(
   return { data, total: Number(res?.count ?? data.length) };
 }
 
+/** Seguimiento visible para la clienta en su portal (GET /api/seguimientos/mios). Sin las notas internas del personal. */
+export interface MiSeguimiento {
+  id: number;
+  servicio: string | null;
+  fechaContacto: string;
+  satisfaccion: number | null;
+}
+
+/** Los seguimientos de la propia clienta (el backend filtra por el usuario de la sesión). */
+export async function listarMisSeguimientos(): Promise<MiSeguimiento[]> {
+  const res = await apiClient.get<{ data?: MiSeguimiento[] }>('/api/seguimientos/mios', { customBase: getBackendBaseUrl() });
+  // Solo los campos de la clienta, aunque un backend anterior mande más (las notas).
+  return Array.isArray(res?.data)
+    ? res.data.map(({ id, servicio, fechaContacto, satisfaccion }) => ({ id, servicio, fechaContacto, satisfaccion }))
+    : [];
+}
+
 export async function listarSeguimientosPorCliente(clienteId: string): Promise<SeguimientoApi[]> {
   const res = await apiClient.get<unknown>(`/api/seguimientos/cliente/${clienteId}`, { customBase: getBackendBaseUrl() });
   const arr = Array.isArray(res) ? res : Array.isArray((res as Record<string, unknown>)?.data) ? (res as Record<string, unknown[]>).data : [];

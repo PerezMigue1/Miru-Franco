@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { COLOR_VINO, COLOR_ORO, COLOR_TEXTO_CLARO } from './exportReportes';
+import { cargarConfiguracionPublicaCliente } from '../services/configuracionSitio';
 
 export interface NotaVentaParaPdf {
   id: number;
@@ -11,10 +12,12 @@ export interface NotaVentaParaPdf {
 
 /**
  * Genera el PDF de una "nota de venta" (comprobante NO fiscal) 100% en el cliente.
- * Nunca debe verse como un CFDI timbrado — lleva un sello visible y explícito dejando
+ * Nunca debe verse como un CFDI timbrado: lleva un sello visible y explícito dejando
  * claro que no tiene validez fiscal (regla legal, no cosmética).
  */
-export function generarNotaVentaPdf(nota: NotaVentaParaPdf): void {
+export async function generarNotaVentaPdf(nota: NotaVentaParaPdf): Promise<void> {
+  // Nombre del salón: Configuración del sitio (sin API, el nombre registrado).
+  const nombreSalon = (await cargarConfiguracionPublicaCliente()).salon.nombre;
   const doc = new jsPDF();
 
   doc.setFillColor(...COLOR_VINO);
@@ -22,7 +25,7 @@ export function generarNotaVentaPdf(nota: NotaVentaParaPdf): void {
   doc.setTextColor(...COLOR_TEXTO_CLARO);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Mirú Franco — Beauty Salón', 14, 12);
+  doc.text(nombreSalon, 14, 12);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text('Nota de venta', 14, 20);
@@ -48,7 +51,7 @@ export function generarNotaVentaPdf(nota: NotaVentaParaPdf): void {
   doc.setTextColor(...COLOR_ORO);
   doc.text(`Total: $${nota.monto.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, yMonto);
 
-  // Sello legal — visible, no decorativo: este documento NUNCA debe confundirse con un CFDI.
+  // Sello legal: visible, no decorativo: este documento NUNCA debe confundirse con un CFDI.
   const yFinal = doc.internal.pageSize.getHeight() - 30;
   doc.setDrawColor(...COLOR_VINO);
   doc.setLineWidth(0.8);
@@ -56,7 +59,7 @@ export function generarNotaVentaPdf(nota: NotaVentaParaPdf): void {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...COLOR_VINO);
-  doc.text('COMPROBANTE NO FISCAL — Sin validez fiscal', 105, yFinal + 10, { align: 'center' });
+  doc.text('COMPROBANTE NO FISCAL: Sin validez fiscal', 105, yFinal + 10, { align: 'center' });
 
   doc.save(`nota-venta-${nota.id}.pdf`);
 }

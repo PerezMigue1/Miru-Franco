@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
-import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
+import { ArrowRight, Clock, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
+import {
+  CONFIGURACION_POR_OMISION,
+  cargarConfiguracionPublicaCliente,
+  domicilioCompleto,
+  enlaceTelefono,
+  enlaceWhatsApp,
+  frasesHorario,
+} from '../services/configuracionSitio';
 import { anioEnMexico } from '../utils/fechaSoloDia';
 import { DOCUMENTOS_LEGALES } from '../utils/documentosLegales';
 import { cargarNombresServiciosFooter } from '../utils/serviciosDisponibles';
@@ -31,11 +38,19 @@ function IconTwitter({ className }: { className?: string }) {
   );
 }
 
+function IconTikTok({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+    </svg>
+  );
+}
+
 const LINKS_RAPIDOS = [
   { label: 'Inicio', href: '/home' },
   { label: 'Tienda', href: '/cliente/tienda-online' },
   { label: 'Servicios', href: '/servicios' },
-  { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
+  { label: 'Sobre nosotros', href: '/sobre-nosotros' },
   { label: 'Contacto', href: '/contacto' },
 ];
 
@@ -53,10 +68,26 @@ const CLASE_ENLACE_EN_TEXTO =
   'underline underline-offset-2 transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]';
 
 export default function Footer() {
-  const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
-  const fbUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;
-  const twUrl = process.env.NEXT_PUBLIC_TWITTER_URL;
-  const hayRedes = Boolean(igUrl || fbUrl || twUrl);
+  // Contacto, horario, nombre y redes: Configuración del sitio (el primer pintado usa los valores por omisión).
+  const [config, setConfig] = useState(CONFIGURACION_POR_OMISION);
+  useEffect(() => {
+    let vigente = true;
+    void cargarConfiguracionPublicaCliente().then((c) => {
+      if (vigente) setConfig(c);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+  const { salon, redes } = config;
+  // Las variables NEXT_PUBLIC_* quedan como respaldo mientras la red no se capture en la configuración.
+  const igUrl = redes.instagram || process.env.NEXT_PUBLIC_INSTAGRAM_URL;
+  const fbUrl = redes.facebook || process.env.NEXT_PUBLIC_FACEBOOK_URL;
+  const twUrl = redes.twitter || process.env.NEXT_PUBLIC_TWITTER_URL;
+  const ttUrl = redes.tiktok;
+  const hayRedes = Boolean(igUrl || fbUrl || twUrl || ttUrl);
+  const telefono = enlaceTelefono(salon.telefono);
+  const whatsapp = enlaceWhatsApp(salon.whatsapp);
 
   // Servicios activos del catálogo real. Si el API falla, la columna queda sin lista: el pie nunca rompe la página.
   const [servicios, setServicios] = useState<string[]>([]);
@@ -82,9 +113,11 @@ export default function Footer() {
               Mirú <span className="mf-logotipo__franco">Franco</span>
             </p>
             <p className="mf-logotipo__salon mb-4">Beauty Salón</p>
-            <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-              Salón de belleza profesional dedicado a realzar tu belleza natural con productos y servicios de alta calidad.
-            </p>
+            {salon.lema && (
+              <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+                {salon.lema}
+              </p>
+            )}
             {hayRedes && (
               <div className="flex gap-3">
                 {igUrl && (
@@ -121,6 +154,18 @@ export default function Footer() {
                     style={{ backgroundColor: 'var(--marca-twitter)' }}
                   >
                     <IconTwitter className="w-5 h-5 text-blanco" />
+                  </a>
+                )}
+                {ttUrl && (
+                  <a
+                    href={ttUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="TikTok"
+                    className="p-3 rounded-full hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: 'var(--botones-principales)' }}
+                  >
+                    <IconTikTok className="w-5 h-5 text-blanco" />
                   </a>
                 )}
               </div>
@@ -173,32 +218,53 @@ export default function Footer() {
             <ul className="space-y-4 text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
               <li className="flex items-start gap-3">
                 <MapPin size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
-                <span>{DIRECCION_SALON ?? `${CIUDAD_SALON}, México`}</span>
+                {salon.mapaUrl ? (
+                  <a href={salon.mapaUrl} target="_blank" rel="noopener noreferrer" className={`${CLASE_ENLACE_BARRA} underline underline-offset-2`}>
+                    {domicilioCompleto(salon)}
+                    <span className="sr-only"> (abre el mapa en otra pestaña)</span>
+                  </a>
+                ) : (
+                  <span>{domicilioCompleto(salon)}</span>
+                )}
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 <a
-                  href="mailto:contacto@mirufranco.com"
-                  className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                  href={`mailto:${salon.correoContacto}`}
+                  className="inline-flex min-h-11 items-center break-all transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                 >
-                  contacto@mirufranco.com
+                  {salon.correoContacto}
                 </a>
               </li>
-              {TELEFONO_SALON && (
+              {telefono && (
                 <li className="flex items-center gap-3">
                   <Phone size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
                   <a
-                    href={TELEFONO_SALON.enlace}
+                    href={telefono}
                     className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
                   >
-                    {TELEFONO_SALON.visible}
+                    {salon.telefono}
+                  </a>
+                </li>
+              )}
+              {whatsapp && (
+                <li className="flex items-center gap-3">
+                  <MessageCircle size={16} aria-hidden className="shrink-0" style={{ color: 'var(--logo-branding)' }} />
+                  <a
+                    href={whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]"
+                  >
+                    WhatsApp {salon.whatsapp}
+                    <span className="sr-only"> (se abre en otra pestaña)</span>
                   </a>
                 </li>
               )}
               <li className="flex items-start gap-3">
                 <Clock size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
                 <span>
-                  {HORARIO_SALON.frases.map((frase) => (
+                  {frasesHorario(config.horario.dias).map((frase) => (
                     <span key={frase} className="block">
                       {frase}
                     </span>
@@ -212,7 +278,7 @@ export default function Footer() {
         {/* Barra inferior */}
         <div className="border-t pt-8 flex flex-col sm:flex-row justify-between items-center gap-4" style={{ borderColor: 'var(--borde-sutil)' }}>
           <p className="text-sm text-center" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-            © {anioEnMexico()} Mirú Franco. Todos los derechos reservados.
+            © {anioEnMexico()} {salon.nombre}. Todos los derechos reservados.
           </p>
           <div className="flex gap-x-6 text-sm flex-wrap justify-center">
             {ENLACES_LEGALES.map((d) => (

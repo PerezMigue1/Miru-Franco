@@ -15,7 +15,7 @@ const NAV_LINKS: { label: string; href: string; activeMatch?: string }[] = [
   // /servicios redirige a /cliente/servicios-citas: el activo se compara con el destino real
   { label: 'Servicios',      href: '/servicios', activeMatch: '/cliente/servicios-citas' },
   { label: 'Tienda',         href: '/cliente/tienda-online' },
-  { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
+  { label: 'Sobre nosotros', href: '/sobre-nosotros' },
   { label: 'Contacto',       href: '/contacto' },
 ];
 

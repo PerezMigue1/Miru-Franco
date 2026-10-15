@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, House } from 'lucide-react';
+import { ChevronLeft, ChevronRight, House } from 'lucide-react';
 
 export interface BreadcrumbItem {
   label: string;
@@ -20,10 +20,23 @@ interface BreadcrumbProps {
  */
 export default function Breadcrumb({ items }: BreadcrumbProps) {
   if (!items.length) return null;
+  // En móvil, con tres niveles o más, el rastro completo se partía en dos líneas y repetía el título: ahí solo se
+  // muestra el regreso al nivel anterior con enlace; desde sm, el rastro completo.
+  const anterior = items.length > 2 ? [...items.slice(0, -1)].reverse().find((i) => i.href) : undefined;
 
   return (
     <nav aria-label="Migas de pan" className="min-w-0 text-[0.8125rem]">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+      {anterior?.href && (
+        <Link
+          href={anterior.href}
+          className="inline-flex min-h-11 items-center gap-1 rounded-md px-1 font-semibold underline-offset-4 hover:underline sm:hidden"
+          style={{ color: 'var(--encabezados-alterno)' }}
+        >
+          <ChevronLeft size={16} aria-hidden className="shrink-0" />
+          {anterior.label}
+        </Link>
+      )}
+      <ol className={`${anterior?.href ? 'hidden sm:flex' : 'flex'} flex-wrap items-center gap-x-1 gap-y-0.5`}>
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           const isFirst = index === 0;

@@ -36,6 +36,8 @@ import { normalizarUrlImagenExterna } from '../../utils/normalizarUrlImagen';
 import { filasDatosCuenta } from './datosCuenta';
 import CambioCorreoModal from './CambioCorreoModal';
 import MisDatosPrivacidad from '../privacidad/MisDatosPrivacidad';
+import AvisosNavegador from '../notificaciones/AvisosNavegador';
+import { seccionDesdeHash } from './seccionDesdeHash';
 
 interface UserInfo {
   id?: string;
@@ -101,6 +103,22 @@ export default function UserProfile() {
   const [avatarFotoUploading, setAvatarFotoUploading] = useState(false);
   const [avatarFotoError, setAvatarFotoError] = useState<string | null>(null);
   const [cambioCorreoAbierto, setCambioCorreoAbierto] = useState(false);
+  // Enlace directo a una sección (p. ej. el aviso de respuesta ARCO: #privacidad-solicitudes), al cargar y al
+  // cambiar el hash. Después de abrirla, baja al bloque indicado cuando ya está pintado.
+  useEffect(() => {
+    const abrirDesdeHash = () => {
+      const destino = seccionDesdeHash(window.location.hash);
+      if (!destino) return;
+      setActiveSection(destino.seccion);
+      if (destino.ancla) {
+        const ancla = destino.ancla;
+        window.setTimeout(() => document.getElementById(ancla)?.scrollIntoView({ block: 'start' }), 300);
+      }
+    };
+    queueMicrotask(abrirDesdeHash);
+    window.addEventListener('hashchange', abrirDesdeHash);
+    return () => window.removeEventListener('hashchange', abrirDesdeHash);
+  }, []);
   const [user, setUser] = useState<UserInfo>({
     nombre: '',
     email: '',
@@ -622,6 +640,14 @@ export default function UserProfile() {
                 </section>
               );
             })}
+            <section className="mf-entrada" style={{ ['--i' as string]: GRUPOS_TARJETAS.length + 2 }}>
+              <h2 className="mb-3 text-sm font-semibold" style={{ color: 'var(--encabezados-alterno)' }}>
+                Avisos
+              </h2>
+              <Card padding="sm">
+                <AvisosNavegador variante="perfil" />
+              </Card>
+            </section>
             <div className="lg:hidden">{cerrarSesion}</div>
           </div>
         )}

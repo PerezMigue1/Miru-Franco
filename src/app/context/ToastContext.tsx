@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { CircleCheck, CircleX, Info, TriangleAlert } from 'lucide-react';
-import { setToastAPI, type ToastType } from '../utils/toast';
+import { setToastAPI, type AccionToast, type ToastType } from '../utils/toast';
 import Button from '../components/ui/Button';
 
 interface ToastItem {
@@ -19,6 +19,7 @@ interface ToastItem {
   message: string;
   type: ToastType;
   duration: number;
+  accion?: AccionToast;
   /** Marcado al vencer: se anima la salida y se quita al terminar (SALIDA_TOAST_MS). */
   saliendo?: boolean;
 }
@@ -39,7 +40,7 @@ interface ConfirmState {
 const ToastContext = createContext<{
   showAlert: (message: string) => Promise<void>;
   showConfirm: (message: string, options?: { title?: string; confirmText?: string; cancelText?: string }) => Promise<boolean>;
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number, accion?: AccionToast) => void;
 } | null>(null);
 
 export function useToast() {
@@ -78,19 +79,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     queueMicrotask(() => setMounted(true));
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 4000) => {
-    const id = ++toastIdRef.current;
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-    const t = setTimeout(() => {
-      setToasts((prev) => prev.map((x) => (x.id === id ? { ...x, saliendo: true } : x)));
-      const salida = setTimeout(() => {
-        setToasts((prev) => prev.filter((x) => x.id !== id));
-        timersRef.current.delete(id);
-      }, SALIDA_TOAST_MS);
-      timersRef.current.set(id, salida);
-    }, duration);
-    timersRef.current.set(id, t);
+  /** Anima la salida y lo quita (al vencer o al pulsar su acción). */
+  const cerrarToast = useCallback((id: number) => {
+    const previo = timersRef.current.get(id);
+    if (previo) clearTimeout(previo);
+    setToasts((prev) => prev.map((x) => (x.id === id ? { ...x, saliendo: true } : x)));
+    const salida = setTimeout(() => {
+      setToasts((prev) => prev.filter((x) => x.id !== id));
+      timersRef.current.delete(id);
+    }, SALIDA_TOAST_MS);
+    timersRef.current.set(id, salida);
   }, []);
+
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 4000, accion?: AccionToast) => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, message, type, duration, accion }]);
+    timersRef.current.set(id, setTimeout(() => cerrarToast(id), duration));
+  }, [cerrarToast]);
 
   const showAlert = useCallback((message: string) => {
     return new Promise<void>((resolve) => {
@@ -170,6 +175,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--texto-cuerpo)' }}>
                   {t.message}
                 </p>
+                {t.accion && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      t.accion?.alHacerClic();
+                      cerrarToast(t.id);
+                    }}
+                    className="-my-2 -mr-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 text-sm font-semibold underline-offset-4 hover:underline"
+                    style={{ color: 'var(--info-texto)' }}
+                  >
+                    {t.accion.etiqueta}
+                  </button>
+                )}
               </div>
             ))}
           </div>,

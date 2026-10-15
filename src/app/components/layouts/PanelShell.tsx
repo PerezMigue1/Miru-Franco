@@ -8,6 +8,7 @@ import { ChevronsLeft, ChevronsRight, ExternalLink, Menu, X, type LucideIcon } f
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 import ThemeToggle from '../ui/ThemeToggle';
 import { mostrarItemActivo } from './menuActivo';
+import CampanaPanel from '../notificaciones/CampanaPanel';
 
 export interface PanelNavItem {
   label: string;
@@ -29,6 +30,8 @@ interface PanelShellProps {
   esActivo: (href: string) => boolean;
   /** Pie del menú lateral (cuenta del usuario), opcional. */
   pie?: (colapsado: boolean) => ReactNode;
+  /** Bandeja de notificaciones del panel: con ella la barra muestra la campana de avisos. */
+  notificacionesHref?: string;
   children: ReactNode;
 }
 
@@ -37,7 +40,7 @@ interface PanelShellProps {
  * Barra fija de 56px, menú lateral fijo en escritorio (colapsable) y cajón en móvil/tablet.
  * Solo presentación: la verificación de sesión, rol y permisos vive en AdminLayout/OperacionLayout.
  */
-export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie, children }: PanelShellProps) {
+export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie, notificacionesHref, children }: PanelShellProps) {
   const pathname = usePathname();
   const [abierto, setAbierto] = useState(false);
   const [colapsado, setColapsado] = useState(false);
@@ -94,8 +97,10 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
             <span className="relative h-8 w-8 shrink-0">
               <Image src="/logo-miru.jpg" alt="" fill sizes="32px" className="object-contain" priority />
             </span>
+            {/* Nunca cortada ("Mirú F..."): completa desde 360 px; más angosto, solo el monograma (el nombre
+                queda para lectores de pantalla). */}
             <span
-              className="truncate text-base font-bold leading-none sm:text-[1.0625rem]"
+              className="whitespace-nowrap text-base font-bold leading-none max-[359px]:sr-only sm:text-[1.0625rem]"
               style={{ fontFamily: 'var(--font-family-serif)', color: 'var(--marfil)' }}
             >
               Mirú Franco
@@ -105,6 +110,8 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {/* Una sola campana: contador, lista de avisos y, dentro de su menú, activar los del navegador. */}
+          {notificacionesHref && <CampanaPanel href={notificacionesHref} />}
           <ThemeToggle />
           <Link
             href="/home"

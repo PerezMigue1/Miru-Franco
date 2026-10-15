@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { COLOR_VINO, COLOR_ORO, COLOR_TEXTO_CLARO } from './exportReportes';
 import type { VentaLocalApi } from '../services/pos';
+import { cargarConfiguracionPublicaCliente } from '../services/configuracionSitio';
 
 const ZONA_SALON = 'America/Mexico_City';
 
@@ -30,21 +31,23 @@ function etiquetaMetodoPago(metodo: string): string {
 }
 
 /**
- * Genera el PDF del ticket de una venta local (POS) — todo sale de `venta`, nada inventado.
+ * Genera el PDF del ticket de una venta local (POS): todo sale de `venta`, nada inventado.
  * Nombres de ítems/cajero/cliente ya vienen resueltos desde el backend (ver
  * `incluirVentaRelaciones()` en pos.service.ts + normalizarVenta en services/pos.ts),
  * nunca se resuelven aquí con catálogos ni se muestran IDs crudos.
  */
-export function generarTicketVentaPdf(venta: VentaLocalApi): void {
+export async function generarTicketVentaPdf(venta: VentaLocalApi): Promise<void> {
+  // Nombre del salón: Configuración del sitio (sin API, el nombre registrado).
+  const nombreSalon = (await cargarConfiguracionPublicaCliente()).salon.nombre;
   const doc = new jsPDF();
 
-  // Encabezado de marca — mismo patrón que exportarReportePdf
+  // Encabezado de marca: mismo patrón que exportarReportePdf
   doc.setFillColor(...COLOR_VINO);
   doc.rect(0, 0, doc.internal.pageSize.getWidth(), 28, 'F');
   doc.setTextColor(...COLOR_TEXTO_CLARO);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Mirú Franco — Beauty Salón', 14, 12);
+  doc.text(nombreSalon, 14, 12);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text('Ticket de venta', 14, 20);
@@ -105,7 +108,7 @@ export function generarTicketVentaPdf(venta: VentaLocalApi): void {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...COLOR_VINO);
-  doc.text('¡Gracias por tu preferencia! — Mirú Franco Beauty Salón', 14, y);
+  doc.text(`¡Gracias por tu preferencia! ${nombreSalon}`, 14, y);
 
   doc.save(`ticket-${folio}.pdf`);
 }

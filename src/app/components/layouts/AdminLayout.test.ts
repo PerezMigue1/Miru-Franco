@@ -36,3 +36,21 @@ describe('Menú de administración: privacidad', () => {
     expect(pagina('solicitudes-arco')).toContain('<AdminLayout>');
   });
 });
+
+describe('Menú de administración: configuración del sitio y reembolsos pendientes', () => {
+  it('"Configuración del sitio" va en Sistema con configuracion:editar y "Reembolsos pendientes" en Ventas con reembolsos:gestionar', () => {
+    const sistema = layout.slice(layout.indexOf("titulo: 'Sistema'"));
+    const ventas = layout.slice(layout.indexOf("titulo: 'Ventas'"), layout.indexOf("titulo: 'Clientes'"));
+    const config = sistema.match(/\{[^}]*label: 'Configuración del sitio'[^}]*\}/)?.[0];
+    const reembolsos = ventas.match(/\{[^}]*label: 'Reembolsos pendientes'[^}]*\}/)?.[0];
+    expect(config).toContain("href: '/admin/configuracion-sitio'");
+    expect(config).toContain("permiso: 'configuracion:editar'");
+    expect(reembolsos).toContain("href: '/admin/reembolsos-pendientes'");
+    expect(reembolsos).toContain("permiso: 'reembolsos:gestionar'");
+  });
+
+  it('las dos pantallas montan AdminLayout', () => {
+    expect(pagina('configuracion-sitio')).toContain('<AdminLayout');
+    expect(pagina('reembolsos-pendientes')).toContain('<AdminLayout');
+  });
+});

@@ -201,7 +201,7 @@ export default function FacturacionPage() {
 
   const handleDescargar = (f: FacturaApi) => {
     if (f.tipo === 'nota') {
-      generarNotaVentaPdf({
+      void generarNotaVentaPdf({
         id: f.id,
         clienteNombre: f.clienteNombre || 'Cliente sin nombre',
         concepto: f.concepto || '-',

@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DOCUMENTOS_LEGALES,
   documentoLegal,
+  fechaVigenciaTexto,
   leyendaVersion,
   type SlugDocumentoLegal,
 } from '../../utils/documentosLegales';
@@ -94,10 +95,10 @@ async function hashDePagina(ruta: string): Promise<string> {
 const fuente = (carpeta: string) => readFileSync(join(RAIZ_APP, carpeta, 'page.tsx'), 'utf8');
 
 describe('Páginas legales: versión y vigencia desde el registro', () => {
-  it.each(PAGINAS)('$carpeta muestra "Versión X. Vigente desde el 14 de octubre de 2026."', async ({ slug, carpeta }) => {
+  it.each(PAGINAS)('$carpeta muestra "Versión X. Vigente desde el …" con su fecha del registro', async ({ slug, carpeta }) => {
     const html = await pintar(carpeta);
     expect(texto(html)).toContain(leyendaVersion(slug));
-    expect(html).toContain('dateTime="2026-10-14"');
+    expect(html).toContain(`dateTime="${documentoLegal(slug).vigenteDesde}"`);
   });
 
   it.each(PAGINAS)('$carpeta no escribe la versión a mano: la lee del registro', ({ slug, carpeta }) => {
@@ -106,10 +107,10 @@ describe('Páginas legales: versión y vigencia desde el registro', () => {
     expect(src).not.toMatch(/Versión \d/);
   });
 
-  it.each(PAGINAS)('$carpeta muestra la fecha una sola vez: solo el encabezado de versión, sin "Última actualización"', async ({ carpeta }) => {
+  it.each(PAGINAS)('$carpeta muestra la fecha una sola vez: solo el encabezado de versión, sin "Última actualización"', async ({ slug, carpeta }) => {
     const t = texto(await pintar(carpeta));
     expect(t).not.toContain('Última actualización');
-    expect(t.split('14 de octubre de 2026').length - 1).toBe(1);
+    expect(t.split(fechaVigenciaTexto(slug)).length - 1).toBe(1);
   });
 });
 

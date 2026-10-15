@@ -98,3 +98,25 @@ describe('Footer: área táctil de 44 px en los enlaces', () => {
     }
   });
 });
+
+describe('Footer: contacto y horario desde Configuración del sitio', () => {
+  it('no tiene datos de contacto escritos a mano: los carga de la configuración', () => {
+    const fuente = readFileSync(join(__dirname, 'Footer.tsx'), 'utf8');
+    expect(fuente).toContain('cargarConfiguracionPublicaCliente');
+    expect(fuente).not.toContain('contacto@mirufranco.com');
+    expect(fuente).not.toContain('HORARIO_SALON');
+    expect(fuente).not.toContain('TELEFONO_SALON');
+  });
+
+  it('el primer pintado usa los valores de la configuración (por omisión, los mismos de los documentos legales)', () => {
+    sinRedes();
+    const html = renderToStaticMarkup(createElement(Footer));
+    expect(html).toContain('Segunda Cerrada de Allende No. 15, Col. Juárez, Huejutla de Reyes, Hidalgo, C.P. 43000');
+    expect(html).toContain('href="mailto:contacto@mirufranco.com"');
+    expect(html).toContain('href="tel:+527712681432"');
+    expect(html).toContain('href="https://wa.me/527711867645"');
+    expect(html).toContain('Lunes a viernes de 9:30 a 19:30 h.');
+    expect(html).toContain('Domingos cerrado.');
+    expect(html).toContain('Mirú Franco Salón Beauty. Todos los derechos reservados.');
+  });
+});

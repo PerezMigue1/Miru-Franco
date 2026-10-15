@@ -1,8 +1,9 @@
 import Header from '../layouts/Header';
 import Footer from '../layouts/Footer';
-import { MapPin, Mail, Phone, Clock } from 'lucide-react';
+import { MapPin, Mail, MessageCircle, Phone, Clock } from 'lucide-react';
 import { metadataPublica } from '../utils/seo';
-import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
+import { domicilioCompleto, enlaceTelefono, enlaceWhatsApp, frasesHorario, obtenerConfiguracionPublica } from '../services/configuracionSitio';
+import { listarPreguntasFrecuentes } from '../services/contenido';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
 
 function IconInstagram({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -27,9 +28,13 @@ export const metadata = metadataPublica({
   path: '/contacto',
 });
 
-export default function ContactoPage() {
-  const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
-  const fbUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;
+export default async function ContactoPage() {
+  // Contacto, horario y textos: Configuración del sitio (revalida cada minuto; sin API, los valores de hoy).
+  const [{ salon, redes, horario, contenido }, { data: preguntas }] = await Promise.all([obtenerConfiguracionPublica(), listarPreguntasFrecuentes()]);
+  const igUrl = redes.instagram || process.env.NEXT_PUBLIC_INSTAGRAM_URL;
+  const fbUrl = redes.facebook || process.env.NEXT_PUBLIC_FACEBOOK_URL;
+  const telefono = enlaceTelefono(salon.telefono);
+  const whatsapp = enlaceWhatsApp(salon.whatsapp);
 
   return (
     <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
@@ -43,7 +48,7 @@ export default function ContactoPage() {
               Contacto
             </h1>
             <p className="max-w-xl text-base md:text-lg leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-80)' }}>
-              Agenda una cita, resuelve tus dudas o simplemente escríbenos. Estaremos encantados de atenderte.
+              {contenido.contacto.introduccion}
             </p>
           </div>
         </section>
@@ -56,7 +61,7 @@ export default function ContactoPage() {
               {/* Datos de contacto */}
               <div className="mf-revelar">
                 <h2 className="text-elegant-title mb-8 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Información de Contacto
+                  Información de contacto
                 </h2>
 
                 <div className="space-y-6">
@@ -70,12 +75,24 @@ export default function ContactoPage() {
                     <div>
                       <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Dirección</p>
                       <p className="text-sm leading-relaxed" style={{ color: 'var(--texto-secundario)' }}>
-                        {DIRECCION_SALON ?? `${CIUDAD_SALON}, México`}
+                        {domicilioCompleto(salon)}
                       </p>
+                      {salon.mapaUrl && (
+                        <a
+                          href={salon.mapaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
+                          style={{ color: 'var(--menu-texto-principal)' }}
+                        >
+                          Cómo llegar
+                          <span className="sr-only"> (abre el mapa en otra pestaña)</span>
+                        </a>
+                      )}
                     </div>
                   </div>
 
-                  {TELEFONO_SALON && (
+                  {telefono && (
                     <div className="flex items-start gap-4">
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
@@ -87,11 +104,35 @@ export default function ContactoPage() {
                         {/* Sin mb-1: el enlace mide 44px y su texto centrado ya deja aire bajo la etiqueta */}
                         <p className="font-semibold text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
                         <a
-                          href={TELEFONO_SALON.enlace}
+                          href={telefono}
                           className="inline-flex min-h-11 items-center text-sm hover:opacity-80 transition-opacity"
                           style={{ color: 'var(--menu-texto-principal)' }}
                         >
-                          {TELEFONO_SALON.visible}
+                          {salon.telefono}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {whatsapp && (
+                    <div className="flex items-start gap-4">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'var(--fondos-suaves)' }}
+                      >
+                        <MessageCircle className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} aria-hidden />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm" style={{ color: 'var(--encabezados-alterno)' }}>WhatsApp</p>
+                        <a
+                          href={whatsapp}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center text-sm hover:opacity-80 transition-opacity"
+                          style={{ color: 'var(--menu-texto-principal)' }}
+                        >
+                          {salon.whatsapp}
+                          <span className="sr-only"> (se abre en otra pestaña)</span>
                         </a>
                       </div>
                     </div>
@@ -107,11 +148,11 @@ export default function ContactoPage() {
                     <div>
                       <p className="font-semibold text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Correo</p>
                       <a
-                        href="mailto:contacto@mirufranco.com"
-                        className="inline-flex min-h-11 items-center text-sm hover:opacity-80 transition-opacity"
+                        href={`mailto:${salon.correoContacto}`}
+                        className="inline-flex min-h-11 items-center break-all text-sm hover:opacity-80 transition-opacity"
                         style={{ color: 'var(--menu-texto-principal)' }}
                       >
-                        contacto@mirufranco.com
+                        {salon.correoContacto}
                       </a>
                     </div>
                   </div>
@@ -126,7 +167,7 @@ export default function ContactoPage() {
                     <div>
                       <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Horario</p>
                       <p className="text-sm" style={{ color: 'var(--texto-secundario)' }}>
-                        {HORARIO_SALON.frases.map((frase) => (
+                        {frasesHorario(horario.dias).map((frase) => (
                           <span key={frase} className="block">
                             {frase}
                           </span>
@@ -184,10 +225,10 @@ export default function ContactoPage() {
                   style={{ backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-2)' }}
                 >
                   <h2 className="text-elegant-title mb-4 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Agenda en Línea
+                    Agenda en línea
                   </h2>
                   <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Elige el servicio, la fecha y la hora que prefieras. Si el servicio pide anticipo, tu cita se confirma al pagarlo.
+                    {contenido.contacto.agendaTexto}
                   </p>
                   <a
                     href="/cliente/servicios-citas"
@@ -205,6 +246,29 @@ export default function ContactoPage() {
             </div>
           </div>
         </section>
+
+        {/* Preguntas frecuentes de Admin > Contenido (sin preguntas visibles, no hay sección) */}
+        {preguntas.length > 0 && (
+          <section className="section-padding" style={{ backgroundColor: 'var(--fondo-general)' }}>
+            <div className="container-max max-w-3xl">
+              <h2 className="text-elegant-title mb-6 hyphens-none" style={{ color: 'var(--encabezados-alterno)' }}>
+                Preguntas frecuentes
+              </h2>
+              <div className="space-y-3">
+                {preguntas.map((p) => (
+                  <details key={p.id} className="rounded-[12px] px-5 py-1" style={{ backgroundColor: 'var(--tarjetas-paneles)', boxShadow: 'var(--mf-sombra-1)' }}>
+                    <summary className="flex min-h-11 cursor-pointer items-center py-2 font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                      {p.pregunta}
+                    </summary>
+                    <p className="pb-4 text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--encabezados-alterno)' }}>
+                      {p.respuesta}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
       </main>
       <Footer />

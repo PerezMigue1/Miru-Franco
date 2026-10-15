@@ -60,7 +60,19 @@ function Frasco({ clave, sizes, prioridad }: { clave: string; sizes: string; pri
  * viaja a la sección siguiente girando (secuencia goji_giro en <canvas>) y queda sobre la
  * tipografía gigante. Con prefers-reduced-motion todo queda estático (lo resuelve el CSS).
  */
-export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
+/** Frase grande del destino del Goji: la primera y la última palabra grandes, las del medio en su estilo. */
+function FraseDestacada({ frase }: { frase: string }) {
+  const palabras = frase.trim().split(/\s+/);
+  if (palabras.length < 3) return <>{frase}</>;
+  return (
+    <>
+      {palabras[0]} <span>{palabras.slice(1, -1).join(' ')}</span> {palabras[palabras.length - 1]}
+    </>
+  );
+}
+
+/** `texto` y `destacado`: Configuración del sitio (contenido del inicio). */
+export default function HeroFluidos({ fluidos, texto, destacado }: { fluidos: FluidoHero[]; texto: string; destacado: string }) {
   const porClave = Object.fromEntries(fluidos.map((f) => [f.clave, f])) as Record<FluidoHero['clave'], FluidoHero>;
 
   return (
@@ -83,7 +95,7 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
                 Beauty Salón
               </p>
               <p className="mt-3 md:mt-6 max-w-md text-base md:text-lg leading-relaxed" style={{ color: 'var(--hero-tagline-color)' }}>
-                Realza tu belleza natural con productos y servicios profesionales. Agenda tu cita y descubre la experiencia Mirú Franco.
+                {texto}
               </p>
               <Link
                 href="/cliente/servicios-citas"
@@ -156,10 +168,10 @@ export default function HeroFluidos({ fluidos }: { fluidos: FluidoHero[] }) {
             </ul>
           </div>
 
-          {/* Destino del Goji: tipografía gigante con el frasco al lado. Texto PROVISIONAL. */}
+          {/* Destino del Goji: tipografía gigante con el frasco al lado (frase de la configuración). */}
           <div className="mf-fluidos__destino">
             <p className="mf-fluidos__gigante">
-              Brillo <span>que se</span> nota
+              <FraseDestacada frase={destacado} />
             </p>
             <span className="mf-fluidos__destino-marca" aria-hidden />
             <Link

@@ -57,21 +57,21 @@ describe('Tipo de imagen al subir a la galería', () => {
   });
 
   it('con pedirTipo, el botón de subir muestra el selector y no deja elegir archivos hasta escoger', () => {
-    const html = renderToStaticMarkup(createElement(SubirImagenesCloudinaryButton, { onUrlsAdded: () => {}, pedirTipo: true }));
+    const html = renderToStaticMarkup(createElement(SubirImagenesCloudinaryButton, { uso: 'servicios', onAgregadas: () => {}, pedirTipo: true }));
     expect(radios(html)).toHaveLength(2);
     const archivo = html.match(/<input[^>]*type="file"[^>]*>/)![0];
     expect(archivo).toMatch(/\sdisabled=""/);
   });
 
   it('sin pedirTipo (productos), el botón sube como siempre, sin selector', () => {
-    const html = renderToStaticMarkup(createElement(SubirImagenesCloudinaryButton, { onUrlsAdded: () => {} }));
+    const html = renderToStaticMarkup(createElement(SubirImagenesCloudinaryButton, { uso: 'productos', onAgregadas: () => {} }));
     expect(radios(html)).toHaveLength(0);
     expect(html.match(/<input[^>]*type="file"[^>]*>/)![0]).not.toMatch(/\sdisabled=""/);
   });
 
   it('el botón manda el tipo elegido a la subida y revisa que se haya elegido', () => {
     const boton = leer('src/app/components/admin/SubirImagenesCloudinaryButton.tsx');
-    expect(boton).toMatch(/subirImagenesCloudinary\(list, pedirTipo \? tipo \?\? undefined : undefined\)/);
+    expect(boton).toMatch(/subirImagenesSeguras\(list, uso, \{ ilustrativa: pedirTipo && tipo === 'ilustrativa' \}\)/);
     expect(boton).toMatch(/if \(pedirTipo\) \{\s*const falta = errorTipoImagen\(tipo\);/);
   });
 
@@ -82,29 +82,11 @@ describe('Tipo de imagen al subir a la galería', () => {
     expect(leer('src/app/components/admin/EditorImagenesPresentacionCloudinary.tsx')).toMatch(/pedirTipo=\{pedirTipo\}/);
   });
 
-  it('operación, subir imágenes: pide el tipo antes de subir y lo manda', () => {
-    const pagina = leer('src/app/(screens)/(privada)/operacion/subir-imagenes/page.tsx');
-    expect(pagina).toContain('<ElegirTipoImagen');
-    expect(pagina).toMatch(/const falta = errorTipoImagen\(tipo\);/);
-    expect(pagina).toMatch(/subirImagenesCloudinary\(files, tipo\)/);
-    expect(pagina).toMatch(/disabled=\{subiendo \|\| !tipo\}/);
-  });
-
-  it('operación, subir imágenes: alineada a la izquierda con la miga, como el resto del panel (sin mx-auto)', () => {
-    const pagina = leer('src/app/(screens)/(privada)/operacion/subir-imagenes/page.tsx');
-    expect(pagina).toContain('<div className="max-w-2xl py-4">');
-    expect(pagina).not.toContain('mx-auto');
-  });
 });
 
 describe('El tipo de imagen no se recuerda entre lotes', () => {
   it('el botón del panel vuelve a pedir el tipo después de subir un lote', () => {
     const boton = leer('src/app/components/admin/SubirImagenesCloudinaryButton.tsx');
-    expect(boton).toMatch(/onUrlsAdded\(urls\);\s*\/\/[^\n]*\n\s*setTipo\(null\);/);
-  });
-
-  it('la pantalla de operación también vuelve a pedirlo después de cada lote', () => {
-    const pagina = leer('src/app/(screens)/(privada)/operacion/subir-imagenes/page.tsx');
-    expect(pagina).toMatch(/setUrls\(resultado\);\s*\/\/[^\n]*\n\s*setTipo\(null\);/);
+    expect(boton).toMatch(/onAgregadas\(subidas\.map\(\(s\) => s\.publicId\)\);\s*\/\/[^\n]*\n\s*setTipo\(null\);/);
   });
 });

@@ -1,12 +1,18 @@
 import type { Servicio } from '../services/servicios';
 import { imagenProductoMostrable } from './normalizarUrlImagen';
 
-/** Una foto de la galería del salón: siempre sale de un servicio real (GET /api/servicios). */
+/**
+ * Una foto del mosaico de la galería: de un servicio real (GET /api/servicios) o de la galería administrada
+ * (GET /api/galeria, ver services/galeria.ts aFotosGaleria), que trae su propio texto alternativo y puede no
+ * estar ligada a un servicio (servicioId null: el visor no enlaza a ningún servicio).
+ */
 export interface FotoGaleria {
   url: string;
-  servicioId: string | number;
+  servicioId: string | number | null;
   servicio: string;
   categoria?: string;
+  /** Texto alternativo que escribió el equipo; sin él se usa "<servicio> en Mirú Franco". */
+  alt?: string;
 }
 
 /**
@@ -55,7 +61,7 @@ export function miniaturaDeServicio(servicio: Pick<Servicio, 'imagen' | 'imagene
 
 /**
  * Fotos de trabajo del salón. Fuente confirmada por el dueño del producto: las imágenes de los
- * servicios activos, que el equipo sube desde /operacion/subir-imagenes y asigna a cada servicio.
+ * servicios activos, que el equipo sube con "Subir foto" en el formulario de cada servicio.
  * Solo fotos del equipo (Cloudinary) y nunca imágenes generadas con IA: la sección dice "servicios
  * hechos en el salón". No publica fotos de clientas: ninguna foto está ligada a una clienta.
  * Sin fotos devuelve [] (la interfaz muestra un estado vacío; nunca imágenes de relleno).

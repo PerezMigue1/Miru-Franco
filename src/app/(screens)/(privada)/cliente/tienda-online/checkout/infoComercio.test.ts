@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import InfoCompra from './InfoCompra';
+import { CONFIGURACION_POR_OMISION } from '../../../../../services/configuracionSitio';
 import {
   CONDICIONES_PAGO,
   ENTREGA,
@@ -8,6 +12,7 @@ import {
   NOTA_TOTAL_COBRADO,
   PROVEEDOR,
   QUEJAS,
+  textoEntrega,
 } from './infoComercio';
 import { HORARIO_SALON, TELEFONO_SALON } from '../../../../../utils/contactoSalon';
 import { PLAZOS_TERMINOS } from '../../../../../utils/terminosCondiciones';
@@ -31,12 +36,21 @@ describe('Checkout: datos del proveedor', () => {
     expect(PROVEEDOR.telefono).toBe(TELEFONO_SALON);
   });
 
-  it('el componente muestra proveedor, responsable, domicilio, teléfono y correo', () => {
-    for (const campo of ['nombreComercial', 'responsable', 'domicilio', 'correo']) {
-      expect(componente).toContain(`PROVEEDOR.${campo}`);
-    }
-    expect(componente).toMatch(/PROVEEDOR\.telefono/);
-    expect(componente).toMatch(/href=\{`mailto:\$\{PROVEEDOR\.correo\}`\}/);
+  it('el componente toma de Configuración del sitio proveedor, responsable, domicilio, teléfono, WhatsApp y correo', () => {
+    expect(componente).toContain('useConfiguracionPublica');
+    expect(componente).not.toContain('PROVEEDOR');
+    const html = renderToStaticMarkup(createElement(InfoCompra));
+    expect(html).toContain(PROVEEDOR.nombreComercial);
+    expect(html).toContain(PROVEEDOR.responsable);
+    expect(html).toContain(PROVEEDOR.domicilio);
+    expect(html).toContain('href="tel:+527712681432"');
+    expect(html).toContain('href="mailto:mildredfranco24@gmail.com"');
+  });
+
+  it('teléfono y WhatsApp van por separado: el WhatsApp es el de los documentos legales (antes se decía "Teléfono y WhatsApp" con el teléfono)', () => {
+    const html = renderToStaticMarkup(createElement(InfoCompra));
+    expect(html).not.toContain('Teléfono y WhatsApp');
+    expect(html).toContain('href="https://wa.me/527711867645"');
   });
 });
 
@@ -69,6 +83,8 @@ describe('Checkout: precios, pago, entrega y quejas', () => {
     expect(ENTREGA).toMatch(/^Recoges tu pedido en el salón/);
     expect(ENTREGA).toContain(HORARIO_SALON.texto);
     expect(ENTREGA).toMatch(/No hacemos envíos a domicilio/);
+    // Con el horario de la configuración: por omisión, el mismo texto de hoy
+    expect(textoEntrega(CONFIGURACION_POR_OMISION.horario.dias)).toBe(ENTREGA);
   });
 
   it('cómo presentar una queja: primero con el salón y después con Profeco', () => {
@@ -83,7 +99,7 @@ describe('Checkout: precios, pago, entrega y quejas', () => {
   it('el paso de revisión muestra la información completa antes de confirmar', () => {
     const revision = pagina.slice(pagina.indexOf('{paso === 3 && ('), pagina.indexOf('Resumen del pedido'));
     expect(revision).toMatch(/<InfoCompra \/>/);
-    for (const texto of ['CONDICIONES_PAGO', 'ENTREGA', 'QUEJAS', 'LEYENDA_PRECIOS']) {
+    for (const texto of ['CONDICIONES_PAGO', 'textoEntrega', 'QUEJAS', 'LEYENDA_PRECIOS']) {
       expect(componente).toContain(texto);
     }
   });

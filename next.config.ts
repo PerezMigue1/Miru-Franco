@@ -25,9 +25,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: '/terminos', destination: '/terminos-y-condiciones', statusCode: 301 },
-      // Maquetas sin backend: fuera de la navegación y redirigidas al inicio de su panel (temporal,
-      // los archivos se conservan para cuando se implementen).
-      ...['/cliente/garantias', '/cliente/promociones', '/cliente/seguimientos'].map((source) => ({ source, destination: '/perfil', permanent: false })),
+      // Garantías, promociones y seguimientos ya muestran datos reales: dejan de redirigirse a /perfil.
       { source: '/admin/marketing', destination: '/admin', permanent: false },
       ...['/admin/base-datos/insertar', '/admin/base-datos/eliminar'].map((source) => ({ source, destination: '/admin/base-datos', permanent: false })),
     ];

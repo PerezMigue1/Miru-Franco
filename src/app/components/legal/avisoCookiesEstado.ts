@@ -11,13 +11,20 @@ export const TEXTO_AVISO_COOKIES =
 /** Guarda la versión de la Política de cookies que se informó: si la política cambia, se vuelve a mostrar. */
 export const CLAVE_AVISO_COOKIES = 'mf-aviso-cookies';
 
+/**
+ * Versiones anteriores que no obligan a volver a mostrar el aviso: la 1.1 solo agregó una cookie estrictamente
+ * necesaria (mf_registro_google), así que quien vio el aviso con la 1.0 ya está informado de lo esencial.
+ */
+const VERSIONES_SIN_NUEVO_AVISO = ['1.0'];
+
 /** Sin localStorage (modo privado, bloqueado): "Entendido" lo oculta al menos durante esta carga. */
 let ocultoEnEstaCarga = false;
 
 export function avisoCookiesVisto(): boolean {
   if (ocultoEnEstaCarga) return true;
   try {
-    return localStorage.getItem(CLAVE_AVISO_COOKIES) === documentoLegal('cookies').version;
+    const vista = localStorage.getItem(CLAVE_AVISO_COOKIES);
+    return vista === documentoLegal('cookies').version || (vista !== null && VERSIONES_SIN_NUEVO_AVISO.includes(vista));
   } catch {
     return false;
   }

@@ -3,10 +3,10 @@
 import { useRef, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import Button from '../ui/Button';
-import { subirFotoUsuarioCloudinary } from '../../utils/cloudinary';
+import { subirImagenSegura, vistaPreviaDe } from '../../utils/cloudinary';
 
 type Props = {
-  /** URL actual de la foto, o null/vacío si no tiene. */
+  /** Foto guardada (URL), recién subida (public_id del servidor) o null/vacío si no tiene. */
   value: string | null;
   /**
    * Componente puramente controlado: solo sube a Cloudinary y notifica la URL resultante.
@@ -17,8 +17,8 @@ type Props = {
 };
 
 /**
- * Subida + previsualización de UNA sola foto de OTRA persona (admin), con firma de galería:
- * la firma de perfil escribiría en la foto de quien sube.
+ * Subida + previsualización de UNA sola foto de OTRA persona (admin), con la subida segura a usuarios/ (la firma de
+ * perfil escribiría en la foto de quien sube). El formulario manda el public_id y el backend lo cambia por la URL.
  */
 export default function FotoUsuarioUploader({ value, onChange, disabled }: Props) {
   const [uploading, setUploading] = useState(false);
@@ -34,9 +34,9 @@ export default function FotoUsuarioUploader({ value, onChange, disabled }: Props
     setError(null);
     setUploading(true);
     try {
-      const url = await subirFotoUsuarioCloudinary(file);
+      const { publicId } = await subirImagenSegura(file, 'usuarios');
       setImgError(false);
-      onChange(url);
+      onChange(publicId);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo subir la foto');
     } finally {

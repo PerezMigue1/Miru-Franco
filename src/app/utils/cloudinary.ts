@@ -3,8 +3,11 @@
  * El backend decide carpeta y formatos según el uso y devuelve { uploadUrl, apiKey, params, signature };
  * aquí solo se manda a `uploadUrl` el archivo con api_key, signature y `params` sin cambiarlos.
  * - perfil: POST /api/auth/me/foto/firma (foto propia, avatares/usuario_<id>).
- * - galeria: POST /api/subidas/firma (imágenes de productos y servicios, foto de otra persona).
  * - factura: POST /api/subidas/firma (PDF del CFDI, solo admin).
+ * - imágenes de los formularios (servicios, productos, equipo, promociones, sitio y la foto de otra persona):
+ *   subida segura, una firma por imagen en POST /api/subidas/imagen/firma con el public_id que genera el servidor
+ *   en la carpeta de cada uso. El formulario manda ese public_id y el backend lo cambia por la URL; nunca se
+ *   escribe una URL a mano.
  *
  * Si una imagen supera ~9 MB, se comprime en el navegador (JPEG) para respetar el límite
  * típico del plan gratuito de Cloudinary (10 MB por archivo).
@@ -15,7 +18,10 @@ import { getBackendBaseUrl } from '../services/config';
 import { comprimirImagenSiSupera, CLOUDINARY_SUBIDA_MAX_BYTES } from './comprimirImagenCliente';
 import { MENSAJE_SIN_CONEXION, esErrorDeRed } from './errorRed';
 
-export type UsoSubida = 'perfil' | 'galeria' | 'factura';
+export type UsoSubida = 'perfil' | 'factura';
+
+/** Uso de una imagen de formulario: decide su carpeta en Cloudinary (nunca galeria/). */
+export type UsoImagen = 'servicios' | 'productos' | 'equipo' | 'promociones' | 'sitio' | 'usuarios';
 
 /**
  * Qué es una imagen que llega a la galería: foto real de un trabajo del salón o imagen ilustrativa. Las
@@ -38,15 +44,11 @@ const MENSAJE_FALLO_PDF = 'No se pudo subir el PDF. Vuelve a intentarlo en unos 
  * Pide al backend la firma de `uso` (una firma sirve para un lote dentro de su vigencia). En galería,
  * `ilustrativa` pide la carpeta de imágenes ilustrativas.
  */
-export async function pedirFirmaSubida(uso: UsoSubida, { ilustrativa = false }: { ilustrativa?: boolean } = {}): Promise<FirmaSubida> {
+export async function pedirFirmaSubida(uso: UsoSubida): Promise<FirmaSubida> {
   const res =
     uso === 'perfil'
       ? await apiClient.post<unknown>('/api/auth/me/foto/firma', undefined, getBackendBaseUrl())
-      : await apiClient.post<unknown>(
-          '/api/subidas/firma',
-          uso === 'galeria' && ilustrativa ? { uso, ilustrativa: true } : { uso },
-          getBackendBaseUrl(),
-        );
+      : await apiClient.post<unknown>('/api/subidas/firma', { uso }, getBackendBaseUrl());
   const data = (res as { data?: FirmaSubida } | null)?.data;
   if (!data?.uploadUrl || !data.apiKey || !data.signature || !data.params) {
     console.error('Firma de subida incompleta', res);
@@ -62,6 +64,60 @@ async function enviarACloudinary(url: string, formData: FormData): Promise<Respo
   } catch (e) {
     throw esErrorDeRed(e) ? new Error(MENSAJE_SIN_CONEXION) : e;
   }
+}
+
+/** Vistas previas de las imágenes recién subidas (public_id -> secure_url), hasta que el formulario se guarde. */
+const vistasPrevias = new Map<string, string>();
+
+/** Qué mostrar de un valor de imagen: una URL guardada tal cual, o la vista previa de una subida recién hecha. */
+export function vistaPreviaDe(valor: string | null | undefined): string | null {
+  const v = (valor ?? '').trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v) || v.startsWith('/')) return v;
+  return vistasPrevias.get(v) ?? null;
+}
+
+/** ¿Es el public_id que genera el servidor para este uso? */
+export const esPublicIdDeUso = (uso: UsoImagen, valor: unknown): valor is string =>
+  typeof valor === 'string' && new RegExp(`^${uso}/(ilustrativas/)?panel_[0-9a-f]{32}$`).test(valor);
+
+/**
+ * Firma de UNA imagen del formulario (POST /api/subidas/imagen/firma). Una firma sin el public_id de su carpeta se
+ * rechaza aquí, antes de subir nada.
+ */
+export async function pedirFirmaImagen(uso: UsoImagen, { ilustrativa = false }: { ilustrativa?: boolean } = {}): Promise<FirmaSubida> {
+  const res = await apiClient.post<unknown>('/api/subidas/imagen/firma', ilustrativa ? { uso, ilustrativa: true } : { uso }, getBackendBaseUrl());
+  const data = (res as { data?: FirmaSubida } | null)?.data;
+  if (!data?.uploadUrl || !data.apiKey || !data.signature || !esPublicIdDeUso(uso, data.params?.public_id)) {
+    throw new Error('La subida no está disponible por ahora. Vuelve a intentarlo más tarde.');
+  }
+  return data;
+}
+
+/** Imagen subida con la subida segura: el public_id que va en el formulario y la vista previa para mostrarla. */
+export interface ImagenSubida {
+  publicId: string;
+  vistaPrevia: string;
+}
+
+/**
+ * Sube UNA imagen de formulario con su propia firma (public_id del servidor en la carpeta del uso). El formulario
+ * guarda `publicId`; el backend comprueba la firma y la cambia por la URL al guardar.
+ */
+export async function subirImagenSegura(file: File, uso: UsoImagen, opciones: { ilustrativa?: boolean } = {}): Promise<ImagenSubida> {
+  const firma = await pedirFirmaImagen(uso, opciones);
+  const listo = await comprimirImagenSiSupera(file, CLOUDINARY_SUBIDA_MAX_BYTES);
+  const vistaPrevia = await enviarFirmado(listo, firma, MENSAJE_FALLO_IMAGEN);
+  const publicId = firma.params.public_id;
+  vistasPrevias.set(publicId, vistaPrevia);
+  return { publicId, vistaPrevia };
+}
+
+/** Varias imágenes: una firma por archivo. */
+export async function subirImagenesSeguras(files: FileList | File[], uso: UsoImagen, opciones: { ilustrativa?: boolean } = {}): Promise<ImagenSubida[]> {
+  const subidas: ImagenSubida[] = [];
+  for (const file of Array.from(files)) subidas.push(await subirImagenSegura(file, uso, opciones));
+  return subidas;
 }
 
 /** Manda `archivo` con la firma tal cual la entregó el backend y devuelve la `secure_url`. */
@@ -109,17 +165,6 @@ export async function subirPdfCloudinary(file: File): Promise<string> {
   return enviarFirmado(file, await pedirFirmaSubida('factura'), MENSAJE_FALLO_PDF);
 }
 
-/**
- * Sube varias imágenes a la galería con una sola firma para todo el lote. Las pantallas de servicios y
- * "Subir imágenes" pasan `tipo` (obligatorio en su formulario): 'ilustrativa' va a galeria/ilustrativas.
- */
-export async function subirImagenesCloudinary(files: FileList | File[], tipo?: TipoImagenGaleria): Promise<string[]> {
-  const list = Array.from(files);
-  if (!list.length) return [];
-  const firma = await pedirFirmaSubida('galeria', { ilustrativa: tipo === 'ilustrativa' });
-  return Promise.all(list.map((file) => subirFirmado(file, 'galeria', firma)));
-}
-
 const MAX_PERFIL_BYTES = 5 * 1024 * 1024;
 
 /** Valida y comprime una foto de persona (máx. 5 MB). */
@@ -139,10 +184,3 @@ export async function subirFotoPerfilCloudinary(file: File): Promise<string> {
   return subirFirmado(await prepararFotoPersona(file), 'perfil');
 }
 
-/**
- * Foto de OTRA persona (admin editando un usuario): firma de galería. Nunca la de perfil, porque
- * esa escribe en avatares/usuario_<id de quien sube> y sobrescribiría la foto del admin.
- */
-export async function subirFotoUsuarioCloudinary(file: File): Promise<string> {
-  return subirFirmado(await prepararFotoPersona(file), 'galeria');
-}

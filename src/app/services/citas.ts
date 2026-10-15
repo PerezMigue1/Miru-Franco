@@ -562,6 +562,12 @@ export async function consultarEstadoAnticipo(citaId: number): Promise<{
   };
 }
 
+/** PATCH /api/citas/:id/anticipo-en-salon: la clienta cambia a pago en el salón el anticipo que apartó en línea. */
+export async function pagarAnticipoEnSalon(citaId: number): Promise<{ anticipoVenceEn: string }> {
+  const r = (await apiClient.patch<Record<string, unknown>>(`/api/citas/${citaId}/anticipo-en-salon`, {}, getBackendBaseUrl())) ?? {};
+  return { anticipoVenceEn: String(r.anticipoVenceEn ?? '') };
+}
+
 /** POST /api/citas/:id/anticipo: el personal cobra el anticipo en el salón. */
 export async function registrarAnticipo(citaId: number, metodo: 'efectivo' | 'transferencia' | 'tarjeta'): Promise<void> {
   await apiClient.post<unknown>(`/api/citas/${citaId}/anticipo`, { metodo }, getBackendBaseUrl());

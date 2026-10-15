@@ -57,25 +57,25 @@ describe('B2 chips de los fluidos del hero: 44 px', () => {
 });
 
 describe('B3 contacto: teléfono y correo con área táctil de 44 px', () => {
-  const pintar = () => renderToStaticMarkup(createElement(ContactoPage));
+  const pintar = async () => renderToStaticMarkup((await ContactoPage()) as ReactElement);
   const enlace = (html: string, href: RegExp) => {
     const m = html.match(new RegExp(`<a\\b[^>]*href="${href.source}"[^>]*>`));
     if (!m) throw new Error(`No hay enlace a ${href.source}`);
     return clases(m[0]);
   };
 
-  it('el teléfono es inline-flex de 44 px con el texto centrado', () => {
-    expect(enlace(pintar(), /tel:[^"]+/)).toEqual(expect.arrayContaining(['inline-flex', 'min-h-11', 'items-center']));
+  it('el teléfono es inline-flex de 44 px con el texto centrado', async () => {
+    expect(enlace(await pintar(), /tel:[^"]+/)).toEqual(expect.arrayContaining(['inline-flex', 'min-h-11', 'items-center']));
   });
 
-  it('el correo es inline-flex de 44 px con el texto centrado', () => {
-    expect(enlace(pintar(), /mailto:[^"]+/)).toEqual(expect.arrayContaining(['inline-flex', 'min-h-11', 'items-center']));
+  it('el correo es inline-flex de 44 px con el texto centrado', async () => {
+    expect(enlace(await pintar(), /mailto:[^"]+/)).toEqual(expect.arrayContaining(['inline-flex', 'min-h-11', 'items-center']));
   });
 
-  it('Instagram y Facebook, cuando se configuran, también miden 44 px', () => {
+  it('Instagram y Facebook, cuando se configuran, también miden 44 px', async () => {
     process.env.NEXT_PUBLIC_INSTAGRAM_URL = 'https://www.instagram.com/salon';
     process.env.NEXT_PUBLIC_FACEBOOK_URL = 'https://www.facebook.com/salon';
-    const html = pintar();
+    const html = await pintar();
     expect(enlace(html, /https:\/\/www\.instagram\.com\/salon/)).toContain('min-h-11');
     expect(enlace(html, /https:\/\/www\.facebook\.com\/salon/)).toContain('min-h-11');
   });

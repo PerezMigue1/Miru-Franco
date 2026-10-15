@@ -1,54 +1,102 @@
-'use client';
-
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowRight, Tag } from 'lucide-react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
 import Card from '../../../../components/ui/Card';
-import Button from '../../../../components/ui/Button';
 import Badge from '../../../../components/ui/Badge';
-import { showAlert } from '../../../../utils/toast';
+import Button from '../../../../components/ui/Button';
+import { listarPromocionesActivas, type PromocionPublica } from '../../../../services/contenido';
+import { formatearFechaSoloDia } from '../../../../utils/fechaSoloDia';
 
-export default function PromocionesPage() {
-  const promociones = [
-    { id: 1, titulo: 'Descuento de Verano', descripcion: '20% de descuento en todos los servicios', fechaFin: '2024-02-29', activa: true },
-    { id: 2, titulo: 'Paquete Completo', descripcion: 'Corte + Tratamiento por solo $600', fechaFin: '2024-01-31', activa: true },
-    { id: 3, titulo: 'Productos con Descuento', descripcion: '15% de descuento en productos seleccionados', fechaFin: '2024-02-15', activa: true },
-  ];
+const FORMATO_DIA: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+
+/** "Válida hasta el 31 de octubre de 2026", "Desde el 1 de noviembre de 2026" o null si no tiene fechas. */
+function textoVigencia(p: Pick<PromocionPublica, 'vigenteDesde' | 'vigenteHasta'>): string | null {
+  const hasta = formatearFechaSoloDia(p.vigenteHasta, FORMATO_DIA);
+  if (hasta) return `Válida hasta el ${hasta}`;
+  const desde = formatearFechaSoloDia(p.vigenteDesde, FORMATO_DIA);
+  return desde ? `Desde el ${desde}` : null;
+}
+
+/**
+ * Promociones activas y vigentes hoy (Admin > Contenido > Promociones). Componente de servidor con revalidación de un
+ * minuto: lo que publica el admin aparece sin deploy. Sin promociones, un estado vacío honesto; nunca datos simulados.
+ */
+export default async function PromocionesPage() {
+  const { data: promociones, error } = await listarPromocionesActivas();
 
   return (
     <ModuleLayout>
       <div className="w-full max-w-none py-4">
-        <PageHeader title="Promociones Especiales" subtitle="Aprovecha nuestras promociones y ofertas especiales" />
+        <PageHeader title="Promociones" subtitle="Las promociones vigentes del salón y la tienda." />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {promociones.map((promocion) => (
-            <Card key={promocion.id} variant="elevated">
-              {promocion.activa && (
-                <div className="mb-4">
-                  <Badge variant="success">Activa</Badge>
-                </div>
-              )}
-              <h3 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                {promocion.titulo}
-              </h3>
-              <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                {promocion.descripcion}
-              </p>
-              <p className="text-xs mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                Válida hasta: {promocion.fechaFin}
-              </p>
-              <Button 
-                fullWidth
-                onClick={() => {
-                  showAlert(`Promoción: ${promocion.titulo}\n${promocion.descripcion}\nVálida hasta: ${promocion.fechaFin}`);
-                }}
-              >
-                Ver Detalles
-              </Button>
-            </Card>
-          ))}
-        </div>
+        {promociones.length === 0 ? (
+          <Card variant="elevated" padding="lg" className="max-w-xl">
+            <div className="flex items-start gap-3">
+              <Tag size={22} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
+              <div>
+                <p className="text-subtitle" style={{ color: 'var(--menu-texto-principal)' }}>
+                  {error ? 'No pudimos cargar las promociones' : 'Por ahora no hay promociones activas'}
+                </p>
+                <p className="mt-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                  {error
+                    ? 'Intenta de nuevo en unos minutos.'
+                    : 'Cuando el salón publique una promoción la verás aquí. Mientras tanto, puedes conocer los servicios y reservar tu cita.'}
+                </p>
+                <Button asChild variant="outline" className="mt-4">
+                  <Link href="/cliente/servicios-citas">Ver servicios</Link>
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" aria-label="Promociones vigentes">
+            {promociones.map((p) => {
+              const vigencia = textoVigencia(p);
+              return (
+                <li key={p.id} className="min-w-0">
+                  <Card variant="elevated" padding="md" className="flex h-full flex-col overflow-hidden">
+                    {p.imagenUrl && (
+                      <div className="relative -mx-6 -mt-6 mb-5 aspect-[16/9]" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
+                        <Image src={p.imagenUrl} alt="" fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" className="object-cover" />
+                      </div>
+                    )}
+                    <div className="flex flex-1 flex-col">
+                      {p.destacada && (
+                        <div className="mb-3">
+                          <Badge variant="info">Destacada</Badge>
+                        </div>
+                      )}
+                      <h2 className="text-subtitle mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                        {p.titulo}
+                      </h2>
+                      <p className="mb-4 whitespace-pre-line text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                        {p.descripcion}
+                      </p>
+                      {vigencia && (
+                        <p className="mb-4 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                          {vigencia}
+                        </p>
+                      )}
+                      {p.enlace && (
+                        <div className="mt-auto">
+                          <Button asChild variant="primary" fullWidth>
+                            <Link href={p.enlace}>
+                              Aprovechar promoción
+                              <ArrowRight size={16} aria-hidden />
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </ModuleLayout>
   );
 }
-

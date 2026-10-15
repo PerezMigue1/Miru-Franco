@@ -866,7 +866,7 @@ function PuntoDeVenta() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => generarTicketVentaPdf(ultimaVenta)}>
+                <Button size="sm" onClick={() => void generarTicketVentaPdf(ultimaVenta)}>
                   <span className="inline-flex items-center gap-1.5"><Download size={14} aria-hidden /> Descargar ticket</span>
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setUltimaVenta(null)}>Cerrar</Button>
@@ -901,7 +901,7 @@ function PuntoDeVenta() {
                   </TableCell>
                   <TableCell rowPadding="lg">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => generarTicketVentaPdf(v)}>
+                      <Button size="sm" variant="outline" onClick={() => void generarTicketVentaPdf(v)}>
                         <span className="inline-flex items-center gap-1"><Download size={13} aria-hidden /> Ticket</span>
                       </Button>
                       {(() => {

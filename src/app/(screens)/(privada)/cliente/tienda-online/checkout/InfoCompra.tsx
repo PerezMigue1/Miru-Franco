@@ -1,5 +1,9 @@
+'use client';
+
 import ContactoProfeco from '../../../../../components/legal/Profeco';
-import { CONDICIONES_PAGO, ENTREGA, LEYENDA_PRECIOS, PROVEEDOR, QUEJAS } from './infoComercio';
+import { CONDICIONES_PAGO, LEYENDA_PRECIOS, QUEJAS, textoEntrega } from './infoComercio';
+import { useConfiguracionPublica } from '../../../../../hooks/useConfiguracionPublica';
+import { domicilioCompleto, enlaceTelefono, enlaceWhatsApp } from '../../../../../services/configuracionSitio';
 
 const FILA = 'grid gap-1 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4';
 const ETIQUETA = { color: 'var(--menu-texto-principal)' };
@@ -9,6 +13,11 @@ const ETIQUETA = { color: 'var(--menu-texto-principal)' };
  * formas de pago, entrega y cómo presentar una queja. Va dentro de la tarjeta de "Revisa y confirma".
  */
 export default function InfoCompra() {
+  // Proveedor, domicilio, contacto y horario: Configuración del sitio (por omisión, los de los Términos).
+  const { salon, horario } = useConfiguracionPublica();
+  const telefono = enlaceTelefono(salon.telefono);
+  const whatsapp = enlaceWhatsApp(salon.whatsapp);
+  const [usuarioCorreo, ...dominio] = salon.correoPrivacidad.split('@');
   return (
     <section className="pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
       <h3 className="text-subtitle mb-3" style={ETIQUETA}>
@@ -21,21 +30,31 @@ export default function InfoCompra() {
         <div className={FILA}>
           <dt className="font-semibold" style={ETIQUETA}>Quién te vende</dt>
           <dd>
-            {PROVEEDOR.nombreComercial}, responsable {PROVEEDOR.responsable}. {PROVEEDOR.domicilio}.
-            {PROVEEDOR.telefono && (
+            {salon.nombre}, responsable {salon.responsable}. {domicilioCompleto(salon)}.
+            {telefono && (
               <>
-                {' '}Teléfono y WhatsApp:{' '}
-                <a href={PROVEEDOR.telefono.enlace} className="mf-cifras" style={ETIQUETA}>
-                  {PROVEEDOR.telefono.visible}
+                {' '}Teléfono:{' '}
+                <a href={telefono} className="mf-cifras" style={ETIQUETA}>
+                  {salon.telefono}
+                </a>
+                .
+              </>
+            )}
+            {whatsapp && (
+              <>
+                {' '}WhatsApp:{' '}
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="mf-cifras" style={ETIQUETA}>
+                  {salon.whatsapp}
+                  <span className="sr-only"> (se abre en otra pestaña)</span>
                 </a>
                 .
               </>
             )}{' '}
             Correo:{' '}
             {/* Punto de corte antes de la arroba: en 375 px break-all lo partía a media palabra. */}
-            <a href={`mailto:${PROVEEDOR.correo}`} style={ETIQUETA}>
-              {PROVEEDOR.correo.split('@')[0]}
-              <wbr />@{PROVEEDOR.correo.split('@').slice(1).join('@')}
+            <a href={`mailto:${salon.correoPrivacidad}`} style={ETIQUETA}>
+              {usuarioCorreo}
+              <wbr />@{dominio.join('@')}
             </a>
           </dd>
         </div>
@@ -57,7 +76,7 @@ export default function InfoCompra() {
         </div>
         <div className={FILA}>
           <dt className="font-semibold" style={ETIQUETA}>Entrega</dt>
-          <dd>{ENTREGA}</dd>
+          <dd>{textoEntrega(horario.dias)}</dd>
         </div>
         <div className={FILA}>
           <dt className="font-semibold" style={ETIQUETA}>Quejas</dt>

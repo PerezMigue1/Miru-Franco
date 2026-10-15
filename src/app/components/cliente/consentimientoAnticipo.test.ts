@@ -93,38 +93,40 @@ describe('Política de anticipos: casilla obligatoria antes de pagar o apartar',
   });
 });
 
-describe('AnticipoPortal: pagar el anticipo desde el detalle de la cita', () => {
-  it('muestra la casilla sin marcar antes del botón de pagar', () => {
-    expect(portal).toMatch(/const \[aceptaPolitica, setAceptaPolitica\] = useState\(false\)/);
-    const casillaEn = portal.indexOf('<CasillaPoliticaAnticipos');
+describe('Pagar el anticipo (OpcionesAnticipo, en el detalle y en la confirmación de la cita)', () => {
+  const opciones = readFileSync(join(__dirname, 'OpcionesAnticipo.tsx'), 'utf8');
+
+  it('muestra la casilla sin marcar antes de los botones de pagar', () => {
+    expect(opciones).toContain('const [acepta, setAcepta] = useState(false)');
+    const casillaEn = opciones.indexOf('<CasillaPoliticaAnticipos');
     expect(casillaEn).toBeGreaterThan(-1);
-    expect(casillaEn).toBeLessThan(portal.indexOf('onClick={pagar}'));
+    expect(casillaEn).toBeLessThan(opciones.indexOf('onClick={() => void pagarEnLinea()}'));
+    expect(casillaEn).toBeLessThan(opciones.indexOf('onClick={() => void pagarEnSalon()}'));
   });
 
-  it('sin la casilla no abre Mercado Pago; con ella registra la aceptación antes de crear la preferencia', () => {
-    const pagar = cuerpoDe(portal, 'pagar');
-    expect(pagar.indexOf('MENSAJE_FALTA_ANTICIPOS')).toBeGreaterThan(-1);
-    expect(pagar).toMatch(/if \(!aceptaPolitica\) \{\s*setErrorPolitica\(MENSAJE_FALTA_ANTICIPOS\);[^}]*return;\s*\}/);
-    expect(pagar.indexOf('if (!aceptaPolitica)')).toBeLessThan(pagar.indexOf('crearPreferenciaAnticipo('));
-    expect(pagar).toMatch(/conAceptacionDeAnticipos\([^,]+,\s*\(\) => crearPreferenciaAnticipo\(cita\.id\)\)/);
+  it('sin la casilla no abre Mercado Pago ni aparta en el salón; con ella registra la aceptación antes', () => {
+    const revisar = cuerpoDe(opciones, 'revisarCasilla');
+    expect(revisar).toContain('setErrorCasilla(MENSAJE_FALTA_ANTICIPOS)');
+    const linea = cuerpoDe(opciones, 'pagarEnLinea');
+    expect(linea).toContain('if (!revisarCasilla()) return;');
+    expect(linea.indexOf('revisarCasilla()')).toBeLessThan(linea.indexOf('crearPreferenciaAnticipo('));
+    expect(linea).toContain('conAceptacionDeAnticipos(rutaOrigen, () => crearPreferenciaAnticipo(cita.id))');
+    const salon = cuerpoDe(opciones, 'pagarEnSalon');
+    expect(salon).toContain('if (!revisarCasilla()) return;');
+    expect(salon).toContain('conAceptacionDeAnticipos(rutaOrigen, () => pagarAnticipoEnSalon(cita.id))');
     expect(MENSAJE_FALTA_ANTICIPOS).toMatch(/Política de anticipos y cancelación/);
   });
 
-  it('la confirmación de la cita (reintento de pago) también pide la casilla y registra antes de abrir Mercado Pago', () => {
-    expect(encabezado).toMatch(/const \[aceptaPolitica, setAceptaPolitica\] = useState\(false\)/);
-    const casillaEn = encabezado.indexOf('<CasillaPoliticaAnticipos');
-    expect(casillaEn).toBeGreaterThan(-1);
-    expect(casillaEn).toBeLessThan(encabezado.indexOf('onClick={pagar}'));
-    const pagar = cuerpoDe(encabezado, 'pagar');
-    expect(pagar).toMatch(/if \(!aceptaPolitica\) \{\s*setErrorPolitica\(MENSAJE_FALTA_ANTICIPOS\);[^}]*return;\s*\}/);
-    expect(pagar).toMatch(/conAceptacionDeAnticipos\([^,]+,\s*\(\) => crearPreferenciaAnticipo\(cita\.id\)\)/);
-    // Ninguna otra llamada abre Mercado Pago sin pasar por el registro.
-    expect(encabezado.match(/crearPreferenciaAnticipo\(/g)).toHaveLength(1);
+  it('la confirmación y el detalle no abren Mercado Pago por su cuenta: todo pasa por OpcionesAnticipo', () => {
+    for (const fuente of [encabezado, portal]) {
+      expect(fuente).toContain('<OpcionesAnticipo');
+      expect(fuente).not.toContain('crearPreferenciaAnticipo(');
+    }
+    expect(opciones.match(/crearPreferenciaAnticipo\(/g)).toHaveLength(1);
   });
 
   it('en la lista de citas el botón lleva al detalle, donde está la casilla', () => {
     expect(portal).toContain('const rutaDetalle = `/cliente/servicios-citas/mis-citas/${cita.id}`;');
-    expect(portal).toMatch(/<Link href=\{rutaDetalle\}/);
-    expect(portal.match(/onClick=\{pagar\}/g)).toHaveLength(1);
+    expect(portal).toMatch(/<Link href={rutaDetalle}/);
   });
 });

@@ -10,7 +10,8 @@ import { SCRIPT_INTRO } from "./components/home/introScript";
 import { ToastProvider } from "./context/ToastContext";
 import ReaceptacionDocumentos from "./components/legal/ReaceptacionDocumentos";
 import AvisoCookies from "./components/legal/AvisoCookies";
-import { OG_IMAGE_DEFAULT, SITE_NAME, SITE_URL } from "./utils/seo";
+import { OG_IMAGE_DEFAULT, SITE_URL } from "./utils/seo";
+import { obtenerConfiguracionPublica } from "./services/configuracionSitio";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -36,19 +37,22 @@ const greatVibes = Great_Vibes({
 
 // Sin `alternates.canonical` aquí a propósito: se heredaría a todas las rutas hijas que no
 // definan el suyo y todas apuntarían al mismo canonical. Cada ruta pública declara el propio.
-export const metadata: Metadata = {
+// Nombre y descripción: Configuración del sitio (revalida cada minuto; sin API, el nombre registrado).
+export async function generateMetadata(): Promise<Metadata> {
+  const { salon } = await obtenerConfiguracionPublica();
+  return {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Mirú Franco — Beauty Salón",
-    template: `%s | ${SITE_NAME}`,
+    default: salon.nombre,
+    template: `%s | ${salon.nombre}`,
   },
-  description: "Salón de belleza profesional en Huejutla de Reyes. Cortes, coloración, tratamientos capilares, alaciado y nanoplastía. Agenda tu cita en línea.",
+  description: salon.descripcionSeo,
   // Safari en iPhone convertía teléfono, correo y dirección del pie en enlaces antes de hidratar (error 418 de React).
   formatDetection: { telephone: false, email: false, address: false, date: false },
   openGraph: {
-    title: "Mirú Franco — Beauty Salón",
-    description: "Salón de belleza profesional. Cortes, coloración, tratamientos y más.",
-    siteName: SITE_NAME,
+    title: salon.nombre,
+    description: salon.descripcionSeo,
+    siteName: salon.nombre,
     locale: "es_MX",
     type: "website",
     images: [OG_IMAGE_DEFAULT],
@@ -57,7 +61,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [OG_IMAGE_DEFAULT.url],
   },
-};
+  };
+}
 
 export default async function RootLayout({
   children,

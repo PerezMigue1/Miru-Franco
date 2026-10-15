@@ -7,7 +7,17 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/home',
 }));
 vi.mock('../context/CartContext', () => ({ useCart: () => ({ totalItems: 0 }) }));
-vi.mock('../hooks/useNotificacionesSSE', () => ({ useNotificacionesSSE: () => undefined }));
+vi.mock('../hooks/useAvisosNotificaciones', () => ({
+  useAvisosNotificaciones: () => ({
+    noLeidas: 0,
+    lista: [],
+    avisos: [],
+    cerrarAviso: () => undefined,
+    abrirAviso: async () => undefined,
+    marcarLeida: async () => undefined,
+    marcarTodas: async () => undefined,
+  }),
+}));
 vi.mock('../services/ecommerce', () => ({ listarNotificaciones: async () => [] }));
 vi.mock('./MenuHorizontal', () => ({ default: () => null }));
 vi.mock('./MenuHamburguesa', () => ({ default: () => null }));

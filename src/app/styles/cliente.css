@@ -1439,9 +1439,17 @@ html:has(.superficie-cliente) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Dos por fila en pantallas chicas: el nombre usa hasta dos líneas en lugar de cortarse */
+/* Dos por fila en pantallas chicas: el nombre usa hasta dos líneas en lugar de cortarse. Todas las filas miden
+   lo mismo y cada chip llena su celda, así un nombre de dos líneas no deja chips de alturas distintas. */
 @media (max-width: 479.98px) {
+  .mf-fluidos__leyenda {
+    grid-auto-rows: 1fr;
+  }
+  .mf-fluidos__leyenda > li {
+    display: flex;
+  }
   .mf-fluidos__chip {
+    flex: 1 1 auto;
     border-radius: 14px;
     padding-block: 0.35rem;
     line-height: 1.2;

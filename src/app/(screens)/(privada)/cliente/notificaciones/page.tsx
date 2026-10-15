@@ -95,7 +95,7 @@ export default function ClienteNotificacionesPage() {
     setDescargandoId(n.id);
     try {
       const venta = await obtenerMiTicketVenta(ventaId);
-      generarTicketVentaPdf(venta);
+      await generarTicketVentaPdf(venta);
     } catch (e) {
       void showAlert(e instanceof Error ? e.message : 'No se pudo descargar el ticket');
     } finally {

@@ -106,11 +106,11 @@ export default function GaleriaTrabajo({ fotos, etiqueta }: GaleriaTrabajoProps)
                 type="button"
                 className="mf-foto"
                 onClick={(e) => abrir(i, e.currentTarget)}
-                aria-label={`Ver foto de ${foto.servicio} en grande`}
+                aria-label={foto.alt ? `Ver en grande: ${foto.alt}` : `Ver foto de ${foto.servicio} en grande`}
               >
                 <FotoConRespaldo
                   src={foto.url}
-                  alt={`${foto.servicio} en Mirú Franco`}
+                  alt={textoAlternativo(foto)}
                   sizes={sizes}
                   className="mf-foto__imagen"
                 />
@@ -163,6 +163,11 @@ function FotoConRespaldo({
       onError={() => setFallida(true)}
     />
   );
+}
+
+/** Texto alternativo de la foto: el que escribió el equipo o, si no hay, el nombre del servicio. */
+function textoAlternativo(foto: FotoGaleria): string {
+  return foto.alt?.trim() || `${foto.servicio} en Mirú Franco`;
 }
 
 /** Cada bloque de 7 llena 12 celdas exactas (4 columnas × 3 filas, o 2 × 6 en móvil). */
@@ -289,7 +294,7 @@ function VisorGaleria({ fotos, inicial, onCerrar }: VisorProps) {
         >
           <FotoConRespaldo
             src={foto.url}
-            alt={`${foto.servicio} en Mirú Franco`}
+            alt={textoAlternativo(foto)}
             sizes="100vw"
             className="object-contain"
             priority
@@ -334,13 +339,15 @@ function VisorGaleria({ fotos, inicial, onCerrar }: VisorProps) {
             {indice + 1} de {total}
           </p>
         </div>
-        <Link
-          href={`/cliente/servicios-citas/servicios/${foto.servicioId}`}
-          className="mf-visor__enlace"
-        >
-          Ver servicio
-          <ArrowRight size={16} aria-hidden />
-        </Link>
+        {foto.servicioId != null && (
+          <Link
+            href={`/cliente/servicios-citas/servicios/${foto.servicioId}`}
+            className="mf-visor__enlace"
+          >
+            Ver servicio
+            <ArrowRight size={16} aria-hidden />
+          </Link>
+        )}
       </div>
     </div>
   );

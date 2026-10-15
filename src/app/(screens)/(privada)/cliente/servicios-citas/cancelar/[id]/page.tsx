@@ -302,9 +302,8 @@ export default function CancelarCitaPage() {
                     </>
                   ) : (
                     <>
-                      <strong>Importante:</strong> Si cancelas con menos de 24 horas de anticipación,
-                      puede aplicarse una política de cancelación. Te recomendamos reprogramar tu cita
-                      en lugar de cancelarla.
+                      <strong>Importante:</strong> Puedes cancelar sin costo antes de que empiece tu cita.
+                      Si solo necesitas otro horario, te recomendamos reprogramarla.
                     </>
                   )}
                 </p>

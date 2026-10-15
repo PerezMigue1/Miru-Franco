@@ -5,9 +5,8 @@ import Link from 'next/link';
 import { Clock3 } from 'lucide-react';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import CasillaPoliticaAnticipos from './CasillaPoliticaAnticipos';
-import { conAceptacionDeAnticipos, MENSAJE_FALTA_ANTICIPOS } from './consentimientoAnticipo';
-import { crearPreferenciaAnticipo, type CitaApi } from '../../services/citas';
+import OpcionesAnticipo from './OpcionesAnticipo';
+import type { CitaApi } from '../../services/citas';
 import { avisoPagoEnSalon, estadoAnticipo, INFO_ANTICIPO, limiteAnticipo, tiempoRestante } from '../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
 import { PLAZOS_TERMINOS } from '../../utils/terminosCondiciones';
@@ -17,37 +16,18 @@ import { PLAZOS_TERMINOS } from '../../utils/terminosCondiciones';
  * Pago mientras siga vigente. `detalle` muestra además la explicación y la casilla de la Política de
  * anticipos, que se registra antes de abrir Mercado Pago; en la lista, el botón lleva a ese detalle.
  */
-export default function AnticipoPortal({ cita, ahora, detalle = false }: { cita: CitaApi; ahora: Date; detalle?: boolean }) {
-  const [abriendo, setAbriendo] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [aceptaPolitica, setAceptaPolitica] = useState(false);
-  const [errorPolitica, setErrorPolitica] = useState<string | null>(null);
-  const idCasilla = `anticipo-politica-${cita.id}`;
+export default function AnticipoPortal({ cita: citaInicial, ahora, detalle = false }: { cita: CitaApi; ahora: Date; detalle?: boolean }) {
+  // Si la clienta cambia a pago en el salón, el plazo nuevo se refleja aquí sin recargar.
+  const [cambioSalon, setCambioSalon] = useState<string | null>(null);
+  const cita = cambioSalon ? { ...citaInicial, anticipoEnSalon: true, anticipoVenceEn: cambioSalon } : citaInicial;
   const rutaDetalle = `/cliente/servicios-citas/mis-citas/${cita.id}`;
   const estado = estadoAnticipo(cita, ahora);
-  if (estado === 'no_requiere') return detalle ? null : <span className="text-sm text-encabezados-alterno">—</span>;
+  if (estado === 'no_requiere') return detalle ? null : <span className="text-sm text-encabezados-alterno">Sin anticipo</span>;
 
   const info = INFO_ANTICIPO[estado];
   const pendiente = estado === 'pendiente';
   /** Eligió pagar en el salón: se le recuerda la hora límite (15 min antes de la cita). */
   const enSalon = pendiente && Boolean(cita.anticipoEnSalon);
-
-  const pagar = async () => {
-    if (!aceptaPolitica) {
-      setErrorPolitica(MENSAJE_FALTA_ANTICIPOS);
-      document.getElementById(idCasilla)?.focus();
-      return;
-    }
-    setAbriendo(true);
-    setError(null);
-    try {
-      const { initPoint } = await conAceptacionDeAnticipos(rutaDetalle, () => crearPreferenciaAnticipo(cita.id));
-      window.location.assign(initPoint);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo abrir Mercado Pago');
-      setAbriendo(false);
-    }
-  };
 
   return (
     <div className={detalle ? 'space-y-3' : 'flex min-w-40 flex-col items-start gap-1.5'}>
@@ -80,20 +60,14 @@ export default function AnticipoPortal({ cita, ahora, detalle = false }: { cita:
         </p>
       )}
       {pendiente && detalle && (
-        <>
-          <CasillaPoliticaAnticipos
-            id={idCasilla}
-            checked={aceptaPolitica}
-            onChange={(marcada) => {
-              setAceptaPolitica(marcada);
-              if (marcada) setErrorPolitica(null);
-            }}
-            error={errorPolitica}
-          />
-          <Button size="md" onClick={pagar} disabled={abriendo} fullWidth>
-            {abriendo ? 'Abriendo…' : 'Pagar anticipo con Mercado Pago'}
-          </Button>
-        </>
+        <OpcionesAnticipo
+          cita={cita}
+          venceEn={cita.anticipoVenceEn ?? null}
+          enSalon={enSalon}
+          ahora={ahora}
+          rutaOrigen={rutaDetalle}
+          onCambioASalon={setCambioSalon}
+        />
       )}
       {pendiente && !detalle && (
         <Button size="md" asChild>
@@ -102,7 +76,6 @@ export default function AnticipoPortal({ cita, ahora, detalle = false }: { cita:
           </Link>
         </Button>
       )}
-      {error && <p role="alert" className="text-xs font-medium text-[var(--danger-texto)]">{error}</p>}
     </div>
   );
 }

@@ -15,9 +15,12 @@
   /* Nueva Paleta de Colores */
   --fondo-general: #DCC8B6;
   --logo-branding: #9f6d1f;
-  --tarjetas-paneles: #B38E6F;
+  /* Tarjeta terracota. Antes #B38E6F: el texto oscuro quedaba justo en AA (4.7-4.8:1) y en letra chica de 12 px
+     con suavizado bajaba de 4.5:1. Con este tono el texto sobre la tarjeta pasa de 5.6:1: carbón 5.9, vino 5.7,
+     --oro-texto 5.8, --texto-enlace-sobre-calido 5.6 y --success-texto 5.9. */
+  --tarjetas-paneles: #C29F81;
   --header-footer: #161616;
-  /* Vino como texto: un paso más profundo que el de botones para cumplir AA sobre terracota (4.7:1) */
+  /* Vino como texto: un paso más profundo que el de botones para cumplir AA sobre terracota (5.7:1) */
   --menu-texto-principal: #600011;
   --warning: #D98E04;
   --danger: #710014;
@@ -34,7 +37,7 @@
      --warning y --danger NO se tocan (identidad de marca / fondos sólidos, ya cumplen ahí). */
   --oro-texto: #37280b;
   /* Aviso como texto pequeño: el ámbar oscuro de marca (--oro-texto). El #4b3002 anterior daba 4.07:1
-     sobre --tarjetas-paneles; este da 4.77:1 ahí y 8.8:1 sobre --fondo-general. */
+     sobre --tarjetas-paneles; este da 5.8:1 ahí y 8.8:1 sobre --fondo-general. */
   --warning-texto: var(--oro-texto);
   --danger-texto: #600011;
   --success-texto: #242d1b;
@@ -44,7 +47,7 @@
      --fondo-general, --fondos-suaves) cae a 1.5-2.8:1 — ilegible. En dark esas superficies son
      grises neutros (no cálidas), el azul ya funciona ahí, no se toca.
      Verde bosque saturado (no --success-texto, para no afectar los números de KPI que ya lo usan):
-     4.56:1 sobre --tarjetas-paneles (la superficie más dura de la paleta), 8.43:1 y 6.84:1 en las
+     5.6:1 sobre --tarjetas-paneles (la superficie más dura de la paleta), 8.43:1 y 6.84:1 en las
      otras dos — mínimo de oscurecimiento necesario para pasar AA en esa superficie específica. */
   --texto-enlace-sobre-calido: #14341e;
   --hero-tagline-color: #2A2A2A;
@@ -150,9 +153,9 @@
   --grafica-indigo:   #5C6BC0;
   /* Serie principal de las gráficas de marca (chartColors.ts): el vino en claro (4.1:1 sobre terracota). */
   --grafica-principal: var(--danger);
-  /* Series de las gráficas sobre la tarjeta terracota (--tarjetas-paneles, #B38E6F) en claro: --hover, oro,
+  /* Series de las gráficas sobre la tarjeta terracota (--tarjetas-paneles, #C29F81) en claro: --hover, oro,
      salvia, ámbar y azul daban entre 1.1 y 1.9:1. Estos tonos oscuros de la misma familia pasan de 3:1
-     (WCAG 1.4.11): terracota 3.5, oro 3.6, verde 3.9, ámbar 3.4 y azul 3.7. En oscuro .dark los devuelve a
+     (WCAG 1.4.11): terracota 4.3, oro 4.4, verde 4.7, ámbar 4.1 y azul 4.5. En oscuro .dark los devuelve a
      los colores de la marca, que ya pasan sobre #2a2a2a. */
   --grafica-terracota: #6e2a12;
   --grafica-oro: #553806;
@@ -182,11 +185,13 @@
   --tarjetas-paneles: #2a2a2a;
   --fondos-suaves: #1f1f1f;
   --menu-texto-principal: #ffffff;
-  --encabezados-alterno: #b38e6f;
+  /* Café como texto en oscuro. Antes #b38e6f (4.80:1 sobre la tarjeta #2a2a2a, justo en AA); este da 5.67:1 sobre la
+     tarjeta, 7.15:1 sobre #161616 y 6.51:1 sobre #1f1f1f. */
+  --encabezados-alterno: #c09c7e;
   --texto-fondo-oscuro: #ffffff;
   --input-bg: #1f1f1f;
   --texto-fondo-oscuro-70: rgba(255, 255, 255, 0.7);
-  /* Terracota sin opacidad: 6.05:1 sobre #161616, 5.51:1 sobre #1f1f1f, 4.80:1 sobre #2a2a2a. */
+  /* Terracota sin opacidad (--encabezados-alterno): 7.15:1 sobre #161616, 6.51:1 sobre #1f1f1f, 5.67:1 sobre #2a2a2a. */
   --texto-secundario: var(--encabezados-alterno);
   --texto-fondo-oscuro-80: rgba(255, 255, 255, 0.8);
   --texto-fondo-oscuro-10: rgba(255, 255, 255, 0.1);

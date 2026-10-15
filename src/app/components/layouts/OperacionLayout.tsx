@@ -9,6 +9,7 @@ import { api } from '../../services/auth';
 import { STAFF_ROLES, getRolFromUser } from '../../utils/adminAuth';
 import { usePermisos, getPermisosFromUser, evaluarPermiso, PERMISOS_COMISIONES } from '../../utils/permisos';
 import PanelShell from './PanelShell';
+import { PERMISOS_GALERIA } from '../galeria/logicaGaleria';
 import PanelVerificando from './PanelVerificando';
 import PanelSinVerificar from './PanelSinVerificar';
 import { decidirAccesoPanel } from '../../utils/accesoPanel';
@@ -22,6 +23,7 @@ import {
   Clock3,
   HandCoins,
   ImagePlus,
+  Images,
   LayoutDashboard,
   Receipt,
   RotateCcw,
@@ -83,7 +85,7 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Mis solicitudes', href: '/operacion/mis-solicitudes', icon: ClipboardList },
   { label: 'Mi asistencia', href: '/operacion/mi-asistencia', icon: Clock3 },
   { label: 'Gestión de equipo', href: '/operacion/gestion-equipo', icon: UserCog, permiso: 'asistencia:gestionar' },
-  { label: 'Subir imágenes', href: '/operacion/subir-imagenes', icon: ImagePlus },
+  { label: 'Galería', href: '/operacion/galeria', icon: Images, permiso: PERMISOS_GALERIA },
   { label: 'Comisiones', href: '/operacion/comisiones', icon: HandCoins, permiso: PERMISOS_COMISIONES },
   { label: 'Anticipos por servicio', href: '/operacion/anticipos', icon: Wallet, permiso: 'servicios:escritura' },
 ];
@@ -238,6 +240,7 @@ export default function OperacionLayout({ children, permisoRequerido }: Operacio
       inicioHref="/operacion"
       grupos={[{ items: NAV_ITEMS.filter((item) => tienePermiso(item.permiso)) }]}
       esActivo={(href) => esActivo(pathname, href)}
+      notificacionesHref="/cliente/notificaciones"
     >
       {children}
     </PanelShell>

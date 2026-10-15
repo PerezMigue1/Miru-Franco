@@ -264,6 +264,7 @@ export default function ServicioDetalleAdminPage() {
                   Galería de Imágenes
                 </label>
                 <EditorImagenesPresentacionCloudinary
+                  uso="servicios"
                   urls={imagenes}
                   onChange={setImagenes}
                   pedirTipo

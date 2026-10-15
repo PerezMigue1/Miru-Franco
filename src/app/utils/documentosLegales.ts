@@ -30,6 +30,8 @@ export interface DocumentoLegalRegistrado {
 }
 
 const VIGENTE_DESDE = '2026-10-14';
+/** Cookies 1.1: agrega mf_registro_google (estrictamente necesaria, no se vuelve a pedir el aviso). */
+const VIGENTE_DESDE_COOKIES = '2026-10-16';
 const VERSION_REEMBOLSOS = '1.0';
 /** Reembolsos y anticipos viven en la misma página: comparten versión y hash. */
 const HASH_REEMBOLSOS = '33d032da7e2d870da8b370b0017ed4b78454964315ec355fe1b4f1d1ad892bf5';
@@ -54,10 +56,10 @@ export const DOCUMENTOS_LEGALES: readonly DocumentoLegalRegistrado[] = [
   {
     slug: 'cookies',
     titulo: 'Política de Cookies',
-    version: '1.0',
-    vigenteDesde: VIGENTE_DESDE,
+    version: '1.1',
+    vigenteDesde: VIGENTE_DESDE_COOKIES,
     ruta: '/politica-de-cookies',
-    hash: '48a413af84c7421848e67d8cecb4adae5fdcfb020157a62c999e6e96c4c5d083',
+    hash: '711f4ceff8d924f7af832522ff43fee726c13b64280ca53efa54b5270cea8607',
   },
   {
     slug: 'reembolsos',

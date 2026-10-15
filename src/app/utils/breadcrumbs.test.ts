@@ -12,6 +12,9 @@ describe('Migas del portal: ubicación real, no carpetas de la URL', () => {
       ['/cliente/tienda-online/mis-pedidos', 'Mis pedidos'],
       ['/cliente/cotizaciones', 'Mis cotizaciones'],
       ['/cliente/notificaciones', 'Notificaciones'],
+      ['/cliente/garantias', 'Garantías y soporte'],
+      ['/cliente/seguimientos', 'Seguimientos'],
+      ['/cliente/promociones', 'Promociones'],
     ]) {
       expect(cadena(ruta)).toBe(`Inicio > ${etiqueta}`);
       expect(getMigasPortal(ruta)?.global).toBe(true);

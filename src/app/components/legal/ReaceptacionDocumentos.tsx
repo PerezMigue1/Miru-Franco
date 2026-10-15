@@ -258,7 +258,7 @@ export function DialogoReaceptacion({
             id={idTitulo}
             ref={tituloRef}
             tabIndex={-1}
-            className="text-xl font-bold rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mf-foco)]"
+            className="text-xl font-bold"
             style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
           >
             {paso === 'aceptar' ? 'Actualizamos nuestros documentos' : 'Antes de salir'}

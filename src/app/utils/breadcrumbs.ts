@@ -30,6 +30,9 @@ export const RUTAS_PORTAL: Record<string, RutaPortal> = {
   '/cliente/notificaciones': { etiqueta: 'Notificaciones', global: true },
   '/cliente/devoluciones': { etiqueta: 'Devoluciones', global: true },
   '/cliente/facturas': { etiqueta: 'Facturas', global: true },
+  '/cliente/garantias': { etiqueta: 'Garantías y soporte', global: true },
+  '/cliente/seguimientos': { etiqueta: 'Seguimientos', global: true },
+  '/cliente/promociones': { etiqueta: 'Promociones', global: true },
 
   // Pantallas que dependen de otra
   '/cliente/tienda-online/productos/[id]': { etiqueta: 'Producto', padre: '/cliente/tienda-online' },
@@ -157,6 +160,9 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'base-datos': { label: 'Base de datos', href: '/admin/base-datos' },
       consentimientos: { label: 'Consentimientos', href: '/admin/consentimientos' },
       'solicitudes-arco': { label: 'Solicitudes ARCO', href: '/admin/solicitudes-arco' },
+      'configuracion-sitio': { label: 'Configuración del sitio', href: '/admin/configuracion-sitio' },
+      contenido: { label: 'Contenido del sitio', href: '/admin/contenido' },
+      'reembolsos-pendientes': { label: 'Reembolsos pendientes', href: '/admin/reembolsos-pendientes' },
     };
 
     const sectionInfo = sectionLabels[section];
@@ -208,7 +214,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'punto-de-venta': 'Punto de venta',
       'segmentacion-clientes': 'Segmentación de clientes',
       'seguimiento-post-servicio': 'Seguimiento posterior al servicio',
-      'subir-imagenes': 'Subir imágenes',
+      galeria: 'Galería',
     };
     operacion.push({ label: modulos[segments[1]] ?? segments[1] });
     return operacion;

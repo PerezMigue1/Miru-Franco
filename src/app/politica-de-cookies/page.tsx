@@ -76,15 +76,20 @@ export default function PoliticaDeCookiesPage() {
       </Seccion>
 
       <Seccion n={2}>
-        <p>Hoy usamos una sola cookie, propia y estrictamente necesaria:</p>
+        <p>Hoy usamos dos cookies, propias y estrictamente necesarias:</p>
         <ul>
           <Clave
             nombres={['mf_session']}
             sirve="mantener tu sesión iniciada y proteger tu cuenta. Solo se crea cuando inicias sesión y no se puede leer desde otros sitios ni desde el código de la página."
             dura="como máximo 24 horas. Se borra al cerrar sesión."
           />
+          <Clave
+            nombres={['mf_registro_google']}
+            sirve="proteger tu alta cuando te registras con Google: comprueba que terminas el registro en el mismo navegador donde entraste con Google, para que nadie pueda abrir tu cuenta desde otro equipo con un enlace. No se puede leer desde otros sitios ni desde el código de la página."
+            dura="15 minutos como máximo. Se borra al terminar tu registro."
+          />
         </ul>
-        <p>Sin esta cookie no podrías entrar a tu cuenta, agendar citas ni comprar en la tienda en línea.</p>
+        <p>Sin estas cookies no podrías entrar a tu cuenta, registrarte con Google, agendar citas ni comprar en la tienda en línea.</p>
       </Seccion>
 
       <Seccion n={3}>

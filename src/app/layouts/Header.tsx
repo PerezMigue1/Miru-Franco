@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,8 +11,7 @@ import { clearAuthData, hasSession } from '../utils/security';
 import { useCart } from '../context/CartContext';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { MIRU_USER_STORAGE_UPDATED } from '../utils/userStorageSync';
-import { listarNotificaciones } from '../services/ecommerce';
-import { useNotificacionesSSE } from '../hooks/useNotificacionesSSE';
+import CampanaAvisos from '../components/notificaciones/CampanaAvisos';
 import { getRolFromUser, panelDeRol } from '../utils/adminAuth';
 import { rutaLogin } from '../utils/rutasConSesion';
 import { rutaDeRegreso } from '../components/auth/redireccionTrasLogin';
@@ -34,7 +33,6 @@ export default function Header() {
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   /** Personal y admin usan el sitio como clienta y además tienen acceso directo a su panel. */
   const [panel, setPanel] = useState<{ href: string; etiqueta: string } | null>(null);
-  const [notificationsCount, setNotificationsCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
   // Mide la altura real del header + barra de navegación (fijos) y la expone como variable
@@ -94,47 +92,6 @@ export default function Header() {
     window.addEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
     return () => window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onUserUpdated);
   }, []);
-
-  // Id incremental para descartar respuestas obsoletas: cargarNotificaciones()
-  // ahora se dispara desde el poll Y desde el SSE, así que puede haber
-  // llamadas en vuelo solapadas — solo aplica el setState de la última que se
-  // pidió (mismo espíritu que el flag `cancelled` que tenía el efecto original,
-  // pero por llamada en vez de por montaje de efecto).
-  const cargarNotificacionesReqId = useRef(0);
-  const cargarNotificaciones = useCallback(async (): Promise<void> => {
-    const reqId = ++cargarNotificacionesReqId.current;
-    if (!hasSession()) {
-      if (cargarNotificacionesReqId.current === reqId) setNotificationsCount(0);
-      return;
-    }
-    try {
-      const list = await listarNotificaciones();
-      if (cargarNotificacionesReqId.current !== reqId) return;
-      const noLeidas = list.filter((n) => n.leida !== true).length;
-      setNotificationsCount(noLeidas);
-    } catch {
-      if (cargarNotificacionesReqId.current === reqId) setNotificationsCount(0);
-    }
-  }, []);
-
-  // Poll-on-focus / on-navigation / on-storage-update: se mantiene tal cual
-  // como respaldo si la conexión SSE de abajo se cae (proxy, red, etc.) — no
-  // se quitó nada de este mecanismo, solo se le sumó el push en vivo.
-  useEffect(() => {
-    void cargarNotificaciones();
-    const onRefresh = () => void cargarNotificaciones();
-    window.addEventListener(MIRU_USER_STORAGE_UPDATED, onRefresh);
-    window.addEventListener('focus', onRefresh);
-    return () => {
-      window.removeEventListener(MIRU_USER_STORAGE_UPDATED, onRefresh);
-      window.removeEventListener('focus', onRefresh);
-    };
-  }, [pathname, cargarNotificaciones]);
-
-  // Push en vivo: cada notificación real (no keep-alive) recibida por SSE
-  // vuelve a llamar cargarNotificaciones(), la misma función de arriba — no
-  // hay un estado paralelo, el SSE solo dispara el mismo refresh que ya existía.
-  useNotificacionesSSE(cargarNotificaciones);
 
   // Cerrar menú usuario al hacer clic fuera
   useEffect(() => {
@@ -307,28 +264,9 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-              {/* Notificaciones: solo con sesión (a un visitante no le llegan) */}
-              {isLoggedIn && (
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/cliente/notificaciones')}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 sm:p-2 hover:opacity-80 transition-opacity relative text-texto-fondo-oscuro"
-                    aria-label="Notificaciones"
-                  >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    {notificationsCount > 0 && (
-                      <span 
-                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-danger text-texto-fondo-oscuro"
-                      >
-                        {notificationsCount}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              )}
+              {/* Notificaciones: solo con sesión (a un visitante no le llegan). Campana única: contador, lista de
+                  avisos, marcar como leídos, avisos en vivo y, dentro de su menú, activar los del navegador. */}
+              {isLoggedIn && <CampanaAvisos variante="sitio" bandejaHref="/cliente/notificaciones" />}
 
               {/* Usuario: Iniciar sesión si no está logueado, menú con perfil y cerrar sesión si sí */}
               {isLoggedIn ? (

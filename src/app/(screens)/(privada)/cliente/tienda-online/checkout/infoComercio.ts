@@ -1,5 +1,6 @@
 import { HORARIO_SALON, TELEFONO_SALON } from '../../../../../utils/contactoSalon';
 import { PLAZOS_TERMINOS as P } from '../../../../../utils/terminosCondiciones';
+import { frasesHorario, type HorarioDia } from '../../../../../services/configuracionSitio';
 
 /**
  * Información de comercio electrónico del checkout (LFPC art. 76 BIS y 7 BIS): quién vende, precios, pago,
@@ -32,5 +33,10 @@ export const CONDICIONES_PAGO: readonly { titulo: string; texto: string }[] = [
 ];
 
 export const ENTREGA = `Recoges tu pedido en el salón, en el domicilio de arriba. ${HORARIO_SALON.texto} No hacemos envíos a domicilio.`;
+
+/** La entrega con el horario de Configuración del sitio (por omisión, el mismo texto de ENTREGA). */
+export function textoEntrega(dias: HorarioDia[]): string {
+  return `Recoges tu pedido en el salón, en el domicilio de arriba. ${frasesHorario(dias).join(' ')} No hacemos envíos a domicilio.`;
+}
 
 export const QUEJAS = 'Si tienes una queja, escríbenos o llámanos primero: queremos resolverla contigo.';

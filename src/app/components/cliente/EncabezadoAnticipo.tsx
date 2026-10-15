@@ -3,11 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CircleAlert, Clock3, HandCoins, Undo2 } from 'lucide-react';
-import Button from '../ui/Button';
 import SelloConfirmacion from './SelloConfirmacion';
-import CasillaPoliticaAnticipos from './CasillaPoliticaAnticipos';
-import { conAceptacionDeAnticipos, MENSAJE_FALTA_ANTICIPOS } from './consentimientoAnticipo';
-import { consultarEstadoAnticipo, crearPreferenciaAnticipo, type CitaApi, type EstadoPagoAnticipo } from '../../services/citas';
+import OpcionesAnticipo from './OpcionesAnticipo';
+import { consultarEstadoAnticipo, type CitaApi, type EstadoPagoAnticipo } from '../../services/citas';
 import { avisoPagoEnSalon, limiteAnticipo, tiempoRestante } from '../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
 import { useAhora } from '../../hooks/useAhora';
@@ -25,11 +23,7 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
   const [venceEn, setVenceEn] = useState<string | null>(cita.anticipoVenceEn ?? null);
   /** La clienta eligió pagar en el salón: su plazo vence 15 min antes del inicio. */
   const [enSalon, setEnSalon] = useState(Boolean(cita.anticipoEnSalon));
-  const [abriendo, setAbriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aceptaPolitica, setAceptaPolitica] = useState(false);
-  const [errorPolitica, setErrorPolitica] = useState<string | null>(null);
-  const idCasilla = `anticipo-politica-confirmacion-${cita.id}`;
 
   useEffect(() => {
     let vivo = true;
@@ -50,23 +44,6 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
     consultar();
     return () => { vivo = false; if (temporizador) clearTimeout(temporizador); };
   }, [cita.id, volvioDeMercadoPago]);
-
-  const pagar = async () => {
-    if (!aceptaPolitica) {
-      setErrorPolitica(MENSAJE_FALTA_ANTICIPOS);
-      document.getElementById(idCasilla)?.focus();
-      return;
-    }
-    setAbriendo(true);
-    setError(null);
-    try {
-      const { initPoint } = await conAceptacionDeAnticipos('/cliente/servicios-citas/confirmacion', () => crearPreferenciaAnticipo(cita.id));
-      window.location.assign(initPoint);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo abrir Mercado Pago. Intenta de nuevo.');
-      setAbriendo(false);
-    }
-  };
 
   const monto = formatearPrecioMXN(cita.anticipoRequerido ?? 0);
   const restante = tiempoRestante(venceEn, ahora);
@@ -164,20 +141,18 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
       <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-fondos-suaves px-4 py-1.5 text-sm font-semibold text-menu-texto-principal">
         <Clock3 size={15} aria-hidden /> {limite ?? <>Quedan <span className="mf-cifras">{restante}</span></>}
       </p>
-      <div className="mx-auto mt-5 max-w-sm space-y-2 text-left">
-        <CasillaPoliticaAnticipos
-          id={idCasilla}
-          checked={aceptaPolitica}
-          onChange={(marcada) => {
-            setAceptaPolitica(marcada);
-            if (marcada) setErrorPolitica(null);
+      <div className="mx-auto mt-5 max-w-sm">
+        <OpcionesAnticipo
+          cita={cita}
+          venceEn={venceEn}
+          enSalon={enSalon}
+          ahora={ahora}
+          rutaOrigen="/cliente/servicios-citas/confirmacion"
+          onCambioASalon={(nuevoVence) => {
+            setEnSalon(true);
+            setVenceEn(nuevoVence);
           }}
-          error={errorPolitica}
         />
-        <Button fullWidth size="lg" onClick={pagar} disabled={abriendo}>
-          {abriendo ? 'Abriendo Mercado Pago…' : 'Pagar anticipo con Mercado Pago'}
-        </Button>
-        {!enSalon && <p className="text-sm text-encabezados-alterno">También puedes pagarlo en el salón antes de que venza el plazo.</p>}
       </div>
       {error && <p role="alert" className="mt-3 text-sm font-medium text-[var(--danger-texto)]">{error}</p>}
     </div>

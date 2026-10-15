@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Button from '../ui/Button';
-import { subirImagenesCloudinary, type TipoImagenGaleria } from '../../utils/cloudinary';
+import { subirImagenesSeguras, type TipoImagenGaleria, type UsoImagen } from '../../utils/cloudinary';
 import { showToast } from '../../utils/toast';
 import ElegirTipoImagen from './ElegirTipoImagen';
 import { errorTipoImagen } from './tipoImagenGaleria';
@@ -24,8 +24,10 @@ function archivoPareceImagen(f: File): boolean {
 }
 
 type Props = {
-  /** Se llama con las `secure_url` devueltas por Cloudinary (en orden). */
-  onUrlsAdded: (urls: string[]) => void;
+  /** Carpeta de la subida segura (servicios/, productos/…; nunca galeria/). */
+  uso: UsoImagen;
+  /** Se llama con los public_id que generó el servidor (en orden); el formulario los manda tal cual al guardar. */
+  onAgregadas: (valores: string[]) => void;
   disabled?: boolean;
   /** Texto del botón cuando no está subiendo. */
   label?: string;
@@ -37,13 +39,14 @@ type Props = {
 };
 
 /**
- * Selector de archivos locales → subida firmada a Cloudinary (carpeta galeria, una firma por lote; con
- * `pedirTipo` y "Imagen ilustrativa", carpeta galeria/ilustrativas).
+ * Selector de archivos locales: subida segura a Cloudinary, una firma por imagen con el public_id que genera el
+ * servidor en la carpeta del uso (con `pedirTipo` y "Imagen ilustrativa", en su subcarpeta ilustrativas/).
  */
 export function SubirImagenesCloudinaryButton({
-  onUrlsAdded,
+  uso,
+  onAgregadas,
   disabled,
-  label = 'Subir imágenes',
+  label = 'Subir foto',
   pedirTipo = false,
 }: Props) {
   const [busy, setBusy] = useState(false);
@@ -81,12 +84,12 @@ export function SubirImagenesCloudinaryButton({
       setError(null);
       setBusy(true);
       try {
-        const urls = await subirImagenesCloudinary(list, pedirTipo ? tipo ?? undefined : undefined);
-        onUrlsAdded(urls);
+        const subidas = await subirImagenesSeguras(list, uso, { ilustrativa: pedirTipo && tipo === 'ilustrativa' });
+        onAgregadas(subidas.map((s) => s.publicId));
         // Cada lote se clasifica de nuevo: el siguiente no hereda "real" o "ilustrativa" sin elegirlo.
         setTipo(null);
-        if (urls.length) {
-          showToast(`${urls.length} imagen(es) subida(s).`, 'success');
+        if (subidas.length) {
+          showToast(`${subidas.length} imagen(es) subida(s). Se guardan al guardar el formulario.`, 'success');
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error al subir';

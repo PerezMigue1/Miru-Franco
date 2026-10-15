@@ -4,8 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { SubirImagenesCloudinaryButton } from './SubirImagenesCloudinaryButton';
+import { vistaPreviaDe, type UsoImagen } from '../../utils/cloudinary';
 
 type Props = {
+  /** Carpeta de la subida segura: servicios o productos. */
+  uso: UsoImagen;
+  /** Imágenes guardadas (URL) o recién subidas (public_id del servidor, con su vista previa). */
   urls: string[];
   onChange: (next: string[]) => void;
   disabled?: boolean;
@@ -16,13 +20,14 @@ type Props = {
 };
 
 /**
- * Solo subida a Cloudinary (sin pegar URLs): miniaturas, quitar y añadir más.
+ * Solo subida a Cloudinary con la subida segura (sin pegar URLs): miniaturas con vista previa, quitar y añadir más.
  */
 export function EditorImagenesPresentacionCloudinary({
+  uso,
   urls,
   onChange,
   disabled,
-  uploadLabel = 'Subir imágenes',
+  uploadLabel = 'Subir foto',
   pedirTipo = false,
 }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -72,7 +77,7 @@ export function EditorImagenesPresentacionCloudinary({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={vistaPreviaDe(url) ?? undefined}
                   alt=""
                   className="pointer-events-none h-full w-full object-cover bg-negro/5"
                 />
@@ -104,7 +109,8 @@ export function EditorImagenesPresentacionCloudinary({
         </p>
       )}
       <SubirImagenesCloudinaryButton
-        onUrlsAdded={add}
+        uso={uso}
+        onAgregadas={add}
         disabled={disabled}
         label={uploadLabel}
         pedirTipo={pedirTipo}
@@ -127,7 +133,7 @@ export function EditorImagenesPresentacionCloudinary({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={effectivePreviewUrl}
+                src={vistaPreviaDe(effectivePreviewUrl) ?? undefined}
                 alt="Vista previa ampliada"
                 className="max-h-[min(82vh,880px)] w-auto max-w-full object-contain"
               />

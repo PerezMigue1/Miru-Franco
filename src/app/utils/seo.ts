@@ -7,12 +7,13 @@ import type { Metadata } from 'next';
  */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://www.mirufranco.com').replace(/\/+$/, '');
 
-export const SITE_NAME = 'Mirú Franco Beauty Salón';
+/** Nombre registrado del salón (respaldo de los títulos; el nombre vigente sale de Configuración del sitio). */
+export const SITE_NAME = 'Mirú Franco Salón Beauty';
 
 /** Imagen por defecto para og:image / twitter:image (servida desde /public). */
 export const OG_IMAGE_DEFAULT = {
   url: '/logo-miru.jpg',
-  alt: 'Mirú Franco Beauty Salón',
+  alt: 'Mirú Franco Salón Beauty',
 };
 
 /**

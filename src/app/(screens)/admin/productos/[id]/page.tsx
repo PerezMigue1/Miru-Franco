@@ -830,6 +830,7 @@ export default function ProductoDetalleAdminPage() {
                           Imágenes de esta presentación
                         </p>
                         <EditorImagenesPresentacionCloudinary
+                          uso="productos"
                           urls={pr.imagenes}
                           onChange={(next) => {
                             setPresentaciones((prev) =>
