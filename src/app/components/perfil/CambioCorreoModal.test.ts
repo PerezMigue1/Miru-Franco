@@ -25,6 +25,13 @@ describe('CambioCorreoModal', () => {
     expect(fuente).toMatch(/solicitarCambioCorreo\(correoNuevo, correoActual, passwordActual\)/);
   });
 
+  it('cuenta sin contraseña: pide también el código que llegó al correo actual y lo manda al confirmar', () => {
+    expect(fuente).toContain('setPideCodigoActual(res.codigoAlCorreoActual)');
+    expect(fuente).toContain('label="Código de tu correo actual"');
+    expect(fuente).toContain('validarCodigoCorreoActual(codigoActual)');
+    expect(fuente).toContain('confirmarCambioCorreo(codigo, pideCodigoActual ? codigoActual : undefined)');
+  });
+
   it('al confirmar avisa que también llega un aviso al correo anterior', () => {
     expect(fuente).toContain("showToast('Listo, tu correo cambió. Te avisamos en tu correo anterior.', 'success')");
   });

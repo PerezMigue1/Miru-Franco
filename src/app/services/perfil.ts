@@ -398,6 +398,11 @@ export function validarCodigoCambioCorreo(codigo: string): string | null {
   return /^\d{6}$/.test(codigo.trim()) ? null : 'El código tiene 6 dígitos.';
 }
 
+/** El código que llega al correo actual (cuentas sin contraseña): 6 dígitos. null si está bien. */
+export function validarCodigoCorreoActual(codigo: string): string | null {
+  return /^\d{6}$/.test(codigo.trim()) ? null : 'El código de tu correo actual tiene 6 dígitos.';
+}
+
 export const MENSAJE_FALTA_PASSWORD_CAMBIO_CORREO = 'Escribe tu contraseña actual para cambiar tu correo.';
 
 /**
@@ -443,17 +448,18 @@ export function campoDelErrorCambioCorreo(error: unknown): 'password' | 'correo'
 
 /**
  * Paso 1: envía un código de 6 dígitos al correo nuevo. `passwordActual` es obligatoria si la cuenta tiene
- * contraseña (el backend responde 400 si falta o no es correcta); una cuenta solo de Google no la manda.
+ * contraseña (el backend responde 400 si falta o no es correcta); una cuenta solo de Google no la manda y, en su
+ * lugar, recibe otro código en el correo actual (`codigoAlCorreoActual`).
  */
 export async function solicitarCambioCorreo(
   correoNuevo: string,
   correoActual?: string,
   passwordActual?: string,
-): Promise<{ mensaje: string; vigenciaMinutos: number }> {
+): Promise<{ mensaje: string; vigenciaMinutos: number; codigoAlCorreoActual: boolean }> {
   const error = validarCorreoNuevo(correoNuevo, correoActual);
   if (error) throw new Error(error);
   try {
-    const res = await apiClient.post<{ message?: string; vigenciaMinutos?: number }>(
+    const res = await apiClient.post<{ message?: string; vigenciaMinutos?: number; codigoAlCorreoActual?: boolean }>(
       '/api/auth/me/correo/solicitar',
       passwordActual ? { correoNuevo: correoNuevo.trim(), passwordActual } : { correoNuevo: correoNuevo.trim() },
       { customBase: BASE(), skip500Redirect: true },
@@ -461,6 +467,7 @@ export async function solicitarCambioCorreo(
     return {
       mensaje: res?.message || 'Te enviamos un código a tu nuevo correo.',
       vigenciaMinutos: Number(res?.vigenciaMinutos ?? 15),
+      codigoAlCorreoActual: res?.codigoAlCorreoActual === true,
     };
   } catch (e) {
     // El cliente muestra un texto genérico ante cualquier 5xx: el 502 es "el correo no salió".
@@ -469,13 +476,16 @@ export async function solicitarCambioCorreo(
   }
 }
 
-/** Paso 2: confirma con el código y devuelve el correo nuevo de la cuenta. */
-export async function confirmarCambioCorreo(codigo: string): Promise<string> {
-  const error = validarCodigoCambioCorreo(codigo);
+/**
+ * Paso 2: confirma con el código y devuelve el correo nuevo de la cuenta. `codigoActual`: el que llegó al correo
+ * actual, en las cuentas sin contraseña.
+ */
+export async function confirmarCambioCorreo(codigo: string, codigoActual?: string): Promise<string> {
+  const error = validarCodigoCambioCorreo(codigo) ?? (codigoActual !== undefined ? validarCodigoCorreoActual(codigoActual) : null);
   if (error) throw new Error(error);
   const res = await apiClient.post<{ data?: { email?: string } }>(
     '/api/auth/me/correo/confirmar',
-    { codigo: codigo.trim() },
+    codigoActual !== undefined ? { codigo: codigo.trim(), codigoActual: codigoActual.trim() } : { codigo: codigo.trim() },
     { customBase: BASE(), skip500Redirect: true },
   );
   const email = res?.data?.email;

@@ -13,6 +13,7 @@ import {
   confirmarCambioCorreo,
   solicitarCambioCorreo,
   validarCodigoCambioCorreo,
+  validarCodigoCorreoActual,
   validarCorreoNuevo,
   validarPasswordActualCambioCorreo,
 } from '../../services/perfil';
@@ -27,7 +28,10 @@ interface CambioCorreoModalProps {
 
 type Paso = 'correo' | 'codigo';
 
-/** "Modificar" del correo en el perfil: paso 1, correo nuevo; paso 2, el código que llega a ese correo. */
+/**
+ * "Modificar" del correo en el perfil: paso 1, correo nuevo; paso 2, el código que llega a ese correo y, si la
+ * cuenta no tiene contraseña (solo Google), también el que llega al correo actual.
+ */
 export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCambiado }: CambioCorreoModalProps) {
   const [paso, setPaso] = useState<Paso>('correo');
   const [correoNuevo, setCorreoNuevo] = useState('');
@@ -40,6 +44,10 @@ export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCam
   const [errorPassword, setErrorPassword] = useState<string | null>(null);
   const [tienePassword, setTienePassword] = useState<boolean | null>(null);
   const campoPassword = campoPasswordCambioCorreo(tienePassword);
+  // Cuenta sin contraseña: el backend manda otro código al correo actual y hacen falta los dos.
+  const [pideCodigoActual, setPideCodigoActual] = useState(false);
+  const [codigoActual, setCodigoActual] = useState('');
+  const [errorCodigoActual, setErrorCodigoActual] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,6 +68,9 @@ export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCam
     setError(null);
     setPasswordActual('');
     setErrorPassword(null);
+    setPideCodigoActual(false);
+    setCodigoActual('');
+    setErrorCodigoActual(null);
   };
 
   const cerrar = () => {
@@ -82,6 +93,9 @@ export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCam
       const res = await solicitarCambioCorreo(correoNuevo, correoActual, passwordActual);
       setAviso(res.mensaje);
       setCodigo('');
+      setPideCodigoActual(res.codigoAlCorreoActual);
+      setCodigoActual('');
+      setErrorCodigoActual(null);
       setPaso('codigo');
     } catch (e) {
       const mensaje = e instanceof Error ? e.message : 'No pudimos enviar el código. Intenta de nuevo.';
@@ -99,14 +113,13 @@ export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCam
 
   const confirmar = async () => {
     const invalido = validarCodigoCambioCorreo(codigo);
-    if (invalido) {
-      setError(invalido);
-      return;
-    }
+    const invalidoActual = pideCodigoActual ? validarCodigoCorreoActual(codigoActual) : null;
+    setError(invalido);
+    setErrorCodigoActual(invalidoActual);
+    if (invalido || invalidoActual) return;
     setCargando(true);
-    setError(null);
     try {
-      const correo = await confirmarCambioCorreo(codigo);
+      const correo = await confirmarCambioCorreo(codigo, pideCodigoActual ? codigoActual : undefined);
       showToast('Listo, tu correo cambió. Te avisamos en tu correo anterior.', 'success');
       reiniciar();
       onCambiado(correo);
@@ -197,10 +210,10 @@ export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCam
       ) : (
         <div className="space-y-3">
           <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-            {aviso} Escríbelo aquí para usar <span className="font-semibold break-all" style={{ color: 'var(--menu-texto-principal)' }}>{correoNuevo.trim()}</span> en tu cuenta.
+            {aviso} {pideCodigoActual ? 'Escríbelos' : 'Escríbelo'} aquí para usar <span className="font-semibold break-all" style={{ color: 'var(--menu-texto-principal)' }}>{correoNuevo.trim()}</span> en tu cuenta.
           </p>
           <Input
-            label="Código de 6 dígitos"
+            label={pideCodigoActual ? 'Código de tu correo nuevo' : 'Código de 6 dígitos'}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
@@ -214,6 +227,29 @@ export default function CambioCorreoModal({ isOpen, onClose, correoActual, onCam
             error={error ?? undefined}
             fullWidth
           />
+          {pideCodigoActual && (
+            <Input
+              label="Código de tu correo actual"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={6}
+              value={codigoActual}
+              onChange={(e) => {
+                setCodigoActual(e.target.value.replace(/\D/g, ''));
+                if (errorCodigoActual) setErrorCodigoActual(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void confirmar();
+              }}
+              icon={<KeyRound size={16} aria-hidden />}
+              disabled={cargando}
+              required
+              aria-required
+              error={errorCodigoActual ?? undefined}
+              helperText={`Lo enviamos a ${correoActual || 'tu correo actual'} para confirmar que eres tú.`}
+              fullWidth
+            />
+          )}
           <button
             type="button"
             onClick={() => void enviarCodigo()}

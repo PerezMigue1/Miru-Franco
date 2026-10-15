@@ -37,6 +37,13 @@ afterEach(() => {
 });
 
 describe('Cambio de correo: paso 1, solicitar el código', () => {
+  it('dice si el backend mandó otro código al correo actual (cuenta sin contraseña)', async () => {
+    responder(200, { success: true, message: 'Te enviamos un código a tu nuevo correo y otro a tu correo actual.', vigenciaMinutos: 15, codigoAlCorreoActual: true });
+    await expect(perfil.solicitarCambioCorreo('nuevo@example.com')).resolves.toMatchObject({ codigoAlCorreoActual: true });
+    responder(200, { success: true, message: 'Te enviamos un código a tu nuevo correo.', vigenciaMinutos: 15 });
+    await expect(perfil.solicitarCambioCorreo('nuevo@example.com', undefined, 'clave')).resolves.toMatchObject({ codigoAlCorreoActual: false });
+  });
+
   it('POST /api/auth/me/correo/solicitar con el correo nuevo y devuelve el aviso y la vigencia', async () => {
     responder(200, { success: true, message: 'Te enviamos un código a tu nuevo correo. Vence en 15 minutos.', vigenciaMinutos: 15 });
     const res = await perfil.solicitarCambioCorreo('  nuevo@example.com ', 'clienta@example.com');
@@ -44,7 +51,7 @@ describe('Cambio de correo: paso 1, solicitar el código', () => {
     expect(url).toBe('http://api.test/api/auth/me/correo/solicitar');
     expect(init?.method).toBe('POST');
     expect(JSON.parse(String(init?.body))).toEqual({ correoNuevo: 'nuevo@example.com' });
-    expect(res).toEqual({ mensaje: 'Te enviamos un código a tu nuevo correo. Vence en 15 minutos.', vigenciaMinutos: 15 });
+    expect(res).toEqual({ mensaje: 'Te enviamos un código a tu nuevo correo. Vence en 15 minutos.', vigenciaMinutos: 15, codigoAlCorreoActual: false });
   });
 
   it('correo de otra cuenta (409): el mensaje del backend', async () => {
@@ -134,6 +141,19 @@ describe('Cambio de correo: paso 2, confirmar con el código', () => {
   it('código incorrecto (400): el mensaje del backend con los intentos que quedan', async () => {
     responder(400, { message: 'El código no es correcto. Te quedan 4 intentos.', code: 'CODIGO_INCORRECTO' });
     await expect(perfil.confirmarCambioCorreo('111111')).rejects.toThrow('El código no es correcto. Te quedan 4 intentos.');
+  });
+
+  it('cuenta sin contraseña: manda también el código del correo actual', async () => {
+    responder(200, { success: true, data: { email: 'nuevo@example.com' } });
+    await perfil.confirmarCambioCorreo('004821', ' 739102 ');
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ codigo: '004821', codigoActual: '739102' });
+  });
+
+  it('el código del correo actual también debe tener 6 dígitos (no se envía si no)', async () => {
+    expect(perfil.validarCodigoCorreoActual('12')).toBe('El código de tu correo actual tiene 6 dígitos.');
+    expect(perfil.validarCodigoCorreoActual('123456')).toBeNull();
+    await expect(perfil.confirmarCambioCorreo('123456', '12')).rejects.toThrow('El código de tu correo actual tiene 6 dígitos.');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('el código debe tener 6 dígitos (no se envía si no)', async () => {
