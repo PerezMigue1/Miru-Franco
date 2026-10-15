@@ -55,14 +55,50 @@ export type ResultadoTruncate =
   | { success: true; tabla: string; restartIdentity: boolean; cascade: boolean; message?: string }
   | { success: false; error: string };
 
+/** Texto exacto que el backend exige en `confirmacion` para vaciar una tabla (POST /api/db/truncate). */
+export function confirmacionTruncate(tabla: string): string {
+  return `TRUNCATE ${tabla}`;
+}
+
+/** Texto exacto que el backend exige en `confirmacion` para importar sobre una tabla (POST /api/db/import). */
+export function confirmacionImportacion(tabla: string): string {
+  return `IMPORTAR ${tabla}`;
+}
+
+/**
+ * Lo que se escribe en el modal de importar: "IMPORTAR <tabla>", o "IMPORTAR TODAS" para toda la base
+ * (después cada tabla viaja con su propia confirmación, que es la que valida el backend).
+ */
+export function confirmacionImportacionEscrita(tabla: string): string {
+  return tabla === '__todas__' ? 'IMPORTAR TODAS' : confirmacionImportacion(tabla);
+}
+
+/** Error si lo escrito no coincide; el mismo formato que el truncate y el mismo texto que pide el backend. */
+export function errorConfirmacionImportacion(tabla: string, escrito: string): string | null {
+  const esperado = confirmacionImportacionEscrita(tabla);
+  return escrito.trim() === esperado ? null : `Escribe exactamente: ${esperado}`;
+}
+
+/**
+ * Error de truncate o importar: en 4xx, el texto del backend (primero el del campo que falló, p. ej.
+ * `errors.confirmacion`, en vez del genérico "Revisa los campos del formulario"); en 5xx, el genérico.
+ */
+function textoErrorOperacion(status: number, data: Record<string, unknown>): string {
+  if (status >= 500) return textoErrorRespuesta(status, data);
+  const errores = data.errors && typeof data.errors === 'object' ? Object.values(data.errors as object) : [];
+  const delCampo = errores.find((v): v is string => typeof v === 'string' && v.trim() !== '');
+  return (delCampo ?? data.message ?? data.error ?? `Error ${status}`) as string;
+}
+
 /**
  * Importa datos desde CSV o JSON.
- * POST /api/db/import (multipart: tabla + archivo)
+ * POST /api/db/import (multipart: tabla + archivo + modo + confirmacion "IMPORTAR <tabla>")
  */
 export async function importarDatos(
   tabla: string,
   archivo: File,
-  modo: ModoImportacion = 'missing_only'
+  modo: ModoImportacion,
+  confirmacion: string
 ): Promise<ResultadoImportacion> {
   const base = getBackendBaseUrl();
   if (!hasSession()) {
@@ -73,6 +109,7 @@ export async function importarDatos(
   formData.append('tabla', tabla);
   formData.append('archivo', archivo);
   formData.append('modo', modo);
+  formData.append('confirmacion', confirmacion);
 
   try {
     const res = await fetch(`${base}${DB_API_PREFIX}/import`, {
@@ -84,11 +121,7 @@ export async function importarDatos(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const msg =
-        res.status >= 500
-          ? textoErrorRespuesta(res.status, data)
-          : ((data.message ?? data.error ?? `Error ${res.status}`) as string);
-      return { success: false, error: msg };
+      return { success: false, error: textoErrorOperacion(res.status, data) };
     }
 
     const importados = typeof data.importados === 'number' ? data.importados : 0;
@@ -167,10 +200,11 @@ export async function obtenerTablasImportables(): Promise<
 
 /**
  * Ejecuta TRUNCATE TABLE para una tabla concreta.
- * POST /api/db/truncate
+ * POST /api/db/truncate (confirmacion: el texto escrito en el formulario, "TRUNCATE <tabla>")
  */
 export async function truncarTabla(
   tabla: string,
+  confirmacion: string,
   opciones?: { restartIdentity?: boolean; cascade?: boolean }
 ): Promise<ResultadoTruncate> {
   const base = getBackendBaseUrl();
@@ -189,15 +223,12 @@ export async function truncarTabla(
         tabla,
         restartIdentity: opciones?.restartIdentity ?? true,
         cascade: opciones?.cascade ?? false,
+        confirmacion,
       }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const msg =
-        res.status >= 500
-          ? textoErrorRespuesta(res.status, data)
-          : ((data.message ?? data.error ?? `Error ${res.status}`) as string);
-      return { success: false, error: msg };
+      return { success: false, error: textoErrorOperacion(res.status, data) };
     }
     return {
       success: true,

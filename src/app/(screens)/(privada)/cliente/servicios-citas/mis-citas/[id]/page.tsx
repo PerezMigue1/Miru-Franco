@@ -257,7 +257,7 @@ export default function DetalleMiCitaPage() {
                 Recordatorios
               </h3>
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                Recibirás un recordatorio por correo electrónico 24 horas antes de tu cita.
+                Antes de tu cita te mandaremos un recordatorio en tu cuenta y, si lo tienes activado, por correo.
               </p>
             </Card>
           </div>

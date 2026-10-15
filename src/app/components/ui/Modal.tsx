@@ -53,9 +53,13 @@ export default function Modal({
 
   // Superficie del sistema (--superficie-modal): lino en claro, carbón en oscuro. La terracota
   // anterior con texto claro daba 2.3:1 en modo claro.
+  // z-[65]: por encima de la barra (.mf-panel-barra, 60) y del menú lateral (.mf-panel-lateral, 55)
+  // de los paneles; por debajo de la re-aceptación de documentos (70) y de "Saltar al contenido" (80).
+  // Con z-50 la barra y el menú quedaban sin velo, pulsables y tapando el borde de arriba de los
+  // diálogos altos.
   return (
     <div
-      className="mf-velo fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4"
+      className="mf-velo fixed inset-0 z-[65] flex items-end sm:items-center justify-center p-2 sm:p-4"
       onClick={onClose}
     >
       <div
@@ -93,11 +97,13 @@ export default function Modal({
           </div>
         )}
 
-        <div className="px-4 sm:px-6 py-4 overflow-y-auto grow">{children}</div>
+        {/* min-h-0: el cuerpo puede encogerse dentro del alto máximo y desplaza solo su contenido. */}
+        <div className="px-4 sm:px-6 py-4 overflow-y-auto overscroll-contain min-h-0 grow">{children}</div>
 
+        {/* En móvil los botones se apilan a todo lo ancho (el principal arriba); desde 640px van en fila. */}
         {footer && (
           <div
-            className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t shrink-0 flex-wrap"
+            className="flex flex-col-reverse items-stretch gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t shrink-0 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
             style={{ borderColor: 'var(--mf-linea-fuerte)' }}
           >
             {footer}

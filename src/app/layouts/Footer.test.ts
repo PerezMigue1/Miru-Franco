@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -29,12 +31,61 @@ describe('Footer: redes sociales', () => {
   });
 });
 
-describe('Footer: área táctil de 44 px en los enlaces', () => {
-  it('los enlaces de texto tienen min-h-11', () => {
+describe('Footer: páginas legales y Profeco', () => {
+  it('enlaza las cuatro páginas legales', () => {
     sinRedes();
-    const lista = enlaces(renderToStaticMarkup(createElement(Footer)));
+    const html = renderToStaticMarkup(createElement(Footer));
+    for (const ruta of ['/terminos-y-condiciones', '/aviso-de-privacidad', '/politica-de-cookies', '/politica-de-reembolsos']) {
+      expect(html).toContain(`href="${ruta}"`);
+    }
+  });
+
+  it('muestra el Teléfono del Consumidor de Profeco y su sitio', () => {
+    sinRedes();
+    const html = renderToStaticMarkup(createElement(Footer));
+    expect(html).toContain('55 5568 8722');
+    expect(html).toContain('800 468 8722');
+    expect(html).toContain('href="https://www.gob.mx/profeco"');
+  });
+});
+
+describe('Footer: servicios del catálogo real', () => {
+  it('no tiene una lista de servicios escrita a mano: la carga del catálogo de servicios activos', () => {
+    const fuente = readFileSync(join(__dirname, 'Footer.tsx'), 'utf8');
+    expect(fuente).not.toContain("'Coloración Profesional'");
+    expect(fuente).toContain('cargarNombresServiciosFooter');
+  });
+
+  it('sin catálogo cargado (primer pintado o API caída) no inventa servicios ni rompe', () => {
+    sinRedes();
+    const html = renderToStaticMarkup(createElement(Footer));
+    expect(html).not.toContain('Nanoplastía');
+    expect(html).toContain('Mirú');
+  });
+});
+
+/** El párrafo de Profeco (texto corrido con sus tres enlaces). */
+const parrafoProfeco = (html: string) => html.match(/<p[^>]*>Profeco, Teléfono del Consumidor:[\s\S]*?<\/p>/)?.[0] ?? '';
+
+describe('Footer: área táctil de 44 px en los enlaces', () => {
+  it('los enlaces de texto tienen min-h-11 (menos los que van dentro del párrafo de Profeco)', () => {
+    sinRedes();
+    const html = renderToStaticMarkup(createElement(Footer));
+    const enProfeco = new Set(enlaces(parrafoProfeco(html)));
+    const lista = enlaces(html).filter((a) => !enProfeco.has(a));
     expect(lista.length).toBeGreaterThan(5);
     for (const a of lista) expect(a).toContain('min-h-11');
+  });
+
+  it('los enlaces de Profeco dentro del párrafo son enlaces en línea con subrayado, sin min-h-11 ni inline-flex', () => {
+    sinRedes();
+    const lista = enlaces(parrafoProfeco(renderToStaticMarkup(createElement(Footer))));
+    expect(lista).toHaveLength(3);
+    for (const a of lista) {
+      expect(a).toMatch(/\bunderline\b/);
+      expect(a).not.toContain('min-h-11');
+      expect(a).not.toContain('inline-flex');
+    }
   });
 
   it('los íconos de redes miden 44 px (p-3 alrededor del ícono de 20 px)', () => {

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Clock3 } from 'lucide-react';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import CasillaPoliticaAnticipos from './CasillaPoliticaAnticipos';
+import { conAceptacionDeAnticipos, MENSAJE_FALTA_ANTICIPOS } from './consentimientoAnticipo';
 import { crearPreferenciaAnticipo, type CitaApi } from '../../services/citas';
 import { avisoPagoEnSalon, estadoAnticipo, INFO_ANTICIPO, limiteAnticipo, tiempoRestante } from '../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
@@ -11,11 +14,16 @@ import { PLAZOS_TERMINOS } from '../../utils/terminosCondiciones';
 
 /**
  * Anticipo de una cita en el portal: estado, monto, cuenta regresiva y botón para pagarlo con Mercado
- * Pago mientras siga vigente. `detalle` muestra además la explicación (pantalla de detalle de la cita).
+ * Pago mientras siga vigente. `detalle` muestra además la explicación y la casilla de la Política de
+ * anticipos, que se registra antes de abrir Mercado Pago; en la lista, el botón lleva a ese detalle.
  */
 export default function AnticipoPortal({ cita, ahora, detalle = false }: { cita: CitaApi; ahora: Date; detalle?: boolean }) {
   const [abriendo, setAbriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
+  const [errorPolitica, setErrorPolitica] = useState<string | null>(null);
+  const idCasilla = `anticipo-politica-${cita.id}`;
+  const rutaDetalle = `/cliente/servicios-citas/mis-citas/${cita.id}`;
   const estado = estadoAnticipo(cita, ahora);
   if (estado === 'no_requiere') return detalle ? null : <span className="text-sm text-encabezados-alterno">—</span>;
 
@@ -25,10 +33,15 @@ export default function AnticipoPortal({ cita, ahora, detalle = false }: { cita:
   const enSalon = pendiente && Boolean(cita.anticipoEnSalon);
 
   const pagar = async () => {
+    if (!aceptaPolitica) {
+      setErrorPolitica(MENSAJE_FALTA_ANTICIPOS);
+      document.getElementById(idCasilla)?.focus();
+      return;
+    }
     setAbriendo(true);
     setError(null);
     try {
-      const { initPoint } = await crearPreferenciaAnticipo(cita.id);
+      const { initPoint } = await conAceptacionDeAnticipos(rutaDetalle, () => crearPreferenciaAnticipo(cita.id));
       window.location.assign(initPoint);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo abrir Mercado Pago');
@@ -66,9 +79,27 @@ export default function AnticipoPortal({ cita, ahora, detalle = false }: { cita:
                     : 'Te devolvimos el anticipo.'}
         </p>
       )}
-      {pendiente && (
-        <Button size="sm" onClick={pagar} disabled={abriendo} fullWidth={detalle}>
-          {abriendo ? 'Abriendo…' : detalle ? 'Pagar anticipo con Mercado Pago' : 'Pagar anticipo'}
+      {pendiente && detalle && (
+        <>
+          <CasillaPoliticaAnticipos
+            id={idCasilla}
+            checked={aceptaPolitica}
+            onChange={(marcada) => {
+              setAceptaPolitica(marcada);
+              if (marcada) setErrorPolitica(null);
+            }}
+            error={errorPolitica}
+          />
+          <Button size="md" onClick={pagar} disabled={abriendo} fullWidth>
+            {abriendo ? 'Abriendo…' : 'Pagar anticipo con Mercado Pago'}
+          </Button>
+        </>
+      )}
+      {pendiente && !detalle && (
+        <Button size="md" asChild>
+          <Link href={rutaDetalle} className="inline-flex items-center justify-center">
+            Pagar anticipo
+          </Link>
         </Button>
       )}
       {error && <p role="alert" className="text-xs font-medium text-[var(--danger-texto)]">{error}</p>}

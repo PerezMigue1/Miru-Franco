@@ -64,3 +64,49 @@ describe('Register paso 2: etiquetas y grupos accesibles', () => {
     },
   );
 });
+
+describe('Register: casillas legales y minimización (puntos 23 y 26)', () => {
+  const fuente = () => readFileSync(join(__dirname, 'Register.tsx'), 'utf8');
+
+  it('el paso 2 tiene tres casillas separadas (Términos, Aviso y promociones), ninguna premarcada', () => {
+    const html = paso2();
+    const casillas = html.match(/<input[^>]*type="checkbox"[^>]*>/g) ?? [];
+    expect(casillas).toHaveLength(3);
+    for (const casilla of casillas) expect(casilla).not.toMatch(/\bchecked\b/);
+    for (const id of ['registro-terminos', 'registro-aviso', 'registro-promociones']) {
+      expect(html).toContain(`for="${id}"`);
+    }
+    expect(html).toContain('href="/terminos-y-condiciones"');
+    expect(html).toContain('href="/aviso-de-privacidad"');
+  });
+
+  it('ya no da por aceptados los Términos con una leyenda: ahora es una casilla', () => {
+    expect(paso2()).not.toContain('Al crear tu cuenta aceptas los');
+  });
+
+  it('una casilla obligatoria sin marcar bloquea el envío con su mensaje', () => {
+    const texto = fuente();
+    expect(texto).toMatch(/name="aceptaTerminos"[\s\S]{0,200}errorCasillaAlta\('aceptaTerminos'/);
+    expect(texto).toMatch(/name="aceptaAvisoPrivacidad"[\s\S]{0,200}errorCasillaAlta\('aceptaAvisoPrivacidad'/);
+  });
+
+  it('el payload sale de construirPayloadRegistro (casillas, documentos y ruta de origen)', () => {
+    expect(fuente()).toContain('construirPayloadRegistro(');
+  });
+
+  it('fecha de nacimiento y perfil capilar son opcionales; el teléfono sigue obligatorio', () => {
+    const texto = fuente();
+    expect(texto).not.toContain('La fecha de nacimiento es requerida');
+    expect(texto).not.toContain('Selecciona tu tipo de cabello');
+    expect(texto).not.toContain('Debes indicar si tienes alergias a productos');
+    expect(texto).not.toContain('Debes indicar si has tenido tratamientos químicos previos');
+    expect(texto).toContain("required: 'El teléfono es requerido'");
+    const html = renderToStaticMarkup(createElement(Register));
+    expect(html).toContain('Fecha de nacimiento (opcional)');
+  });
+
+  it('la casilla de datos de salud solo aparece cuando se capturan alergias', () => {
+    expect(paso2()).not.toContain('Autorizo el uso de mis datos de salud');
+    expect(fuente()).toMatch(/hasAllergiesValue === 'yes' && \(\s*<Controller\s+name="consienteDatosSensibles"/);
+  });
+});

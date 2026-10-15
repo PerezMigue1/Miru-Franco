@@ -103,7 +103,7 @@ export default function CobroSinCitaPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-              Cobro sin Cita
+              Cobro sin cita
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
               Cobra servicios de clientes que llegan sin cita previa (venta en mostrador)

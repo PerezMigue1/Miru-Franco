@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   MONITOREO_INTERVALO_MS,
+  OPCIONES_TRUNCATE_INICIALES,
   PESTANAS_MONITOREO,
+  PLACEHOLDER_CONFIRMACION,
   modoImportacion,
   opcionesTablaTruncate,
   textoIntervaloMonitoreo,
@@ -54,6 +56,17 @@ describe('Truncate: la primera tabla se puede elegir', () => {
 
   it('sin tablas pide cargarlas', () => {
     expect(opcionesTablaTruncate([])).toEqual([{ value: '', label: 'Carga las tablas de la BD' }]);
+  });
+});
+
+describe('Truncate: opciones y confirmación sin nada prellenado', () => {
+  it('RESTART IDENTITY y CASCADE empiezan sin marcar', () => {
+    expect(OPCIONES_TRUNCATE_INICIALES).toEqual({ restartIdentity: false, cascade: false });
+  });
+
+  it('el placeholder de la confirmación no es el texto a escribir (no parece ya lleno)', () => {
+    expect(PLACEHOLDER_CONFIRMACION).toBe('Escribe la confirmación');
+    expect(PLACEHOLDER_CONFIRMACION).not.toMatch(/TRUNCATE|IMPORTAR/);
   });
 });
 

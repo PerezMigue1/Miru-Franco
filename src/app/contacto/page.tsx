@@ -84,10 +84,11 @@ export default function ContactoPage() {
                         <Phone className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
+                        {/* Sin mb-1: el enlace mide 44px y su texto centrado ya deja aire bajo la etiqueta */}
+                        <p className="font-semibold text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</p>
                         <a
                           href={TELEFONO_SALON.enlace}
-                          className="text-sm hover:opacity-80 transition-opacity"
+                          className="inline-flex min-h-11 items-center text-sm hover:opacity-80 transition-opacity"
                           style={{ color: 'var(--menu-texto-principal)' }}
                         >
                           {TELEFONO_SALON.visible}
@@ -104,10 +105,10 @@ export default function ContactoPage() {
                       <Mail className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Correo</p>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Correo</p>
                       <a
                         href="mailto:contacto@mirufranco.com"
-                        className="text-sm hover:opacity-80 transition-opacity"
+                        className="inline-flex min-h-11 items-center text-sm hover:opacity-80 transition-opacity"
                         style={{ color: 'var(--menu-texto-principal)' }}
                       >
                         contacto@mirufranco.com
@@ -143,14 +144,14 @@ export default function ContactoPage() {
                         <IconInstagram className="w-5 h-5" style={{ color: 'var(--logo-branding)' }} />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm mb-2" style={{ color: 'var(--encabezados-alterno)' }}>Redes Sociales</p>
+                        <p className="font-semibold text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Redes Sociales</p>
                         <div className="flex gap-4">
                           {igUrl && (
                             <a
                               href={igUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
+                              className="flex min-h-11 items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
                               style={{ color: 'var(--menu-texto-principal)' }}
                             >
                               <IconInstagram className="w-4 h-4" />
@@ -162,7 +163,7 @@ export default function ContactoPage() {
                               href={fbUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
+                              className="flex min-h-11 items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
                               style={{ color: 'var(--menu-texto-principal)' }}
                             >
                               <IconFacebook className="w-4 h-4" />
@@ -186,7 +187,7 @@ export default function ContactoPage() {
                     Agenda en Línea
                   </h2>
                   <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Elige el servicio, la fecha y la hora que prefieras. Confirmación instantánea.
+                    Elige el servicio, la fecha y la hora que prefieras. Si el servicio pide anticipo, tu cita se confirma al pagarlo.
                   </p>
                   <a
                     href="/cliente/servicios-citas"

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Card from '../ui/Card';
+import Input from '../ui/Input';
 import { listarHorasExtra, type ListadoHorasExtraApi } from '../../services/horasExtra';
 import { mesActualEnMexico } from '../../utils/fechaSoloDia';
 
@@ -39,15 +40,15 @@ export default function PanelHorasExtra() {
     <Card variant="elevated" padding="lg">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-          Horas Extras del Mes
+          Horas extra del mes
         </h2>
-        <input
+        {/* Campo del sistema: 44 px de alto, borde de 3:1 y foco visible (el input suelto medía 34 px). */}
+        <Input
           type="month"
           aria-label="Mes de las horas extra"
           value={mesHorasExtra}
           onChange={(e) => setMesHorasExtra(e.target.value)}
-          className="text-sm rounded-lg px-2 py-1.5 border"
-          style={{ borderColor: 'var(--borde-visible)', color: 'var(--menu-texto-principal)', backgroundColor: 'var(--fondo-general)' }}
+          className="text-sm"
         />
       </div>
 
@@ -62,24 +63,24 @@ export default function PanelHorasExtra() {
           <div className="space-y-3 mb-4">
             {horasExtraData.data.map((r) => (
               <div key={r.usuarioId} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                <div className="flex justify-between items-center">
-                  <div>
+                <div className="flex justify-between items-center gap-3">
+                  <div className="min-w-0">
                     <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{r.nombre}</p>
                     <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{r.horasExtra} extra</p>
                   </div>
-                  <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <p className="font-semibold text-right shrink-0 mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>
                     {r.tarifaConfigurada ? fmtMoneda(r.montoTotal) : 'Tarifa no configurada'}
                   </p>
                 </div>
 
                 {r.registrosCerradosAutomaticos > 0 && (
                   <p className="text-xs mt-2" style={{ color: 'var(--warning-texto)' }}>
-                    {r.registrosCerradosAutomaticos} registro{r.registrosCerradosAutomaticos === 1 ? '' : 's'} cerrado{r.registrosCerradosAutomaticos === 1 ? '' : 's'} automáticamente no se contó{r.registrosCerradosAutomaticos === 1 ? '' : 'aron'} — revísalo{r.registrosCerradosAutomaticos === 1 ? '' : 's'} y corrige la salida en la tabla de Asistencia si trabajó extra ese día.
+                    {r.registrosCerradosAutomaticos} registro{r.registrosCerradosAutomaticos === 1 ? '' : 's'} cerrado{r.registrosCerradosAutomaticos === 1 ? '' : 's'} automáticamente no se contó{r.registrosCerradosAutomaticos === 1 ? '' : 'aron'}: revísalo{r.registrosCerradosAutomaticos === 1 ? '' : 's'} y corrige la salida en la tabla de Asistencia si trabajó extra ese día.
                   </p>
                 )}
                 {r.registrosSinHorarioEsperado > 0 && (
                   <p className="text-xs mt-1" style={{ color: 'var(--warning-texto)' }}>
-                    {r.registrosSinHorarioEsperado} marca{r.registrosSinHorarioEsperado === 1 ? '' : 's'} en domingo sin horario configurado — define el horario de domingo en la configuración si el salón abrió, o verifica por qué se marcó ese día.
+                    {r.registrosSinHorarioEsperado} marca{r.registrosSinHorarioEsperado === 1 ? '' : 's'} en domingo sin horario configurado: define el horario de domingo en la configuración si el salón abrió, o verifica por qué se marcó ese día.
                   </p>
                 )}
               </div>

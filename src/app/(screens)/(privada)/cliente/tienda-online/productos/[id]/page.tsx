@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import DetalleProductoClient from './DetalleProductoClient';
 import { getProductoPorId, urlsGaleriaProductoCatalogo } from '../../../../../../services/productos';
 import { metadataPublica, recortarDescripcion } from '../../../../../../utils/seo';
+import { esImagenGenerada } from '../../../../../../utils/galeria';
 
 export async function generateMetadata({
   params,
@@ -19,7 +20,8 @@ export async function generateMetadata({
     });
   }
   const titulo = producto.marca ? `${producto.nombre} — ${producto.marca}` : producto.nombre;
-  const imagen = urlsGaleriaProductoCatalogo(producto)[0];
+  // Nunca una imagen generada con IA en la vista previa al compartir: la primera foto real o la del salón.
+  const imagen = urlsGaleriaProductoCatalogo(producto).find((u) => !esImagenGenerada(u));
   return metadataPublica({
     title: titulo,
     description:

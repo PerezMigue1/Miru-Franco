@@ -295,12 +295,12 @@ export default function NuevoProductoAdminPage() {
               )}
             </div>
             <div className="flex items-end gap-2">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex min-h-11 min-w-11 items-center gap-2 cursor-pointer px-1">
                 <input
                   type="checkbox"
                   checked={disponible}
                   onChange={(e) => setDisponible(e.target.checked)}
-                  className="rounded"
+                  className="h-5 w-5 rounded"
                 />
                 <span style={{ color: 'var(--menu-texto-principal)' }}>Disponible en tienda</span>
               </label>
@@ -345,12 +345,12 @@ export default function NuevoProductoAdminPage() {
               fullWidth
             />
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={nuevo} onChange={(e) => setNuevo(e.target.checked)} className="rounded" />
+              <label className="flex min-h-11 min-w-11 items-center gap-2 cursor-pointer px-1">
+                <input type="checkbox" checked={nuevo} onChange={(e) => setNuevo(e.target.checked)} className="h-5 w-5 rounded" />
                 <span style={{ color: 'var(--menu-texto-principal)' }}>Marcar como nuevo</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={crueltyFree} onChange={(e) => setCrueltyFree(e.target.checked)} className="rounded" />
+              <label className="flex min-h-11 min-w-11 items-center gap-2 cursor-pointer px-1">
+                <input type="checkbox" checked={crueltyFree} onChange={(e) => setCrueltyFree(e.target.checked)} className="h-5 w-5 rounded" />
                 <span style={{ color: 'var(--menu-texto-principal)' }}>Cruelty Free</span>
               </label>
             </div>

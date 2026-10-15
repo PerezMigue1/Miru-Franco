@@ -4,7 +4,7 @@ import { useId, type InputHTMLAttributes, type Ref } from 'react';
 import type { QuienCaptura } from '../../utils/consentimientoDatosSensibles';
 
 interface CasillaDatosSaludProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
-  /** 'clienta': la clienta autoriza (con enlace al Aviso). 'personal': el personal confirma que la clienta autorizó. */
+  /** 'clienta': la titular autoriza (con enlace al Aviso). 'personal': el personal confirma que la persona aceptó. */
   quien?: QuienCaptura;
   error?: string | null;
   ref?: Ref<HTMLInputElement>;
@@ -30,7 +30,7 @@ export default function CasillaDatosSalud({ quien = 'clienta', error, className 
           {...input}
         />
         {quien === 'personal' ? (
-          <span>La clienta autorizó el uso de sus datos de salud</span>
+          <span>La persona aceptó que registremos sus datos de salud para cuidar sus servicios</span>
         ) : (
           <span>
             Autorizo el uso de mis datos de salud (alergias y sensibilidad) solo para valorar si un tratamiento es seguro

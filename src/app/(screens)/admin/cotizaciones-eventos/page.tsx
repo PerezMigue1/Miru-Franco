@@ -5,7 +5,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
-import Table, { TableRow, TableCell } from '../../../components/ui/Table';
+import Table, { TablaVacia, TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -238,9 +238,14 @@ export default function CotizacionesEventosPage() {
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando cotizaciones…</p>
         ) : cotizaciones.length === 0 ? (
-          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>No hay cotizaciones registradas.</p>
+          <TablaVacia
+            icono={FileText}
+            titulo="Todavía no hay cotizaciones"
+            descripcion="Arma la primera con un paquete especial y la fecha del evento."
+            accion={<Button variant="outline" onClick={openNueva}>Nueva cotización</Button>}
+          />
         ) : (
-        <Table headers={['Cliente', 'Paquete', 'Fecha', 'Monto Total', 'Anticipo', 'Estado', 'Acciones']} headerSutil>
+        <Table headers={['Cliente', 'Paquete', 'Fecha', 'Monto Total', 'Anticipo', 'Estado', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Cotizaciones: desplaza para ver más columnas">
           {cotizaciones.map((cotizacion) => (
             <TableRow key={cotizacion.id}>
               <TableCell rowPadding="lg">{cotizacion.clienteNombre}</TableCell>
@@ -262,7 +267,7 @@ export default function CotizacionesEventosPage() {
                     </Button>
                   )}
                   {cotizacion.estado !== 'cancelada' && (
-                    <Button size="sm" variant="danger" onClick={() => handleCambiarEstado(cotizacion, 'cancelada')} disabled={cambiandoEstadoId !== null}>
+                    <Button size="sm" variant="outline-danger" onClick={() => handleCambiarEstado(cotizacion, 'cancelada')} disabled={cambiandoEstadoId !== null}>
                       Cancelar
                     </Button>
                   )}

@@ -10,8 +10,14 @@ import Card from '../../../../../../components/ui/Card';
 import Textarea from '../../../../../../components/ui/Textarea';
 import { obtenerCita, cancelarCita, type CitaApi } from '../../../../../../services/citas';
 import { estadoAnticipo } from '../../../../../../utils/anticipoCita';
-import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
 import { showToast } from '../../../../../../utils/toast';
+import {
+  consultarPoliticaCancelacionAnticipo,
+  puedeConfirmarCancelacion,
+  textoAnticipoAlCancelar,
+  toastCitaCancelada,
+  type PoliticaCancelacionAnticipo,
+} from './avisoAnticipo';
 import {
   MENSAJE_CITA_NO_CANCELABLE,
   citaGestionablePorClienta,
@@ -34,6 +40,9 @@ export default function CancelarCitaPage() {
   const [cita, setCita] = useState<CitaApi | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Qué pasa con el anticipo pagado si cancela (regla del backend); null mientras carga o si no responde.
+  const [politicaAnticipo, setPoliticaAnticipo] = useState<PoliticaCancelacionAnticipo | null>(null);
+  const [cargandoPolitica, setCargandoPolitica] = useState(false);
 
   useEffect(() => {
     if (!id || !Number.isFinite(Number(id))) {
@@ -50,6 +59,13 @@ export default function CancelarCitaPage() {
           return;
         }
         setCita(c);
+        if (estadoAnticipo(c) === 'pagado') {
+          // Hasta que responda, "Sí, Cancelar Cita" queda desactivado (puedeConfirmarCancelacion).
+          setCargandoPolitica(true);
+          void consultarPoliticaCancelacionAnticipo(c.id)
+            .then(setPoliticaAnticipo)
+            .finally(() => setCargandoPolitica(false));
+        }
       })
       .catch(() => setError('No se pudo cargar la cita.'))
       .finally(() => setCargando(false));
@@ -74,7 +90,8 @@ export default function CancelarCitaPage() {
     try {
       const motivoCancelacion = [motivo, comentarios].filter(Boolean).join(' — ') || 'Sin motivo especificado';
       await cancelarCita(Number(id), { motivoCancelacion }, { propios: true });
-      showToast('Tu cita quedó cancelada.', 'success');
+      const avisoCancelada = toastCitaCancelada(cita && estadoAnticipo(cita) === 'pagado' ? politicaAnticipo : null);
+      showToast(avisoCancelada, 'success');
       router.push('/cliente/servicios-citas/mis-citas');
     } catch (err) {
       setErrorCancelar(mensajeErrorCancelarCita(err));
@@ -122,9 +139,9 @@ export default function CancelarCitaPage() {
     minute: '2-digit',
     timeZone: TZ_MEXICO,
   });
-  // Si la clienta cancela con el anticipo pagado, el salón lo retiene (términos, sección 6).
+  // Anticipo pagado: se devuelve o no según la política de anticipos (art. 56), que calcula el backend.
   const anticipoPagado = estadoAnticipo(cita) === 'pagado';
-  const avisoAnticipo = `El anticipo de ${formatearPrecioMXN(cita.anticipoRequerido ?? 0)} que pagaste no se devuelve si cancelas.`;
+  const avisoAnticipo = textoAnticipoAlCancelar(cita.anticipoRequerido ?? 0, politicaAnticipo);
 
   if (mostrarConfirmacion) {
     return (
@@ -197,9 +214,9 @@ export default function CancelarCitaPage() {
                 variant="danger"
                 fullWidth
                 onClick={confirmarCancelacion}
-                disabled={cancelando}
+                disabled={!puedeConfirmarCancelacion({ anticipoPagado, politicaCargando: cargandoPolitica, cancelando })}
               >
-                {cancelando ? 'Cancelando...' : 'Sí, Cancelar Cita'}
+                {cancelando ? 'Cancelando...' : anticipoPagado && cargandoPolitica ? 'Revisando tu anticipo…' : 'Sí, Cancelar Cita'}
               </Button>
             </div>
           </Card>
@@ -281,8 +298,7 @@ export default function CancelarCitaPage() {
                 <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   {anticipoPagado ? (
                     <>
-                      <strong>Importante:</strong> {avisoAnticipo} Si reprogramas tu cita con aviso, tu anticipo se
-                      respeta para la nueva fecha.
+                      <strong>Importante:</strong> {avisoAnticipo}
                     </>
                   ) : (
                     <>

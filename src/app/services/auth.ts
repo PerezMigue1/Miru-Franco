@@ -3,6 +3,7 @@ import { getBackendBaseUrl } from './config';
 import { markSessionStart } from '../utils/security';
 import { normalizarUsuarioAlmacenado } from '../utils/normalizarUsuarioAlmacenado';
 import { emitMiruUserStorageUpdated } from '../utils/userStorageSync';
+import type { SlugDocumentoLegal } from '../utils/documentosLegales';
 import {
   mergePerfilEnLocalStorage,
   normalizarPerfilUsuario,
@@ -40,6 +41,42 @@ export interface RegisterResponse {
   message?: string;
   requiereVerificacion?: boolean;
   metodo?: 'email' | 'sms';
+}
+
+/**
+ * Cuerpo de POST /api/usuarios/registro (CreateUsuarioDto). Minimización: fecha de nacimiento y perfil
+ * capilar son opcionales; el teléfono sigue obligatorio (recuperación por SMS). Términos y Aviso deben ir en
+ * true; `documentos` dice qué versión de cada uno aceptó y `rutaOrigen` dónde marcó las casillas.
+ */
+export interface DatosRegistro {
+  nombre: string;
+  email: string;
+  password: string;
+  telefono: string;
+  fechaNacimiento?: string;
+  metodoVerificacion?: 'email' | 'sms';
+  preguntaSeguridad: {
+    pregunta: string;
+    respuesta: string;
+  };
+  // Sin dirección embebida: se usan registros DireccionUsuario después del alta.
+  perfilCapilar?: {
+    tipoCabello?: string;
+    colorNatural?: string;
+    colorActual?: string;
+    productosUsados?: string;
+    tieneAlergias?: boolean;
+    alergias?: string;
+    tratamientosQuimicos?: boolean;
+    tratamientos?: string;
+  };
+  aceptaTerminos: boolean;
+  aceptaAvisoPrivacidad: boolean;
+  recibePromociones?: boolean;
+  documentos?: { slug: SlugDocumentoLegal; version: string; hash: string }[];
+  rutaOrigen?: string;
+  /** Obligatorio si perfilCapilar.alergias trae texto. No se guarda. */
+  consienteDatosSensibles?: boolean;
 }
 
 export interface ForgotPasswordResponse {
@@ -119,6 +156,20 @@ export async function getMiPerfil(): Promise<PerfilUsuarioCompleto> {
   const obj = unwrapUsuarioPayload(res);
   if (!obj) throw new Error('No se pudo leer el perfil');
   return normalizarPerfilUsuario(obj);
+}
+
+/**
+ * Si la cuenta entra con contraseña (GET /api/auth/me manda `tienePassword`; el hash nunca sale): true o false,
+ * o null si no se pudo saber. Lo usan las pantallas que piden la contraseña actual (cambio de correo).
+ */
+export async function cuentaTienePassword(): Promise<boolean | null> {
+  try {
+    const obj = unwrapUsuarioPayload(await apiClient.get<unknown>('/api/auth/me', getBackendBaseUrl()));
+    const valor = obj?.tienePassword;
+    return typeof valor === 'boolean' ? valor : null;
+  } catch {
+    return null;
+  }
 }
 
 // Helper para guardar datos de sesión. El JWT llega como cookie httpOnly (el backend no lo
@@ -215,33 +266,7 @@ export const api = {
     }
   },
 
-  async register(registerData: {
-    nombre: string;
-    email: string;
-    password: string;
-    telefono: string;
-    fechaNacimiento: string;
-    metodoVerificacion?: 'email' | 'sms'; // ✅ NUEVO: Método de verificación
-    preguntaSeguridad: {
-      pregunta: string;
-      respuesta: string;
-    };
-    // Sin dirección embebida: se usan registros DireccionUsuario después del alta.
-    perfilCapilar: {
-      tipoCabello: string;
-      colorNatural?: string;
-      colorActual?: string;
-      productosUsados?: string;
-      tieneAlergias: boolean;
-      alergias?: string;
-      tratamientosQuimicos: boolean;
-      tratamientos?: string;
-    };
-    aceptaAvisoPrivacidad: boolean;
-    recibePromociones: boolean;
-    /** Obligatorio si perfilCapilar.alergias trae texto. No se guarda. */
-    consienteDatosSensibles?: boolean;
-  }): Promise<RegisterResponse> {
+  async register(registerData: DatosRegistro): Promise<RegisterResponse> {
     const BACKEND_BASE = getBackendBaseUrl(); // Calculado en runtime
     const data = await apiClient.post<RegisterResponse>('/api/usuarios/registro', registerData, BACKEND_BASE);
     // No guardar datos de autenticación si requiere verificación

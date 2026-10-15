@@ -257,9 +257,12 @@ export default function Header() {
               </button>
 
               {/* Monograma al lado del nombre también en móvil (apilado ocupaba casi un tercio de
-                  la pantalla). Bajo 384px no cabe junto a los iconos: queda el logotipo solo. */}
+                  la pantalla). Bajo 384px no cabe junto a los iconos: queda el logotipo solo. Con
+                  sesión (campana y cuenta de más) el límite sube a 440px: a 375 cortaba "Mirú Fra…". */}
               <div className="flex flex-row items-center gap-1.5 sm:gap-3 min-w-0 overflow-hidden">
-                <div className="relative shrink-0 hidden min-[384px]:block w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16">
+                <div
+                  className={`relative shrink-0 hidden ${isLoggedIn ? 'min-[440px]:block' : 'min-[384px]:block'} w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16`}
+                >
                   <Image
                     src="/logo-miru.jpg"
                     alt="Mirú Franco Logo"
@@ -282,7 +285,10 @@ export default function Header() {
 
             {/* Derecha: Tema + Carrito + Notificaciones + Usuario */}
             <div className="flex items-center gap-1 sm:gap-3 md:gap-4 ml-auto shrink-0">
-              <ThemeToggle />
+              {/* Con sesión, por debajo de 440px el tema pasa al menú lateral para que quepa el logotipo */}
+              <div className={`shrink-0 ${isLoggedIn ? 'hidden min-[440px]:flex' : 'flex'}`}>
+                <ThemeToggle />
+              </div>
               {/* Carrito */}
               <Link
                 href="/cliente/tienda-online/carrito"
@@ -327,9 +333,14 @@ export default function Header() {
               {/* Usuario: Iniciar sesión si no está logueado, menú con perfil y cerrar sesión si sí */}
               {isLoggedIn ? (
                 <div className="relative" ref={userMenuRef}>
+                  {/* El nombre visible (desde md) va dentro del nombre accesible, para quien navega por voz */}
                   <button
+                    type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
+                    aria-label={`Menú de tu cuenta (${userName})`}
+                    aria-expanded={isUserMenuOpen}
+                    aria-controls={isUserMenuOpen ? 'menu-cuenta' : undefined}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 hover:opacity-80 transition-opacity text-texto-fondo-oscuro"
                   >
                     {userAvatarUrl ? (
                       <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-blanco/25">
@@ -352,13 +363,15 @@ export default function Header() {
                         />
                       </svg>
                     )}
-                    <span className="hidden sm:block text-base font-medium max-w-[120px] truncate">{userName}</span>
+                    {/* Desde md: entre 640 y 767px el nombre volvía a cortar el logotipo */}
+                    <span className="hidden md:block text-base font-medium max-w-[120px] truncate">{userName}</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                   {isUserMenuOpen && (
                     <div
+                      id="menu-cuenta"
                       className="absolute right-0 mt-2 z-50 rounded-lg shadow-xl border min-w-[240px] overflow-hidden"
                       style={{ borderColor: 'var(--borde-visible)', backgroundColor: 'var(--tarjetas-paneles)' }}
                     >
@@ -398,7 +411,7 @@ export default function Header() {
                                 setIsUserMenuOpen(false);
                                 router.push('/perfil');
                               }}
-                              className="text-sm font-medium hover:underline flex items-center gap-1"
+                              className="min-h-11 text-sm font-medium hover:underline flex items-center gap-1"
                               style={{ color: 'var(--texto-enlace-sobre-calido)' }}
                             >
                               Mi perfil
@@ -420,7 +433,7 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online/mis-pedidos');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
+                          className="w-full min-h-11 text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
                           style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Mis pedidos
@@ -430,7 +443,7 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/servicios-citas/mis-citas');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
+                          className="w-full min-h-11 text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
                           style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Mis citas
@@ -440,7 +453,7 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
+                          className="w-full min-h-11 text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors"
                           style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Sigue comprando
@@ -450,7 +463,7 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             router.push('/cliente/tienda-online/carrito');
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors flex items-center justify-between"
+                          className="w-full min-h-11 text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors flex items-center justify-between"
                           style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           Carrito
@@ -473,7 +486,7 @@ export default function Header() {
                                 setIsUserMenuOpen(false);
                                 router.push(panel.href);
                               }}
-                              className="w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-[var(--hover)]/10 transition-colors"
+                              className="w-full min-h-11 text-left px-4 py-2.5 text-sm font-semibold hover:bg-[var(--hover)]/10 transition-colors"
                               style={{ color: 'var(--texto-cuerpo)' }}
                             >
                               {panel.etiqueta}
@@ -486,7 +499,7 @@ export default function Header() {
                         <button
                           onClick={handleLogout}
                           disabled={loading}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors disabled:opacity-50"
+                          className="w-full min-h-11 text-left px-4 py-2.5 text-sm hover:bg-[var(--hover)]/10 transition-colors disabled:opacity-50"
                           style={{ color: 'var(--texto-cuerpo)' }}
                         >
                           {loading ? 'Cerrando...' : 'Cerrar sesión'}
@@ -539,6 +552,13 @@ export default function Header() {
             className="mf-menu-movil fixed left-0 top-0 h-full w-80 max-w-[85vw] z-50 shadow-2xl overflow-y-auto scrollbar-hide outline-none"
             style={{ backgroundColor: 'var(--header-footer)' }}
           >
+            {/* Selector de tema que no cabe en la barra con sesión por debajo de 440px: en la fila de
+                "Menú", a la izquierda de "Cerrar menú" (misma altura y 4px de separación). */}
+            {isLoggedIn && (
+              <div className="absolute top-6 right-[4.5rem] min-[440px]:hidden">
+                <ThemeToggle />
+              </div>
+            )}
             <MenuHamburguesa onClose={() => setIsMenuOpen(false)} />
           </div>
           <div

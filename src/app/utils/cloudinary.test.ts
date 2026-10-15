@@ -104,6 +104,21 @@ describe('subirImagenesCloudinary (lotes)', () => {
     expect(await subirImagenesCloudinary([])).toEqual([]);
     expect(post).not.toHaveBeenCalled();
   });
+
+  it('un lote de imágenes ilustrativas pide la firma con ilustrativa: true (carpeta galeria/ilustrativas)', async () => {
+    post.mockResolvedValue(firma({ ...PARAMS_GALERIA, folder: 'galeria/ilustrativas' }));
+    await subirImagenesCloudinary([imagen('a.jpg'), imagen('b.jpg')], 'ilustrativa');
+
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria', ilustrativa: true }, 'https://api.ejemplo.test');
+    expect(enviado(0).datos.get('folder')).toBe('galeria/ilustrativas');
+  });
+
+  it('un lote de fotos reales del salón pide la firma de galería sin la bandera', async () => {
+    post.mockResolvedValue(firma(PARAMS_GALERIA));
+    await subirImagenesCloudinary([imagen('a.jpg')], 'real');
+    expect(post).toHaveBeenCalledWith('/api/subidas/firma', { uso: 'galeria' }, 'https://api.ejemplo.test');
+  });
 });
 
 describe('foto de perfil propia y foto de otra persona', () => {

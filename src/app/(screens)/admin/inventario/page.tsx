@@ -25,13 +25,14 @@ import {
   Percent,
   Settings2,
 } from 'lucide-react';
-import { getCategoryColor, getEstadoColor } from '../../../utils/categoryColors';
+import { getCategoryColor } from '../../../utils/categoryColors';
 import {
   getProductosSinRedirigir,
   aplicarDescuentoGlobal,
   type Producto,
 } from '../../../services/productos';
 import { leerCantidadEntera } from './cantidadEntera';
+import { filtrarProductosInventario, insigniaEstadoProducto, productosActivos } from './filtroInventario';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../utils/catalogStockSync';
 import { registrarEntrada, registrarSalida, registrarAjuste } from '../../../services/inventarioMovimientos';
 import { diasHastaFechaSoloDia, formatearFechaSoloDia } from '../../../utils/fechaSoloDia';
@@ -67,8 +68,9 @@ export default function InventarioPage() {
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('all');
-  // Desmarcado = solo disponibles (como hoy); marcado = SOLO no disponibles. Mismo patrón que Servicios.
-  const [mostrarSoloInactivos, setMostrarSoloInactivos] = useState(false);
+  // "Mostrar inactivos": desmarcado = solo productos activos (disponibles o no); marcado = también
+  // los desactivados (borrado lógico). `productos` ya trae ambos; aquí se filtra para el listado.
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [pagina, setPagina] = useState(1);
   const PRODUCTOS_POR_PAGINA = 30;
   const [marcaDescuento, setMarcaDescuento] = useState('');
@@ -91,7 +93,7 @@ export default function InventarioPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getProductosSinRedirigir({ incluirNoDisponibles: true })
+    getProductosSinRedirigir({ incluirNoDisponibles: true, incluirInactivos: true })
       .then((result) => {
         if (cancelled) return;
         setProductos(result.data);
@@ -111,7 +113,7 @@ export default function InventarioPage() {
       const my = ++seq;
       setLoading(true);
       setError(null);
-      getProductosSinRedirigir({ incluirNoDisponibles: true })
+      getProductosSinRedirigir({ incluirNoDisponibles: true, incluirInactivos: true })
         .then((result) => {
           if (my !== seq) return;
           setProductos(result.data);
@@ -148,7 +150,7 @@ export default function InventarioPage() {
 
   const presentacionesOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [];
-    for (const p of productos) {
+    for (const p of productosActivos(productos)) {
       for (const pr of p.presentaciones ?? []) {
         if (pr.id != null) {
           opts.push({ value: String(pr.id), label: `${p.nombre} - ${pr.tamaño}` });
@@ -168,8 +170,9 @@ export default function InventarioPage() {
     return null;
   }, [productos, movPresentacionId]);
 
+  // El descuento global solo se aplica a productos activos (el backend no le lista los desactivados).
   const productosAfectadosDescuento = useMemo(() => {
-    return productos.filter((p) => {
+    return productosActivos(productos).filter((p) => {
       const cumpleMarca =
         !marcaDescuento.trim() ||
         (p.marca && p.marca.trim().toLowerCase() === marcaDescuento.trim().toLowerCase());
@@ -208,7 +211,7 @@ export default function InventarioPage() {
           mensaje: res.mensaje ?? `Descuento aplicado a ${res.actualizados} producto(s).`,
         });
         setPorcentajeDescuento('');
-        const result = await getProductosSinRedirigir({ incluirNoDisponibles: true });
+        const result = await getProductosSinRedirigir({ incluirNoDisponibles: true, incluirInactivos: true });
         setProductos(result.data);
       } else {
         setResultadoDescuento({ ok: false, mensaje: res.error });
@@ -232,7 +235,7 @@ export default function InventarioPage() {
   };
 
   const recargarProductos = async () => {
-    const result = await getProductosSinRedirigir({ incluirNoDisponibles: true });
+    const result = await getProductosSinRedirigir({ incluirNoDisponibles: true, incluirInactivos: true });
     setProductos(result.data);
   };
 
@@ -290,19 +293,16 @@ export default function InventarioPage() {
     }
   };
 
-  const productosFiltrados = productos.filter((p) => {
-    const texto = `${p.nombre} ${p.categoria ?? ''} ${p.marca ?? ''}`.toLowerCase();
-    const q = busqueda.toLowerCase();
-    const coincideBusqueda = !q || texto.includes(q);
-    const coincideCategoria = categoriaFiltro === 'all' || p.categoria === categoriaFiltro;
-    const coincideDisponibilidad = mostrarSoloInactivos ? !p.disponible : p.disponible;
-    return coincideBusqueda && coincideCategoria && coincideDisponibilidad;
+  const productosFiltrados = filtrarProductosInventario(productos, {
+    busqueda,
+    categoria: categoriaFiltro,
+    mostrarInactivos,
   });
 
   // Reinicia a la página 1 cuando cambian los filtros o la búsqueda, para no quedar en una página vacía.
   useEffect(() => {
     setPagina(1);
-  }, [busqueda, categoriaFiltro, mostrarSoloInactivos]);
+  }, [busqueda, categoriaFiltro, mostrarInactivos]);
 
   const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / PRODUCTOS_POR_PAGINA));
   const paginaActual = Math.min(pagina, totalPaginas);
@@ -311,10 +311,12 @@ export default function InventarioPage() {
     paginaActual * PRODUCTOS_POR_PAGINA
   );
 
-  const totalProductos = productos.length;
-  const stockBajo = productos.filter((p) => { const t = p.stockCantidad ?? 0; return t > 0 && t <= 5; }).length;
-  const sinStock = productos.filter((p) => (p.stockCantidad ?? 0) === 0).length;
-  const valorTotal = productos.reduce(
+  // KPIs solo de productos activos: los desactivados ya no están en el catálogo.
+  const activos = productosActivos(productos);
+  const totalProductos = activos.length;
+  const stockBajo = activos.filter((p) => { const t = p.stockCantidad ?? 0; return t > 0 && t <= 5; }).length;
+  const sinStock = activos.filter((p) => (p.stockCantidad ?? 0) === 0).length;
+  const valorTotal = activos.reduce(
     (acc, p) =>
       acc +
       (p.presentaciones ?? []).reduce(
@@ -338,7 +340,8 @@ export default function InventarioPage() {
               {totalProductos} producto{totalProductos === 1 ? '' : 's'} en catálogo
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* En móvil apilados a todo lo ancho (antes cada botón medía distinto). */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button size="sm" variant="outline" onClick={() => router.push('/admin/control-caducidad')}>
               <span className="inline-flex items-center gap-1.5"><CalendarDays size={15} aria-hidden /> Control de caducidad</span>
             </Button>
@@ -422,14 +425,14 @@ export default function InventarioPage() {
                 label: cat === 'all' ? 'Todas las categorías' : cat,
               }))}
             />
-            <label className="flex items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
+            <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
               <input
                 type="checkbox"
-                checked={mostrarSoloInactivos}
-                onChange={(e) => setMostrarSoloInactivos(e.target.checked)}
-                className="rounded"
+                checked={mostrarInactivos}
+                onChange={(e) => setMostrarInactivos(e.target.checked)}
+                className="h-5 w-5 rounded"
               />
-              Mostrar solo inactivos
+              Mostrar inactivos
             </label>
           </div>
 
@@ -444,16 +447,22 @@ export default function InventarioPage() {
               {productosPagina.map((producto) => {
                 const cad = proximaCaducidad(producto);
                 const stock = typeof producto.stockCantidad === 'number' ? producto.stockCantidad : null;
+                const insignia = insigniaEstadoProducto(producto);
                 return (
-                  <CatalogoCard
+                  // Desactivado: tarjeta atenuada y foto en gris (el texto sigue en AA con 0.8).
+                  <div
                     key={producto.id}
+                    className={insignia.atenuada ? 'grid [&_img]:grayscale' : 'grid'}
+                    style={insignia.atenuada ? { opacity: 0.8 } : undefined}
+                  >
+                  <CatalogoCard
                     imagenUrl={imagenProductoMostrable(producto.imagenes?.[0] ?? producto.imagen)}
                     imagenFallback={IMG_SERVICIO_PLACEHOLDER}
                     placeholder={<ServicioImagenPlaceholder />}
                     titulo={producto.nombre}
                     estadoBadge={
-                      <Badge variant={getEstadoColor(!!producto.disponible)} size="sm">
-                        {producto.disponible ? 'Disponible' : 'No disponible'}
+                      <Badge variant={insignia.variante} size="sm">
+                        {insignia.texto}
                       </Badge>
                     }
                     acciones={
@@ -504,6 +513,7 @@ export default function InventarioPage() {
                       )}
                     </div>
                   </CatalogoCard>
+                  </div>
                 );
               })}
             </div>

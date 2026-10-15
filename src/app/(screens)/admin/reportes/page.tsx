@@ -187,7 +187,7 @@ export default function ReportesPage() {
               fullWidth
             />
             {tipoReporte !== 'inventario' && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Fecha Inicio" type="date" value={desde} onChange={(e) => setRango((r) => ({ ...r, desde: e.target.value }))} fullWidth />
                 <Input label="Fecha Fin" type="date" value={hasta} onChange={(e) => setRango((r) => ({ ...r, hasta: e.target.value }))} fullWidth />
               </div>
@@ -227,11 +227,12 @@ export default function ReportesPage() {
         </div>
 
         {!loading && tabla && tabla.filas.length > 0 && (
-          <Card variant="elevated" padding="lg">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+          // Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas.
+          <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
+            <h2 className="text-lg font-semibold px-4 pt-4 pb-3 sm:px-6 sm:pt-6" style={{ color: 'var(--menu-texto-principal)' }}>
               Detalle
             </h2>
-            <Table headers={tabla.columnas} headerSutil>
+            <Table headers={tabla.columnas} headerSutil stickyFirstColumn etiqueta="Detalle del reporte: desplaza para ver más columnas">
               {tabla.filas.map((fila, idx) => (
                 <TableRow key={idx}>
                   {fila.map((celda, ci) => (

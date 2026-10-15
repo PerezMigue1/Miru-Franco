@@ -58,6 +58,16 @@ describe('CSP del proxy (antes middleware)', () => {
     expect(sinNonce).toEqual([]);
   });
 
+  it('img-src ya no permite los hosts de imágenes retirados (igual que next.config.ts)', () => {
+    const csp = proxy(new NextRequest('https://www.mirufranco.com/home')).headers.get('Content-Security-Policy') ?? '';
+    const imgSrc = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('img-src ')) ?? '';
+    for (const host of ['images.unsplash.com', 'logos-world.net', 'via.placeholder.com']) {
+      expect(imgSrc, host).not.toContain(host);
+    }
+    expect(imgSrc).toContain('https://res.cloudinary.com');
+    expect(imgSrc).toContain('https://lh3.googleusercontent.com');
+  });
+
   it("ninguna página se prerenderiza con force-static (su HTML no podría llevar el nonce)", () => {
     const estaticas = archivosDeRuta(APP_DIR)
       .filter((f) => /export const dynamic = ['"]force-static['"]/.test(readFileSync(f, 'utf8')))

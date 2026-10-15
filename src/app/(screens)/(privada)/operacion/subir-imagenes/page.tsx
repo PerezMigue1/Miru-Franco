@@ -3,9 +3,11 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import OperacionLayout from '../../../../components/layouts/OperacionLayout';
-import { subirImagenesCloudinary } from '../../../../utils/cloudinary';
+import { subirImagenesCloudinary, type TipoImagenGaleria } from '../../../../utils/cloudinary';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
+import ElegirTipoImagen from '../../../../components/admin/ElegirTipoImagen';
+import { errorTipoImagen } from '../../../../components/admin/tipoImagenGaleria';
 import { showToast } from '../../../../utils/toast';
 import { copiarAlPortapapeles } from '../_lib/panelOperacion';
 
@@ -16,18 +18,29 @@ export default function SubirImagenesPage() {
   const [urls, setUrls] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<number | null>(null);
+  /** Obligatorio y sin preselección: estas URLs pueden llegar a la galería de servicios. */
+  const [tipo, setTipo] = useState<TipoImagenGaleria | null>(null);
+  const [errorTipo, setErrorTipo] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubir = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length) return;
+    const falta = errorTipoImagen(tipo);
+    if (falta || !tipo) {
+      setErrorTipo(falta);
+      e.target.value = '';
+      return;
+    }
     setError(null);
     setUrls([]);
     setSubiendo(true);
     try {
-      // Subida firmada a la carpeta galeria (sirve para productos y servicios).
-      const resultado = await subirImagenesCloudinary(files);
+      // Subida firmada: foto real a galeria; imagen ilustrativa a galeria/ilustrativas (queda en la URL).
+      const resultado = await subirImagenesCloudinary(files, tipo);
       setUrls(resultado);
+      // Cada lote se clasifica de nuevo: el siguiente no hereda "real" o "ilustrativa" sin elegirlo.
+      setTipo(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir');
     } finally {
@@ -51,7 +64,7 @@ export default function SubirImagenesPage() {
 
   return (
     <OperacionLayout>
-      <div className="max-w-2xl mx-auto py-4">
+      <div className="max-w-2xl py-4">
         <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
           Subir imágenes
         </h1>
@@ -59,7 +72,16 @@ export default function SubirImagenesPage() {
           Selecciona una o varias imágenes y obtendrás las URLs para usar en productos o servicios.
         </p>
 
-        <Card variant="elevated" padding="lg" className="mb-6">
+        <Card variant="elevated" padding="lg" className="mb-6 space-y-4">
+          <ElegirTipoImagen
+            valor={tipo}
+            onCambiar={(t) => {
+              setTipo(t);
+              setErrorTipo(null);
+            }}
+            disabled={subiendo}
+            error={errorTipo}
+          />
           <input
             ref={inputRef}
             type="file"
@@ -70,7 +92,7 @@ export default function SubirImagenesPage() {
           />
           <Button
             onClick={() => inputRef.current?.click()}
-            disabled={subiendo}
+            disabled={subiendo || !tipo}
           >
             {subiendo ? 'Subiendo...' : 'Elegir imágenes y subir'}
           </Button>

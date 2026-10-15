@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { CIUDAD_SALON, DIRECCION_SALON, HORARIO_SALON, TELEFONO_SALON } from '../utils/contactoSalon';
 import { anioEnMexico } from '../utils/fechaSoloDia';
+import { DOCUMENTOS_LEGALES } from '../utils/documentosLegales';
+import { cargarNombresServiciosFooter } from '../utils/serviciosDisponibles';
+import { PROFECO } from '../components/legal/Profeco';
 
 function IconInstagram({ className }: { className?: string }) {
   return (
@@ -35,20 +39,36 @@ const LINKS_RAPIDOS = [
   { label: 'Contacto', href: '/contacto' },
 ];
 
-const SERVICIOS = [
-  'Cortes y Estilo',
-  'Coloración Profesional',
-  'Tratamientos Capilares',
-  'Alaciado',
-  'Nanoplastía',
-  'Peinados de Evento',
-];
+/** Páginas legales del registro (anticipos vive dentro de la política de reembolsos, no lleva enlace propio). */
+const ENLACES_LEGALES = DOCUMENTOS_LEGALES.filter((d) => d.slug !== 'anticipos');
+
+const CLASE_ENLACE_BARRA =
+  'inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]';
+
+/**
+ * Enlace dentro de texto corrido (párrafo de Profeco): en línea y subrayado. Los enlaces dentro de una
+ * oración no necesitan los 44 px, y con inline-flex las líneas del párrafo quedaban con alturas irregulares.
+ */
+const CLASE_ENLACE_EN_TEXTO =
+  'underline underline-offset-2 transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]';
 
 export default function Footer() {
   const igUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
   const fbUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;
   const twUrl = process.env.NEXT_PUBLIC_TWITTER_URL;
   const hayRedes = Boolean(igUrl || fbUrl || twUrl);
+
+  // Servicios activos del catálogo real. Si el API falla, la columna queda sin lista: el pie nunca rompe la página.
+  const [servicios, setServicios] = useState<string[]>([]);
+  useEffect(() => {
+    let vigente = true;
+    void cargarNombresServiciosFooter().then((nombres) => {
+      if (vigente) setServicios(nombres);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   return (
     <footer className="mt-auto" style={{ backgroundColor: 'var(--header-footer)' }}>
@@ -127,18 +147,22 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Columna 3: Servicios */}
+          {/* Columna 3: Servicios (la columna se queda aunque no haya lista, así la cuadrícula no se mueve) */}
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
-              Servicios
-            </h2>
-            <ul className="space-y-3">
-              {SERVICIOS.map((s) => (
-                <li key={s} className="text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
-                  {s}
-                </li>
-              ))}
-            </ul>
+            {servicios.length > 0 && (
+              <>
+                <h2 className="text-sm font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--oro-sobre-carbon)' }}>
+                  Servicios
+                </h2>
+                <ul className="space-y-3">
+                  {servicios.map((s) => (
+                    <li key={s} className="text-sm" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
           {/* Columna 4: Contacto */}
@@ -190,18 +214,34 @@ export default function Footer() {
           <p className="text-sm text-center" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
             © {anioEnMexico()} Mirú Franco. Todos los derechos reservados.
           </p>
-          <div className="flex gap-6 text-sm flex-wrap justify-center">
-            <Link href="/terminos-y-condiciones" className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
-              Términos y Condiciones
-            </Link>
-            <Link href="/aviso-de-privacidad" className="inline-flex min-h-11 items-center transition-colors duration-200 text-[color:var(--texto-fondo-oscuro-70)] hover:text-[color:var(--texto-fondo-oscuro)]">
-              Aviso de Privacidad
-            </Link>
+          <div className="flex gap-x-6 text-sm flex-wrap justify-center">
+            {ENLACES_LEGALES.map((d) => (
+              <Link key={d.slug} href={d.ruta} className={CLASE_ENLACE_BARRA}>
+                {d.titulo}
+              </Link>
+            ))}
           </div>
           <p className="text-xs" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
             Diseñado en Guadalajara
           </p>
         </div>
+
+        {/* Profeco: dónde acudir si una queja no se resuelve con nosotras */}
+        <p className="mt-4 text-xs text-center" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+          Profeco, Teléfono del Consumidor:{' '}
+          <a href={PROFECO.telefonoCdmx.enlace} className={CLASE_ENLACE_EN_TEXTO}>
+            {PROFECO.telefonoCdmx.visible}
+          </a>{' '}
+          (CDMX y zona metropolitana) y{' '}
+          <a href={PROFECO.telefonoPais.enlace} className={CLASE_ENLACE_EN_TEXTO}>
+            {PROFECO.telefonoPais.visible}
+          </a>{' '}
+          (resto del país),{' '}
+          <a href={PROFECO.sitio.url} target="_blank" rel="noopener noreferrer" className={CLASE_ENLACE_EN_TEXTO}>
+            {PROFECO.sitio.visible}
+            <span className="sr-only"> (se abre en otra pestaña)</span>
+          </a>
+        </p>
       </div>
     </footer>
   );

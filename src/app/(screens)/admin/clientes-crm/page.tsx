@@ -6,7 +6,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
-import Table, { TableRow, TableCell } from '../../../components/ui/Table';
+import Table, { PaginacionTabla, TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
@@ -16,6 +16,7 @@ import {
   patchUsuarioEstado,
   type Usuario,
 } from '../../../services/usuarios';
+import { paginar } from '../../../utils/paginacion';
 
 function formatearFecha(iso?: string | null): string {
   if (!iso) return '—';
@@ -33,6 +34,7 @@ export default function ClientesCRMPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
+  const [pagina, setPagina] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [clienteToDelete, setClienteToDelete] = useState<Usuario | null>(null);
   const [saving, setSaving] = useState(false);
@@ -70,6 +72,8 @@ export default function ClientesCRMPage() {
       c.email.toLowerCase().includes(q)
     );
   });
+  // Más de mil clientas: la tabla va de 50 en 50 (antes pintaba todas de golpe).
+  const paginaClientes = paginar(filtrados, pagina);
 
   const handleDesactivar = async () => {
     if (!clienteToDelete) return;
@@ -135,19 +139,27 @@ export default function ClientesCRMPage() {
           aria-label="Buscar cliente"
           className="w-full sm:w-64"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPagina(1);
+          }}
         />
       </div>
 
-      <Card variant="elevated" padding="lg">
+      {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+      <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
         {loading ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando clientes...
           </p>
+        ) : filtrados.length === 0 ? (
+          <p className="text-sm py-8 px-4 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
+            No hay clientes. Los usuarios con rol «Cliente» aparecerán aquí.
+          </p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table headers={['Cliente', 'Teléfono', 'Email', 'Estado', 'Alta', 'Acciones']} headerSutil>
-              {filtrados.map((cliente) => (
+          <>
+            <Table headers={['Cliente', 'Teléfono', 'Email', 'Estado', 'Alta', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Clientes: desplaza para ver más columnas">
+              {paginaClientes.filas.map((cliente) => (
                 <TableRow key={cliente.id}>
                   <TableCell className="font-semibold" rowPadding="lg">{cliente.nombre}</TableCell>
                   <TableCell rowPadding="lg">{cliente.telefono || '—'}</TableCell>
@@ -159,7 +171,8 @@ export default function ClientesCRMPage() {
                   </TableCell>
                   <TableCell rowPadding="lg">{formatearFecha(cliente.creadoEn)}</TableCell>
                   <TableCell rowPadding="lg">
-                    <div className="flex flex-wrap gap-2">
+                    {/* En una sola fila: al partirse, cada fila medía de 121 a 165 px. */}
+                    <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                       <Button
                         size="sm"
                         variant="outline"
@@ -170,7 +183,7 @@ export default function ClientesCRMPage() {
                       {cliente.activo && (
                         <Button
                           size="sm"
-                          variant="danger"
+                          variant="outline-danger"
                           onClick={() => {
                             setClienteToDelete(cliente);
                             setShowDeleteModal(true);
@@ -184,12 +197,15 @@ export default function ClientesCRMPage() {
                 </TableRow>
               ))}
             </Table>
-          </div>
-        )}
-        {!loading && filtrados.length === 0 && (
-          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
-            No hay clientes. Los usuarios con rol «Cliente» aparecerán aquí.
-          </p>
+            <PaginacionTabla
+              className="px-4 py-4 sm:px-6"
+              pagina={paginaClientes.pagina}
+              totalPaginas={paginaClientes.totalPaginas}
+              total={filtrados.length}
+              unidad="clientes"
+              onCambiar={setPagina}
+            />
+          </>
         )}
       </Card>
 

@@ -87,16 +87,16 @@ function formatearMoneda(valor: number): string {
 }
 
 function formatearHora(iso?: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return 'Sin dato';
   try {
     return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
   } catch {
-    return '—';
+    return 'Sin dato';
   }
 }
 
 function formatearFechaRelativa(iso?: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return 'Sin dato';
   const fecha = new Date(iso);
   const diffMs = Date.now() - fecha.getTime();
   const diffMin = Math.round(diffMs / 60000);
@@ -428,7 +428,7 @@ export default function AdminDashboardPage() {
               ) : ventasPorMetodo.length > 0 ? (
                 <BarraVentasPorMetodo datos={ventasPorMetodo} reducedMotion={reducedMotion} />
               ) : (
-                <MensajeVacio texto="Sin ventas registradas — las ventas del POS aparecerán aquí." />
+                <MensajeVacio texto="Sin ventas registradas: las ventas del POS aparecerán aquí." />
               )}
             </Card>
 
@@ -457,7 +457,7 @@ export default function AdminDashboardPage() {
                   <Clock3 size={17} style={{ color: 'var(--hover)' }} />
                   <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Agenda de hoy</h3>
                 </div>
-                <Link href="/operacion/gestion-citas" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                <Link href="/operacion/gestion-citas" className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
                   Ver agenda
                   <ArrowRight size={14} aria-hidden />
                 </Link>
@@ -472,10 +472,10 @@ export default function AdminDashboardPage() {
                     <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ backgroundColor: 'var(--fondo-general)' }}>
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: 'var(--menu-texto-principal)' }} title={c.clienteNombre ?? undefined}>
-                          {c.clienteNombre ?? 'Cliente'} — {c.servicioNombre ?? 'Servicio'}
+                          {c.clienteNombre ?? 'Cliente'} · {c.servicioNombre ?? 'Servicio'}
                         </p>
                         <p className="text-xs truncate" style={{ color: 'var(--encabezados-alterno)' }}>
-                          {formatearHora(c.fechaHoraInicio)} · {c.especialistaNombre ?? '—'}
+                          {formatearHora(c.fechaHoraInicio)} · {c.especialistaNombre ?? 'Sin especialista'}
                         </p>
                       </div>
                       <Badge variant="info">{ETIQUETAS_ESTADO_CITA[c.estado] ?? c.estado}</Badge>
@@ -498,7 +498,7 @@ export default function AdminDashboardPage() {
                       <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Stock bajo</span>
                     </div>
-                    <Link href="/admin/inventario" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <Link href="/admin/inventario" className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
                       Ver todos
                       <ArrowRight size={14} aria-hidden />
                     </Link>
@@ -531,7 +531,7 @@ export default function AdminDashboardPage() {
                       <PackageX size={14} style={{ color: 'var(--danger-texto)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Por caducar</span>
                     </div>
-                    <Link href="/admin/control-caducidad" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <Link href="/admin/control-caducidad" className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
                       Ver todos
                       <ArrowRight size={14} aria-hidden />
                     </Link>
@@ -568,7 +568,7 @@ export default function AdminDashboardPage() {
                       <MessageSquareWarning size={14} style={{ color: 'var(--danger-texto)' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--encabezados-alterno)' }}>Quejas abiertas</span>
                     </div>
-                    <Link href="/admin/quejas-garantias" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <Link href="/admin/quejas-garantias" className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
                       Ver todas
                       <ArrowRight size={14} aria-hidden />
                     </Link>
@@ -587,7 +587,7 @@ export default function AdminDashboardPage() {
                       ))}
                     </div>
                   ) : (
-                    <MensajeVacio texto="Sin quejas abiertas — todo al día." compacto />
+                    <MensajeVacio texto="Sin quejas abiertas: todo al día." compacto />
                   )}
                 </div>
               </div>
@@ -606,7 +606,7 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
               ) : (
-                <MensajeVacio texto="Aún no hay actividad — las ventas, citas y quejas aparecerán aquí." />
+                <MensajeVacio texto="Aún no hay actividad: las ventas, citas y quejas aparecerán aquí." />
               )}
             </Card>
           </div>
@@ -654,7 +654,7 @@ export default function AdminDashboardPage() {
                   <UserPlus size={17} style={{ color: 'var(--hover)' }} />
                   <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Clientes nuevos</h3>
                 </div>
-                <Link href="/admin/clientes-crm" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                <Link href="/admin/clientes-crm" className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
                   Ver todos
                   <ArrowRight size={14} aria-hidden />
                 </Link>
@@ -706,7 +706,7 @@ export default function AdminDashboardPage() {
             <Card variant="elevated" padding="lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Pedidos recientes</h3>
-                <Link href="/admin/venta-online" className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
+                <Link href="/admin/venta-online" className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--menu-texto-principal)' }}>
                   Ver todos
                   <ArrowRight size={14} aria-hidden />
                 </Link>
@@ -753,7 +753,7 @@ export default function AdminDashboardPage() {
               <Link
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium px-4 py-1.5 rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={{ backgroundColor: 'var(--tarjetas-paneles)', color: 'var(--menu-texto-principal)', outlineColor: 'var(--hover)' }}
               >
                 <Icon size={14} aria-hidden />
@@ -770,7 +770,7 @@ export default function AdminDashboardPage() {
               <Link
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-opacity duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium px-3.5 py-1 rounded-full border transition-opacity duration-150 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--encabezados-alterno)', outlineColor: 'var(--hover)' }}
               >
                 <Icon size={12} aria-hidden />
@@ -832,7 +832,8 @@ function DonutConLeyenda({
   return (
     <div className="flex flex-col items-center gap-4">
       <div style={{ width: '100%', maxWidth: 160, height: 160 }} className="shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
+        {/* Dimensiones iniciales: sin ellas Recharts medía -1 en el primer pintado y avisaba en consola. */}
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 160, height: 160 }}>
           <PieChart>
             <Pie
               data={datos}
@@ -885,7 +886,7 @@ function BarraVentasPorMetodo({
 }) {
   return (
     <div style={{ width: '100%', height: 180 }}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 180 }}>
         <BarChart data={datos} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
           <XAxis type="number" hide />
           <YAxis

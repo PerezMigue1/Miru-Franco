@@ -137,6 +137,7 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       inventario: { label: 'Inventario', href: '/admin/inventario' },
       productos: { label: 'Productos', href: '/admin/inventario' },
       servicios: { label: 'Servicios', href: '/admin/servicios' },
+      paquetes: { label: 'Paquetes especiales', href: '/admin/paquetes' },
       'clientes-crm': { label: 'Clientes (CRM)', href: '/admin/clientes-crm' },
       proveedores: { label: 'Proveedores', href: '/admin/proveedores' },
       'usuarios-roles': { label: 'Usuarios y roles', href: '/admin/usuarios-roles' },
@@ -154,6 +155,8 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'pedidos-por-recoger': { label: 'Pedidos por recoger', href: '/admin/pedidos-por-recoger' },
       'quejas-garantias': { label: 'Quejas y garantías', href: '/admin/quejas-garantias' },
       'base-datos': { label: 'Base de datos', href: '/admin/base-datos' },
+      consentimientos: { label: 'Consentimientos', href: '/admin/consentimientos' },
+      'solicitudes-arco': { label: 'Solicitudes ARCO', href: '/admin/solicitudes-arco' },
     };
 
     const sectionInfo = sectionLabels[section];
@@ -166,12 +169,18 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
         else if (section === 'inventario' && third === 'prediccion') admin.push({ label: 'Predicción de inventario' });
         else if (section === 'inventario' && third === 'inteligente') admin.push({ label: 'Predicción de inventario' });
         else if (section === 'inventario' && third === 'ventas-analisis') admin.push({ label: 'Análisis de ventas (tienda)' });
+        else if (section === 'inventario' && third === 'historial-ventas') admin.push({ label: 'Historial de ventas' });
         else if (section === 'inventario' && third === 'producto' && segments[3] && segments[4] === 'analisis') {
           admin.push({ label: 'Análisis de ventas por producto' });
         } else if (section === 'servicios' && third === 'nuevo') admin.push({ label: 'Nuevo servicio' });
         else if (section === 'servicios') admin.push({ label: 'Detalle de servicio' });
         else if (section === 'clientes-crm' && third === 'segmentacion') admin.push({ label: 'Segmentación de clientes' });
-        else if (section === 'clientes-crm') admin.push({ label: 'Perfil de cliente' });
+        else if (section === 'clientes-crm' && segments[3] === 'editar') {
+          admin.push({ label: 'Perfil de cliente', href: `/admin/clientes-crm/${third}` }, { label: 'Editar cliente' });
+        } else if (section === 'clientes-crm') admin.push({ label: 'Perfil de cliente' });
+        else if (section === 'paquetes') admin.push({ label: 'Detalle de paquete' });
+        else if (section === 'usuarios-roles' && third === 'nuevo') admin.push({ label: 'Nuevo usuario' });
+        else if (section === 'usuarios-roles') admin.push({ label: 'Editar usuario' });
       }
     }
     return admin;

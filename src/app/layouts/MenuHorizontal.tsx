@@ -56,7 +56,7 @@ export default function MenuHorizontal() {
             <li key={item.name} className="relative shrink-0">
               <Link
                 href={item.href}
-                className="mf-nav-pildora relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 whitespace-nowrap rounded-full"
+                className="mf-nav-pildora relative flex min-h-11 items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 whitespace-nowrap rounded-full"
                 aria-current={isActive ? 'page' : undefined}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +85,7 @@ export default function MenuHorizontal() {
               <li key={marca.name} className="relative">
                 <Link
                   href={marca.href}
-                  className="mf-nav-pildora relative flex items-center gap-2 px-5 py-2.5 whitespace-nowrap rounded-full"
+                  className="mf-nav-pildora relative flex min-h-11 items-center gap-2 px-5 py-2.5 whitespace-nowrap rounded-full"
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <span className="font-semibold text-sm">{marca.name}</span>

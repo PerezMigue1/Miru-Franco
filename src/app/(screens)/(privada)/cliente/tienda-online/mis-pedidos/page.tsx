@@ -12,6 +12,7 @@ import Table, { TableRow, TableCell } from '../../../../../components/ui/Table';
 import { listarPedidos, etiquetaEstadoPedido, etiquetaMetodoPagoPedido, varianteBadgeEstadoPedido } from '../../../../../services/ecommerce';
 import type { PedidoApi } from '../../../../../services/ecommerce';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
+import TarjetaPedidoMovil from './TarjetaPedidoMovil';
 
 export default function MisPedidosPage() {
   const router = useRouter();
@@ -95,6 +96,13 @@ export default function MisPedidosPage() {
         </Card>
       ) : (
         <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
+          {/* Por debajo de 640 px, tarjetas: en la tabla el estado y "Ver detalle" quedaban fuera de vista. */}
+          <ul className="space-y-3 sm:hidden" aria-label="Mis pedidos">
+            {filtrados.map((pedido) => (
+              <TarjetaPedidoMovil key={pedido.id} pedido={pedido} fecha={formatearFecha(pedido.creadoEn)} />
+            ))}
+          </ul>
+          <div className="hidden sm:block">
           <Table
             headers={['Número', 'Fecha', 'Total', 'Método de pago', 'Estado', 'Acciones']}
           >
@@ -123,6 +131,7 @@ export default function MisPedidosPage() {
               </TableRow>
             ))}
           </Table>
+          </div>
         </Card>
       )}
     </ModuleLayout>

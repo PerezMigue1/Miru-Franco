@@ -15,6 +15,7 @@ import {
   type Producto,
 } from '../../../../../../services/productos';
 import { ProductoGaleriaDetalle } from '../../../../../../components/tienda/ProductoGaleriaDetalle';
+import LeyendaPrecioIva from '../../../../../../components/tienda/LeyendaPrecioIva';
 import {
   listarValoracionesProducto,
   listarPedidosQueIncluyenProducto,
@@ -265,6 +266,7 @@ export default function DetalleProductoClient({ id }: Props) {
               <p className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>{precioActual}</p>
               {hayRebaja && <p className="text-xl line-through" style={{ color: 'var(--encabezados-alterno)' }}>{precioOriginal}</p>}
             </div>
+            <LeyendaPrecioIva className="mt-1" />
             <div className="mt-2 flex items-center gap-2">
               {disponible ? (
                 <><Check size={16} aria-hidden style={{ color: 'var(--success-texto)' }} /><p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>Stock disponible: <span className="font-semibold mf-cifras">{maxCantidad} unidades</span></p></>

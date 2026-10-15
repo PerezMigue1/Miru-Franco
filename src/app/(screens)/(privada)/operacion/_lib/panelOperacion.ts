@@ -59,6 +59,65 @@ export function resultadoCargaEjecucion<A, B>(
   };
 }
 
+/** Gestión de citas: 25 por página (con 100 la página medía más de 11.000 px de alto). */
+export const TAMANO_PAGINA_CITAS = 25;
+
+/**
+ * Columnas de la tabla de gestión de citas: fecha, inicio y fin van juntos en "Horario" y la especialista
+ * bajo el servicio. Con 9 columnas la tabla medía 1458 px en un marco de 1062 (Riesgo IA y Acciones fuera).
+ */
+export const COLUMNAS_TABLA_CITAS = ['Cliente', 'Horario', 'Servicio', 'Estado', 'Riesgo IA', 'Acciones'] as const;
+
+const ESTADOS_FINALES_CITA = ['cancelada', 'completada', 'no_asistio'];
+
+/**
+ * Acciones de una fila de gestión de citas: la principal (check-in o check-out) a la vista y el resto
+ * (reprogramar, cancelar y las del anticipo) en el menú "Más", para que la fila no crezca a 240 px.
+ */
+export function accionesCita(
+  estado: string,
+  hayAccionesAnticipo: boolean,
+): { principal: 'checkin' | 'checkout' | null; secundarias: ('reprogramar' | 'cancelar')[]; conMenu: boolean } {
+  const principal = estado === 'pendiente' || estado === 'confirmada' ? 'checkin' : estado === 'en_curso' ? 'checkout' : null;
+  const secundarias: ('reprogramar' | 'cancelar')[] = ESTADOS_FINALES_CITA.includes(estado) ? [] : ['reprogramar', 'cancelar'];
+  return { principal, secundarias, conMenu: secundarias.length > 0 || hayAccionesAnticipo };
+}
+
+/**
+ * Dónde abrir un menú flotante (position: fixed) junto a su botón: debajo y alineado a su borde
+ * derecho; arriba si abajo no cabe la altura estimada y arriba hay más espacio. Nunca pegado al borde.
+ */
+export function posicionMenu(
+  disparador: { top: number; bottom: number; right: number },
+  ventana: { ancho: number; alto: number },
+  altoEstimado = 240,
+): { right: number; top?: number; bottom?: number; maxHeight: number } {
+  const MARGEN = 8;
+  const SEPARACION = 4;
+  const right = Math.max(MARGEN, ventana.ancho - disparador.right);
+  const espacioAbajo = ventana.alto - disparador.bottom - SEPARACION - MARGEN;
+  const espacioArriba = disparador.top - SEPARACION - MARGEN;
+  if (espacioAbajo >= altoEstimado || espacioAbajo >= espacioArriba) {
+    return { right, top: disparador.bottom + SEPARACION, maxHeight: Math.max(0, espacioAbajo) };
+  }
+  return { right, bottom: ventana.alto - disparador.top + SEPARACION, maxHeight: Math.max(0, espacioArriba) };
+}
+
+/**
+ * De dónde sale "Ventas de hoy" en /operacion: el resumen de caja (caja:lectura), las ventas del día
+ * sumadas como en el punto de venta (ventas:escritura) o ninguna (sin permiso de ventas la tarjeta no va).
+ */
+export function fuenteVentasHoy(tienePermiso: TienePermiso): 'resumen' | 'ventas' | null {
+  if (tienePermiso('caja:lectura')) return 'resumen';
+  if (tienePermiso('ventas:escritura')) return 'ventas';
+  return null;
+}
+
+/** Tono de un KPI que solo alerta cuando hay algo que atender (en cero se queda normal). */
+export function tonoSiHay<T extends string>(cantidad: number, tono: T): T | 'normal' {
+  return cantidad > 0 ? tono : 'normal';
+}
+
 /** Contadores de gestión de citas: cuentan solo la página visible, y así lo dicen. */
 export function resumenCitasPagina(citas: { estado: string }[]) {
   return {

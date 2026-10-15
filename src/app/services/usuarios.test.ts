@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const { get, post } = vi.hoisted(() => ({
@@ -11,12 +13,20 @@ vi.mock('./config', () => ({ getBackendBaseUrl: () => 'http://api.test' }));
 
 import {
   createUsuario,
+  cuerpoPromocionesPanel,
   getUsuarioDatosRelacionados,
   TIPOS_CABELLO,
   validarAltaUsuario,
+  erroresCamposAlta,
+  erroresConsentimientoAlta,
+  MENSAJE_FALTA_TERMINOS_ALTA,
+  NOTA_PROMOCIONES_PANEL,
+  perfilCapilarAlta,
   telefonoEdicionUsuario,
   opcionesRolEdicion,
+  rutaOrigenEdicion,
 } from './usuarios';
+import { documentosAceptados } from './consentimientos';
 
 afterEach(() => { get.mockClear(); post.mockClear(); });
 
@@ -29,6 +39,7 @@ const ALTA_VALIDA = {
   pregunta: '¿Cuál es el nombre de tu primera mascota?',
   respuesta: 'Firulais',
   tipoCabello: 'ondulado',
+  aceptaTerminos: true,
   aceptaAviso: true,
 };
 
@@ -71,6 +82,54 @@ describe('Alta de usuario desde admin: no se inventan datos', () => {
   });
 });
 
+describe('Alta desde admin: perfil capilar solo con lo capturado (minimización)', () => {
+  it('sin nada capturado no hay perfil capilar', () => {
+    expect(perfilCapilarAlta({ tipoCabello: '', tieneAlergias: false, alergias: '', tratamientosQuimicos: false, tratamientos: '' })).toBeUndefined();
+  });
+
+  it('las alergias viajan aunque no se elija tipo de cabello, y no se manda un tipo vacío ni booleanos sin marcar', () => {
+    expect(perfilCapilarAlta({ tipoCabello: '', tieneAlergias: true, alergias: '  Látex ', tratamientosQuimicos: false, tratamientos: '' })).toEqual({
+      tieneAlergias: true,
+      alergias: 'Látex',
+    });
+  });
+
+  it('las alergias escritas solo cuentan con "Tiene alergias" marcada; los tratamientos con su casilla', () => {
+    expect(perfilCapilarAlta({ tipoCabello: 'rizado', tieneAlergias: false, alergias: 'Látex', tratamientosQuimicos: true, tratamientos: ' Alaciado ' })).toEqual({
+      tipoCabello: 'rizado',
+      tratamientosQuimicos: true,
+      tratamientos: 'Alaciado',
+    });
+  });
+
+  it('createUsuario tampoco manda un tipo de cabello vacío ni descarta las alergias', async () => {
+    await createUsuario({
+      nombre: 'Ana', email: 'ana@salon.mx', password: 'Miru#Fr4nco!',
+      perfilCapilar: { tipoCabello: '', tieneAlergias: true, alergias: 'Látex', tratamientosQuimicos: false },
+      consienteDatosSensibles: true,
+    });
+    const cuerpo = post.mock.calls[0][1] as { perfilCapilar?: Record<string, unknown>; consienteDatosSensibles?: boolean };
+    expect(cuerpo.perfilCapilar).toEqual({ tieneAlergias: true, alergias: 'Látex' });
+    expect(cuerpo.consienteDatosSensibles).toBe(true);
+  });
+});
+
+describe('Promociones desde el panel: el personal solo puede quitarlas', () => {
+  it('quitar (true → false) manda recibePromociones: false', () => {
+    expect(cuerpoPromocionesPanel(true, false)).toEqual({ recibePromociones: false });
+  });
+
+  it('sin cambio no se manda nada, y nunca se manda true desde el panel', () => {
+    expect(cuerpoPromocionesPanel(true, true)).toEqual({});
+    expect(cuerpoPromocionesPanel(false, false)).toEqual({});
+    expect(cuerpoPromocionesPanel(false, true)).toEqual({});
+  });
+
+  it('la nota explica que solo la persona puede activarlas', () => {
+    expect(NOTA_PROMOCIONES_PANEL).toBe('Solo la persona puede activar las promociones, desde su perfil.');
+  });
+});
+
 describe('Validación del formulario de alta', () => {
   it('con todo capturado no hay error', () => {
     expect(validarAltaUsuario(ALTA_VALIDA)).toBeNull();
@@ -86,11 +145,40 @@ describe('Validación del formulario de alta', () => {
     expect(validarAltaUsuario({ ...ALTA_VALIDA, aceptaAviso: false })).toMatch(/aviso de privacidad/i);
   });
 
-  it('pide teléfono válido, fecha de nacimiento y tipo de cabello', () => {
+  it('pide que la persona haya aceptado los Términos y condiciones (el backend ahora lo exige)', () => {
+    expect(validarAltaUsuario({ ...ALTA_VALIDA, aceptaTerminos: false })).toBe(MENSAJE_FALTA_TERMINOS_ALTA);
+    expect(MENSAJE_FALTA_TERMINOS_ALTA).toMatch(/Términos y condiciones/);
+  });
+
+  it('erroresConsentimientoAlta da el mensaje de cada casilla sin marcar, para mostrarlo junto a ella', () => {
+    expect(erroresConsentimientoAlta({ aceptaTerminos: false, aceptaAviso: false })).toEqual({
+      aceptaTerminos: MENSAJE_FALTA_TERMINOS_ALTA,
+      aceptaAviso: expect.stringMatching(/aviso de privacidad/i),
+    });
+    expect(erroresConsentimientoAlta({ aceptaTerminos: true, aceptaAviso: true })).toEqual({});
+  });
+
+  it('pide teléfono válido; la fecha de nacimiento y el tipo de cabello son opcionales (minimización)', () => {
     expect(validarAltaUsuario({ ...ALTA_VALIDA, telefono: '' })).toMatch(/teléfono/i);
     expect(validarAltaUsuario({ ...ALTA_VALIDA, telefono: '12345' })).toMatch(/10 dígitos/);
-    expect(validarAltaUsuario({ ...ALTA_VALIDA, fechaNacimiento: '' })).toMatch(/fecha de nacimiento/i);
-    expect(validarAltaUsuario({ ...ALTA_VALIDA, tipoCabello: '' })).toMatch(/tipo de cabello/i);
+    expect(validarAltaUsuario({ ...ALTA_VALIDA, fechaNacimiento: '' })).toBeNull();
+    expect(validarAltaUsuario({ ...ALTA_VALIDA, tipoCabello: '' })).toBeNull();
+    expect(validarAltaUsuario({ ...ALTA_VALIDA, fechaNacimiento: '', tipoCabello: '' })).toBeNull();
+  });
+
+  it('cada campo que falta queda marcado con su propio mensaje (además del aviso de arriba)', () => {
+    expect(erroresCamposAlta({ ...ALTA_VALIDA, nombre: ' ', email: '', password: '' })).toEqual({
+      nombre: 'Escribe el nombre completo.',
+      email: 'Escribe el email.',
+      password: 'Escribe la contraseña.',
+    });
+    expect(validarAltaUsuario({ ...ALTA_VALIDA, nombre: ' ', email: '', password: '' })).toBe('Nombre, email y contraseña son obligatorios.');
+    expect(erroresCamposAlta({ ...ALTA_VALIDA, email: 'no-es-correo' })).toEqual({ email: 'Escribe un email válido.' });
+    expect(erroresCamposAlta({ ...ALTA_VALIDA, telefono: '12345' }).telefono).toMatch(/10 dígitos/);
+    expect(erroresCamposAlta({ ...ALTA_VALIDA, password: 'Ab1!xz' }).password).toMatch(/8 caracteres/);
+    expect(erroresCamposAlta({ ...ALTA_VALIDA, respuesta: '' }).respuesta).toMatch(/respuesta/i);
+    expect(erroresCamposAlta({ ...ALTA_VALIDA, pregunta: '' }).pregunta).toMatch(/pregunta de seguridad/i);
+    expect(erroresCamposAlta(ALTA_VALIDA)).toEqual({});
   });
 
   it('valida la contraseña igual que el registro: 8 caracteres, mayúscula, minúscula, número y especial', () => {
@@ -141,5 +229,44 @@ describe('Edición de usuario desde admin: teléfono', () => {
   it('un teléfono que no es de 10 dígitos da el mensaje de formato, sin enviarse', () => {
     expect(telefonoEdicionUsuario('Por definir')).toEqual({ error: expect.stringMatching(/10 dígitos/) });
     expect(telefonoEdicionUsuario('12345')).toEqual({ error: expect.stringMatching(/10 dígitos/) });
+  });
+});
+
+describe('Alta desde admin: Términos y documentos aceptados (punto 23)', () => {
+  it('createUsuario manda aceptaTerminos y los documentos con su versión y hash', async () => {
+    const documentos = documentosAceptados(['terminos', 'aviso-privacidad']);
+    await createUsuario({
+      nombre: 'Ana',
+      email: 'ana@salon.mx',
+      password: 'Miru#Fr4nco!',
+      aceptaTerminos: true,
+      aceptaAvisoPrivacidad: true,
+      documentos,
+    });
+    const cuerpo = post.mock.calls[0][1] as Record<string, unknown>;
+    expect(cuerpo).toMatchObject({ aceptaTerminos: true, aceptaAvisoPrivacidad: true, documentos });
+  });
+
+  it('sin capturarlo no inventa la aceptación de los Términos', async () => {
+    await createUsuario({ nombre: 'Ana', email: 'ana@salon.mx', password: 'Miru#Fr4nco!' });
+    const cuerpo = post.mock.calls[0][1] as Record<string, unknown>;
+    expect(cuerpo).not.toHaveProperty('aceptaTerminos');
+    expect(cuerpo).not.toHaveProperty('documentos');
+  });
+
+  it('la pantalla nuevo usuario tiene la casilla de Términos sin premarcar, la valida y manda los documentos vigentes', () => {
+    const pagina = readFileSync(join(__dirname, '..', '(screens)', 'admin', 'usuarios-roles', 'nuevo', 'page.tsx'), 'utf8');
+    expect(pagina).toContain('La persona leyó y aceptó los');
+    expect(pagina).toMatch(/const \[aceptaTerminos, setAceptaTerminos\] = useState\(false\)/);
+    expect(pagina).toMatch(/validarAltaUsuario\(\{[^}]*aceptaTerminos/);
+    expect(pagina).toContain("documentos: documentosAceptados(['terminos', 'aviso-privacidad'])");
+    expect(pagina).toContain('aceptaTerminos,');
+  });
+});
+
+describe('rutaOrigen de las ediciones del panel', () => {
+  it('se manda tal cual y se recorta a 300 caracteres (límite del backend)', () => {
+    expect(rutaOrigenEdicion('/admin/clientes-crm/abc/editar')).toBe('/admin/clientes-crm/abc/editar');
+    expect(rutaOrigenEdicion('/' + 'x'.repeat(400))).toHaveLength(300);
   });
 });

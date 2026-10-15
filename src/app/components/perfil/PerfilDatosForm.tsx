@@ -17,9 +17,10 @@ import {
   telefonoSinLada,
 } from '../../utils/phone';
 import CasillaDatosSalud from '../legal/CasillaDatosSalud';
+import AvisoSimplificado from '../legal/AvisoSimplificado';
 import { mensajeUsuarioDesdeErrorApi } from '../../utils/apiErrorMessage';
 import { hoyEnMexico } from '../../utils/fechaSoloDia';
-import { errorConsentimientoAlergias } from '../../utils/consentimientoDatosSensibles';
+import { alergiasNuevas, errorConsentimientoCambio, mensajeSaludDelBackend } from '../../utils/consentimientoDatosSensibles';
 import {
   VALORES_PERFIL_VACIOS,
   cuerpoGuardarPerfil,
@@ -55,6 +56,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
     register,
     handleSubmit,
     reset,
+    setError,
     setValue,
     watch,
     formState: { errors, isSubmitting },
@@ -90,6 +92,12 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
     try {
       await patchMiPerfil(cuerpo);
     } catch (e) {
+      // 400 CONSENTIMIENTO_SALUD_REQUERIDO: el mensaje va junto a la casilla de datos de salud.
+      const salud = mensajeSaludDelBackend(e);
+      if (salud) {
+        setError('consienteDatosSensibles', { type: 'server', message: salud });
+        return;
+      }
       setSaveError(mensajeUsuarioDesdeErrorApi(e));
       return;
     }
@@ -193,7 +201,7 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
         <div className="md:col-span-2 border-t pt-6 mt-2" style={{ borderColor: 'var(--borde-visible)' }}>
           <div className="flex items-center gap-3 mb-4">
             <span className="w-8 h-px" style={{ backgroundColor: 'var(--logo-branding)' }} />
-            <p className="text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: 'var(--logo-branding)' }}>Perfil capilar</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar</p>
           </div>
         </div>
         <Select label="Tipo de cabello" fullWidth options={TIPO_CABELLO_OPTIONS} disabled={disabled} {...register('tipoCabello')} />
@@ -202,27 +210,31 @@ export default function PerfilDatosForm({ onSaved }: PerfilDatosFormProps) {
         <Input label="Productos que usas" maxLength={1000} fullWidth disabled={disabled} {...register('productosUsados')} />
         <div className="md:col-span-2">
           <Input label="Alergias" maxLength={1000} fullWidth disabled={disabled} {...register('alergias')} />
-          <CasillaDatosSalud
-            className="mt-2"
-            disabled={disabled}
-            error={errors.consienteDatosSensibles?.message}
-            {...register('consienteDatosSensibles', {
-              validate: (v, all) => errorConsentimientoAlergias(all.alergias, v) ?? true,
-            })}
-          />
+          {/* Solo si las alergias cambian a un texto nuevo: la misma casilla del registro (el backend la exige). */}
+          {alergiasNuevas(perfil?.alergias, watch('alergias')) && (
+            <CasillaDatosSalud
+              className="mt-2"
+              disabled={disabled}
+              error={errors.consienteDatosSensibles?.message}
+              {...register('consienteDatosSensibles', {
+                validate: (v, all) => errorConsentimientoCambio(perfil?.alergias, all.alergias, v, 'clienta') ?? true,
+              })}
+            />
+          )}
         </div>
 
-        <div className="md:col-span-2 flex flex-col gap-3">
-          <label className="flex items-center gap-2 text-sm cursor-pointer text-[var(--menu-texto-principal)]">
+        <div className="md:col-span-2 mf-consentimiento">
+          <label>
             <input type="checkbox" disabled={disabled} {...register('recibePromociones')} />
             Deseo recibir promociones
           </label>
         </div>
 
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-3">
           <Button type="submit" disabled={disabled}>
             {isSubmitting ? 'Guardando…' : 'Guardar cambios'}
           </Button>
+          <AvisoSimplificado finalidad="mantener tu perfil y cuidar tus servicios" />
         </div>
       </form>
     </div>

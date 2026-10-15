@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { SearchX, SlidersHorizontal } from 'lucide-react';
 import TarjetaServicio from '../../../../components/servicios/TarjetaServicio';
+import LeyendaPrecioIva from '../../../../components/tienda/LeyendaPrecioIva';
 import FilaChipsDesplazable from '../../../../components/cliente/FilaChipsDesplazable';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../components/ui/PageHeader';
@@ -333,6 +334,7 @@ export default function ListaServiciosPage() {
           </aside>
 
           <div className="flex-1 min-w-0">
+            <LeyendaPrecioIva className="mb-3" />
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtrados.map((servicio, index) => (
                 <TarjetaServicio key={servicio.id} servicio={servicio} indice={index} />

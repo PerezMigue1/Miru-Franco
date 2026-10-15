@@ -21,17 +21,20 @@ import { listarSeguimientosPorCliente, type SeguimientoApi } from '../../../../s
 import { formatearFechaSoloDia } from '../../../../utils/fechaSoloDia';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
 import { etiquetaEstadoPedido, varianteBadgeEstadoPedido } from '../../../../services/ecommerce';
+import { usePermisos } from '../../../../utils/permisos';
+import { etiquetaTipoNotificacion } from '../../../(privada)/operacion/_lib/panelOperacion';
+import ObservacionesCliente from './ObservacionesCliente';
 
 const FECHA_CORTA: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
 /** Fechas con hora (citas, compras, actividad): en hora local. La de nacimiento usa formatearFechaSoloDia. */
 function formatearFecha(iso?: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return 'Sin dato';
   try {
     const d = new Date(iso);
     return d.toLocaleDateString('es-MX', FECHA_CORTA);
   } catch {
-    return '—';
+    return 'Sin dato';
   }
 }
 
@@ -57,6 +60,7 @@ export default function ClienteDetallePage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { tienePermiso } = usePermisos();
 
   const [cliente, setCliente] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,7 +194,7 @@ export default function ClienteDetallePage() {
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.telefono || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.telefono || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Email</label>
@@ -202,15 +206,15 @@ export default function ClienteDetallePage() {
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Fecha de nacimiento</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFechaSoloDia(cliente.fechaNacimiento, FECHA_CORTA) ?? '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFechaSoloDia(cliente.fechaNacimiento, FECHA_CORTA) ?? 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Google ID</label>
-                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.googleId || '—'}</p>
+                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.googleId || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Foto (URL)</label>
-                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.foto || '—'}</p>
+                    <p className="font-medium break-all" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.foto || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Acepta aviso privacidad</label>
@@ -225,52 +229,57 @@ export default function ClienteDetallePage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Perfil Capilar y Salud
+                  Perfil capilar y salud
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Tipo de cabello</label>
-                    <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.tipoCabello || '—'}</p>
+                    <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.tipoCabello || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Color natural</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorNatural || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorNatural || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Color actual</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorActual || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorActual || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Productos usados</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.productosUsados || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.productosUsados || 'Sin dato'}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Alergias</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.alergias || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.alergias || 'Sin dato'}</p>
                   </div>
                 </div>
               </Card>
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Historial de Citas
+                  Historial de citas
                 </h2>
                 {citas.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
                 ) : citas.error ? (
                   <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el historial de citas.</p>
                 ) : citas.data.length > 0 ? (
-                  <Table headers={['Servicio', 'Fecha', 'Especialista', 'Precio', 'Estado']}>
+                  <Table headers={['Servicio', 'Fecha', 'Precio', 'Estado']} stickyFirstColumn>
                     {citas.data.map((c) => {
                       const servicio = r(c.servicio);
                       const especialista = r(c.especialista);
                       return (
                         <TableRow key={String(c.id)}>
-                          <TableCell>{String(servicio.nombre ?? '—')}</TableCell>
+                          {/* Especialista bajo el servicio y con salto de línea (como en la ficha de Operación): con su propia columna, "Estado" quedaba fuera a 1440 px. */}
+                          <TableCell className="min-w-40" style={{ whiteSpace: 'normal' }}>
+                            <span className="block">{String(servicio.nombre ?? '-')}</span>
+                            {especialista.nombre != null && (
+                              <span className="block text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{String(especialista.nombre)}</span>
+                            )}
+                          </TableCell>
                           <TableCell>{formatearFecha(c.fechaHoraInicio as string | undefined)}</TableCell>
-                          <TableCell>{String(especialista.nombre ?? '—')}</TableCell>
                           <TableCell className="font-semibold">
-                            {servicio.precio != null ? `$${Number(servicio.precio).toFixed(2)}` : '—'}
+                            {servicio.precio != null ? `$${Number(servicio.precio).toFixed(2)}` : 'Sin dato'}
                           </TableCell>
                           <TableCell><Badge variant={varianteEstadoCita(c.estado as string | undefined)}>{etiquetaEstadoCita(c.estado as string | undefined)}</Badge></TableCell>
                         </TableRow>
@@ -284,14 +293,14 @@ export default function ClienteDetallePage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Historial de Compras
+                  Historial de compras
                 </h2>
                 {compras.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando compras…</p>
                 ) : compras.error ? (
                   <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el historial de compras.</p>
                 ) : compras.data.length > 0 ? (
-                  <Table headers={['Pedido', 'Fecha', 'Artículos', 'Total', 'Estado']}>
+                  <Table headers={['Pedido', 'Fecha', 'Artículos', 'Total', 'Estado']} stickyFirstColumn>
                     {compras.data.map((p) => {
                       const items = Array.isArray(p.items) ? p.items : [];
                       return (
@@ -300,9 +309,9 @@ export default function ClienteDetallePage() {
                           <TableCell>{formatearFecha(p.creadoEn as string | undefined)}</TableCell>
                           <TableCell>{items.length}</TableCell>
                           <TableCell className="font-semibold">
-                            {p.total != null ? `$${Number(p.total).toFixed(2)}` : '—'}
+                            {p.total != null ? `$${Number(p.total).toFixed(2)}` : 'Sin dato'}
                           </TableCell>
-                          <TableCell>{p.estado ? <Badge variant={varianteBadgeEstadoPedido(String(p.estado))}>{etiquetaEstadoPedido(String(p.estado), p.metodoPago as string | null | undefined)}</Badge> : '—'}</TableCell>
+                          <TableCell>{p.estado ? <Badge variant={varianteBadgeEstadoPedido(String(p.estado))}>{etiquetaEstadoPedido(String(p.estado), p.metodoPago as string | null | undefined)}</Badge> : 'Sin dato'}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -342,7 +351,7 @@ export default function ClienteDetallePage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Seguimiento Post-Servicio
+                  Seguimiento posterior al servicio
                 </h2>
                 {seguimientos.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando seguimientos…</p>
@@ -374,7 +383,7 @@ export default function ClienteDetallePage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Direcciones Ligadas
+                  Direcciones ligadas
                 </h2>
                 {rel.direcciones.length > 0 ? (
                   <div className="space-y-2">
@@ -384,7 +393,7 @@ export default function ClienteDetallePage() {
                           {d.esPrincipal ? 'Principal' : 'Secundaria'}
                         </p>
                         <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                          {[d.calle, d.coloniaBarrio, d.municipioAlcaldia, d.estado, d.codigoPostal].filter(Boolean).join(', ') || '—'}
+                          {[d.calle, d.coloniaBarrio, d.municipioAlcaldia, d.estado, d.codigoPostal].filter(Boolean).join(', ') || 'Sin dato'}
                         </p>
                       </div>
                     ))}
@@ -396,9 +405,15 @@ export default function ClienteDetallePage() {
                 )}
               </Card>
 
+              <ObservacionesCliente
+                clienteId={id}
+                puedeLeer={tienePermiso('clientes:lectura')}
+                puedeEscribir={tienePermiso('clientes:escritura')}
+              />
+
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Observaciones Importantes
+                  Notificaciones recientes
                 </h2>
                 {rel.notificaciones.length > 0 ? (
                   <div className="space-y-2">
@@ -406,19 +421,16 @@ export default function ClienteDetallePage() {
                       <div key={n.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                         <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{n.titulo}</p>
                         <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                          {n.tipo} · {formatearFecha(n.creadoEn)} · {n.leida ? 'Leída' : 'No leída'}
+                          {etiquetaTipoNotificacion(n.tipo)} · {formatearFecha(n.creadoEn)} · {n.leida ? 'Leída' : 'No leída'}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                    No hay observaciones/notificaciones registradas.
+                    No hay notificaciones registradas.
                   </p>
                 )}
-                <div className="mt-4">
-                  <Button variant="outline" disabled>Agregar Observación</Button>
-                </div>
               </Card>
             </div>
 
@@ -463,17 +475,17 @@ export default function ClienteDetallePage() {
 
               <Card variant="elevated" padding="lg">
                 <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Acciones Rápidas
+                  Acciones rápidas
                 </h3>
                 <div className="space-y-2">
                   <Button fullWidth onClick={() => router.push('/operacion/gestion-citas')}>
-                    Agendar Nueva Cita
+                    Agendar nueva cita
                   </Button>
                   <Button fullWidth variant="outline" onClick={() => router.push('/admin/clientes-crm')}>
                     Volver al listado
                   </Button>
                   {cliente.activo && (
-                    <Button fullWidth variant="danger" onClick={() => setShowDeleteModal(true)}>
+                    <Button fullWidth variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
                       Eliminar cliente
                     </Button>
                   )}

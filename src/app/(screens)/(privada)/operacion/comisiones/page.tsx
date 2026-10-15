@@ -100,13 +100,14 @@ function Reporte({ todos }: { todos: boolean }) {
           <h2 id="titulo-reporte" className="text-lg font-semibold text-menu-texto-principal">
             {todos ? 'Reporte por persona' : 'Mis comisiones'}
           </h2>
+          {/* Una columna por debajo de 420 px: a 375 en dos columnas el año de la fecha se cortaba. */}
           <form
-            className="grid grid-cols-2 items-end gap-3 sm:flex"
+            className="grid grid-cols-1 min-[420px]:grid-cols-2 items-end gap-3 sm:flex"
             onSubmit={(e) => { e.preventDefault(); if (periodoValido) cargar(periodo.desde, periodo.hasta); }}
           >
             <Input label="Desde" type="date" value={periodo.desde} max={periodo.hasta} onChange={(e) => setPeriodo((p) => ({ ...p, desde: e.target.value }))} />
             <Input label="Hasta" type="date" value={periodo.hasta} min={periodo.desde} onChange={(e) => setPeriodo((p) => ({ ...p, hasta: e.target.value }))} />
-            <Button type="submit" disabled={!periodoValido || cargando} className="col-span-2 sm:col-span-1">
+            <Button type="submit" disabled={!periodoValido || cargando} className="min-[420px]:col-span-2 sm:col-span-1">
               {cargando ? 'Consultando…' : 'Consultar'}
             </Button>
           </form>
@@ -282,7 +283,7 @@ function MontosPorServicio() {
                       {ocupado ? 'Guardando…' : 'Guardar'}
                     </Button>
                     {s.comision && (
-                      <Button size="sm" variant="outline" onClick={() => quitar(s)} disabled={ocupado} className="mb-1">Quitar</Button>
+                      <Button size="sm" variant="outline-danger" onClick={() => quitar(s)} disabled={ocupado} className="mb-1">Quitar</Button>
                     )}
                   </div>
                 </div>

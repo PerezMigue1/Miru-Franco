@@ -23,6 +23,10 @@ import {
   obtenerRealtimeMetricsDirecto,
   obtenerQueryInsightsDirecto,
   truncarTabla,
+  confirmacionTruncate,
+  confirmacionImportacion,
+  confirmacionImportacionEscrita,
+  errorConfirmacionImportacion,
   type ResultadoImportacion,
   type ModoImportacion,
   type TablaImportable,
@@ -47,7 +51,9 @@ import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
 import {
   MONITOREO_INTERVALO_MS,
+  OPCIONES_TRUNCATE_INICIALES,
   PESTANAS_MONITOREO,
+  PLACEHOLDER_CONFIRMACION,
   modoImportacion,
   opcionesTablaTruncate,
   textoIntervaloMonitoreo,
@@ -149,9 +155,9 @@ const ACCESOS_INSERTAR = [
 ];
 
 const ACCESOS_ELIMINAR = [
-  { label: 'Inventario', href: '/admin/inventario', description: 'Eliminar productos' },
+  { label: 'Inventario', href: '/admin/inventario', description: 'Desactivar productos' },
   { label: 'Usuarios y roles', href: '/admin/usuarios-roles', description: 'Desactivar usuarios' },
-  { label: 'Servicios', href: '/admin/servicios', description: 'Eliminar servicios' },
+  { label: 'Servicios', href: '/admin/servicios', description: 'Desactivar servicios' },
 ];
 
 // ─── Storage: exportaciones ────────────────────────────────────────────────────
@@ -252,12 +258,17 @@ export default function BaseDatosPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Confirmación antes de importar (la importación escribe en la base).
   const [confirmarImportacion, setConfirmarImportacion] = useState(false);
+  // Lo que se escribe en el modal ("IMPORTAR <tabla>"), como en el truncate, y su error.
+  const [importConfirmText, setImportConfirmText] = useState('');
+  const [errorConfirmImport, setErrorConfirmImport] = useState<string | null>(null);
 
   // ── Exportar ──
   const [tablaExport, setTablaExport] = useState('');
   const [formatoExport, setFormatoExport] = useState<'csv' | 'json'>('csv');
   const [exportando, setExportando] = useState(false);
   const [errorExport, setErrorExport] = useState<string | null>(null);
+  // Error de "Cargar tablas de la BD": se muestra en Importación, Exportación y Truncate.
+  const [errorCargaTablas, setErrorCargaTablas] = useState<string | null>(null);
 
 
   
@@ -329,8 +340,8 @@ export default function BaseDatosPage() {
   const [formatoBackup, setFormatoBackup] = useState<'json' | 'sql' | 'csv'>('json');
   const [tablasSeleccionadasBackup, setTablasSeleccionadasBackup] = useState<string[]>([]);
   const [tablaTruncate, setTablaTruncate] = useState('');
-  const [truncateRestartIdentity, setTruncateRestartIdentity] = useState(true);
-  const [truncateCascade, setTruncateCascade] = useState(false);
+  const [truncateRestartIdentity, setTruncateRestartIdentity] = useState<boolean>(OPCIONES_TRUNCATE_INICIALES.restartIdentity);
+  const [truncateCascade, setTruncateCascade] = useState<boolean>(OPCIONES_TRUNCATE_INICIALES.cascade);
   const [truncateConfirmText, setTruncateConfirmText] = useState('');
   const [truncandoTabla, setTruncandoTabla] = useState(false);
   const [resultadoTruncate, setResultadoTruncate] = useState<ResultadoTruncate | null>(null);
@@ -517,10 +528,18 @@ export default function BaseDatosPage() {
     if (!archivoImport) { setResultadoImport({ success: false, error: 'Selecciona un archivo CSV o JSON' }); return; }
     const ext = archivoImport.name.toLowerCase().split('.').pop();
     if (ext !== 'csv' && ext !== 'json') { setResultadoImport({ success: false, error: 'El archivo debe ser CSV o JSON' }); return; }
+    setImportConfirmText('');
+    setErrorConfirmImport(null);
     setConfirmarImportacion(true);
   };
 
   const ejecutarImportacion = async () => {
+    // Como en el truncate: hay que escribir la confirmación; si no coincide, el modal sigue abierto.
+    const faltaConfirmar = errorConfirmacionImportacion(tablaImport, importConfirmText);
+    if (faltaConfirmar) {
+      setErrorConfirmImport(faltaConfirmar);
+      return;
+    }
     setConfirmarImportacion(false);
     if (!tablaImport || !archivoImport) return;
     const ext = archivoImport.name.toLowerCase().split('.').pop();
@@ -562,7 +581,7 @@ export default function BaseDatosPage() {
           const rows = (parsed as Record<string, unknown[]>)[tabla];
           const blob = new Blob([JSON.stringify(rows ?? [])], { type: 'application/json' });
           const fileTabla = new File([blob], `${tabla}.json`, { type: 'application/json' });
-          const resTabla = await importarDatos(tabla, fileTabla, modoPorTabla(tabla));
+          const resTabla = await importarDatos(tabla, fileTabla, modoPorTabla(tabla), confirmacionImportacion(tabla));
           if (resTabla.success) {
             importadosTotal += resTabla.importados;
             fallidosTotal += resTabla.fallidos ?? 0;
@@ -597,8 +616,14 @@ export default function BaseDatosPage() {
       return;
     }
 
-    // El modo sale de la metadata del backend (p. ej. productos solo admite append).
-    const res = await importarDatos(tablaImport, archivoImport, modoImportacion(tablasImportablesMeta, tablaImport));
+    // El modo sale de la metadata del backend (p. ej. productos solo admite append). La confirmación
+    // que se escribió en el modal viaja al backend, que la vuelve a validar.
+    const res = await importarDatos(
+      tablaImport,
+      archivoImport,
+      modoImportacion(tablasImportablesMeta, tablaImport),
+      importConfirmText.trim(),
+    );
     setResultadoImport(res);
     setImportando(false);
     if (res.success) {
@@ -664,13 +689,14 @@ export default function BaseDatosPage() {
       setResultadoTruncate({ success: false, error: 'Selecciona una tabla.' });
       return;
     }
-    const confirmEsperado = `TRUNCATE ${tablaTruncate}`;
+    const confirmEsperado = confirmacionTruncate(tablaTruncate);
     if (truncateConfirmText.trim() !== confirmEsperado) {
       setResultadoTruncate({ success: false, error: `Escribe exactamente: ${confirmEsperado}` });
       return;
     }
     setTruncandoTabla(true);
-    const res = await truncarTabla(tablaTruncate, {
+    // El backend vuelve a validar el texto escrito: sin él responde 400 y se muestra su mensaje.
+    const res = await truncarTabla(tablaTruncate, truncateConfirmText.trim(), {
       restartIdentity: truncateRestartIdentity,
       cascade: truncateCascade,
     });
@@ -682,6 +708,7 @@ export default function BaseDatosPage() {
   const cargarTablasDirectas = async () => {
     setLoadingTablasDirectas(true);
     setErrorExport(null);
+    setErrorCargaTablas(null);
     const [resTablas, resImportables] = await Promise.all([
       listarTablasDirectas(),
       obtenerTablasImportables(),
@@ -703,7 +730,7 @@ export default function BaseDatosPage() {
       // Pre-seleccionar todas para backup
       setTablasSeleccionadasBackup(resTablas.tablas);
     } else {
-      setErrorExport(resTablas.error);
+      setErrorCargaTablas(resTablas.error);
       setTablasDirectas([]);
       setTablaExport('');
       setTablaImport('');
@@ -1186,43 +1213,51 @@ export default function BaseDatosPage() {
     </div>
   );
 
+  /** Botón "Cargar tablas de la BD" de Importación, Exportación y Truncate, con el error de la carga debajo. */
+  const bloqueCargarTablas = (
+    <div className="space-y-2">
+      <Button type="button" variant="outline" onClick={cargarTablasDirectas} disabled={loadingTablasDirectas} className="w-full sm:w-auto">
+        {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
+      </Button>
+      {errorCargaTablas && (
+        <p role="alert" className="text-sm" style={{ color: 'var(--danger-texto)' }}>{errorCargaTablas}</p>
+      )}
+    </div>
+  );
+
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
     <AdminLayout>
-      <div className="px-4 md:px-8 lg:px-12">
+      <div className="min-w-0">
         <header className="mb-8">
           <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>Gestor de Base de Datos</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Administración de la base de datos Neon (PostgreSQL)</p>
         </header>
 
-        <div className="relative pl-11 space-y-6 overflow-hidden">
-          {/* Trigger del menú lateral */}
+        <div className="relative min-w-0 space-y-6">
+          {/* Botón del menú de secciones: en el flujo (sin sangría extra) y solo con clic o toque. */}
           <button
             type="button"
             aria-label="Mostrar menú de secciones"
             aria-expanded={!menuLateralOculto}
             onClick={() => setMenuLateralOculto((v) => !v)}
-            onMouseEnter={() => setMenuLateralOculto(false)}
-            className="absolute left-0 top-6 z-40 h-11 w-9 rounded-r-lg border border-l-0 text-sm"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border text-sm"
             style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
           >
-            <Menu size={16} className="mx-auto" />
+            <Menu size={16} aria-hidden />
           </button>
-          <div className="absolute top-0 left-0 h-full w-4 z-40" onMouseEnter={() => setMenuLateralOculto(false)} />
 
-          {/* Menú lateral deslizable */}
+          {/* Menú lateral: se abre y se cierra con clic o toque (no al pasar el mouse). */}
           {!menuLateralOculto && (
             <aside
               className="absolute top-0 left-0 h-full w-[min(280px,85%)] z-50 p-4 overflow-y-auto"
               style={{ backgroundColor: 'var(--fondo-general)', borderRight: `1px solid var(--encabezados-alterno)` }}
-              onMouseEnter={() => setMenuLateralOculto(false)}
-              onMouseLeave={() => setMenuLateralOculto(true)}
             >
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Secciones</p>
                 <button type="button" aria-label="Cerrar" onClick={() => setMenuLateralOculto(true)}
-                  className="text-sm px-2 py-1 rounded border"
-                  style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}><X size={14} className="mx-auto" /></button>
+                  className="inline-flex h-11 w-11 items-center justify-center rounded border text-sm"
+                  style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}><X size={14} aria-hidden /></button>
               </div>
               <div className="space-y-1">
                 {([
@@ -1234,7 +1269,7 @@ export default function BaseDatosPage() {
                 ] as const).map((item) => (
                   <button key={item.id} type="button"
                     onClick={() => { navegarVistaPrincipal(item.id); setMenuLateralOculto(true); }}
-                    className="w-full text-left rounded px-3 py-2 text-sm"
+                    className="w-full text-left rounded px-3 py-2 text-sm min-h-11"
                     style={{ backgroundColor: vistaPrincipal === item.id ? 'var(--hover)' : 'transparent', color: vistaPrincipal === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                     {item.label}
                   </button>
@@ -1245,7 +1280,7 @@ export default function BaseDatosPage() {
                   {([{ id: 'importar', label: 'Importar datos' }, { id: 'exportar', label: 'Exportar datos' }, { id: 'truncate', label: 'Truncate tabla' }] as const).map((item) => (
                     <button key={item.id} type="button"
                       onClick={() => { navegarVistaOperaciones(item.id); setMenuLateralOculto(true); }}
-                      className="w-full text-left rounded px-3 py-2 text-sm"
+                      className="w-full text-left rounded px-3 py-2 text-sm min-h-11"
                       style={{ backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: vistaOperaciones === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                       {item.label}
                     </button>
@@ -1262,7 +1297,7 @@ export default function BaseDatosPage() {
                 <div className="flex flex-wrap gap-2">
                   {([{ id: 'importar', label: 'Importación' }, { id: 'exportar', label: 'Exportación' }, { id: 'truncate', label: 'Truncate' }] as const).map((item) => (
                     <button key={item.id} type="button" onClick={() => navegarVistaOperaciones(item.id)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium border"
+                      className="min-h-11 px-4 py-2 rounded-full text-sm font-medium border"
                       style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: vistaOperaciones === item.id ? 'var(--hover)' : 'transparent', color: vistaOperaciones === item.id ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)' }}>
                       {item.label}
                     </button>
@@ -1280,16 +1315,12 @@ export default function BaseDatosPage() {
                   <Upload size={18} /> Importar datos
                 </h2>
                 <form onSubmit={handleImportar} className="space-y-4">
-                  <div>
-                    <Button type="button" variant="outline" onClick={cargarTablasDirectas} disabled={loadingTablasDirectas}>
-                      {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
-                    </Button>
-                  </div>
+                  {bloqueCargarTablas}
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Tabla</label>
                     <Select
                       options={(tablasImportablesMeta.length > 0 ? tablasImportablesMeta.map((t) => t.tabla) : tablasDirectas).length === 0
-                        ? [{ value: '', label: '— Carga las tablas de la BD —' }]
+                        ? [{ value: '', label: 'Carga las tablas de la BD' }]
                         : [{ value: '__todas__', label: 'Toda la base (JSON multi-tabla)' },
                           ...(tablasImportablesMeta.length > 0 ? tablasImportablesMeta.map((t) => t.tabla) : tablasDirectas)
                             .map((t) => ({ value: t, label: t }))]
@@ -1304,7 +1335,7 @@ export default function BaseDatosPage() {
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Archivo (CSV o JSON)</label>
                     <input ref={fileInputRef} type="file" accept=".csv,.json" aria-label="Archivo a importar (CSV o JSON)"
                       onChange={(e) => setArchivoImport(e.target.files?.[0] ?? null)}
-                      className="mf-campo w-full px-4 py-2.5" />
+                      className="mf-campo w-full min-w-0 max-w-full px-4 py-2.5" />
                     {tablaImport === 'usuarios' && (
                       <p className="mt-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                         Recomendación: evita importar la columna <code className="bg-[var(--badge-base)] px-1 rounded">password</code> con hash bcrypt.
@@ -1350,17 +1381,13 @@ export default function BaseDatosPage() {
                   Conexión directa a la base de datos del salón. Lista las tablas del esquema principal.
                 </p>
                 <form onSubmit={handleExportar} className="space-y-4">
-                  <div>
-                    <Button type="button" variant="outline" onClick={cargarTablasDirectas} disabled={loadingTablasDirectas}>
-                      {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
-                    </Button>
-                  </div>
+                  {bloqueCargarTablas}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Tabla o todas</label>
                       <Select
                         options={tablasDirectas.length === 0
-                          ? [{ value: '', label: '— Carga las tablas primero —' }]
+                          ? [{ value: '', label: 'Carga las tablas primero' }]
                           : [{ value: '__todas__', label: 'Todas las tablas' }, ...tablasDirectas.map((t) => ({ value: t, label: t }))]}
                         value={tablasDirectas.length === 0 ? '' : tablaExport}
                         aria-label="Tabla a exportar"
@@ -1497,11 +1524,7 @@ export default function BaseDatosPage() {
                   Esta operación es destructiva.
                 </p>
                 <form onSubmit={handleTruncateTabla} className="space-y-4">
-                  <div>
-                    <Button type="button" variant="outline" onClick={cargarTablasDirectas} disabled={loadingTablasDirectas}>
-                      {loadingTablasDirectas ? 'Cargando…' : 'Cargar tablas de la BD'}
-                    </Button>
-                  </div>
+                  {bloqueCargarTablas}
                   <div>
                     <label className="block mb-2 font-medium" style={{ color: 'var(--menu-texto-principal)' }}>Tabla objetivo</label>
                     <Select
@@ -1513,11 +1536,11 @@ export default function BaseDatosPage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <label className="inline-flex min-h-11 items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input type="checkbox" checked={truncateRestartIdentity} onChange={(e) => setTruncateRestartIdentity(e.target.checked)} className="rounded" />
                       RESTART IDENTITY
                     </label>
-                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                    <label className="inline-flex min-h-11 items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                       <input type="checkbox" checked={truncateCascade} onChange={(e) => setTruncateCascade(e.target.checked)} className="rounded" />
                       CASCADE
                     </label>
@@ -1532,7 +1555,7 @@ export default function BaseDatosPage() {
                       aria-label="Confirmación del TRUNCATE"
                       onChange={(e) => setTruncateConfirmText(e.target.value)}
                       className="mf-campo w-full px-4 py-2.5"
-                      placeholder={tablaTruncate ? `TRUNCATE ${tablaTruncate}` : 'TRUNCATE nombre_tabla'}
+                      placeholder={PLACEHOLDER_CONFIRMACION}
                     />
                   </div>
                   <Button type="submit" variant="danger" disabled={truncandoTabla || !tablaTruncate}>
@@ -1610,6 +1633,9 @@ export default function BaseDatosPage() {
                       <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
                         Necesario para generar el backup. Si ya las cargaste en otra sección ya estarán disponibles.
                       </p>
+                      {errorCargaTablas && (
+                        <p role="alert" className="text-sm mt-2" style={{ color: 'var(--danger-texto)' }}>{errorCargaTablas}</p>
+                      )}
                     </div>
                   )}
 
@@ -2552,6 +2578,30 @@ export default function BaseDatosPage() {
             }[modoImportacion(tablasImportablesMeta, tablaImport)]}
           </p>
         )}
+        {/* Como en el truncate: se escribe la confirmación, que viaja al backend y él la vuelve a validar. */}
+        <div className="mt-4">
+          <label htmlFor="confirmacion-importacion" className="block mb-2 text-sm font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+            Confirmación (escribe exactamente:{' '}
+            <code className="text-xs bg-[var(--badge-base)] px-1 rounded">{confirmacionImportacionEscrita(tablaImport)}</code>)
+          </label>
+          <input
+            id="confirmacion-importacion"
+            type="text"
+            value={importConfirmText}
+            aria-invalid={errorConfirmImport ? true : undefined}
+            aria-describedby={errorConfirmImport ? 'confirmacion-importacion-error' : undefined}
+            onChange={(e) => {
+              setImportConfirmText(e.target.value);
+              setErrorConfirmImport(null);
+            }}
+            className="mf-campo w-full px-4 py-2.5"
+            placeholder={PLACEHOLDER_CONFIRMACION}
+            autoComplete="off"
+          />
+          {errorConfirmImport && (
+            <p id="confirmacion-importacion-error" role="alert" className="mt-2 text-sm" style={{ color: 'var(--danger-texto)' }}>{errorConfirmImport}</p>
+          )}
+        </div>
       </Modal>
     </AdminLayout>
   );

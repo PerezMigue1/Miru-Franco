@@ -316,7 +316,8 @@ class ApiClient {
               : '';
           if (errDetail) {
             message =
-              message === 'Bad Request' || /revisa los campos|validaci/i.test(message)
+              // El backend ya manda el campo error en español ('Solicitud inválida'); se aceptan ambos textos.
+              message === 'Bad Request' || message === 'Solicitud inválida' || /revisa los campos|validaci/i.test(message)
                 ? errDetail
                 : `${message} — ${errDetail}`;
           }
@@ -343,7 +344,9 @@ class ApiClient {
             errorData = { message: errorText };
           }
           const message = errorData.message || errorData.error || 'El correo ya está registrado. Usa otro email.';
-          throw new Error(message);
+          const err409 = new Error(message) as ApiError;
+          err409.status = 409;
+          throw err409;
         }
 
         // ✅ Manejar error 429 (Rate Limiting)
@@ -443,12 +446,13 @@ class ApiClient {
   /** GET con base opcional. Puedes pasar `{ customBase, skipAuth: true }` para rutas públicas. */
   async get<T>(
     endpoint: string,
-    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean; skip500Redirect?: boolean; skip403Redirect?: boolean }
+    customBaseOrOptions?: string | { customBase?: string; skipAuth?: boolean; skip500Redirect?: boolean; skip403Redirect?: boolean; skip401Redirect?: boolean }
   ): Promise<T> {
     let customBase: string | undefined;
     let skipAuth = false;
     let skip500Redirect = false;
     let skip403Redirect = false;
+    let skip401Redirect = false;
     if (typeof customBaseOrOptions === 'string') {
       customBase = customBaseOrOptions;
     } else if (customBaseOrOptions && typeof customBaseOrOptions === 'object') {
@@ -456,9 +460,10 @@ class ApiClient {
       skipAuth = Boolean(customBaseOrOptions.skipAuth);
       skip500Redirect = Boolean(customBaseOrOptions.skip500Redirect);
       skip403Redirect = Boolean(customBaseOrOptions.skip403Redirect);
+      skip401Redirect = Boolean(customBaseOrOptions.skip401Redirect);
     }
     const url = customBase ? `${customBase}${endpoint}` : undefined;
-    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect, skip403Redirect });
+    return this.request<T>(endpoint, { method: 'GET', endpoint: url, skipAuth, skip500Redirect, skip403Redirect, skip401Redirect });
   }
 
   private resolveCustomBaseOpts(opts?: ApiClientCustomBase): { url?: string; skip500Redirect: boolean; skip403Redirect: boolean; skip401Redirect: boolean } {

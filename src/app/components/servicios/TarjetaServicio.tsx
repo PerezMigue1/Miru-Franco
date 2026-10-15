@@ -31,6 +31,7 @@ export default function TarjetaServicio({ servicio, indice }: { servicio: Servic
               src={servicio.imagen ?? servicio.imagenes?.[0]}
               alt={servicio.nombre}
               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              marcarIlustrativa
             />
           </div>
         </div>

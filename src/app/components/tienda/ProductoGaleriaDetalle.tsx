@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import Badge from '../ui/Badge';
 import { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
+import { esImagenGenerada } from '../../utils/galeria';
 
 type Props = {
   urls: string[];
@@ -54,6 +56,13 @@ export function ProductoGaleriaDetalle({ urls, nombreProducto }: Props) {
         </div>
       ))}
 
+      {/* La misma insignia que en servicios, sobre la foto que se ve si es generada con IA o ilustrativa. */}
+      {esImagenGenerada(safe[i]) && (
+        <span className="pointer-events-none absolute left-3 top-3 z-[2]">
+          <Badge size="sm">Imagen ilustrativa</Badge>
+        </span>
+      )}
+
       {n > 1 && (
         <>
           <button
@@ -62,7 +71,7 @@ export function ProductoGaleriaDetalle({ urls, nombreProducto }: Props) {
               e.preventDefault();
               prev();
             }}
-            className="absolute left-1 top-1/2 z-[3] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-opacity hover:opacity-90 sm:left-2 sm:h-11 sm:w-11"
+            className="absolute left-1 top-1/2 z-[3] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-opacity hover:opacity-90 sm:left-2"
             style={{
               backgroundColor: 'var(--tarjetas-paneles)',
               color: 'var(--menu-texto-principal)',
@@ -78,7 +87,7 @@ export function ProductoGaleriaDetalle({ urls, nombreProducto }: Props) {
               e.preventDefault();
               next();
             }}
-            className="absolute right-1 top-1/2 z-[3] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-opacity hover:opacity-90 sm:right-2 sm:h-11 sm:w-11"
+            className="absolute right-1 top-1/2 z-[3] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-opacity hover:opacity-90 sm:right-2"
             style={{
               backgroundColor: 'var(--tarjetas-paneles)',
               color: 'var(--menu-texto-principal)',
@@ -96,7 +105,7 @@ export function ProductoGaleriaDetalle({ urls, nombreProducto }: Props) {
               className="rounded-full px-2 py-0.5 text-xs font-medium"
               style={{
                 backgroundColor: 'var(--negro-55)',
-                color: 'var(--menu-texto-principal)',
+                color: 'var(--texto-fondo-oscuro)',
               }}
             >
               {i + 1} / {n}

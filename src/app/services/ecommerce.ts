@@ -224,6 +224,14 @@ export interface PedidoApi {
   direccionEnvioId?: string | null;
   /** Líneas del pedido si el listado las incluyó (GET /api/pedidos las trae); así no hace falta pedir /items. */
   items?: PedidoItemApi[];
+  /**
+   * Solo en el detalle del portal (propios): hasta cuándo puede revocar su compra (art. 56 LFPC, 5 días hábiles)
+   * y si hoy puede. Los calcula el backend.
+   */
+  revocableHasta?: string | null;
+  puedeRevocar?: boolean;
+  /** Lo que se reintegraría al revocar: el total menos los reembolsos ya aprobados. */
+  montoRevocable?: number;
 }
 
 function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
@@ -257,6 +265,10 @@ function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
           }),
         }
       : {}),
+    ...(raw.puedeRevocar !== undefined
+      ? { puedeRevocar: raw.puedeRevocar === true, revocableHasta: raw.revocableHasta != null ? str(raw.revocableHasta) : null }
+      : {}),
+    ...(raw.montoRevocable !== undefined ? { montoRevocable: num(raw.montoRevocable) } : {}),
   };
 }
 
@@ -449,6 +461,31 @@ export async function cancelarPedidoPropio(id: number): Promise<{ pedido: Pedido
   const o = unwrapObject<Record<string, unknown>>(res);
   if (!o || o.id == null) throw new Error('No se pudo cancelar el pedido');
   return { pedido: normalizarPedido(o), reembolso: normalizarReembolso((res as Record<string, unknown>).reembolso) };
+}
+
+/** Resultado de revocar la compra: reembolsada, por reembolsar por el salón, o falta entregar el producto. */
+export type EstadoRevocacionApi = 'reembolsado' | 'en_revision' | 'pendiente_entrega';
+
+export interface RevocacionApi {
+  estado: EstadoRevocacionApi;
+  monto: number;
+  devolucionId: number | null;
+}
+
+/**
+ * Portal: la clienta revoca su compra dentro de los 5 días hábiles (art. 56 LFPC), sin dar razones. El motivo es
+ * opcional. Si no la ha recogido se cancela y se reembolsa; si ya la recogió, la entrega en el salón.
+ */
+export async function revocarCompraPropia(id: number, motivo?: string): Promise<{ pedido: PedidoApi | null; revocacion: RevocacionApi }> {
+  const texto = motivo?.trim();
+  const res = await apiClient.post<unknown>(conPropios(`/api/pedidos/${id}/revocar`, { propios: true }), texto ? { motivo: texto } : {}, BASE());
+  const o = unwrapObject<Record<string, unknown>>(res);
+  const r = ((res && typeof res === 'object' ? (res as Record<string, unknown>).revocacion : null) ?? {}) as Record<string, unknown>;
+  const estado = (['reembolsado', 'en_revision', 'pendiente_entrega'] as const).find((e) => e === r.estado) ?? 'en_revision';
+  return {
+    pedido: o && o.id != null ? normalizarPedido(o) : null,
+    revocacion: { estado, monto: num(r.monto), devolucionId: r.devolucionId != null ? num(r.devolucionId) : null },
+  };
 }
 
 export async function eliminarPedido(id: number): Promise<void> {
@@ -1009,7 +1046,13 @@ export interface DevolucionApi {
   clienteNombre?: string | null;
   clienteEmail?: string | null;
   producto?: string | null;
+  /** 'revocacion_art56': la clienta revocó su compra (art. 56 LFPC); si no viene, es una solicitud normal. */
+  origen?: string;
+  /** Estado del pedido (lista paginada): una revocación de un pedido cancelado ya no tiene producto que recibir. */
+  pedidoEstado?: string;
 }
+
+export const ORIGEN_REVOCACION = 'revocacion_art56';
 
 const objeto = (v: unknown): Record<string, unknown> | null =>
   v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
@@ -1040,6 +1083,8 @@ function normalizarDevolucion(r: Record<string, unknown>): DevolucionApi {
     clienteNombre: usuario?.nombre != null ? str(usuario.nombre) : null,
     clienteEmail: usuario?.email != null ? str(usuario.email) : null,
     producto: item ? str(item.nombreProducto ?? productoItem?.nombre) || null : null,
+    ...(r.origen != null ? { origen: str(r.origen) } : {}),
+    ...(pedido?.estado != null ? { pedidoEstado: str(pedido.estado) } : {}),
   };
 }
 
@@ -1090,6 +1135,17 @@ export async function aprobarDevolucion(
 
 export async function rechazarDevolucion(id: number, datos: { nota?: string } = {}): Promise<void> {
   await apiClient.post<unknown>(`/api/devoluciones/${id}/rechazar`, datos, BASE());
+}
+
+/** Cómo se reintegró una revocación: Mercado Pago (automático), efectivo de la caja, a mano, o ya estaba reembolsado. */
+export type ReembolsoRevocacionApi = 'mercado_pago' | 'efectivo' | 'manual' | 'ya_reembolsado';
+
+/** Personal con devoluciones:gestionar: "Recibir producto y reembolsar" una revocación de compra (art. 56 LFPC). */
+export async function recibirRevocacion(id: number, datos: { nota?: string } = {}): Promise<{ reembolso: ReembolsoRevocacionApi | null }> {
+  const res = await apiClient.post<unknown>(`/api/devoluciones/${id}/recibir-revocacion`, datos, BASE());
+  const r = res && typeof res === 'object' ? (res as Record<string, unknown>).reembolso : null;
+  const reembolso = (['mercado_pago', 'efectivo', 'manual', 'ya_reembolsado'] as const).find((x) => x === r) ?? null;
+  return { reembolso };
 }
 
 export interface DevolucionesPaginadas {

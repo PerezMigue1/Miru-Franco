@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getProductosSinRedirigir } from './services/productos';
 import { getServicios } from './services/servicios';
 import { SITE_URL } from './utils/seo';
+import { DOCUMENTOS_LEGALES } from './utils/documentosLegales';
 
 /** Se regenera cada hora; si el backend no responde, se publican solo las rutas fijas. */
 export const revalidate = 3600;
@@ -12,8 +13,12 @@ const RUTAS_FIJAS: { path: string; changeFrequency: MetadataRoute.Sitemap[number
   { path: '/cliente/tienda-online', changeFrequency: 'daily', priority: 0.9 },
   { path: '/sobre-nosotros', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/contacto', changeFrequency: 'monthly', priority: 0.6 },
-  { path: '/terminos-y-condiciones', changeFrequency: 'yearly', priority: 0.2 },
-  { path: '/aviso-de-privacidad', changeFrequency: 'yearly', priority: 0.2 },
+  // Páginas legales del registro (sin anclas: anticipos vive dentro de la política de reembolsos).
+  ...[...new Set(DOCUMENTOS_LEGALES.map((d) => d.ruta.split('#')[0]))].map((path) => ({
+    path,
+    changeFrequency: 'yearly' as const,
+    priority: 0.2,
+  })),
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { CircleAlert, Clock3, HandCoins, Undo2 } from 'lucide-react';
 import Button from '../ui/Button';
 import SelloConfirmacion from './SelloConfirmacion';
+import CasillaPoliticaAnticipos from './CasillaPoliticaAnticipos';
+import { conAceptacionDeAnticipos, MENSAJE_FALTA_ANTICIPOS } from './consentimientoAnticipo';
 import { consultarEstadoAnticipo, crearPreferenciaAnticipo, type CitaApi, type EstadoPagoAnticipo } from '../../services/citas';
 import { avisoPagoEnSalon, limiteAnticipo, tiempoRestante } from '../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
@@ -25,6 +27,9 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
   const [enSalon, setEnSalon] = useState(Boolean(cita.anticipoEnSalon));
   const [abriendo, setAbriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
+  const [errorPolitica, setErrorPolitica] = useState<string | null>(null);
+  const idCasilla = `anticipo-politica-confirmacion-${cita.id}`;
 
   useEffect(() => {
     let vivo = true;
@@ -47,10 +52,15 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
   }, [cita.id, volvioDeMercadoPago]);
 
   const pagar = async () => {
+    if (!aceptaPolitica) {
+      setErrorPolitica(MENSAJE_FALTA_ANTICIPOS);
+      document.getElementById(idCasilla)?.focus();
+      return;
+    }
     setAbriendo(true);
     setError(null);
     try {
-      const { initPoint } = await crearPreferenciaAnticipo(cita.id);
+      const { initPoint } = await conAceptacionDeAnticipos('/cliente/servicios-citas/confirmacion', () => crearPreferenciaAnticipo(cita.id));
       window.location.assign(initPoint);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo abrir Mercado Pago. Intenta de nuevo.');
@@ -154,7 +164,16 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
       <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-fondos-suaves px-4 py-1.5 text-sm font-semibold text-menu-texto-principal">
         <Clock3 size={15} aria-hidden /> {limite ?? <>Quedan <span className="mf-cifras">{restante}</span></>}
       </p>
-      <div className="mx-auto mt-5 max-w-sm space-y-2">
+      <div className="mx-auto mt-5 max-w-sm space-y-2 text-left">
+        <CasillaPoliticaAnticipos
+          id={idCasilla}
+          checked={aceptaPolitica}
+          onChange={(marcada) => {
+            setAceptaPolitica(marcada);
+            if (marcada) setErrorPolitica(null);
+          }}
+          error={errorPolitica}
+        />
         <Button fullWidth size="lg" onClick={pagar} disabled={abriendo}>
           {abriendo ? 'Abriendo Mercado Pago…' : 'Pagar anticipo con Mercado Pago'}
         </Button>

@@ -3,14 +3,17 @@ import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import Card from '../components/ui/Card';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
+import EncabezadoVersion from '../components/legal/EncabezadoVersion';
+import ContactoProfeco from '../components/legal/Profeco';
 import { metadataPublica } from '../utils/seo';
-import { PLAZOS_TERMINOS as P, fechaActualizacionTerminos } from '../utils/terminosCondiciones';
+import { PLAZOS_TERMINOS as P } from '../utils/terminosCondiciones';
+import { documentoLegal } from '../utils/documentosLegales';
 import { HORARIO_SALON } from '../utils/contactoSalon';
 
 export const metadata = metadataPublica({
   title: 'Términos y Condiciones',
   description:
-    'Términos y Condiciones de Mirú Franco Salón Beauty: compras con recogida en el salón, pago en línea y apartados, cambios y devoluciones, citas, garantía y datos personales.',
+    'Términos y Condiciones de Mirú Franco Salón Beauty: compras con entrega en el salón, pago en línea y apartados, revocación, cambios y devoluciones, citas, garantía y datos personales.',
   path: '/terminos-y-condiciones',
 });
 
@@ -44,11 +47,10 @@ export default function TerminosYCondicionesPage() {
   return (
     <DocumentoLegal
       titulo="Términos y Condiciones de Uso"
-      fechaIso={P.fechaActualizacion}
-      fechaTexto={fechaActualizacionTerminos()}
       secciones={SECCIONES}
       etiquetaIndice="Índice de los términos"
     >
+      <EncabezadoVersion slug="terminos" />
       <p className="mf-terminos__intro">
         Bienvenida a www.mirufranco.com. Al crear una cuenta, agendar una cita o comprar en nuestra tienda en
         línea, aceptas estos Términos y Condiciones. Te pedimos leerlos con calma. Si tienes dudas, escríbenos
@@ -57,7 +59,8 @@ export default function TerminosYCondicionesPage() {
 
       <Seccion n={1}>
         <p>
-          Este sitio es operado por Mildred Rubí Franco Martínez, con nombre comercial Mirú Franco Salón Beauty.
+          Este sitio es operado por Mildred Rubí Franco Martínez, con nombre comercial Mirú Franco Salón Beauty, que es
+          la proveedora de los productos y servicios que ofrecemos aquí. Estos son sus datos de contacto:
         </p>
         <Card variant="elevated" padding="lg" className="mf-terminos__contacto">
           <dl>
@@ -117,7 +120,7 @@ export default function TerminosYCondicionesPage() {
 
       <Seccion n={3}>
         <ol>
-          <li>Todos los precios están en pesos mexicanos (MXN) e incluyen IVA.</li>
+          <li>Todos los precios son totales: están en pesos mexicanos (MXN) e incluyen IVA.</li>
           <li>Las fotografías son ilustrativas. El empaque puede variar según el lote del fabricante.</li>
           <li>
             Las existencias se confirman al momento de completar tu pedido. Si por un error un producto no está
@@ -133,14 +136,16 @@ export default function TerminosYCondicionesPage() {
 
       <Seccion n={4}>
         <p>
-          No realizamos envíos a domicilio desde la tienda en línea. Todos los pedidos se recogen en el salón,
-          dentro del horario de atención. Al hacer tu pedido puedes elegir entre dos formas de pago:
+          No realizamos envíos a domicilio desde la tienda en línea. Todos los pedidos se entregan en el salón, en el
+          domicilio de la sección 1 y dentro del horario de atención. Al hacer tu pedido puedes elegir entre dos formas
+          de pago:
         </p>
 
         <h3>4.1 Pagar en línea</h3>
         <ol>
           <li>
-            El pago se procesa por medio de Mercado Pago. Mirú Franco no recibe ni guarda los datos de tu tarjeta.
+            El pago se procesa por medio de Mercado Pago. Mirú Franco no recibe ni guarda el número completo ni el
+            código de seguridad de tu tarjeta.
           </li>
           <li>
             Tu pedido queda confirmado cuando Mercado Pago aprueba el pago. Si el pago no se completa en{' '}
@@ -181,20 +186,26 @@ export default function TerminosYCondicionesPage() {
       <Seccion n={5}>
         <ol>
           <li>
-            <strong>Cambios:</strong> aceptamos cambios de producto dentro de los {P.diasCambioProducto} días
-            naturales siguientes a que lo recojas, siempre que esté sellado, sin abrir y en las mismas
-            condiciones en que lo recibiste, con su comprobante.
+            <strong>Tu derecho de revocación:</strong> conforme al artículo 56 de la Ley Federal de Protección al
+            Consumidor, puedes revocar tu compra en línea sin dar razones dentro de los 5 días hábiles siguientes a la
+            entrega de tu pedido en el salón (o desde la compra, si todavía no se te entrega). Avísanos por WhatsApp o
+            por correo, o entréganos el producto en el salón, y te reintegramos el total que pagaste.
           </li>
           <li>
-            Por higiene y seguridad, no aceptamos cambios de productos abiertos o usados, salvo que tengan un
-            defecto de fábrica.
+            <strong>Cambios (beneficio adicional):</strong> además de tu derecho de revocación, aceptamos cambios de
+            producto dentro de los {P.diasCambioProducto} días naturales siguientes a que lo recojas, siempre que esté
+            sellado, sin abrir y en las mismas condiciones en que lo recibiste, con su comprobante.
+          </li>
+          <li>
+            Por higiene y seguridad, este beneficio de cambio no aplica a productos abiertos o usados, salvo que tengan
+            un defecto de fábrica. Esto no limita tu derecho de revocación.
           </li>
           <li>
             <strong>Cambio por otro producto:</strong> el cambio se hace por otro producto. Si el nuevo cuesta
             más, pagas la diferencia.
           </li>
           <li>
-            <strong>Sí hay reembolso en estos casos:</strong>
+            <strong>Además de la revocación, también hay reembolso en estos casos:</strong>
             <ul>
               <li>el producto tiene un defecto de fábrica o llegó en mal estado;</li>
               <li>te entregamos un producto distinto al que pediste;</li>
@@ -211,7 +222,11 @@ export default function TerminosYCondicionesPage() {
             Los reembolsos de pagos en línea se hacen por Mercado Pago, al mismo medio con el que pagaste. El
             tiempo en que se refleja depende de tu banco.
           </li>
-          <li>Lo anterior no limita los derechos que te otorga la Ley Federal de Protección al Consumidor.</li>
+          <li>
+            Consulta todos los detalles en nuestra{' '}
+            <Link href={documentoLegal('reembolsos').ruta}>{documentoLegal('reembolsos').titulo}</Link>. Nada de lo
+            anterior limita los derechos que te otorga la Ley Federal de Protección al Consumidor.
+          </li>
         </ol>
       </Seccion>
 
@@ -246,8 +261,11 @@ export default function TerminosYCondicionesPage() {
             tu anticipo se respeta para la nueva fecha.
           </li>
           <li>
-            <strong>Cancelar:</strong> si cancelas una cita con el anticipo pagado, el anticipo no se devuelve.
-            Si no puedes asistir, te recomendamos reagendar.
+            <strong>Cancelar:</strong> si al pagar tu anticipo faltan más de 10 días hábiles para tu cita, puedes
+            cancelarla dentro de los 5 días hábiles siguientes a tu pago y te devolvemos el anticipo completo. Si faltan
+            10 días hábiles o menos, al cancelar el anticipo no se devuelve, pero puedes reagendar con aviso previo y tu
+            anticipo se respeta. Consulta nuestra{' '}
+            <Link href={documentoLegal('anticipos').ruta}>{documentoLegal('anticipos').titulo}</Link>.
           </li>
           <li>
             Si no llegas y no avisas, el anticipo no se devuelve y podríamos limitar tus citas en línea. En ese
@@ -311,8 +329,9 @@ export default function TerminosYCondicionesPage() {
       <Seccion n={11}>
         <p>
           Tratamos tus datos personales de acuerdo con nuestro{' '}
-          <Link href="/aviso-de-privacidad">Aviso de Privacidad</Link>. Solo los usamos para
-          gestionar tu cuenta, tus pedidos y tus citas, y para comunicarnos contigo.
+          <Link href={documentoLegal('aviso-privacidad').ruta}>{documentoLegal('aviso-privacidad').titulo}</Link>. Ahí
+          te explicamos qué datos recabamos, para qué los usamos (incluidas las finalidades adicionales, a las que
+          puedes negarte), con quién los compartimos y cómo ejercer tus derechos.
         </p>
       </Seccion>
 
@@ -327,8 +346,8 @@ export default function TerminosYCondicionesPage() {
       <Seccion n={13}>
         <p>
           Podemos actualizar estos términos. La versión vigente siempre estará publicada en esta página con su
-          fecha de actualización. Los pedidos y citas confirmados se rigen por los términos vigentes al momento
-          de confirmarlos.
+          número de versión y su fecha de vigencia. Los pedidos y citas confirmados se rigen por los términos
+          vigentes al momento de confirmarlos.
         </p>
       </Seccion>
 
@@ -338,6 +357,9 @@ export default function TerminosYCondicionesPage() {
           leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las partes se someten a la
           Procuraduría Federal del Consumidor (Profeco) en la vía administrativa y a los tribunales competentes
           de Huejutla de Reyes, Hidalgo.
+        </p>
+        <p>
+          <strong>Procuraduría Federal del Consumidor (Profeco):</strong> <ContactoProfeco />.
         </p>
       </Seccion>
     </DocumentoLegal>

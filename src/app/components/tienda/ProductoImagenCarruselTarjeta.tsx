@@ -2,10 +2,12 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import Badge from '../ui/Badge';
 import { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
+import { esImagenGenerada } from '../../utils/galeria';
 
 /** Hosts permitidos en next.config `images.remotePatterns`: se pueden optimizar (WebP/AVIF + tamaño correcto). */
-const HOSTS_OPTIMIZABLES = new Set(['res.cloudinary.com', 'images.unsplash.com']);
+const HOSTS_OPTIMIZABLES = new Set(['res.cloudinary.com']);
 
 function puedeOptimizar(src: string): boolean {
   try {
@@ -13,6 +15,11 @@ function puedeOptimizar(src: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Fotos que se pueden mostrar: sin vacías ni las que ya fallaron al cargar (sin ninguna, sale el placeholder). */
+export function fotosQueCargan(urls: string[], fallidas: ReadonlySet<string>): string[] {
+  return urls.filter((u) => Boolean(u) && !fallidas.has(u));
 }
 
 type Props = {
@@ -28,7 +35,10 @@ type Props = {
  * foto; los puntos indican cuántas hay. La segunda foto solo se monta cuando se va a mostrar.
  */
 export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'object-contain' }: Props) {
-  const safe = urls.filter(Boolean);
+  // Una foto que no carga se quita (como en ServicioImagen): nunca queda la imagen rota con su alt.
+  const [fallidas, setFallidas] = useState<ReadonlySet<string>>(() => new Set());
+  const marcarFallida = (src: string) => setFallidas((previas) => new Set(previas).add(src));
+  const safe = fotosQueCargan(urls, fallidas);
   const n = safe.length;
   const [encima, setEncima] = useState(false);
   const [segundaVista, setSegundaVista] = useState(false);
@@ -68,6 +78,7 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
             unoptimized={!puedeOptimizar(src)}
             quality={75}
             loading="lazy"
+            onError={() => marcarFallida(src)}
           />
         </div>
       ))}
@@ -85,6 +96,12 @@ export function ProductoImagenCarruselTarjeta({ urls, alt, imageClassName = 'obj
             />
           ))}
         </div>
+      )}
+      {/* La misma insignia que en servicios, sobre la foto que se ve si es generada con IA o ilustrativa. */}
+      {esImagenGenerada(safe[i]) && (
+        <span className="pointer-events-none absolute left-2 top-2 z-[6]">
+          <Badge size="sm">Imagen ilustrativa</Badge>
+        </span>
       )}
     </div>
   );

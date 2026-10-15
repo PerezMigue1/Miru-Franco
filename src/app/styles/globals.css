@@ -10,6 +10,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  /* Controles nativos (fecha, hora, mes, barras) en claro; .dark los pasa a oscuro. */
+  color-scheme: light;
   /* Nueva Paleta de Colores */
   --fondo-general: #DCC8B6;
   --logo-branding: #9f6d1f;
@@ -146,6 +148,17 @@
   --grafica-petroleo: #2A6F6F;
   --grafica-teja:     #C45C3E;
   --grafica-indigo:   #5C6BC0;
+  /* Serie principal de las gráficas de marca (chartColors.ts): el vino en claro (4.1:1 sobre terracota). */
+  --grafica-principal: var(--danger);
+  /* Series de las gráficas sobre la tarjeta terracota (--tarjetas-paneles, #B38E6F) en claro: --hover, oro,
+     salvia, ámbar y azul daban entre 1.1 y 1.9:1. Estos tonos oscuros de la misma familia pasan de 3:1
+     (WCAG 1.4.11): terracota 3.5, oro 3.6, verde 3.9, ámbar 3.4 y azul 3.7. En oscuro .dark los devuelve a
+     los colores de la marca, que ya pasan sobre #2a2a2a. */
+  --grafica-terracota: #6e2a12;
+  --grafica-oro: #553806;
+  --grafica-verde: #2f3d22;
+  --grafica-ambar: #663600;
+  --grafica-azul: #1e3a6e;
   /* Colores de otras marcas en el pie de página (no cambian con el tema). */
   --marca-facebook:  #1877F2;
   --marca-twitter:   #1DA1F2;
@@ -154,6 +167,17 @@
 
 /* Modo oscuro - solo colores oscuros de la paleta */
 .dark {
+  /* Íconos nativos de fecha, hora y mes, y barras de desplazamiento, en claro sobre oscuro. */
+  color-scheme: dark;
+  /* Serie principal de las gráficas: el vino (#710014) daba 1.15:1 sobre #2a2a2a. Este vino claro
+     (el mismo de --danger-texto) da 4.8:1 sobre #2a2a2a y 6.1:1 sobre #161616 (WCAG 1.4.11, 3:1). */
+  --grafica-principal: #e0748f;
+  /* Tercera serie: la terracota (#A64B63) daba 2.6:1 sobre #2a2a2a; esta terracota clara pasa de 3:1. */
+  --grafica-terracota: #d08a5e;
+  --grafica-oro: var(--logo-branding);
+  --grafica-verde: var(--success);
+  --grafica-ambar: var(--warning);
+  --grafica-azul: var(--enlaces-textos-interactivos);
   --fondo-general: #161616;
   --tarjetas-paneles: #2a2a2a;
   --fondos-suaves: #1f1f1f;

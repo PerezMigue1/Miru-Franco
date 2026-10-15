@@ -132,7 +132,7 @@ export default function NuevaSolicitudDevolucion({ pedidos, onCreada }: NuevaSol
           fullWidth
         />
         {causa === 'sellado_sin_abrir' && (
-          <label className="flex items-center gap-2 text-sm text-menu-texto-principal md:col-span-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm text-menu-texto-principal md:col-span-2">
             <input type="checkbox" checked={sellado} onChange={(e) => setSellado(e.target.checked)} className="h-5 w-5 accent-[var(--botones-principales)]" />
             Revisé el producto: está sellado y sin abrir
           </label>

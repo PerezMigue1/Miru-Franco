@@ -3,20 +3,15 @@ import Footer from '../layouts/Footer';
 import Image from 'next/image';
 import { metadataPublica } from '../utils/seo';
 import SuperficieCliente from '../components/cliente/SuperficieCliente';
+import { getServicios } from '../services/servicios';
+import { cifraServiciosDisponibles } from '../utils/serviciosDisponibles';
 
 export const metadata = metadataPublica({
   title: 'Sobre nosotros',
   description:
-    'Conoce la historia, los valores y el equipo detrás de Mirú Franco Beauty Salón, tu salón de belleza profesional en Huejutla de Reyes.',
+    'Conoce Mirú Franco Beauty Salón, tu salón de belleza en Huejutla de Reyes: quiénes somos, nuestros valores y cómo agendar tu cita.',
   path: '/sobre-nosotros',
 });
-
-const STATS = [
-  { num: '5+', label: 'Años de experiencia' },
-  { num: '500+', label: 'Clientes satisfechos' },
-  { num: '15+', label: 'Servicios disponibles' },
-  { num: '100%', label: 'Satisfacción garantizada' },
-];
 
 const VALORES = [
   {
@@ -37,7 +32,12 @@ const VALORES = [
   },
 ];
 
-export default function SobreNosotrosPage() {
+export default async function SobreNosotrosPage() {
+  // Solo cifras con respaldo: el conteo real del catálogo (si el API falla, se oculta). Años, número de
+  // clientas y una "satisfacción garantizada" no tienen fuente ni política definida: no se anuncian.
+  const { data: servicios, error } = await getServicios();
+  const cifraServicios = error ? null : cifraServiciosDisponibles(servicios);
+
   return (
     <SuperficieCliente className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--fondo-general)' }}>
       <Header />
@@ -67,11 +67,26 @@ export default function SobreNosotrosPage() {
                 En Mirú Franco, nos dedicamos a realzar tu belleza natural con productos y servicios de la más alta calidad. Nuestro equipo de profesionales está comprometido a brindarte una experiencia excepcional en cada visita.
               </p>
               <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--texto-secundario)' }}>
-                Con años de experiencia en el cuidado capilar, combinamos técnicas tradicionales con innovaciones modernas para ofrecerte resultados que superen tus expectativas.
+                Estamos en Huejutla de Reyes, Hidalgo. Aquí puedes agendar tus servicios en línea, comprar productos profesionales para el cuidado de tu cabello y recogerlos en el salón.
               </p>
               <p className="text-base leading-relaxed" style={{ color: 'var(--texto-secundario)' }}>
                 Cada cliente es único, y por eso diseñamos un plan de cuidado personalizado para adaptarnos a tus necesidades específicas, tu tipo de cabello y tus preferencias de estilo.
               </p>
+              {/* Cifra real del catálogo, dentro de la historia: sola en una banda completa se fundía en
+                  oscuro con "Nuestros Valores" y el pie. Sin ella (API caído) no queda hueco. */}
+              {cifraServicios && (
+                <p className="mt-8 flex items-baseline gap-3 border-t pt-6" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
+                  <span
+                    className="mf-cifras text-4xl font-bold"
+                    style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
+                  >
+                    {cifraServicios.num}
+                  </span>
+                  <span className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {cifraServicios.label}
+                  </span>
+                </p>
+              )}
             </div>
             <div className="mf-revelar flex justify-center">
               {/* Arco: eco de la forma del monograma */}
@@ -87,31 +102,6 @@ export default function SobreNosotrosPage() {
                   sizes="(max-width: 640px) 256px, 320px"
                 />
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section className="py-14 md:py-16 layout-gutter-x" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-          <div className="container-max">
-            <div className="mf-revelar grid grid-cols-2 sm:grid-cols-4 gap-y-8">
-              {STATS.map((stat, i) => (
-                <div
-                  key={stat.label}
-                  className={`px-4 sm:px-8 ${i % 2 === 0 ? 'border-r' : ''} sm:border-r sm:last:border-r-0`}
-                  style={{ borderColor: 'var(--mf-linea)' }}
-                >
-                  <p
-                    className="mf-cifras text-4xl md:text-5xl font-bold mb-2"
-                    style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
-                  >
-                    {stat.num}
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
         </section>

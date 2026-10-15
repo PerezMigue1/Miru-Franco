@@ -43,6 +43,25 @@ describe('Servicio por id en el panel', () => {
   });
 });
 
+describe('anticipoAplica del backend (si hoy se pide anticipo al agendar en línea)', () => {
+  it('con anticipoAplica false lo conserva, aunque el servicio tenga monto', async () => {
+    get.mockResolvedValueOnce({ data: { id: 5, nombre: 'Corte', anticipoMonto: '150.00', anticipoAplica: false } });
+    const s = await getServicioPorId(5);
+    expect(s?.anticipoMonto).toBe(150);
+    expect(s?.anticipoAplica).toBe(false);
+  });
+
+  it('con anticipoAplica true lo conserva', async () => {
+    get.mockResolvedValueOnce({ data: { id: 5, nombre: 'Corte', anticipoMonto: 150, anticipoAplica: true } });
+    expect((await getServicioPorId(5))?.anticipoAplica).toBe(true);
+  });
+
+  it('un backend anterior que no lo manda: queda sin definir (se usa solo el monto, como hasta ahora)', async () => {
+    get.mockResolvedValueOnce({ data: { id: 5, nombre: 'Corte', anticipoMonto: 150 } });
+    expect((await getServicioPorId(5))?.anticipoAplica).toBeUndefined();
+  });
+});
+
 describe('Listado admin de servicios', () => {
   it('un fallo devuelve el error (no solo una lista vacía)', async () => {
     get.mockRejectedValueOnce(conStatus(403, 'Sin permiso para servicios'));

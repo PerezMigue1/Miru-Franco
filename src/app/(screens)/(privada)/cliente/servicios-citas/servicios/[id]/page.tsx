@@ -7,6 +7,7 @@ import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import ServicioImagen from '../../../../../../components/servicios/ServicioImagen';
+import LeyendaPrecioIva from '../../../../../../components/tienda/LeyendaPrecioIva';
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../../components/cliente/PasosFlujo';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
 import { CalendarDays, Check, Clock3, Info } from 'lucide-react';
@@ -86,6 +87,7 @@ export default function DetalleServicioPage() {
                 src={servicio.imagen ?? servicio.imagenes?.[0]}
                 alt={servicio.nombre}
                 sizes="(max-width: 1024px) 100vw, 50vw"
+                marcarIlustrativa
               />
             </div>
           </div>
@@ -103,33 +105,36 @@ export default function DetalleServicioPage() {
 
             <Card className="mt-8 mb-6" padding="lg">
               <div className="space-y-5">
-                <dl className="mf-cifras flex flex-wrap items-end gap-x-10 gap-y-4">
-                  {servicio.precio && (
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
-                        Precio
-                      </dt>
-                      <dd className="mt-1 text-4xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
-                        {formatearPrecioMXN(servicio.precio)}
-                      </dd>
-                    </div>
-                  )}
-                  {servicio.duracion && (
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
-                        Duración
-                      </dt>
-                      <dd className="mt-1 flex items-center gap-1.5 text-xl font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                        <Clock3 size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} />
-                        {servicio.duracion}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
+                <div>
+                  <dl className="mf-cifras flex flex-wrap items-end gap-x-10 gap-y-4">
+                    {servicio.precio && (
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
+                          Precio
+                        </dt>
+                        <dd className="mt-1 text-4xl font-bold" style={{ color: 'var(--menu-texto-principal)' }}>
+                          {formatearPrecioMXN(servicio.precio)}
+                        </dd>
+                      </div>
+                    )}
+                    {servicio.duracion && (
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--encabezados-alterno)' }}>
+                          Duración
+                        </dt>
+                        <dd className="mt-1 flex items-center gap-1.5 text-xl font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
+                          <Clock3 size={18} aria-hidden style={{ color: 'var(--logo-branding)' }} />
+                          {servicio.duracion}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                  {servicio.precio && <LeyendaPrecioIva className="mt-2" />}
+                </div>
                 {servicio.requiereEvaluacion && (
                   <p className="flex items-start gap-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                     <Info size={16} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} />
-                    Este servicio requiere una evaluación previa con el especialista antes de agendar.
+                    Este servicio requiere una evaluación previa con el especialista.
                   </p>
                 )}
                 {enCliente && !haySesion && (

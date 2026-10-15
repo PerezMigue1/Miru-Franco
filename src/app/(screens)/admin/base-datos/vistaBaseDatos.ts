@@ -71,6 +71,15 @@ export function opcionesTablaTruncate(tablas: string[]): Array<{ value: string; 
   return [{ value: '', label: 'Selecciona una tabla' }, ...tablas.map((t) => ({ value: t, label: t }))];
 }
 
+/** Opciones del TRUNCATE al entrar: ninguna marcada, cada una se elige a propósito. */
+export const OPCIONES_TRUNCATE_INICIALES = { restartIdentity: false, cascade: false } as const;
+
+/**
+ * Placeholder de los campos de confirmación (truncate e importar). No es el texto a escribir: si lo fuera,
+ * el campo parecería ya lleno.
+ */
+export const PLACEHOLDER_CONFIRMACION = 'Escribe la confirmación';
+
 /** Texto del intervalo de actualización del monitoreo, derivado del intervalo real. */
 export function textoIntervaloMonitoreo(): string {
   return `cada ${Math.round(MONITOREO_INTERVALO_MS / 1000)} s`;

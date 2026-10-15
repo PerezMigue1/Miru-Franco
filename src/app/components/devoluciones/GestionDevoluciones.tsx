@@ -6,11 +6,15 @@ import {
   listarDevolucionesPaginado,
   listarTodosLosPedidos,
   rechazarDevolucion,
+  recibirRevocacion,
+  ORIGEN_REVOCACION,
   type DevolucionApi,
   type EstadoDevolucion,
   type MetodoReembolso,
   type PedidoApi,
+  type ReembolsoRevocacionApi,
 } from '../../services/ecommerce';
+import { showToast } from '../../utils/toast';
 import Modal from '../ui/Modal';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
@@ -32,7 +36,25 @@ const PERMISO_GESTIONAR = 'devoluciones:gestionar';
 const varianteEstado = (estado: string) =>
   estado === 'aprobada' ? 'success' : estado === 'rechazada' ? 'danger' : estado === 'pendiente' ? 'warning' : 'default';
 
-type Resolucion = { devolucion: DevolucionApi; accion: 'aprobar' | 'rechazar' };
+type Resolucion = { devolucion: DevolucionApi; accion: 'aprobar' | 'rechazar' | 'recibir' };
+
+/** Revocación de compra (art. 56 LFPC): se resuelve con "Recibir producto y reembolsar", no con Aprobar. */
+const esRevocacion = (d: DevolucionApi) => d.origen === ORIGEN_REVOCACION;
+
+const TITULO_MODAL: Record<Resolucion['accion'], string> = {
+  aprobar: 'Aprobar solicitud',
+  rechazar: 'Rechazar solicitud',
+  recibir: 'Recibir producto y reembolsar',
+};
+
+/** Qué hacer con el dinero después de recibir una revocación, según cómo se reintegró. */
+function mensajeRevocacionRecibida(reembolso: ReembolsoRevocacionApi | null, monto: number | null | undefined): string {
+  const total = monto != null ? fmtMoneda(monto) : 'el total';
+  if (reembolso === 'mercado_pago') return `Listo: se reembolsaron ${total} por Mercado Pago.`;
+  if (reembolso === 'efectivo') return `Listo: entrega ${total} en efectivo; la salida quedó en tu caja y se descuenta en tu siguiente corte.`;
+  if (reembolso === 'ya_reembolsado') return 'Listo: el pago de este pedido ya estaba reembolsado.';
+  return `Listo: devuelve ${total} por el mismo medio con el que pagó (terminal o transferencia).`;
+}
 
 interface GestionDevolucionesProps {
   /**
@@ -113,7 +135,10 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
     setErrorResolucion(null);
     try {
       const notaLimpia = nota.trim() || undefined;
-      if (accion === 'aprobar') {
+      if (accion === 'recibir') {
+        const { reembolso } = await recibirRevocacion(devolucion.id, { nota: notaLimpia });
+        showToast(mensajeRevocacionRecibida(reembolso, devolucion.monto), 'success', 8000);
+      } else if (accion === 'aprobar') {
         await aprobarDevolucion(devolucion.id, {
           ...(devolucion.tipo === 'reembolso' ? { metodoReembolso: metodo } : {}),
           nota: notaLimpia,
@@ -141,7 +166,7 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
         {/* Encabezado */}
         <div>
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-            Devoluciones y Cambios
+            Devoluciones y cambios
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
             {total} solicitud{total === 1 ? '' : 'es'} · un reembolso aprobado en efectivo sale de la caja de quien lo aprueba y se descuenta en su siguiente corte
@@ -205,6 +230,7 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
                         {d.tipo === 'reembolso' ? 'Reembolso' : d.tipo === 'cambio' ? 'Cambio' : 'Solicitud'}
                         {d.causa ? ` · ${etiquetaCausa(d.causa)}` : ''}
                       </span>
+                      {esRevocacion(d) && <Badge variant="info" size="sm" className="mt-1">Revocación (art. 56)</Badge>}
                       {detalleMotivoDevolucion(d) && <span className="block text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{detalleMotivoDevolucion(d)}</span>}
                       {d.estado !== 'pendiente' && (d.resueltoPorNombre || d.notaResolucion) && (
                         <span className="block text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -220,8 +246,17 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
                       <Badge variant={varianteEstado(d.estado)}>{etiquetaEstadoDevolucion(d.estado)}</Badge>
                     </TableCell>
                     <TableCell rowPadding="lg">
-                      {puedeGestionar && d.estado === 'pendiente' ? (
-                        <div className="flex gap-2">
+                      {puedeGestionar && d.estado === 'pendiente' && esRevocacion(d) ? (
+                        <div className="flex flex-wrap gap-2">
+                          {/* Etiqueta corta en la tabla; el título completo queda en el modal. */}
+                          <Button size="sm" onClick={() => abrirResolucion(d, 'recibir')}>Recibir y reembolsar</Button>
+                          {/* Si la revocación ya canceló el pedido, el pago se debe: no se rechaza. */}
+                          {d.pedidoEstado !== 'cancelado' && (
+                            <Button size="sm" variant="outline" onClick={() => abrirResolucion(d, 'rechazar')}>Rechazar</Button>
+                          )}
+                        </div>
+                      ) : puedeGestionar && d.estado === 'pendiente' ? (
+                        <div className="flex flex-wrap gap-2">
                           <Button size="sm" onClick={() => abrirResolucion(d, 'aprobar')}>Aprobar</Button>
                           <Button size="sm" variant="outline" onClick={() => abrirResolucion(d, 'rechazar')}>Rechazar</Button>
                         </div>
@@ -247,7 +282,7 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
                   >
                     <ChevronLeft size={14} /> Anterior
                   </Button>
-                  <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                  <span className="text-xs whitespace-nowrap" style={{ color: 'var(--encabezados-alterno)' }}>
                     Página {pagina} de {totalPaginas}
                   </span>
                   <Button
@@ -272,13 +307,19 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
       <Modal
         isOpen={resolucion !== null}
         onClose={cerrarResolucion}
-        title={resolucion?.accion === 'aprobar' ? 'Aprobar solicitud' : 'Rechazar solicitud'}
+        title={resolucion ? TITULO_MODAL[resolucion.accion] : ''}
         size="md"
         footer={
           <>
             <Button variant="outline" onClick={cerrarResolucion} disabled={guardando}>Volver</Button>
             <Button onClick={() => void confirmarResolucion()} disabled={guardando}>
-              {guardando ? 'Guardando…' : resolucion?.accion === 'aprobar' ? 'Aprobar' : 'Rechazar'}
+              {guardando
+                ? 'Guardando…'
+                : resolucion?.accion === 'recibir'
+                  ? 'Recibir y reembolsar'
+                  : resolucion?.accion === 'aprobar'
+                    ? 'Aprobar'
+                    : 'Rechazar'}
             </Button>
           </>
         }
@@ -293,6 +334,22 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
                 <> · Monto: <strong style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(resolucion.devolucion.monto)}</strong></>
               )}
             </p>
+            {resolucion.accion === 'recibir' && (
+              // Texto legal en el color de cuerpo (en vino se leía como alerta) y la instrucción, lo que hay que hacer, en negritas.
+              <div className="space-y-2 text-sm" style={{ color: 'var(--texto-cuerpo)' }}>
+                <p>
+                  La clienta revocó su compra (art. 56 de la Ley Federal de Protección al Consumidor): se le reintegra todo lo
+                  pagado por el método original. Si pagó con Mercado Pago, el reembolso sale solo; si pagó en efectivo en el
+                  salón, sale de tu caja y se descuenta en tu siguiente corte; si pagó con terminal o transferencia, devuélvelo
+                  por el mismo medio.
+                </p>
+                <p className="font-semibold">
+                  {resolucion.devolucion.pedidoEstado === 'cancelado'
+                    ? 'El pedido no se entregó y ya se canceló: no hay producto que recibir, solo falta reembolsar.'
+                    : 'Confirma que recibiste el pedido completo en el salón: sus productos regresan al inventario.'}
+                </p>
+              </div>
+            )}
             {resolucion.accion === 'aprobar' && esReembolso && (
               <Select
                 label="Cómo se devuelve el dinero"
@@ -311,7 +368,13 @@ export default function GestionDevoluciones({ conNuevaSolicitud = true }: Gestio
               value={nota}
               maxLength={1000}
               onChange={(e) => setNota(e.target.value)}
-              placeholder={resolucion.accion === 'aprobar' ? 'Ej. defecto confirmado en mostrador' : 'Ej. el producto está abierto'}
+              placeholder={
+                resolucion.accion === 'recibir'
+                  ? 'Ej. producto recibido completo en mostrador'
+                  : resolucion.accion === 'aprobar'
+                    ? 'Ej. defecto confirmado en mostrador'
+                    : 'Ej. el producto está abierto'
+              }
               rows={2}
               fullWidth
             />

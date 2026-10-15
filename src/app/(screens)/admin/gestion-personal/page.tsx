@@ -36,6 +36,7 @@ export default function GestionPersonalPage() {
 
   // Campos del formulario (compartidos crear/editar)
   const [usuariosPersonal, setUsuariosPersonal] = useState<Usuario[]>([]);
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
   const [formUsuarioId, setFormUsuarioId] = useState('');
   const [formPuesto, setFormPuesto] = useState('');
   const [formEspecialidades, setFormEspecialidades] = useState('');
@@ -167,10 +168,16 @@ export default function GestionPersonalPage() {
     setFormError(null);
   };
 
+  // El modal abre de inmediato (la lista de usuarios tardaba unos 3 s sin señal); el select muestra carga.
   const openCrear = async () => {
     resetForm();
-    await cargarUsuariosPersonal();
     setIsModalCrearOpen(true);
+    setCargandoUsuarios(true);
+    try {
+      await cargarUsuariosPersonal();
+    } finally {
+      setCargandoUsuarios(false);
+    }
   };
 
   const openEditar = async (emp: EmpleadoApi) => {
@@ -289,13 +296,14 @@ export default function GestionPersonalPage() {
         </div>
 
         {/* Listado */}
-        <Card variant="elevated" padding="lg">
+        {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+        <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
         {loading ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando empleados…</p>
         ) : empleados.length === 0 ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay empleados registrados.</p>
         ) : (
-        <Table headers={['Nombre', 'Rol', 'Estado', 'Comisión', 'Acciones']} headerSutil>
+        <Table headers={['Nombre', 'Rol', 'Estado', 'Comisión', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Personal: desplaza para ver más columnas">
           {empleados.map((empleado) => (
             <TableRow key={empleado.id}>
               <TableCell className="font-semibold" rowPadding="lg">{empleado.nombre}</TableCell>
@@ -309,13 +317,13 @@ export default function GestionPersonalPage() {
               </TableCell>
               <TableCell className="font-semibold" rowPadding="lg">{empleado.comisiones}</TableCell>
               <TableCell rowPadding="lg">
-                <div className="flex gap-2">
+                <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                   <Button size="sm" variant="outline" onClick={() => {
                     const raw = empleadosRaw.find((e) => (e.id || e.usuarioId) === empleado.id);
                     if (raw) openEditar(raw);
                   }}>Editar</Button>
                   {empleado.activo && (
-                    <Button size="sm" variant="danger" onClick={() => {
+                    <Button size="sm" variant="outline-danger" onClick={() => {
                       const raw = empleadosRaw.find((e) => (e.id || e.usuarioId) === empleado.id);
                       if (raw) openBaja(raw);
                     }}>Dar de baja</Button>
@@ -335,7 +343,7 @@ export default function GestionPersonalPage() {
                 <Clock3 size={18} /> Horario y tarifa de hora extra
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                Igual para todo el personal — se usará para calcular horas extras desde asistencia.
+                Igual para todo el personal: se usará para calcular horas extras desde asistencia.
               </p>
             </div>
             {!esAdmin && (
@@ -366,12 +374,13 @@ export default function GestionPersonalPage() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 mb-2">
                   <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Domingo</p>
                   {esAdmin && (
-                    <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                    <label className="flex min-h-11 cursor-pointer items-center gap-2 px-1 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                       <input
                         type="checkbox"
+                        className="h-5 w-5"
                         checked={domingoActivo}
                         onChange={(e) => setDomingoActivo(e.target.checked)}
                       />
@@ -386,7 +395,7 @@ export default function GestionPersonalPage() {
                   </div>
                 ) : (
                   <p className="text-xs" style={{ color: 'var(--warning-texto)' }}>
-                    Domingo — sin configurar. El salón se asume cerrado ese día hasta que se defina un horario.
+                    Domingo sin configurar. El salón se asume cerrado ese día hasta que se defina un horario.
                   </p>
                 )}
               </div>
@@ -415,7 +424,7 @@ export default function GestionPersonalPage() {
                   />
                   {!tarifaConfigurada && (
                     <p className="text-xs mt-1" style={{ color: 'var(--warning-texto)' }}>
-                      Tarifa no configurada — el cálculo de horas extras no será real hasta que se defina.
+                      Tarifa no configurada: el cálculo de horas extras no será real hasta que se defina.
                     </p>
                   )}
                 </div>
@@ -455,16 +464,23 @@ export default function GestionPersonalPage() {
         {formError && <p className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{formError}</p>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <Select
-              label="Usuario *"
-              value={formUsuarioId}
-              onChange={(e) => setFormUsuarioId(e.target.value)}
-              options={[
-                { value: '', label: 'Seleccionar usuario...' },
-                ...usuariosPersonal.map((u) => ({ value: u.id, label: `${u.nombre} (${u.rol})` })),
-              ]}
-              fullWidth
-            />
+            {cargandoUsuarios ? (
+              <div role="status" aria-label="Cargando usuarios">
+                <span className="mf-etiqueta">Usuario *</span>
+                <div className="mf-skeleton h-11 w-full rounded-[10px]" aria-hidden />
+              </div>
+            ) : (
+              <Select
+                label="Usuario *"
+                value={formUsuarioId}
+                onChange={(e) => setFormUsuarioId(e.target.value)}
+                options={[
+                  { value: '', label: 'Seleccionar usuario...' },
+                  ...usuariosPersonal.map((u) => ({ value: u.id, label: `${u.nombre} (${u.rol})` })),
+                ]}
+                fullWidth
+              />
+            )}
           </div>
           <Input label="Puesto" value={formPuesto} onChange={(e) => setFormPuesto(e.target.value)} placeholder="Ej. Estilista senior" fullWidth />
           <Input label="Teléfono" value={formTelefono} onChange={(e) => setFormTelefono(e.target.value)} placeholder="555-0000" fullWidth />
@@ -472,7 +488,7 @@ export default function GestionPersonalPage() {
           <Input label="Comisión %" type="number" min={0} max={100} value={formComision} onChange={(e) => setFormComision(e.target.value)} placeholder="0" fullWidth />
           <Input label="Fecha de ingreso" type="date" value={formFechaIngreso} onChange={(e) => setFormFechaIngreso(e.target.value)} fullWidth />
           <div className="flex items-center gap-2 pt-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex min-h-11 items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={formActivo} onChange={(e) => setFormActivo(e.target.checked)} className="rounded" />
               <span style={{ color: 'var(--menu-texto-principal)' }}>Empleado activo</span>
             </label>
@@ -504,7 +520,7 @@ export default function GestionPersonalPage() {
           <Input label="Comisión %" type="number" min={0} max={100} value={formComision} onChange={(e) => setFormComision(e.target.value)} placeholder="0" fullWidth />
           <Input label="Fecha de ingreso" type="date" value={formFechaIngreso} onChange={(e) => setFormFechaIngreso(e.target.value)} fullWidth />
           <div className="flex items-center gap-2 pt-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex min-h-11 items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={formActivo} onChange={(e) => setFormActivo(e.target.checked)} className="rounded" />
               <span style={{ color: 'var(--menu-texto-principal)' }}>Empleado activo</span>
             </label>

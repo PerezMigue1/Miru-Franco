@@ -15,6 +15,8 @@ interface BreadcrumbProps {
 /**
  * Rastro de navegación sobrio: texto en el tono de la superficie y chevrones de lucide. Las
  * píldoras azules anteriores quedaban en 2.7:1 sobre lino. Cada miga mide 44 px de alto táctil.
+ * El chevrón cierra cada miga (no abre la siguiente): si el rastro salta de línea en móvil, el
+ * separador se queda al final de la primera y la segunda empieza con texto.
  */
 export default function Breadcrumb({ items }: BreadcrumbProps) {
   if (!items.length) return null;
@@ -28,14 +30,6 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
           const icono = isFirst ? <House size={13} aria-hidden className="shrink-0" /> : null;
           return (
             <li key={index} className="flex min-w-0 items-center gap-1">
-              {index > 0 && (
-                <ChevronRight
-                  size={14}
-                  aria-hidden
-                  className="shrink-0"
-                  style={{ color: 'var(--campo-placeholder)' }}
-                />
-              )}
               {!isLast && item.href ? (
                 <Link
                   href={item.href}
@@ -54,6 +48,14 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
                   {icono}
                   {item.label}
                 </span>
+              )}
+              {!isLast && (
+                <ChevronRight
+                  size={14}
+                  aria-hidden
+                  className="shrink-0"
+                  style={{ color: 'var(--campo-placeholder)' }}
+                />
               )}
             </li>
           );

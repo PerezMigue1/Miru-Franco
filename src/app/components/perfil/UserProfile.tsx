@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  FileLock,
   IdCard,
   LockKeyhole,
   LogOut,
@@ -33,6 +34,8 @@ import { mergePerfilEnLocalStorage, patchMiPerfil } from '../../services/perfil'
 import { subirFotoPerfilCloudinary } from '../../utils/cloudinary';
 import { normalizarUrlImagenExterna } from '../../utils/normalizarUrlImagen';
 import { filasDatosCuenta } from './datosCuenta';
+import CambioCorreoModal from './CambioCorreoModal';
+import MisDatosPrivacidad from '../privacidad/MisDatosPrivacidad';
 
 interface UserInfo {
   id?: string;
@@ -70,7 +73,7 @@ function roleLabel(role: NormalizedRole): string {
 }
 
 type SidebarItem = 'perfil' | 'pedidos' | 'citas' | 'tienda' | 'seguridad';
-type ActiveSection = 'informacion-personal' | 'datos-cuenta' | null;
+type ActiveSection = 'informacion-personal' | 'datos-cuenta' | 'privacidad' | null;
 
 interface ProfileCard {
   id: string;
@@ -84,7 +87,7 @@ interface ProfileCard {
 
 /** Grupos del hub de la cuenta (listas de filas en vez de tarjetas iguales). */
 const GRUPOS_TARJETAS: { titulo: string; ids: string[] }[] = [
-  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'comunicaciones'] },
+  { titulo: 'Tu cuenta', ids: ['info', 'cuenta', 'seguridad', 'privacidad', 'comunicaciones'] },
   { titulo: 'Citas y beneficios', ids: ['citas', 'promociones'] },
   { titulo: 'Paneles del salón', ids: ['admin', 'operacion'] },
 ];
@@ -97,6 +100,7 @@ export default function UserProfile() {
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const [avatarFotoUploading, setAvatarFotoUploading] = useState(false);
   const [avatarFotoError, setAvatarFotoError] = useState<string | null>(null);
+  const [cambioCorreoAbierto, setCambioCorreoAbierto] = useState(false);
   const [user, setUser] = useState<UserInfo>({
     nombre: '',
     email: '',
@@ -254,6 +258,13 @@ export default function UserProfile() {
       icon: LockKeyhole,
       href: '/forgot-password',
       alert: true,
+    },
+    {
+      id: 'privacidad',
+      title: 'Mis datos y privacidad',
+      subtitle: 'Descarga tus datos, revisa tus consentimientos y ejerce tus derechos ARCO.',
+      icon: FileLock,
+      section: 'privacidad',
     },
     {
       id: 'comunicaciones',
@@ -532,8 +543,10 @@ export default function UserProfile() {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          fila.modificar === 'correo' ? router.push('/forgot-password') : setActiveSection('informacion-personal')
+                          fila.modificar === 'correo' ? setCambioCorreoAbierto(true) : setActiveSection('informacion-personal')
                         }
+                        // Sin el correo cargado el modal decía "Tu correo actual es sin registrar".
+                        disabled={fila.modificar === 'correo' && !user.email}
                         className="self-start sm:self-auto"
                       >
                         Modificar
@@ -543,6 +556,23 @@ export default function UserProfile() {
                 ))}
               </dl>
             </Card>
+            <CambioCorreoModal
+              isOpen={cambioCorreoAbierto}
+              onClose={() => setCambioCorreoAbierto(false)}
+              correoActual={user.email}
+              onCambiado={(correo) => {
+                setUser((prev) => ({ ...prev, email: correo }));
+                void refreshUserFromApi();
+              }}
+            />
+          </section>
+        )}
+
+        {/* Sub-vista: Mis datos y privacidad (derechos ARCO y consentimientos) */}
+        {activeSection === 'privacidad' && (
+          <section className="mb-8">
+            {volver}
+            <MisDatosPrivacidad onEditarPerfil={() => setActiveSection('informacion-personal')} />
           </section>
         )}
 

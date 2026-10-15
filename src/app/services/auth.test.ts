@@ -111,3 +111,33 @@ describe('api.getProfile: el status del fallo llega a quien decide (layouts)', (
     expect(r.status).toBeUndefined();
   });
 });
+
+describe('cuentaTienePassword: si la cuenta entra con contraseña (GET /auth/me, tienePassword)', () => {
+  let cuentaTienePassword: typeof import('./auth').cuentaTienePassword;
+  beforeAll(async () => {
+    ({ cuentaTienePassword } = await import('./auth'));
+  });
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    fetchMock.mockReset();
+    vi.restoreAllMocks();
+  });
+
+  it('true o false según lo que diga el backend', async () => {
+    responder(200, { success: true, data: { id: 'u-1', email: 'a@b.mx', tienePassword: true } });
+    expect(await cuentaTienePassword()).toBe(true);
+    responder(200, { success: true, data: { id: 'u-2', email: 'g@gmail.com', tienePassword: false } });
+    expect(await cuentaTienePassword()).toBe(false);
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.test/api/auth/me');
+  });
+
+  it('si no viene el dato o la consulta falla: null (no se sabe)', async () => {
+    responder(200, { success: true, data: { id: 'u-1', email: 'a@b.mx' } });
+    expect(await cuentaTienePassword()).toBeNull();
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    expect(await cuentaTienePassword()).toBeNull();
+  });
+});

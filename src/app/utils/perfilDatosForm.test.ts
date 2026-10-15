@@ -44,9 +44,22 @@ describe('perfil de la clienta: no guardar sin haber cargado el perfil', () => {
     expect(cuerpoGuardarPerfil(null, VALORES_PERFIL_VACIOS)).toBeNull();
   });
 
-  it('guardar sin tocar las alergias reenvía las mismas, nunca vacío', () => {
-    const cuerpo = cuerpoGuardarPerfil(PERFIL, { ...valoresDesdePerfil(PERFIL), consienteDatosSensibles: true });
-    expect(cuerpo?.alergias).toBe('Amoniaco');
-    expect(cuerpo?.consienteDatosSensibles).toBe(true);
+  it('guardar sin tocar las alergias no las manda (ni vacías ni repetidas) y no pide el consentimiento', () => {
+    const cuerpo = cuerpoGuardarPerfil(PERFIL, valoresDesdePerfil(PERFIL));
+    expect(cuerpo).not.toHaveProperty('alergias');
+    expect(cuerpo).not.toHaveProperty('consienteDatosSensibles');
+  });
+});
+
+describe('perfil de la clienta: alergias nuevas con la casilla de datos de salud', () => {
+  it('si cambian a un texto nuevo, viajan con consienteDatosSensibles: true', () => {
+    const cuerpo = cuerpoGuardarPerfil(PERFIL, { ...valoresDesdePerfil(PERFIL), alergias: 'Amoniaco, látex', consienteDatosSensibles: true });
+    expect(cuerpo).toMatchObject({ alergias: 'Amoniaco, látex', consienteDatosSensibles: true });
+  });
+
+  it('si las borra, se mandan como null y sin consentimiento', () => {
+    const cuerpo = cuerpoGuardarPerfil(PERFIL, { ...valoresDesdePerfil(PERFIL), alergias: '  ' });
+    expect(cuerpo?.alergias).toBeNull();
+    expect(cuerpo).not.toHaveProperty('consienteDatosSensibles');
   });
 });

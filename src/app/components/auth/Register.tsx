@@ -20,34 +20,25 @@ import ActivateAccount from './ActivateAccount';
 import Notification from '../ui/Notification';
 import { hoyEnMexico, mismoDiaHaceAnios } from '../../utils/fechaSoloDia';
 import CasillaDatosSalud from '../legal/CasillaDatosSalud';
-import { errorConsentimientoAlergias, requiereConsentimiento } from '../../utils/consentimientoDatosSensibles';
+import AvisoSimplificado from '../legal/AvisoSimplificado';
+import CasillaDocumento from '../legal/CasillaDocumento';
+import { CAMPOS_CASILLA_ALTA, EtiquetaCasillaAlta, SUFIJO_CASILLA_ALTA } from '../legal/CasillasAlta';
+import { CASILLAS_ALTA_INICIALES, errorCasillaAlta } from '../legal/reglasAlta';
+import { errorConsentimientoAlergias } from '../../utils/consentimientoDatosSensibles';
+import { construirPayloadRegistro, type ValoresRegistro } from './payloadRegistro';
 
 interface RegisterProps {
   onSwitchToLogin?: () => void;
   onRegisterSuccess?: () => void;
 }
 
-interface FormValues {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
+/**
+ * Campos del formulario. `consienteDatosSensibles` (datos de salud) y las casillas legales (aceptaTerminos,
+ * aceptaAvisoPrivacidad, recibePromociones) no se guardan aquí: solo viajan al backend.
+ */
+interface FormValues extends ValoresRegistro {
   confirmPassword: string;
-  birthDate: string;
   securityQuestion: string;
-  securityAnswer: string;
-  hairType: string;
-  colorNatural: string;
-  colorActual: string;
-  productosUsados: string;
-  hasAllergies: 'yes' | 'no' | '';
-  allergies: string;
-  /** Consentimiento expreso para datos de salud; no se guarda, solo viaja al backend. */
-  consienteDatosSensibles: boolean;
-  hasChemicalTreatments: 'yes' | 'no' | '';
-  chemicalTreatments: string;
-  acceptTerms: boolean;
-  receivePromotions: boolean;
 }
 
 const STEP1_FIELDS: (keyof FormValues)[] = [
@@ -80,7 +71,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       hairType: '', colorNatural: '', colorActual: '', productosUsados: '',
       hasAllergies: '', allergies: '', consienteDatosSensibles: false,
       hasChemicalTreatments: '', chemicalTreatments: '',
-      acceptTerms: false, receivePromotions: false,
+      // Ninguna casilla legal empieza marcada.
+      ...CASILLAS_ALTA_INICIALES,
     },
     mode: 'onBlur',
   });
@@ -158,36 +150,12 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
     setGeneralError('');
     try {
       const { api } = await import('../../services');
-      const registerData = {
-        nombre: sanitizeInput(values.name),
-        email: sanitizeEmail(values.email),
-        password: values.password,
-        telefono: normalizarTelefonoRegistro(values.phone),
-        fechaNacimiento: values.birthDate,
-        preguntaSeguridad: {
-          pregunta: sanitizeInput(selectedQuestion?.pregunta || ''),
-          respuesta: sanitizeInput(values.securityAnswer),
-        },
-        perfilCapilar: {
-          tipoCabello:
-            values.hairType === 'lacio' ? 'liso' :
-            values.hairType === 'ondulado' ? 'ondulado' :
-            values.hairType === 'rizado' ? 'rizado' :
-            values.hairType || 'liso',
-          colorNatural: values.colorNatural ? sanitizeInput(values.colorNatural) : undefined,
-          colorActual: values.colorActual ? sanitizeInput(values.colorActual) : undefined,
-          productosUsados: values.productosUsados ? sanitizeInput(values.productosUsados) : undefined,
-          tieneAlergias: values.hasAllergies === 'yes',
-          alergias: values.hasAllergies === 'yes' ? sanitizeInput(values.allergies) : undefined,
-          tratamientosQuimicos: values.hasChemicalTreatments === 'yes',
-          tratamientos: values.hasChemicalTreatments === 'yes' ? sanitizeInput(values.chemicalTreatments) : undefined,
-        },
-        aceptaAvisoPrivacidad: values.acceptTerms,
-        recibePromociones: values.receivePromotions,
-        ...(values.hasAllergies === 'yes' && requiereConsentimiento(values.allergies)
-          ? { consienteDatosSensibles: values.consienteDatosSensibles }
-          : {}),
-      };
+      // Casillas, versión vigente de Términos y Aviso, y la página donde se marcaron (/register o /login).
+      const registerData = construirPayloadRegistro(
+        values,
+        selectedQuestion?.pregunta || '',
+        typeof window !== 'undefined' ? window.location.pathname : '/register',
+      );
 
       const response = await api.register(registerData);
       if (response.success) {
@@ -391,7 +359,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
       {/* Fecha de nacimiento */}
       <div>
-        <label htmlFor="registro-fecha-nacimiento" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Fecha de Nacimiento</label>
+        <label htmlFor="registro-fecha-nacimiento" className="block text-sm font-medium mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Fecha de nacimiento (opcional)</label>
         <input
           type="date"
           id="registro-fecha-nacimiento"
@@ -400,10 +368,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           style={inputStyle(!!errors.birthDate)}
           max={mismoDiaHaceAnios(hoyEnMexico(), 18)}
           {...register('birthDate', {
-            required: 'La fecha de nacimiento es requerida',
-            // Mayor de edad si nació a más tardar el mismo día de hace 18 años, contando "hoy" en
-            // México (sin depender de la zona del navegador). Ambos son 'YYYY-MM-DD': se comparan como texto.
-            validate: (v) => v <= mismoDiaHaceAnios(hoyEnMexico(), 18) || 'Debes ser mayor de 18 años',
+            // Opcional (minimización: el backend no la usa). Si la escribe, sigue la regla de mayoría de edad:
+            // nació a más tardar el mismo día de hace 18 años, contando "hoy" en México. Ambos son 'YYYY-MM-DD'.
+            validate: (v) => !v || v <= mismoDiaHaceAnios(hoyEnMexico(), 18) || 'Debes ser mayor de 18 años',
           })}
         />
         {errors.birthDate && <p className="mt-1 text-sm text-[color:var(--danger-texto)]">{errors.birthDate.message}</p>}
@@ -470,21 +437,25 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
 
   const renderStep2 = () => (
     <div className="space-y-5">
-      <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>Cuéntanos sobre tu cabello</h3>
+      <div>
+        <h3 className="text-xl font-bold mb-1" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>Cuéntanos sobre tu cabello</h3>
+        <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+          Es opcional y puedes completarlo después en tu perfil. Ayuda a tu estilista a preparar tu servicio.
+        </p>
+      </div>
 
-      {/* Tipo de cabello */}
+      {/* Tipo de cabello (opcional) */}
       <fieldset>
         <legend className="block text-sm font-medium mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Tipo de cabello</legend>
         <Controller
           name="hairType"
           control={control}
-          rules={{ required: 'Selecciona tu tipo de cabello' }}
           render={({ field }) => (
             <div className="space-y-2">
               {['Lacio', 'Ondulado', 'Rizado'].map((type) => {
                 const val = type.toLowerCase();
                 return (
-                  <label key={type} className="flex items-center cursor-pointer">
+                  <label key={type} className="flex min-h-11 items-center cursor-pointer">
                     <input
                       type="radio"
                       value={val}
@@ -529,10 +500,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           <Controller
             name="hasAllergies"
             control={control}
-            rules={{ required: 'Debes indicar si tienes alergias a productos' }}
             render={({ field }) => (
               <>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex min-h-11 items-center cursor-pointer">
                   <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'no'}
                     onChange={() => { field.onChange('no'); setValue('allergies', ''); setValue('consienteDatosSensibles', false); }}
@@ -540,7 +510,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                   />
                   <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>No</span>
                 </label>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex min-h-11 items-center cursor-pointer">
                   <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'yes'}
                     onChange={() => field.onChange('yes')}
@@ -581,6 +551,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               render={({ field }) => (
                 <CasillaDatosSalud
                   name={field.name}
+                  ref={field.ref}
                   checked={!!field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
                   onBlur={field.onBlur}
@@ -600,10 +571,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
           <Controller
             name="hasChemicalTreatments"
             control={control}
-            rules={{ required: 'Debes indicar si has tenido tratamientos químicos previos' }}
             render={({ field }) => (
               <>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex min-h-11 items-center cursor-pointer">
                   <input type="radio" value="no" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'no'}
                     onChange={() => { field.onChange('no'); setValue('chemicalTreatments', ''); }}
@@ -611,7 +581,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
                   />
                   <span className="ml-2" style={{ color: 'var(--menu-texto-principal)' }}>No</span>
                 </label>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex min-h-11 items-center cursor-pointer">
                   <input type="radio" value="yes" disabled={isSubmitting} className="h-4 w-4 accent-[var(--botones-principales)]"
                     checked={field.value === 'yes'}
                     onChange={() => field.onChange('yes')}
@@ -644,52 +614,55 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
         </div>
       </fieldset>
 
-      {/* Aviso de Privacidad (se guarda como aceptaAvisoPrivacidad) */}
-      <div className="space-y-3 pt-4">
-        <label className="flex items-start cursor-pointer">
-          <Controller
-            name="acceptTerms"
-            control={control}
-            rules={{ required: 'Debes aceptar el Aviso de Privacidad' }}
-            render={({ field }) => (
-              <input
-                type="checkbox"
-                disabled={isSubmitting}
-                className="mt-1 h-4 w-4 rounded accent-[var(--botones-principales)]"
-                checked={!!field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
-                onBlur={field.onBlur}
-              />
-            )}
-          />
-          <span className="ml-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-            Acepto el{' '}
-            <a href="/aviso-de-privacidad" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4" style={{ color: 'var(--menu-texto-principal)' }} onClick={(e) => e.stopPropagation()}>
-              Aviso de Privacidad<span className="sr-only"> (se abre en otra pestaña)</span>
-            </a>
-          </span>
-        </label>
-        {errors.acceptTerms && <p className="text-sm text-[color:var(--danger-texto)]">{errors.acceptTerms.message}</p>}
-        <label className="flex items-start cursor-pointer">
-          <Controller
-            name="receivePromotions"
-            control={control}
-            render={({ field }) => (
-              <input
-                type="checkbox"
-                disabled={isSubmitting}
-                className="mt-1 h-4 w-4 rounded accent-[var(--botones-principales)]"
-                checked={!!field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
-                onBlur={field.onBlur}
-              />
-            )}
-          />
-          <span className="ml-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Deseo recibir promociones</span>
-        </label>
-      </div>
+      {/* Casillas legales: tres separadas, sin marcar; Términos y Aviso obligatorias (el backend las exige) */}
+      <fieldset className="space-y-1 pt-4">
+        <legend className="block text-sm font-medium mb-1" style={{ color: 'var(--menu-texto-principal)' }}>Antes de crear tu cuenta</legend>
+        <Controller
+          name="aceptaTerminos"
+          control={control}
+          rules={{ validate: (v) => errorCasillaAlta('aceptaTerminos', v) ?? true }}
+          render={({ field }) => renderCasillaAlta(field)}
+        />
+        <Controller
+          name="aceptaAvisoPrivacidad"
+          control={control}
+          rules={{ validate: (v) => errorCasillaAlta('aceptaAvisoPrivacidad', v) ?? true }}
+          render={({ field }) => renderCasillaAlta(field)}
+        />
+        <Controller
+          name="recibePromociones"
+          control={control}
+          render={({ field }) => renderCasillaAlta(field)}
+        />
+      </fieldset>
     </div>
   );
+
+  /** Una casilla legal del alta, con su enlace al documento y su error junto a ella (recibe el foco si falta). */
+  function renderCasillaAlta(field: {
+    name: (typeof CAMPOS_CASILLA_ALTA)[number];
+    value: boolean;
+    onChange: (valor: boolean) => void;
+    onBlur: () => void;
+    ref: React.Ref<HTMLInputElement>;
+  }) {
+    const campo = field.name;
+    return (
+      <CasillaDocumento
+        id={`registro-${SUFIJO_CASILLA_ALTA[campo]}`}
+        name={campo}
+        ref={field.ref}
+        checked={!!field.value}
+        onChange={(e) => field.onChange(e.target.checked)}
+        onBlur={field.onBlur}
+        disabled={isSubmitting}
+        aria-required={campo !== 'recibePromociones' ? true : undefined}
+        error={errors[campo]?.message}
+      >
+        <EtiquetaCasillaAlta campo={campo} />
+      </CasillaDocumento>
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto relative">
@@ -784,14 +757,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
               </span>
             </button>
           </div>
-          {currentStep > 1 && (
-            <p className="mf-leyenda-terminos">
-              Al crear tu cuenta aceptas los{' '}
-              <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">
-                Términos y Condiciones<span className="sr-only"> (se abre en otra pestaña)</span>
-              </a>
-            </p>
-          )}
+          <AvisoSimplificado finalidad="crear tu cuenta y gestionar tus citas y compras" />
         </form>
 
         <div className="mt-6 text-center">

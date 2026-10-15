@@ -25,17 +25,18 @@ import { etiquetaEstadoPedido, varianteBadgeEstadoPedido } from '../../../../../
 import { fmtMoneda } from '../../../../../utils/cobroPos';
 import { usePermisos } from '../../../../../utils/permisos';
 import { etiquetaTipoNotificacion } from '../../_lib/panelOperacion';
+import ObservacionesCliente from '../../../../admin/clientes-crm/[id]/ObservacionesCliente';
 
 const FECHA_CORTA: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
 /** Fechas con hora (citas, compras, actividad): en hora local. La de nacimiento usa formatearFechaSoloDia. */
 function formatearFecha(iso?: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return 'Sin dato';
   try {
     const d = new Date(iso);
     return d.toLocaleDateString('es-MX', FECHA_CORTA);
   } catch {
-    return '—';
+    return 'Sin dato';
   }
 }
 
@@ -172,7 +173,7 @@ export default function ClienteDetalleOperacionPage() {
           </div>
           {puedeAgendar && (
             <div className="flex gap-2">
-              <Button variant="primary" onClick={() => router.push('/operacion/gestion-citas')}>Nueva Cita</Button>
+              <Button variant="primary" onClick={() => router.push('/operacion/gestion-citas')}>Nueva cita</Button>
             </div>
           )}
         </div>
@@ -196,7 +197,7 @@ export default function ClienteDetalleOperacionPage() {
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Teléfono</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.telefono || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.telefono || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Email</label>
@@ -204,7 +205,7 @@ export default function ClienteDetalleOperacionPage() {
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Fecha de nacimiento</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFechaSoloDia(cliente.fechaNacimiento, FECHA_CORTA) ?? '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{formatearFechaSoloDia(cliente.fechaNacimiento, FECHA_CORTA) ?? 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Foto de perfil</label>
@@ -225,52 +226,57 @@ export default function ClienteDetalleOperacionPage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Perfil Capilar y Salud
+                  Perfil capilar y salud
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Tipo de cabello</label>
-                    <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.tipoCabello || '—'}</p>
+                    <p className="font-medium capitalize" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.tipoCabello || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Color natural</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorNatural || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorNatural || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Color actual</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorActual || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.colorActual || 'Sin dato'}</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Productos usados</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.productosUsados || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.productosUsados || 'Sin dato'}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm mb-1" style={{ color: 'var(--encabezados-alterno)' }}>Alergias</label>
-                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.alergias || '—'}</p>
+                    <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{cliente.alergias || 'Sin dato'}</p>
                   </div>
                 </div>
               </Card>
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Historial de Citas
+                  Historial de citas
                 </h2>
                 {citas.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando citas…</p>
                 ) : citas.error ? (
                   <p className="text-sm py-4" style={{ color: 'var(--danger-texto)' }}>No se pudo cargar el historial de citas.</p>
                 ) : citas.data.length > 0 ? (
-                  <Table headers={['Servicio', 'Fecha', 'Especialista', 'Precio', 'Estado']}>
+                  <Table headers={['Servicio', 'Fecha', 'Precio', 'Estado']}>
                     {citas.data.map((c) => {
                       const servicio = r(c.servicio);
                       const especialista = r(c.especialista);
                       return (
                         <TableRow key={String(c.id)}>
-                          <TableCell>{String(servicio.nombre ?? '—')}</TableCell>
+                          {/* Especialista bajo el servicio y con salto de línea: con su propia columna, "Estado" quedaba fuera a 1440 px. */}
+                          <TableCell className="min-w-40" style={{ whiteSpace: 'normal' }}>
+                            <span className="block">{String(servicio.nombre ?? '-')}</span>
+                            {especialista.nombre != null && (
+                              <span className="block text-xs" style={{ color: 'var(--encabezados-alterno)' }}>{String(especialista.nombre)}</span>
+                            )}
+                          </TableCell>
                           <TableCell>{formatearFecha(c.fechaHoraInicio as string | undefined)}</TableCell>
-                          <TableCell>{String(especialista.nombre ?? '—')}</TableCell>
                           <TableCell className="font-semibold">
-                            {servicio.precio != null ? fmtMoneda(Number(servicio.precio) || 0) : '—'}
+                            {servicio.precio != null ? fmtMoneda(Number(servicio.precio) || 0) : 'Sin dato'}
                           </TableCell>
                           <TableCell><Badge variant={varianteEstadoCita(c.estado as string | undefined)}>{etiquetaEstadoCita(c.estado as string | undefined)}</Badge></TableCell>
                         </TableRow>
@@ -284,7 +290,7 @@ export default function ClienteDetalleOperacionPage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Historial de Compras
+                  Historial de compras
                 </h2>
                 {compras.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando compras…</p>
@@ -300,14 +306,14 @@ export default function ClienteDetalleOperacionPage() {
                           <TableCell>{formatearFecha(p.creadoEn as string | undefined)}</TableCell>
                           <TableCell>{items.length}</TableCell>
                           <TableCell className="font-semibold">
-                            {p.total != null ? fmtMoneda(Number(p.total) || 0) : '—'}
+                            {p.total != null ? fmtMoneda(Number(p.total) || 0) : 'Sin dato'}
                           </TableCell>
                           <TableCell>
                             {p.estado ? (
                               <Badge variant={varianteBadgeEstadoPedido(String(p.estado))}>
                                 {etiquetaEstadoPedido(String(p.estado), p.metodoPago as string | null | undefined)}
                               </Badge>
-                            ) : '—'}
+                            ) : 'Sin dato'}
                           </TableCell>
                         </TableRow>
                       );
@@ -348,7 +354,7 @@ export default function ClienteDetalleOperacionPage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Seguimiento Post-Servicio
+                  Seguimiento posterior al servicio
                 </h2>
                 {seguimientos.loading ? (
                   <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>Cargando seguimientos…</p>
@@ -380,7 +386,7 @@ export default function ClienteDetalleOperacionPage() {
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Direcciones Ligadas
+                  Direcciones ligadas
                 </h2>
                 {rel.direcciones.length > 0 ? (
                   <div className="space-y-2">
@@ -390,7 +396,7 @@ export default function ClienteDetalleOperacionPage() {
                           {d.esPrincipal ? 'Principal' : 'Secundaria'}
                         </p>
                         <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                          {[d.calle, d.coloniaBarrio, d.municipioAlcaldia, d.estado, d.codigoPostal].filter(Boolean).join(', ') || '—'}
+                          {[d.calle, d.coloniaBarrio, d.municipioAlcaldia, d.estado, d.codigoPostal].filter(Boolean).join(', ') || 'Sin dato'}
                         </p>
                       </div>
                     ))}
@@ -401,6 +407,12 @@ export default function ClienteDetalleOperacionPage() {
                   </p>
                 )}
               </Card>
+
+              <ObservacionesCliente
+                clienteId={id}
+                puedeLeer={tienePermiso('clientes:lectura')}
+                puedeEscribir={tienePermiso('clientes:escritura')}
+              />
 
               <Card variant="elevated" padding="lg">
                 <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
@@ -466,12 +478,12 @@ export default function ClienteDetalleOperacionPage() {
 
               <Card variant="elevated" padding="lg">
                 <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Acciones Rápidas
+                  Acciones rápidas
                 </h3>
                 <div className="space-y-2">
                   {puedeAgendar && (
                     <Button fullWidth onClick={() => router.push('/operacion/gestion-citas')}>
-                      Agendar Nueva Cita
+                      Agendar nueva cita
                     </Button>
                   )}
                   <Button fullWidth variant="outline" onClick={() => router.push('/operacion/segmentacion-clientes')}>

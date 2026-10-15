@@ -32,19 +32,17 @@ function connectSrcOrigins(): string[] {
 
 /**
  * Orígenes desde los que puede cargarse una imagen (img / next/image hacia URL absoluta).
- * Debe incluir el mismo host que el API si el backend sirve /uploads, url.jpg, etc.
+ * Debe incluir el mismo host que el API si el backend sirve /uploads, url.jpg, etc. Los bancos de
+ * imágenes y de relleno (Unsplash, logos-world, via.placeholder) ya no se usan: igual que next.config.ts.
  */
 function imgSrcOrigins(): string[] {
   const staticHosts = [
     'https://res.cloudinary.com',
-    'https://images.unsplash.com',
-    'https://logos-world.net',
     'https://lh3.googleusercontent.com',
     'https://lh4.googleusercontent.com',
     'https://lh5.googleusercontent.com',
     'https://lh6.googleusercontent.com',
     'https://lh7.googleusercontent.com',
-    'https://via.placeholder.com',
     'https://backend-miru-franco.vercel.app',
     'https://miru-franco.onrender.com',
     'https://api.mirufranco.com',

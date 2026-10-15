@@ -38,6 +38,11 @@ export interface Servicio {
   duracionMinutos?: number;
   /** Anticipo que pide al agendar en línea (null o 0: no pide). */
   anticipoMonto?: number | null;
+  /**
+   * Si hoy se pide anticipo al agendar en línea (regla del backend: monto y anticipos activados). false: la web
+   * no lo anuncia y la cita se crea sin anticipo. Sin definir: backend anterior, se usa solo el monto.
+   */
+  anticipoAplica?: boolean;
   precio?: string;
   categoria?: string;
   /** Indica si el servicio requiere evaluación previa (Prisma `requiereEvaluacion`). */
@@ -70,6 +75,7 @@ type ApiServicioRaw = Record<string, unknown> & {
   precio?: number | string;
   anticipoMonto?: number | string | null;
   anticipo_monto?: number | string | null;
+  anticipoAplica?: boolean;
   categoria?: string;
   requiere_evaluacion?: boolean;
   requiereEvaluacion?: boolean;
@@ -227,6 +233,8 @@ function normalizarServicio(raw: ApiServicioRaw): Servicio {
       const n = v === null || v === undefined || v === '' ? null : Number(v);
       return n !== null && Number.isFinite(n) && n > 0 ? n : null;
     })(),
+    // Solo si el backend lo manda: sin él (versión anterior) la pantalla usa el monto como siempre.
+    ...(typeof raw.anticipoAplica === 'boolean' ? { anticipoAplica: raw.anticipoAplica } : {}),
     categoria: raw.categoria != null ? String(raw.categoria) : undefined,
     requiereEvaluacion,
     // Exponer el estado real; si el backend no lo envía (respuestas antiguas), asumir activo.

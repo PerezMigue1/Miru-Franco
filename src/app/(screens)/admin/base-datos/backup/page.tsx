@@ -332,26 +332,23 @@ export default function BackupPage() {
       <header className="mb-6">
         <h1 className="mf-titulo-pagina" style={{ color: 'var(--menu-texto-principal)' }}>Respaldos de la base de datos</h1>
       </header>
-      <div className="relative pl-11 space-y-6 overflow-hidden">
+      <div className="relative min-w-0 space-y-6">
+        {/* Botón del menú de secciones: en el flujo (sin sangría extra) y solo con clic o toque. */}
         <button
           type="button"
           aria-label="Mostrar menú de secciones"
           aria-expanded={!menuLateralOculto}
           onClick={() => setMenuLateralOculto((v) => !v)}
-          onMouseEnter={() => setMenuLateralOculto(false)}
-          className="absolute left-0 top-6 z-40 h-11 w-9 rounded-r-lg border border-l-0 text-sm"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border text-sm"
           style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
         >
-          <Menu size={16} className="mx-auto" />
+          <Menu size={16} aria-hidden />
         </button>
-        <div className="absolute top-0 left-0 h-full w-4 z-40" onMouseEnter={() => setMenuLateralOculto(false)} />
 
         {!menuLateralOculto && (
           <aside
             className="absolute top-0 left-0 h-full w-[min(280px,85%)] z-50 p-4 overflow-y-auto"
             style={{ backgroundColor: 'var(--fondo-general)', borderRight: '1px solid var(--encabezados-alterno)' }}
-            onMouseEnter={() => setMenuLateralOculto(false)}
-            onMouseLeave={() => setMenuLateralOculto(true)}
           >
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Secciones</p>
@@ -359,10 +356,10 @@ export default function BackupPage() {
                 type="button"
                 aria-label="Cerrar"
                 onClick={() => setMenuLateralOculto(true)}
-                className="text-sm px-2 py-1 rounded border"
+                className="inline-flex h-11 w-11 items-center justify-center rounded border text-sm"
                 style={{ borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
               >
-                <X size={14} className="mx-auto" />
+                <X size={14} aria-hidden />
               </button>
             </div>
 
@@ -378,7 +375,7 @@ export default function BackupPage() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMenuLateralOculto(true)}
-                  className="block w-full text-left rounded px-3 py-2 text-sm no-underline"
+                  className="flex min-h-11 w-full items-center text-left rounded px-3 py-2 text-sm no-underline"
                   style={{
                     backgroundColor: item.href === '/admin/base-datos/backup' ? 'var(--hover)' : 'transparent',
                     color: item.href === '/admin/base-datos/backup' ? 'var(--texto-fondo-oscuro)' : 'var(--menu-texto-principal)',
@@ -446,7 +443,7 @@ export default function BackupPage() {
                 {tablasDirectas.map((tabla) => (
                   <label
                     key={tabla}
-                    className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer"
+                    className="flex min-h-11 items-center gap-2 text-sm p-2 rounded border cursor-pointer"
                     style={{ backgroundColor: 'var(--fondo-general)', borderColor: 'var(--encabezados-alterno)', color: 'var(--menu-texto-principal)' }}
                   >
                     <input
@@ -496,7 +493,7 @@ export default function BackupPage() {
                     onChange={toggleAutoBackup}
                     className="w-4 h-4"
                   />
-                  <label htmlFor="auto-backup" className="text-sm font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+                  <label htmlFor="auto-backup" className="inline-flex min-h-11 items-center text-sm font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
                     Habilitar backups automáticos
                   </label>
                 </div>
@@ -532,7 +529,7 @@ export default function BackupPage() {
                   aria-label="Hora"
                   value={autoTime.split(':')[0]}
                   onChange={(e) => updateAutoTime(`${String(Math.max(0, Math.min(23, Number(e.target.value) || 0))).padStart(2, '0')}:${autoTime.split(':')[1]}`)}
-                  className="w-16 p-2 rounded border text-center"
+                  className="w-16 min-h-11 p-2 rounded border text-center"
                   style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
                 />
                 <span style={{ color: 'var(--encabezados-alterno)' }}>:</span>
@@ -543,7 +540,7 @@ export default function BackupPage() {
                   aria-label="Minuto"
                   value={autoTime.split(':')[1]}
                   onChange={(e) => updateAutoTime(`${autoTime.split(':')[0]}:${String(Math.max(0, Math.min(59, Number(e.target.value) || 0))).padStart(2, '0')}`)}
-                  className="w-16 p-2 rounded border text-center"
+                  className="w-16 min-h-11 p-2 rounded border text-center"
                   style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
                 />
                 <span style={{ color: 'var(--encabezados-alterno)' }}>:</span>
@@ -554,7 +551,7 @@ export default function BackupPage() {
                   aria-label="Segundo"
                   value={autoSecond}
                   onChange={(e) => updateAutoSecond(e.target.value)}
-                  className="w-16 p-2 rounded border text-center"
+                  className="w-16 min-h-11 p-2 rounded border text-center"
                   style={{ borderColor: 'var(--encabezados-alterno)', backgroundColor: 'var(--fondo-general)', color: 'var(--menu-texto-principal)' }}
                 />
               </div>
@@ -595,7 +592,7 @@ export default function BackupPage() {
                   aria-label="Día del mes"
                   value={autoMonthday}
                   onChange={(e) => updateAutoMonthday(e.target.value)}
-                  className="w-full p-2 rounded border"
+                  className="w-full min-h-11 p-2 rounded border"
                   style={{
                     borderColor: 'var(--encabezados-alterno)',
                     backgroundColor: 'var(--fondo-general)',

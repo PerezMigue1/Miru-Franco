@@ -87,7 +87,7 @@ export default function PanelSolicitudes() {
     <>
       <Card variant="elevated" padding="lg">
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Solicitudes de Permisos
+          Solicitudes de permisos
         </h2>
         <div className="space-y-3 max-h-[420px] overflow-y-auto">
           {loadingSolicitudes ? (
@@ -101,7 +101,7 @@ export default function PanelSolicitudes() {
               <div key={s.id} className="p-4 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                    {s.usuarioNombre || 'Empleado'} — {etiquetaTipoSolicitud(s.tipo)}
+                    {s.usuarioNombre || 'Empleado'}: {etiquetaTipoSolicitud(s.tipo)}
                   </p>
                   <Badge variant={varianteBadgeEstadoSolicitud(s.estado)}>{etiquetaEstadoSolicitud(s.estado)}</Badge>
                 </div>
@@ -113,7 +113,7 @@ export default function PanelSolicitudes() {
                 </p>
                 {s.estado !== 'pendiente' ? (
                   <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Resuelto por {s.resueltoPorNombre || '—'}
+                    Resuelto por {s.resueltoPorNombre || 'Sin dato'}
                     {s.comentarioResolucion ? `: "${s.comentarioResolucion}"` : ''}
                   </p>
                 ) : (

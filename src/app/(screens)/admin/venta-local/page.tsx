@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listarVentas, crearVenta, cancelarVenta, abrirCorte, resumenCorteTexto, VentaLocalApi, EstadoVentaLocal, type CorteApi } from '../../../services/pos';
+import { listarVentas, crearVenta, cancelarVenta, anularVentaCortada, abrirCorte, resumenCorteTexto, VentaLocalApi, EstadoVentaLocal, type CorteApi } from '../../../services/pos';
 import ResumenCorteCaja from '../../../components/operacion/ResumenCorteCaja';
 import { showToast } from '../../../utils/toast';
 import { getProductosSinRedirigir, type Producto } from '../../../services/productos';
@@ -22,7 +22,18 @@ import { hoyEnMexico } from '../../../utils/fechaSoloDia';
 import PagoMixtoCampos from '../../../components/operacion/PagoMixtoCampos';
 import { itemsDeVenta, pagosMixtos, totalesTicket, validarCobro, type LineaCobro, type MontosMixtos } from '../../../utils/cobroPos';
 import { formatearPrecioMXN } from '../../../utils/formatoPrecio';
-import { etiquetaMetodoVenta, presentacionIdDeVenta, puedeCancelarVenta, textoTotalDelDia, totalDelDia, ventasPagadasDelDia } from './ventasDia';
+import { usePermisos } from '../../../utils/permisos';
+import {
+  accionesDeVenta,
+  etiquetaMetodoVenta,
+  mensajeErrorAccionVenta,
+  presentacionIdDeVenta,
+  textoDevolucionFueraDeCaja,
+  textoModalAnular,
+  textoTotalDelDia,
+  totalDelDia,
+  ventasPagadasDelDia,
+} from './ventasDia';
 
 interface VentaFila {
   id: number;
@@ -66,6 +77,8 @@ function varianteBadgeEstadoVenta(estado: EstadoVentaLocal): 'success' | 'warnin
 }
 
 export default function VentaLocalPage() {
+  // Anular una venta cortada exige devoluciones:gestionar (misma clave que el backend).
+  const { tienePermiso } = usePermisos();
   const [ventasHoy, setVentasHoy] = useState<VentaFila[]>([]);
   const [loading, setLoading] = useState(true);
   const [catProductos, setCatProductos] = useState<Producto[]>([]);
@@ -95,8 +108,9 @@ export default function VentaLocalPage() {
   // Corte recién registrado: el modal muestra su cuenta del efectivo y las salidas.
   const [corteRegistrado, setCorteRegistrado] = useState<CorteApi | null>(null);
 
-  // Modal cancelar venta
+  // Modal cancelar/anular venta (mismo modal; 'anular' es para ventas que YA entraron a un corte)
   const [isModalCancelarOpen, setIsModalCancelarOpen] = useState(false);
+  const [accionVenta, setAccionVenta] = useState<'cancelar' | 'anular'>('cancelar');
   const [ventaIdCancelando, setVentaIdCancelando] = useState<number | null>(null);
   const [cancelMotivoVenta, setCancelMotivoVenta] = useState('');
   const [savingCancelVenta, setSavingCancelVenta] = useState(false);
@@ -183,20 +197,34 @@ export default function VentaLocalPage() {
     finally { setSavingCorte(false); }
   };
 
-  const openCancelarVenta = (id: number) => { setVentaIdCancelando(id); setCancelMotivoVenta(''); setCancelVentaError(null); setIsModalCancelarOpen(true); };
+  const openCancelarVenta = (id: number) => { setAccionVenta('cancelar'); setVentaIdCancelando(id); setCancelMotivoVenta(''); setCancelVentaError(null); setIsModalCancelarOpen(true); };
+  const openAnularVenta = (id: number) => { setAccionVenta('anular'); setVentaIdCancelando(id); setCancelMotivoVenta(''); setCancelVentaError(null); setIsModalCancelarOpen(true); };
 
   const handleCancelarVenta = async () => {
     if (!ventaIdCancelando) return;
+    // Anular una venta cortada mueve dinero del corte: el motivo es obligatorio.
+    if (accionVenta === 'anular' && !cancelMotivoVenta.trim()) {
+      setCancelVentaError('Escribe el motivo de la anulación.');
+      return;
+    }
     setSavingCancelVenta(true);
     setCancelVentaError(null);
     try {
-      await cancelarVenta(ventaIdCancelando, { motivoCancelacion: cancelMotivoVenta.trim() || 'Cancelada desde panel admin' });
+      if (accionVenta === 'anular') {
+        await anularVentaCortada(ventaIdCancelando, { motivoCancelacion: cancelMotivoVenta.trim() });
+        showToast('Venta anulada: la salida de efectivo se descuenta en el siguiente corte.', 'success', 8000);
+      } else {
+        await cancelarVenta(ventaIdCancelando, { motivoCancelacion: cancelMotivoVenta.trim() || 'Cancelada desde panel admin' });
+      }
       setIsModalCancelarOpen(false); setVentaIdCancelando(null); cargar();
     } catch (e) {
-      setCancelVentaError(e instanceof Error && e.message ? e.message : 'No se pudo cancelar la venta. Intenta de nuevo.');
+      // El modal se queda abierto con el motivo del rechazo (p. ej. el 409 de quien no opera la caja).
+      setCancelVentaError(mensajeErrorAccionVenta(e, accionVenta));
     }
     finally { setSavingCancelVenta(false); }
   };
+
+  const ventaCancelando = ventasHoy.find((v) => v.id === ventaIdCancelando) ?? null;
 
   const nombreCliente = (clienteId: string | null | undefined): string => {
     if (!clienteId) return 'Cliente general';
@@ -363,9 +391,24 @@ export default function VentaLocalPage() {
               <TableCell rowPadding="lg">
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setVentaDetalle(venta)}>Ver Detalles</Button>
-                  {puedeCancelarVenta(venta.raw.estado, venta.raw.corteId) && (
-                    <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
-                  )}
+                  {(() => {
+                    const acciones = accionesDeVenta(venta.raw.estado, venta.raw.corteId, venta.raw.metodoPago, tienePermiso);
+                    return (
+                      <>
+                        {acciones.cancelar && (
+                          <Button size="sm" variant="danger" onClick={() => openCancelarVenta(venta.id)}>Cancelar</Button>
+                        )}
+                        {acciones.anularCortada && (
+                          <Button size="sm" variant="outline-danger" onClick={() => openAnularVenta(venta.id)}>Anular venta cortada</Button>
+                        )}
+                        {acciones.devolverFueraDeCaja && (
+                          <p className="max-w-xs whitespace-normal text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                            {textoDevolucionFueraDeCaja(venta.raw.metodoPago)}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </TableCell>
             </TableRow>
@@ -405,21 +448,36 @@ export default function VentaLocalPage() {
         )}
       </Modal>
 
-      {/* Modal: Cancelar Venta */}
+      {/* Modal: Cancelar / Anular Venta (el mismo modal; anular exige motivo) */}
       <Modal
         isOpen={isModalCancelarOpen}
         onClose={() => { if (!savingCancelVenta) { setIsModalCancelarOpen(false); setVentaIdCancelando(null); } }}
-        title="Cancelar Venta"
+        title={accionVenta === 'anular' ? 'Anular venta cortada' : 'Cancelar Venta'}
         size="sm"
         footer={
           <>
             <Button variant="outline" onClick={() => { setIsModalCancelarOpen(false); setVentaIdCancelando(null); }} disabled={savingCancelVenta}>Volver</Button>
-            <Button variant="danger" onClick={handleCancelarVenta} disabled={savingCancelVenta}>{savingCancelVenta ? 'Cancelando...' : 'Cancelar venta'}</Button>
+            <Button variant="danger" onClick={handleCancelarVenta} disabled={savingCancelVenta}>
+              {accionVenta === 'anular'
+                ? (savingCancelVenta ? 'Anulando...' : 'Anular venta')
+                : (savingCancelVenta ? 'Cancelando...' : 'Cancelar venta')}
+            </Button>
           </>
         }
       >
         {cancelVentaError && <p role="alert" className="text-sm mb-3" style={{ color: 'var(--danger-texto)' }}>{cancelVentaError}</p>}
-        <Textarea label="Motivo de cancelación" value={cancelMotivoVenta} onChange={(e) => setCancelMotivoVenta(e.target.value)} placeholder="Describe el motivo (opcional)..." rows={3} fullWidth />
+        {accionVenta === 'anular' && ventaCancelando &&
+          textoModalAnular(ventaCancelando.raw).map((parrafo) => (
+            <p key={parrafo} className="text-sm mb-3" style={{ color: 'var(--encabezados-alterno)' }}>{parrafo}</p>
+          ))}
+        <Textarea
+          label={accionVenta === 'anular' ? 'Motivo de la anulación *' : 'Motivo de cancelación'}
+          value={cancelMotivoVenta}
+          onChange={(e) => setCancelMotivoVenta(e.target.value)}
+          placeholder={accionVenta === 'anular' ? 'Describe el motivo (obligatorio)...' : 'Describe el motivo (opcional)...'}
+          rows={3}
+          fullWidth
+        />
       </Modal>
 
       {/* Modal: Ver Detalles (solo lectura) */}

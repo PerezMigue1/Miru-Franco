@@ -19,8 +19,9 @@ export default function DatosRecogerEnSalon({ conAviso = true }: { conAviso?: bo
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${NOMBRE_SALON}, ${DIRECCION_SALON}`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-semibold underline underline-offset-2"
-              style={{ color: 'var(--checkout-entrega-enlace)' }}
+              className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-2"
+              // Sobre la tarjeta terracota del checkout el vino del enlace daba 4.10:1: texto principal subrayado.
+              style={{ color: 'var(--menu-texto-principal)' }}
             >
               Cómo llegar
             </a>
@@ -30,7 +31,7 @@ export default function DatosRecogerEnSalon({ conAviso = true }: { conAviso?: bo
               <a
                 href={TELEFONO_SALON.enlace}
                 className="font-semibold underline underline-offset-2 mf-cifras"
-                style={{ color: 'var(--checkout-entrega-enlace)' }}
+                style={{ color: 'var(--menu-texto-principal)' }}
               >
                 {TELEFONO_SALON.visible}
               </a>

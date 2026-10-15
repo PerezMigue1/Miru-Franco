@@ -87,4 +87,38 @@ describe('Migas del panel admin: subpantallas con su nombre real', () => {
     expect(migas('/admin/servicios/nuevo')).toEqual(['Inicio', 'Panel de administración', 'Servicios', 'Nuevo servicio']);
     expect(migas('/admin/servicios/12')).toEqual(['Inicio', 'Panel de administración', 'Servicios', 'Detalle de servicio']);
   });
+
+  it('las pantallas de privacidad llevan su nombre', () => {
+    expect(migas('/admin/consentimientos')).toEqual(['Inicio', 'Panel de administración', 'Consentimientos']);
+    expect(migas('/admin/solicitudes-arco')).toEqual(['Inicio', 'Panel de administración', 'Solicitudes ARCO']);
+  });
+
+  it('paquetes y su detalle no terminan en "Panel de administración"', () => {
+    expect(migas('/admin/paquetes')).toEqual(['Inicio', 'Panel de administración', 'Paquetes especiales']);
+    expect(migas('/admin/paquetes/7')).toEqual(['Inicio', 'Panel de administración', 'Paquetes especiales', 'Detalle de paquete']);
+    expect(getBreadcrumbsForPath('/admin/paquetes/7')[2].href).toBe('/admin/paquetes');
+  });
+
+  it('editar clienta e historial de ventas terminan en la página actual', () => {
+    expect(migas('/admin/clientes-crm/c-1/editar')).toEqual([
+      'Inicio',
+      'Panel de administración',
+      'Clientes (CRM)',
+      'Perfil de cliente',
+      'Editar cliente',
+    ]);
+    expect(getBreadcrumbsForPath('/admin/clientes-crm/c-1/editar')[3].href).toBe('/admin/clientes-crm/c-1');
+    expect(migas('/admin/inventario/historial-ventas')).toEqual(['Inicio', 'Panel de administración', 'Inventario', 'Historial de ventas']);
+  });
+
+  it('nuevo y editar usuario muestran la página actual después de "Usuarios y roles"', () => {
+    expect(migas('/admin/usuarios-roles/nuevo')).toEqual(['Inicio', 'Panel de administración', 'Usuarios y roles', 'Nuevo usuario']);
+    expect(migas('/admin/usuarios-roles/0b9f-uuid')).toEqual(['Inicio', 'Panel de administración', 'Usuarios y roles', 'Editar usuario']);
+  });
+
+  it('la miga actual no enlaza: solo las anteriores llevan href', () => {
+    const items = getBreadcrumbsForPath('/admin/usuarios-roles/nuevo');
+    expect(items.at(-1)?.href).toBeUndefined();
+    expect(items.slice(0, -1).every((i) => i.href)).toBe(true);
+  });
 });

@@ -9,7 +9,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
-import Table, { TableRow, TableCell } from '../../../components/ui/Table';
+import Table, { TablaVacia, TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
@@ -172,9 +172,18 @@ export default function QuejasGarantiasPage() {
         {loading ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando casos…</p>
         ) : casos.length === 0 ? (
-          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay casos registrados.</p>
+          <TablaVacia
+            icono={ClipboardList}
+            titulo="No hay casos registrados"
+            descripcion="Cuando una clienta reporte una queja o pida una garantía, regístrala aquí."
+            accion={
+              <Button asChild variant="outline">
+                <a href="#registrar-caso">Registrar un caso</a>
+              </Button>
+            }
+          />
         ) : (
-        <Table headers={['Cliente', 'Servicio', 'Fecha', 'Tipo', 'Descripción', 'Estado', 'Acciones']} headerSutil>
+        <Table headers={['Cliente', 'Servicio', 'Fecha', 'Tipo', 'Descripción', 'Estado', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Casos: desplaza para ver más columnas">
           {casos.map((caso) => (
             <TableRow key={caso.id}>
               <TableCell className="font-semibold" rowPadding="lg">{caso.cliente}</TableCell>
@@ -205,7 +214,7 @@ export default function QuejasGarantiasPage() {
         )}
         </Card>
 
-        <Card variant="elevated" padding="lg">
+        <Card variant="elevated" padding="lg" id="registrar-caso" className="scroll-mt-20">
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
           Registrar nuevo caso
         </h2>

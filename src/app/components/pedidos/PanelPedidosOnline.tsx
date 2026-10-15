@@ -91,14 +91,14 @@ function textoPago(p: PedidoApi): string {
 
 
 function formatearFecha(fecha?: string | null) {
-  if (!fecha) return '—';
+  if (!fecha) return 'Sin dato';
   const d = new Date(fecha);
   if (Number.isNaN(d.getTime())) return fecha;
   return d.toLocaleString('es-MX', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 function nombreCliente(p: PedidoApi): string {
-  return p.usuarioNombre || p.usuarioEmail || p.usuarioId || '—';
+  return p.usuarioNombre || p.usuarioEmail || p.usuarioId || 'Sin dato';
 }
 
 /**
@@ -377,7 +377,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Input
               aria-label="Buscar pedidos por clienta, email o número de pedido"
-              placeholder="Buscar por clienta, email o # de pedido"
+              placeholder="Clienta, email o # de pedido"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="w-full sm:w-72"
@@ -398,7 +398,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
             ? 'Mostrando todos los pedidos, cualquier estado.'
             : vista === 'recoger'
               ? 'Pedidos en preparación o listos para recoger en el salón. Al marcarlo listo, la clienta recibe el aviso en la app y por correo.'
-              : 'Pedidos por cobrar, por preparar o listos para recoger — el histórico completo (entregados, cancelados) está en "Ver todo".'}
+              : 'Pedidos por cobrar, por preparar o listos para recoger; el histórico completo (entregados, cancelados) está en "Ver todo".'}
           {modo === 'todos' && busqueda.trim() && ' La búsqueda solo filtra dentro de la página actual, no en los pedidos de otras páginas.'}
         </p>
 
@@ -466,7 +466,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
                 >
                   <ChevronLeft size={14} /> Anterior
                 </Button>
-                <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                <span className="text-xs whitespace-nowrap" style={{ color: 'var(--encabezados-alterno)' }}>
                   Página {pagina} de {totalPaginasMostrable}
                 </span>
                 <Button
@@ -493,7 +493,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
           <>
             {detallePedido && accionesPermitidas(detallePedido).includes('cancelar') && (
               <Button
-                variant="danger"
+                variant="outline-danger"
                 className="sm:mr-auto inline-flex items-center gap-1"
                 onClick={() => void ejecutarAccion(detallePedido, 'cancelar')}
                 disabled={guardando}
@@ -541,7 +541,7 @@ export default function PanelPedidosOnline({ vista = 'cobro' }: { vista?: VistaP
                     <div key={it.id} className="flex justify-between text-sm">
                       <span style={{ color: 'var(--menu-texto-principal)' }}>
                         {it.nombreProducto ?? 'Producto'}
-                        {it.tamanio && <span style={{ color: 'var(--encabezados-alterno)' }}> — {it.tamanio}</span>}
+                        {it.tamanio && <span style={{ color: 'var(--encabezados-alterno)' }}> · {it.tamanio}</span>}
                         <span style={{ color: 'var(--encabezados-alterno)' }}> × {it.cantidad}</span>
                       </span>
                       <span style={{ color: 'var(--menu-texto-principal)' }}>{formatearPrecioMXN(it.subtotal)}</span>

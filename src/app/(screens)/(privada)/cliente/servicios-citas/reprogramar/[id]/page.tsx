@@ -249,7 +249,7 @@ export default function ReprogramarCitaPage() {
                     style={{ backgroundColor: 'var(--fondos-suaves)' }}
                   >
                     <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                      <strong>Nota:</strong> Al reprogramar tu cita, recibirás una confirmación por correo electrónico con los nuevos detalles.
+                      <strong>Nota:</strong> Al reprogramar tu cita, te avisaremos en tu cuenta con los nuevos detalles y los recordatorios se ajustan a la nueva hora.
                     </p>
                   </div>
 

@@ -1417,7 +1417,8 @@ html:has(.superficie-cliente) {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  min-height: 40px;
+  /* Objetivo táctil del sistema (DESIGN.md §5); en dos líneas a <480px, el contenido puede crecerlo */
+  min-height: 44px;
   max-width: 100%;
   padding: 0 0.8rem;
   border-radius: 999px;

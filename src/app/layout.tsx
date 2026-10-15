@@ -8,6 +8,8 @@ import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { SCRIPT_INTRO } from "./components/home/introScript";
 import { ToastProvider } from "./context/ToastContext";
+import ReaceptacionDocumentos from "./components/legal/ReaceptacionDocumentos";
+import AvisoCookies from "./components/legal/AvisoCookies";
 import { OG_IMAGE_DEFAULT, SITE_NAME, SITE_URL } from "./utils/seo";
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,6 +86,9 @@ export default async function RootLayout({
             <CartProvider>
               {children}
             </CartProvider>
+            {/* Con sesión: pide aceptar la versión nueva de Términos y Aviso. Sin bloquear: aviso de cookies. */}
+            <ReaceptacionDocumentos />
+            <AvisoCookies />
           </ToastProvider>
         </ThemeProvider>
       </body>

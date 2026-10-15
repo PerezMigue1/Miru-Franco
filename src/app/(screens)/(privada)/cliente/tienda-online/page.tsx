@@ -10,6 +10,7 @@ import Input from '../../../../components/ui/Input';
 import { getProductos, type Producto } from '../../../../services/productos';
 import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
 import TarjetaCatalogo from '../../../../components/tienda/TarjetaCatalogo';
+import LeyendaPrecioIva from '../../../../components/tienda/LeyendaPrecioIva';
 import FilaChipsDesplazable from '../../../../components/cliente/FilaChipsDesplazable';
 import { SearchX, SlidersHorizontal } from 'lucide-react';
 
@@ -581,6 +582,7 @@ export default function CatalogoProductosPage() {
 
       {!loading && !error && (
         <div id="catalogo-productos-grid" className="space-y-6 scroll-mt-4">
+        {productosPagina.length > 0 && <LeyendaPrecioIva className="mb-3" />}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {productosPagina.map((producto, indice) => {
             const sinStock = (producto.stockCantidad ?? 0) === 0;

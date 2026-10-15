@@ -29,6 +29,11 @@ export interface Producto {
    * y seguir "disponible" (listado), o tener stock y estar "no disponible" (dado de baja).
    */
   disponible: boolean;
+  /**
+   * Borrado lógico (productos.activo): false = desactivado, no se lista ni se vende. Solo el admin
+   * recibe inactivos (incluirInactivos). normalizarProducto siempre lo llena (true si no viene).
+   */
+  activo?: boolean;
   nuevo?: boolean;
   crueltyFree?: boolean;
   /** Para detalle: descripción larga */
@@ -112,6 +117,7 @@ type ApiProductoRaw = Record<string, unknown> & {
   imagenes?: (string | Record<string, unknown>)[];
   stock?: number | boolean;
   disponible?: boolean;
+  activo?: boolean;
   nuevo?: boolean;
   crueltyFree?: boolean;
   descripcionLarga?: string;
@@ -240,6 +246,7 @@ function normalizarProducto(raw: ApiProductoRaw): Producto {
     imagenes,
     stock: disponible,
     disponible: disponibleReal,
+    activo: raw.activo !== false,
     nuevo: Boolean(raw.nuevo),
     crueltyFree: Boolean(raw.crueltyFree ?? (raw as Record<string, unknown>).cruelty_free),
     descripcionLarga:
@@ -284,19 +291,28 @@ export type ProductosResult = { data: Producto[]; error: null } | { data: Produc
  * Opciones para getProductosSinRedirigir.
  * incluirNoDisponibles: si true, pide al backend todos los productos (incl. no disponibles) para inventario admin.
  * El backend puede aceptar ?incluirNoDisponibles=1 o ?todos=1 en GET /api/productos.
+ * incluirInactivos: si true, pide también los productos desactivados (?incluirInactivos=1). El backend
+ * solo los devuelve al admin o a quien tiene servicios:escritura (sesión en la cookie); al resto le
+ * responde solo activos. Tienda, POS y venta local NO lo usan.
  */
-export type GetProductosSinRedirigirOpts = { incluirNoDisponibles?: boolean };
+export type GetProductosSinRedirigirOpts = { incluirNoDisponibles?: boolean; incluirInactivos?: boolean };
 
 /**
  * Obtiene el listado de productos sin usar apiClient (sin redirección en 401/403/500).
  * Útil para dashboard e inventario: si el backend falla, devuelve data vacía y error, sin redirigir.
- * Para inventario admin, usa incluirNoDisponibles: true para recibir también los productos desactivados.
+ * Para inventario admin, usa incluirInactivos: true para recibir también los productos desactivados.
  */
 export async function getProductosSinRedirigir(opts?: GetProductosSinRedirigirOpts): Promise<ProductosResult> {
   try {
     const base = getBackendBaseUrl();
-    const query = opts?.incluirNoDisponibles ? '?incluirNoDisponibles=1' : '';
-    const res = await fetch(`${base}/api/productos${query}`, { credentials: 'include', ...(opts?.incluirNoDisponibles ? {} : { next: { revalidate: 60 } }) });
+    const params = [
+      ...(opts?.incluirNoDisponibles ? ['incluirNoDisponibles=1'] : []),
+      ...(opts?.incluirInactivos ? ['incluirInactivos=1'] : []),
+    ];
+    const query = params.length ? `?${params.join('&')}` : '';
+    // Las vistas de admin (no disponibles o inactivos) no se cachean: dependen de la sesión.
+    const sinCache = opts?.incluirNoDisponibles || opts?.incluirInactivos;
+    const res = await fetch(`${base}/api/productos${query}`, { credentials: 'include', ...(sinCache ? {} : { next: { revalidate: 60 } }) });
     if (!res.ok) {
       const msg = textoRespuestaFallida(res.status, await res.text(), `${base}/api/productos${query}`);
       return { data: [], error: msg };
@@ -545,11 +561,27 @@ export async function updateProducto(
 }
 
 /**
- * Elimina un producto (borrado lógico en backend). Requiere JWT y rol admin.
+ * Desactiva un producto (borrado lógico en backend: activo = false; pedidos y ventas pasadas no
+ * cambian). Requiere JWT y rol admin.
  */
 export async function deleteProducto(id: string | number): Promise<void> {
   const BACKEND_BASE = getBackendBaseUrl();
   await apiClient.delete(`/api/productos/${id}`, BACKEND_BASE);
+}
+
+/** Reactiva un producto desactivado (PUT con activo: true). Requiere JWT y rol admin. */
+export async function reactivarProducto(id: string | number): Promise<Producto> {
+  const BACKEND_BASE = getBackendBaseUrl();
+  const response = await apiClient.put<{ success?: boolean; data?: ApiProductoRaw }>(
+    `/api/productos/${id}`,
+    { activo: true },
+    BACKEND_BASE
+  );
+  const data = (response as Record<string, unknown>)?.data;
+  if (data && typeof data === 'object') {
+    return normalizarProducto(data as ApiProductoRaw);
+  }
+  throw new Error('El API no devolvió el producto reactivado');
 }
 
 /** Convierte precio en string (ej. "$350") a número. */

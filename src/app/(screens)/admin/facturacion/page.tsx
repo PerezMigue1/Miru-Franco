@@ -4,12 +4,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   listarFacturas,
   listarTodosLosPedidos,
+  obtenerPedido,
   crearFactura,
   PedidoApi,
   FacturaApi,
   TipoDocumentoFactura,
 } from '../../../services/ecommerce';
 import { getUsuarios } from '../../../services/usuarios';
+import { enParaleloLimitado } from '../../../utils/enParaleloLimitado';
+import { etiquetaEstadoFactura } from '../../../utils/estados';
+import { montoFactura as montoDeFactura, montoTotalFacturas, pedidosReferenciados } from './facturasPedidos';
 import { subirPdfCloudinary } from '../../../utils/cloudinary';
 import { generarNotaVentaPdf } from '../../../utils/generarNotaPdf';
 import AdminLayout from '../../../components/layouts/AdminLayout';
@@ -21,7 +25,8 @@ import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
-import { BadgeDollarSign, Clock3, Receipt } from 'lucide-react';
+import { BadgeDollarSign, Clock3, Info, Receipt } from 'lucide-react';
+import { AVISO_SIN_TIMBRADO, textoBotonGuardar, tituloModalDocumento } from './textosFacturacion';
 
 function fmtFecha(iso?: string): string {
   if (!iso) return '-';
@@ -33,9 +38,17 @@ function fmtMoneda(v: number): string {
   return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+/** Estado del documento en palabras ("solicitada" → "Solicitada"). */
+const estadoLegible = (estado?: string | null): string | null => (estado ? etiquetaEstadoFactura(estado) : null);
+
 export default function FacturacionPage() {
   const [facturas, setFacturas] = useState<FacturaApi[]>([]);
-  const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
+  /** Solo los pedidos de los CFDI de la lista: se traen después de pintar las facturas. */
+  const [pedidosPorId, setPedidosPorId] = useState<Map<number, PedidoApi>>(new Map());
+  const [cargandoPedidos, setCargandoPedidos] = useState(true);
+  /** Lista completa de pedidos para elegir uno al registrar un CFDI: se pide al elegir ese tipo. */
+  const [listaPedidos, setListaPedidos] = useState<PedidoApi[] | null>(null);
+  const [cargandoListaPedidos, setCargandoListaPedidos] = useState(false);
   const [nombresClientes, setNombresClientes] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,39 +75,58 @@ export default function FacturacionPage() {
   const [subiendoPdf, setSubiendoPdf] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Antes un Promise.all esperaba la lista completa de pedidos (10 a 15 s con "0 documentos" y $0.00).
+  // Ahora las facturas se pintan en cuanto llegan; los nombres y los pedidos de los CFDI, después.
   const cargar = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    setCargandoPedidos(true);
+    void getUsuarios()
+      .then((usuarios) => setNombresClientes(new Map(usuarios.map((u) => [u.id, u.nombre]))))
+      .catch(() => {});
+    let lista: FacturaApi[] = [];
     try {
-      const [usuarios, listaPedidos, listaFacturas] = await Promise.all([
-        getUsuarios(),
-        listarTodosLosPedidos(),
-        listarFacturas(),
-      ]);
-      setNombresClientes(new Map(usuarios.map((u) => [u.id, u.nombre])));
-      setPedidos(listaPedidos);
-      setFacturas(listaFacturas);
+      lista = await listarFacturas();
+      setFacturas(lista);
     } catch {
       setError('Error al cargar facturas');
     } finally {
       setLoading(false);
     }
+    try {
+      const encontrados = await enParaleloLimitado(
+        pedidosReferenciados(lista).map((id) => () => obtenerPedido(id).catch(() => null)),
+        6,
+      );
+      setPedidosPorId(new Map(encontrados.filter((p): p is PedidoApi => p !== null).map((p) => [p.id, p])));
+    } finally {
+      setCargandoPedidos(false);
+    }
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const nombreClientePedido = (pedidoId?: number | null): string => {
-    const pedido = pedidos.find((p) => p.id === pedidoId);
-    return (pedido?.usuarioId && nombresClientes.get(pedido.usuarioId)) || 'Cliente sin nombre';
+  const cargarListaPedidos = () => {
+    if (listaPedidos || cargandoListaPedidos) return;
+    setCargandoListaPedidos(true);
+    listarTodosLosPedidos()
+      .then(setListaPedidos)
+      .catch(() => setFormError('No se pudo cargar la lista de pedidos; puedes registrar el CFDI sin pedido.'))
+      .finally(() => setCargandoListaPedidos(false));
   };
 
-  const nombreCliente = (f: FacturaApi): string =>
-    f.tipo === 'nota' ? (f.clienteNombre || 'Cliente sin nombre') : nombreClientePedido(f.pedidoId);
+  const nombreDeUsuario = (usuarioId?: string | null): string =>
+    (usuarioId && nombresClientes.get(usuarioId)) || 'Cliente sin nombre';
 
-  const montoFactura = (f: FacturaApi): number => {
-    if (f.tipo === 'nota') return f.monto ?? 0;
-    const pedido = pedidos.find((p) => p.id === f.pedidoId);
-    return pedido?.total ?? 0;
+  /** null mientras el pedido del CFDI sigue llegando (la celda pinta skeleton). */
+  const nombreCliente = (f: FacturaApi): string | null => {
+    if (f.tipo === 'nota') return f.clienteNombre || 'Cliente sin nombre';
+    const pedido = f.pedidoId != null ? pedidosPorId.get(f.pedidoId) : undefined;
+    if (!pedido && f.pedidoId != null && cargandoPedidos) return null;
+    return nombreDeUsuario(pedido?.usuarioId);
   };
+
+  const montoFactura = (f: FacturaApi): number | null => montoDeFactura(f, pedidosPorId, cargandoPedidos);
 
   const openNueva = () => {
     setFormTipo('nota');
@@ -183,7 +215,9 @@ export default function FacturacionPage() {
 
   const notasCount = facturas.filter((f) => f.tipo === 'nota').length;
   const cfdiSinPdf = facturas.filter((f) => f.tipo === 'cfdi' && !f.pdfUrl).length;
-  const montoTotal = facturas.reduce((acc, f) => acc + montoFactura(f), 0);
+  const montoTotal = montoTotalFacturas(facturas, pedidosPorId, cargandoPedidos);
+  // Sin role="status" por celda (decenas de regiones vivas): la tabla lleva un solo aria-busy mientras cargan.
+  const skeletonCelda = <span className="mf-skeleton inline-block h-4 w-24 align-middle" aria-hidden />;
 
   return (
     <AdminLayout>
@@ -196,10 +230,22 @@ export default function FacturacionPage() {
               Facturación
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-              {facturas.length} documento{facturas.length === 1 ? '' : 's'} registrados
+              {loading ? (
+                <span className="mf-skeleton inline-block h-4 w-40 align-middle" role="status" aria-label="Cargando documentos" />
+              ) : (
+                `${facturas.length} documento${facturas.length === 1 ? '' : 's'} registrados`
+              )}
             </p>
           </div>
-          <Button onClick={openNueva}>+ Nueva Nota/Factura</Button>
+          <Button onClick={openNueva}>+ Nota de venta o CFDI timbrado</Button>
+        </div>
+
+        <div
+          className="flex items-start gap-3 px-4 py-3 rounded-[10px] text-sm"
+          style={{ backgroundColor: 'var(--fondos-suaves)', color: 'var(--menu-texto-principal)' }}
+        >
+          <Info size={18} aria-hidden className="shrink-0 mt-0.5" />
+          <p>{AVISO_SIN_TIMBRADO}</p>
         </div>
 
         {error && (
@@ -210,39 +256,47 @@ export default function FacturacionPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <TarjetaKpi icono={Receipt} etiqueta="Notas de venta" valor={notasCount} />
+          <TarjetaKpi icono={Receipt} etiqueta="Notas de venta" cargando={loading} valor={notasCount} />
 
-          <TarjetaKpi icono={Clock3} etiqueta="CFDI sin PDF cargado" valor={cfdiSinPdf} />
+          <TarjetaKpi icono={Clock3} etiqueta="CFDI sin PDF cargado" cargando={loading} valor={cfdiSinPdf} />
 
-          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto total" valor={fmtMoneda(montoTotal)} />
+          <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto total" cargando={loading || montoTotal === null} valor={fmtMoneda(montoTotal ?? 0)} />
         </div>
 
         {/* Listado */}
-        <Card variant="elevated" padding="lg">
+        {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+        <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
         {loading ? (
-          <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando facturas…</p>
+          <div className="space-y-3 p-5" role="status" aria-label="Cargando facturas">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="mf-skeleton h-10 w-full" />
+            ))}
+          </div>
         ) : facturas.length === 0 ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay facturas registradas.</p>
         ) : (
-        <Table headers={['Cliente', 'Tipo', 'Folio/Concepto', 'Monto', 'Fecha', 'Estado', 'Acciones']} headerSutil>
-          {facturas.map((f) => (
+        <Table headers={['Cliente', 'Tipo', 'Folio/Concepto', 'Monto', 'Fecha', 'Estado', 'Acciones']} ocupada={cargandoPedidos} headerSutil stickyFirstColumn etiqueta="Facturas: desplaza para ver más columnas">
+          {facturas.map((f) => {
+            const cliente = nombreCliente(f);
+            const monto = montoFactura(f);
+            return (
             <TableRow key={f.id}>
-              <TableCell className="font-semibold" rowPadding="lg">{nombreCliente(f)}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{cliente ?? skeletonCelda}</TableCell>
               <TableCell rowPadding="lg">
                 <Badge variant={f.tipo === 'nota' ? 'default' : 'info'}>
                   {f.tipo === 'nota' ? 'Nota de venta' : 'CFDI'}
                 </Badge>
               </TableCell>
               <TableCell rowPadding="lg">{f.tipo === 'nota' ? (f.concepto || '-') : (f.folio || '-')}</TableCell>
-              <TableCell className="font-semibold" rowPadding="lg">{fmtMoneda(montoFactura(f))}</TableCell>
+              <TableCell className="font-semibold" rowPadding="lg">{monto === null ? skeletonCelda : fmtMoneda(monto)}</TableCell>
               <TableCell rowPadding="lg">{fmtFecha(f.creadoEn)}</TableCell>
               <TableCell rowPadding="lg">
                 <Badge variant={f.estado ? 'info' : 'default'}>
-                  {f.estado || 'Sin estado'}
+                  {estadoLegible(f.estado) ?? 'Sin estado'}
                 </Badge>
               </TableCell>
               <TableCell rowPadding="lg">
-                <div className="flex gap-2">
+                <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                   <Button size="sm" variant="outline" onClick={() => setFacturaDetalle(f)}>Ver</Button>
                   <Button
                     size="sm"
@@ -255,7 +309,8 @@ export default function FacturacionPage() {
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </Table>
         )}
         </Card>
@@ -265,13 +320,13 @@ export default function FacturacionPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => { if (!saving) setIsModalOpen(false); }}
-        title="Generar nota/factura"
+        title={tituloModalDocumento(formTipo)}
         size="md"
         footer={
           <>
             <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={saving}>Cancelar</Button>
             <Button onClick={handleGenerar} disabled={saving}>
-              {subiendoPdf ? 'Subiendo PDF...' : saving ? 'Generando...' : 'Generar Documento'}
+              {textoBotonGuardar(formTipo, { guardando: saving, subiendoPdf })}
             </Button>
           </>
         }
@@ -281,7 +336,11 @@ export default function FacturacionPage() {
           <Select
             label="Tipo de Documento"
             value={formTipo}
-            onChange={(e) => setFormTipo(e.target.value as TipoDocumentoFactura)}
+            onChange={(e) => {
+              const tipo = e.target.value as TipoDocumentoFactura;
+              setFormTipo(tipo);
+              if (tipo === 'cfdi') cargarListaPedidos();
+            }}
             options={[
               { value: 'nota', label: 'Nota de venta (sin validez fiscal)' },
               { value: 'cfdi', label: 'Factura CFDI (registrar documento ya timbrado)' },
@@ -317,10 +376,10 @@ export default function FacturacionPage() {
                 value={formPedidoId}
                 onChange={(e) => setFormPedidoId(e.target.value)}
                 options={[
-                  { value: '', label: 'Sin pedido asociado' },
-                  ...pedidos.map((p) => ({
+                  { value: '', label: cargandoListaPedidos ? 'Cargando pedidos…' : 'Sin pedido asociado' },
+                  ...(listaPedidos ?? []).map((p) => ({
                     value: String(p.id),
-                    label: `#${p.id} — ${nombreClientePedido(p.id)} — ${fmtMoneda(p.total)}`,
+                    label: `#${p.id} · ${nombreDeUsuario(p.usuarioId)} · ${fmtMoneda(p.total)}`,
                   })),
                 ]}
                 fullWidth
@@ -343,19 +402,21 @@ export default function FacturacionPage() {
                 fullWidth
               />
               <div>
-                <label className="text-sm font-medium block mb-1" style={{ color: 'var(--menu-texto-principal)' }}>
+                <label htmlFor="cfdi-pdf" className="mf-etiqueta">
                   PDF del CFDI (el que entregó el PAC/contador)
                 </label>
+                {/* Campo del sistema (44 px de alto) con el botón nativo teñido de la paleta. */}
                 <input
+                  id="cfdi-pdf"
                   ref={fileInputRef}
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setFormPdfFile(e.target.files?.[0] ?? null)}
-                  className="text-sm"
+                  className="mf-campo w-full px-2 py-1.5 text-sm file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--fondos-suaves)] file:px-3 file:font-semibold file:text-[var(--menu-texto-principal)]"
                 />
               </div>
               <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-                El sistema no genera ni timbra CFDI — solo registra los datos y guarda el PDF que ya existe.
+                {AVISO_SIN_TIMBRADO}
               </p>
             </>
           )}
@@ -372,8 +433,8 @@ export default function FacturacionPage() {
       >
         {facturaDetalle && (
           <div className="space-y-2 text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
-            <p><span className="font-semibold">Cliente:</span> {nombreCliente(facturaDetalle)}</p>
-            <p><span className="font-semibold">Monto:</span> {fmtMoneda(montoFactura(facturaDetalle))}</p>
+            <p><span className="font-semibold">Cliente:</span> {nombreCliente(facturaDetalle) ?? 'Cargando…'}</p>
+            <p><span className="font-semibold">Monto:</span> {montoFactura(facturaDetalle) === null ? 'Cargando…' : fmtMoneda(montoFactura(facturaDetalle) ?? 0)}</p>
             <p><span className="font-semibold">Fecha:</span> {fmtFecha(facturaDetalle.creadoEn)}</p>
             {facturaDetalle.tipo === 'nota' ? (
               <p><span className="font-semibold">Concepto:</span> {facturaDetalle.concepto || '-'}</p>
@@ -386,7 +447,7 @@ export default function FacturacionPage() {
                 <p><span className="font-semibold">Razón Social:</span> {facturaDetalle.razonSocial || '-'}</p>
               </>
             )}
-            <p><span className="font-semibold">Estado:</span> {facturaDetalle.estado || 'Sin estado registrado'}</p>
+            <p><span className="font-semibold">Estado:</span> {estadoLegible(facturaDetalle.estado) ?? 'Sin estado registrado'}</p>
           </div>
         )}
       </Modal>

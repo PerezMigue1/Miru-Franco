@@ -8,11 +8,27 @@ import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
-import { createUsuario, patchUsuarioRol, getRoles, validarAltaUsuario, TIPOS_CABELLO, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
+import {
+  createUsuario,
+  patchUsuarioRol,
+  getRoles,
+  validarAltaUsuario,
+  erroresCamposAlta,
+  erroresConsentimientoAlta,
+  perfilCapilarAlta,
+  NOTA_PROMOCIONES_PANEL,
+  TIPOS_CABELLO,
+  type CampoAlta,
+  type RolCatalogoItem,
+  type RolValor,
+} from '../../../../services/usuarios';
+import { documentosAceptados } from '../../../../services/consentimientos';
+import { documentoLegal } from '../../../../utils/documentosLegales';
 import { normalizarTelefonoRegistro, MENSAJE_FORMATO_TELEFONO } from '../../../../utils/phone';
 import { api as authApi } from '../../../../services/auth';
 import CasillaDatosSalud from '../../../../components/legal/CasillaDatosSalud';
-import { errorConsentimientoAlergias, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
+import CasillaDocumento, { EnlaceDocumento } from '../../../../components/legal/CasillaDocumento';
+import { errorConsentimientoAlergias, mensajeSaludDelBackend, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
 
 const ROLES_PERMITIDOS = ['admin', 'estilista', 'empleado', 'becario'] as const;
 
@@ -24,6 +40,18 @@ const opcionesRolPermitidas = [
 ];
 
 const gridForm = 'grid grid-cols-1 sm:grid-cols-2 gap-4';
+/** Enlaces dentro de las casillas: en móvil, objetivo de 44 px. */
+const enlaceCasilla = 'max-sm:inline-flex max-sm:min-h-11 max-sm:items-center';
+/** id de cada campo marcado, en el orden del formulario (el foco va al primero con error). */
+const ID_CAMPO: Record<CampoAlta, string> = {
+  nombre: 'alta-nombre',
+  email: 'alta-email',
+  password: 'alta-password',
+  telefono: 'alta-telefono',
+  pregunta: 'alta-pregunta',
+  respuesta: 'alta-respuesta',
+  tipoCabello: 'alta-tipo-cabello',
+};
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
@@ -56,8 +84,15 @@ export default function NuevoUsuarioPage() {
   const [errorConsentimiento, setErrorConsentimiento] = useState<string | null>(null);
   const [tratamientosQuimicos, setTratamientosQuimicos] = useState(false);
   const [tratamientos, setTratamientos] = useState('');
+  // Casillas legales sin premarcar: el backend exige Términos y Aviso aceptados.
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [aceptaAviso, setAceptaAviso] = useState(false);
-  const [recibePromo, setRecibePromo] = useState(false);
+  const [erroresCasillas, setErroresCasillas] = useState<Partial<Record<'aceptaTerminos' | 'aceptaAviso', string>>>({});
+  // Cada campo que falta se marca junto a él (aria-invalid), además del aviso de arriba.
+  const [erroresCampos, setErroresCampos] = useState<Partial<Record<CampoAlta, string>>>({});
+  const limpiarCampo = (campo: CampoAlta) => setErroresCampos((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
+  // Solo se mandan alergias si la casilla "Tiene alergias" está marcada; con texto, se pide el consentimiento.
+  const alergiasEnviadas = tieneAlergias ? alergias.trim() : '';
 
   useEffect(() => {
     getRoles().then(setRoles).catch(() => setRoles([]));
@@ -118,16 +153,22 @@ export default function NuevoUsuarioPage() {
 
   const handleCrear = async () => {
     if (enviandoRef.current || usuarioCreado) return;
-    const errorValidacion = validarAltaUsuario({ nombre, email, password, telefono, fechaNacimiento, pregunta, respuesta, tipoCabello, aceptaAviso });
+    const faltanCampos = erroresCamposAlta({ nombre, email, password, telefono, fechaNacimiento, pregunta, respuesta, tipoCabello, aceptaTerminos, aceptaAviso });
+    setErroresCampos(faltanCampos);
+    setErroresCasillas(erroresConsentimientoAlta({ aceptaTerminos, aceptaAviso }));
+    const errorValidacion = validarAltaUsuario({ nombre, email, password, telefono, fechaNacimiento, pregunta, respuesta, tipoCabello, aceptaTerminos, aceptaAviso });
     if (errorValidacion) {
       setError(errorValidacion);
+      const primero = (Object.keys(ID_CAMPO) as CampoAlta[]).find((c) => faltanCampos[c]);
+      if (primero) document.getElementById(ID_CAMPO[primero])?.focus();
       return;
     }
-    // Solo se mandan alergias si la casilla "Tiene alergias" está marcada.
-    const alergiasEnviadas = tieneAlergias ? alergias.trim() : '';
     const faltaConsentimiento = errorConsentimientoAlergias(alergiasEnviadas, consienteDatosSensibles, 'personal');
     setErrorConsentimiento(faltaConsentimiento);
-    if (faltaConsentimiento) return;
+    if (faltaConsentimiento) {
+      document.getElementById('alta-consiente-salud')?.focus();
+      return;
+    }
     enviandoRef.current = true;
     setSaving(true);
     setError(null);
@@ -144,18 +185,17 @@ export default function NuevoUsuarioPage() {
         password,
         telefono: normalizarTelefonoRegistro(telefono),
         rol: rol as RolValor,
-        fechaNacimiento,
+        // Opcional (minimización): createUsuario la manda solo si se capturó.
+        fechaNacimiento: fechaNacimiento || undefined,
         // Sin pregunta elegida no se manda nada: nunca una respuesta por defecto.
         preguntaSeguridad: pregunta.trim() ? { pregunta: pregunta.trim(), respuesta: respuesta.trim() } : undefined,
-        perfilCapilar: {
-          tipoCabello,
-          tieneAlergias,
-          alergias: alergiasEnviadas || undefined,
-          tratamientosQuimicos,
-          tratamientos: tratamientos.trim() || undefined,
-        },
+        // Solo lo capturado: sin tipo de cabello no se manda, y las alergias no se pierden por eso.
+        perfilCapilar: perfilCapilarAlta({ tipoCabello, tieneAlergias, alergias, tratamientosQuimicos, tratamientos }),
+        aceptaTerminos,
         aceptaAvisoPrivacidad: aceptaAviso,
-        recibePromociones: recibePromo,
+        // Sin recibePromociones: solo la persona puede aceptarlas (el backend rechaza true desde el panel).
+        // Versión vigente de cada documento que la persona aceptó.
+        documentos: documentosAceptados(['terminos', 'aviso-privacidad']),
         ...(requiereConsentimiento(alergiasEnviadas) ? { consienteDatosSensibles: true } : {}),
       });
       if (rol && rol !== 'cliente') {
@@ -171,6 +211,12 @@ export default function NuevoUsuarioPage() {
       }
       router.push('/admin/usuarios-roles');
     } catch (err) {
+      // 400 CONSENTIMIENTO_SALUD_REQUERIDO: el mensaje va junto a la casilla de datos de salud.
+      const salud = mensajeSaludDelBackend(err);
+      if (salud) {
+        setErrorConsentimiento(salud);
+        return;
+      }
       const e = err as Error & { validationErrors?: Record<string, string> };
       let msg = e instanceof Error ? e.message : 'Error al crear usuario';
       if (e.validationErrors && Object.keys(e.validationErrors).length > 0) {
@@ -218,36 +264,71 @@ export default function NuevoUsuarioPage() {
           <div>
             <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Datos básicos</h3>
             <div className={gridForm}>
-              <Input label="Nombre completo *" placeholder="Nombre del usuario" value={nombre} onChange={(e) => setNombre(e.target.value)} fullWidth required />
+              <Input
+                id={ID_CAMPO.nombre}
+                label="Nombre completo *"
+                placeholder="Nombre del usuario"
+                value={nombre}
+                onChange={(e) => {
+                  setNombre(e.target.value);
+                  limpiarCampo('nombre');
+                }}
+                fullWidth
+                required
+                error={erroresCampos.nombre}
+              />
               <div>
                 <Input
+                  id={ID_CAMPO.email}
                   label="Email *"
                   type="email"
                   placeholder="correo@ejemplo.com"
                   value={email}
-                  onChange={handleEmailChange}
+                  onChange={(e) => {
+                    handleEmailChange(e);
+                    limpiarCampo('email');
+                  }}
                   onBlur={handleEmailBlur}
                   fullWidth
                   required
-                  error={emailYaRegistrado ? 'Este correo ya está registrado' : undefined}
+                  error={erroresCampos.email ?? (emailYaRegistrado ? 'Este correo ya está registrado' : undefined)}
                 />
                 {verificandoEmail && (
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Verificando...</p>
                 )}
               </div>
               <Input
+                id={ID_CAMPO.password}
                 label="Contraseña *"
                 type="password"
                 placeholder="Mínimo 8 caracteres"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  limpiarCampo('password');
+                }}
                 fullWidth
                 required
                 minLength={8}
+                error={erroresCampos.password}
                 helperText="Mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial."
               />
-              <Input label="Teléfono *" type="tel" placeholder="10 dígitos" value={telefono} onChange={(e) => setTelefono(e.target.value)} fullWidth required helperText={MENSAJE_FORMATO_TELEFONO} />
-              <Input label="Fecha de nacimiento *" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} fullWidth required />
+              <Input
+                id={ID_CAMPO.telefono}
+                label="Teléfono *"
+                type="tel"
+                placeholder="10 dígitos"
+                value={telefono}
+                onChange={(e) => {
+                  setTelefono(e.target.value);
+                  limpiarCampo('telefono');
+                }}
+                fullWidth
+                required
+                error={erroresCampos.telefono}
+                helperText={MENSAJE_FORMATO_TELEFONO}
+              />
+              <Input label="Fecha de nacimiento (opcional)" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} fullWidth />
               <Select label="Rol *" value={rol} onChange={(e) => setRol(e.target.value)} options={opcionesRol} fullWidth required />
             </div>
           </div>
@@ -257,24 +338,41 @@ export default function NuevoUsuarioPage() {
             <div className={gridForm}>
               <div>
                 <Select
+                  id={ID_CAMPO.pregunta}
                   label="Pregunta de seguridad"
                   value={pregunta}
                   onChange={(e) => {
                     setPregunta(e.target.value);
                     if (!e.target.value) setRespuesta('');
+                    limpiarCampo('pregunta');
+                    limpiarCampo('respuesta');
                   }}
                   options={[
                     { value: '', label: 'Sin pregunta de seguridad' },
                     ...preguntasSeguridad.filter((q) => q.pregunta).map((q) => ({ value: q.pregunta, label: q.pregunta })),
                   ]}
                   fullWidth
+                  error={erroresCampos.pregunta}
                   helperText="Opcional. Sin pregunta, la cuenta no podrá recuperarse por este medio."
                 />
                 {loadingPreguntas && (
                   <p className="text-xs mt-1" style={{ color: 'var(--encabezados-alterno)' }}>Cargando preguntas...</p>
                 )}
               </div>
-              <Input label={pregunta ? 'Respuesta *' : 'Respuesta'} placeholder="Respuesta secreta" value={respuesta} onChange={(e) => setRespuesta(e.target.value)} fullWidth required={Boolean(pregunta)} disabled={!pregunta} />
+              <Input
+                id={ID_CAMPO.respuesta}
+                label={pregunta ? 'Respuesta *' : 'Respuesta'}
+                placeholder="Respuesta secreta"
+                value={respuesta}
+                onChange={(e) => {
+                  setRespuesta(e.target.value);
+                  limpiarCampo('respuesta');
+                }}
+                fullWidth
+                required={Boolean(pregunta)}
+                disabled={!pregunta}
+                error={erroresCampos.respuesta}
+              />
             </div>
           </div>
 
@@ -282,36 +380,40 @@ export default function NuevoUsuarioPage() {
             <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--menu-texto-principal)' }}>Perfil capilar</h3>
             <div className={gridForm}>
               <Select
-                label="Tipo de cabello *"
+                id={ID_CAMPO.tipoCabello}
+                label="Tipo de cabello (opcional)"
                 value={tipoCabello}
-                onChange={(e) => setTipoCabello(e.target.value)}
-                options={[{ value: '', label: 'Selecciona el tipo de cabello' }, ...TIPOS_CABELLO]}
+                onChange={(e) => {
+                  setTipoCabello(e.target.value);
+                  limpiarCampo('tipoCabello');
+                }}
+                options={[{ value: '', label: 'Sin especificar' }, ...TIPOS_CABELLO]}
                 fullWidth
-                required
+                error={erroresCampos.tipoCabello}
               />
-              <div className="flex flex-col gap-4 sm:col-span-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={tieneAlergias} onChange={(e) => setTieneAlergias(e.target.checked)} className="rounded" />
-                  <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Tiene alergias</span>
-                </label>
+              <div className="flex flex-col gap-2 sm:col-span-2">
+                <CasillaDocumento id="alta-tiene-alergias" checked={tieneAlergias} onChange={(e) => setTieneAlergias(e.target.checked)}>
+                  Tiene alergias
+                </CasillaDocumento>
                 {tieneAlergias && (
-                  <>
-                    <Textarea label="Alergias" value={alergias} onChange={(e) => setAlergias(e.target.value)} placeholder="Especificar" fullWidth rows={2} />
-                    <CasillaDatosSalud
-                      quien="personal"
-                      checked={consienteDatosSensibles}
-                      onChange={(e) => {
-                        setConsienteDatosSensibles(e.target.checked);
-                        if (e.target.checked) setErrorConsentimiento(null);
-                      }}
-                      error={errorConsentimiento}
-                    />
-                  </>
+                  <Textarea label="Alergias" value={alergias} onChange={(e) => setAlergias(e.target.value)} placeholder="Especificar" fullWidth rows={2} />
                 )}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={tratamientosQuimicos} onChange={(e) => setTratamientosQuimicos(e.target.checked)} className="rounded" />
-                  <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Tratamientos químicos previos</span>
-                </label>
+                {requiereConsentimiento(alergiasEnviadas) && (
+                  <CasillaDatosSalud
+                    quien="personal"
+                    id="alta-consiente-salud"
+                    checked={consienteDatosSensibles}
+                    onChange={(e) => {
+                      setConsienteDatosSensibles(e.target.checked);
+                      if (e.target.checked) setErrorConsentimiento(null);
+                    }}
+                    aria-required
+                    error={errorConsentimiento}
+                  />
+                )}
+                <CasillaDocumento id="alta-tratamientos" checked={tratamientosQuimicos} onChange={(e) => setTratamientosQuimicos(e.target.checked)}>
+                  Tratamientos químicos previos
+                </CasillaDocumento>
                 {tratamientosQuimicos && (
                   <Textarea label="Tratamientos" value={tratamientos} onChange={(e) => setTratamientos(e.target.value)} placeholder="Especificar" fullWidth rows={2} />
                 )}
@@ -319,16 +421,42 @@ export default function NuevoUsuarioPage() {
             </div>
           </div>
 
-          <div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={aceptaAviso} onChange={(e) => setAceptaAviso(e.target.checked)} className="rounded" />
-              <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>La persona leyó y aceptó el aviso de privacidad</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-2">
-              <input type="checkbox" checked={recibePromo} onChange={(e) => setRecibePromo(e.target.checked)} className="rounded" />
-              <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Recibe promociones</span>
-            </label>
-          </div>
+          <fieldset>
+            <legend className="text-lg font-semibold mb-2" style={{ color: 'var(--menu-texto-principal)' }}>Consentimientos</legend>
+            <CasillaDocumento
+              id="alta-acepta-terminos"
+              checked={aceptaTerminos}
+              onChange={(e) => {
+                setAceptaTerminos(e.target.checked);
+                if (e.target.checked) setErroresCasillas((prev) => ({ ...prev, aceptaTerminos: undefined }));
+              }}
+              aria-required
+              error={erroresCasillas.aceptaTerminos}
+            >
+              La persona leyó y aceptó los{' '}
+              <EnlaceDocumento href={documentoLegal('terminos').ruta} className={enlaceCasilla}>Términos y condiciones</EnlaceDocumento>
+            </CasillaDocumento>
+            <CasillaDocumento
+              id="alta-acepta-aviso"
+              checked={aceptaAviso}
+              onChange={(e) => {
+                setAceptaAviso(e.target.checked);
+                if (e.target.checked) setErroresCasillas((prev) => ({ ...prev, aceptaAviso: undefined }));
+              }}
+              aria-required
+              error={erroresCasillas.aceptaAviso}
+            >
+              La persona leyó y aceptó el{' '}
+              <EnlaceDocumento href={documentoLegal('aviso-privacidad').ruta} className={enlaceCasilla}>aviso de privacidad</EnlaceDocumento>
+            </CasillaDocumento>
+            {/* Contrato del backend: el personal no puede aceptar promociones por la persona (400). */}
+            <CasillaDocumento id="alta-recibe-promociones" checked={false} disabled readOnly aria-describedby="alta-recibe-promociones-nota">
+              Recibe promociones
+            </CasillaDocumento>
+            <p id="alta-recibe-promociones-nota" className="text-xs -mt-1 pl-7" style={{ color: 'var(--encabezados-alterno)' }}>
+              {NOTA_PROMOCIONES_PANEL}
+            </p>
+          </fieldset>
 
         </div>
       </Card>

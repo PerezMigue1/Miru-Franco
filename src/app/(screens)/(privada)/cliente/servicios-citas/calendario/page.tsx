@@ -188,7 +188,8 @@ function CalendarioContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card>
+            {/* p-4 y sin espacio horizontal en móvil: a 375 px cada día mide 44 x 48 (antes 35 x 48). */}
+            <Card padding="sm" className="sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <button
                   type="button"
@@ -217,7 +218,7 @@ function CalendarioContent() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 mb-4">
+              <div className="grid grid-cols-7 gap-x-0 gap-y-2 sm:gap-2 mb-4">
                 {nombresDias.map((dia) => (
                   <div
                     key={dia}
@@ -229,7 +230,7 @@ function CalendarioContent() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-x-0 gap-y-2 sm:gap-2">
                 {dias.map((dia, index) => {
                   if (!dia) {
                     return <div key={`empty-${index}`} className="h-12" />;
@@ -248,7 +249,7 @@ function CalendarioContent() {
                       disabled={!especialistaId || esPasado}
                       aria-pressed={seleccionado}
                       aria-label={dia.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
-                      className={`mf-btn mf-cifras h-12 rounded-full text-sm font-semibold disabled:opacity-35 disabled:cursor-not-allowed ${
+                      className={`mf-btn mf-cifras h-12 w-full min-w-11 rounded-full text-sm font-semibold disabled:opacity-35 disabled:cursor-not-allowed ${
                         seleccionado ? '' : 'enabled:hover:bg-[var(--fondos-suaves)]'
                       }`}
                       style={{

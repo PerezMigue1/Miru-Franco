@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
+import EncabezadoVersion from '../components/legal/EncabezadoVersion';
 import { metadataPublica } from '../utils/seo';
-import { AVISO_PRIVACIDAD, fechaActualizacionAviso } from '../utils/avisoPrivacidad';
+import { documentoLegal } from '../utils/documentosLegales';
 
 export const metadata = metadataPublica({
   title: 'Aviso de Privacidad',
@@ -39,17 +41,21 @@ export default function AvisoDePrivacidadPage() {
   return (
     <DocumentoLegal
       titulo="Aviso de Privacidad Integral"
-      fechaIso={AVISO_PRIVACIDAD.fechaActualizacion}
-      fechaTexto={fechaActualizacionAviso()}
       secciones={SECCIONES}
       etiquetaIndice="Índice del aviso de privacidad"
     >
+      <EncabezadoVersion slug="aviso-privacidad" />
       <Seccion n={1}>
         <p>
           <strong>Mildred Rubí Franco Martínez</strong>, con nombre comercial <strong>Mirú Franco Salón Beauty</strong>,
           con domicilio en Segunda Cerrada de Allende No. 15, Col. Juárez, Huejutla de Reyes, Hidalgo, C.P. 43000, es
           responsable del tratamiento de tus datos personales, de acuerdo con la Ley Federal de Protección de Datos
-          Personales en Posesión de los Particulares.
+          Personales en Posesión de los Particulares, publicada en el Diario Oficial de la Federación el 20 de marzo de
+          2025.
+        </p>
+        <p>
+          <strong>Persona designada de datos personales:</strong> Mildred Rubí Franco Martínez. Ella atiende tus
+          solicitudes sobre tus datos: derechos ARCO, revocación del consentimiento y limitación de su uso.
         </p>
         <p>
           Contacto para temas de privacidad: <strong><a href={`mailto:${CORREO}`}>{CORREO}</a></strong>, o por WhatsApp
@@ -64,15 +70,17 @@ export default function AvisoDePrivacidadPage() {
         </p>
         <ul>
           <li>
-            <strong>Identificación y contacto:</strong> nombre, correo electrónico, teléfono, fecha de nacimiento y
-            foto de perfil. Si entras con Google, recibimos tu nombre, correo y foto de esa cuenta.
+            <strong>Identificación y contacto:</strong> nombre, correo electrónico, teléfono y foto de perfil. La fecha
+            de nacimiento es opcional: solo la guardamos si nos la das. Si entras con Google, recibimos tu nombre, correo
+            y foto de esa cuenta.
           </li>
           <li>
             <strong>Seguridad de tu cuenta:</strong> contraseña (guardada cifrada, nadie puede leerla), pregunta y
             respuesta de seguridad, y registros de inicio de sesión.
           </li>
           <li>
-            <strong>Perfil capilar:</strong> tipo de cabello, color natural, color actual y productos que has usado.
+            <strong>Perfil capilar (opcional):</strong> tipo de cabello, color natural, color actual y productos que has
+            usado. Solo lo guardamos si nos lo das.
           </li>
           <li>
             <strong>Historial con nosotras:</strong> citas, servicios realizados, pedidos, pagos, valoraciones, quejas
@@ -86,8 +94,10 @@ export default function AvisoDePrivacidadPage() {
           </li>
         </ul>
         <p>
-          <strong>Datos que no recabamos:</strong> no guardamos los datos de tu tarjeta. Los pagos en línea los procesa
-          directamente Mercado Pago.
+          <strong>Datos de tu tarjeta:</strong> nunca recibimos ni guardamos el número completo ni el código de seguridad
+          de tu tarjeta. Los pagos en línea los procesa directamente Mercado Pago. Si guardas una tarjeta para pagar más
+          rápido, conservamos solo lo necesario para reconocerla (marca, banco, tipo, terminación y vencimiento) y la
+          referencia que nos da Mercado Pago.
         </p>
       </Seccion>
 
@@ -97,15 +107,20 @@ export default function AvisoDePrivacidadPage() {
           <strong>alergias, sensibilidad en la piel o cuero cabelludo y embarazo</strong>. Estos datos son sensibles.
         </p>
         <p>
-          Solo los tratamos con tu <strong>consentimiento expreso</strong>, que nos das al marcar la casilla
-          correspondiente cuando los registras. Los usamos únicamente para decidir si un tratamiento es seguro para ti.
-          Puedes negarte a darlos, pero entonces no podremos realizar tratamientos químicos que requieran esa
-          valoración.
+          Solo los tratamos con tu <strong>consentimiento expreso</strong>, como pide el artículo 8 de la ley, que nos
+          das al marcar la casilla correspondiente cuando los registras. Los usamos únicamente para decidir si un
+          tratamiento es seguro para ti. Puedes negarte a darlos, pero entonces no podremos realizar tratamientos
+          químicos que requieran esa valoración. Puedes revocar este consentimiento cuando quieras, como se explica en
+          la sección 6.
         </p>
       </Seccion>
 
       <Seccion n={4}>
         <h3>Finalidades necesarias para darte el servicio</h3>
+        <p>
+          Son indispensables para la relación que tienes con nosotras, por eso no requieren tu consentimiento. La
+          excepción son tus datos de salud: solo los usamos con tu consentimiento expreso (sección 3).
+        </p>
         <ol>
           <li>Crear y administrar tu cuenta y mantenerla segura.</li>
           <li>Agendar, confirmar, reprogramar y darle seguimiento a tus citas.</li>
@@ -120,7 +135,7 @@ export default function AvisoDePrivacidadPage() {
           <li>Cumplir obligaciones legales y fiscales.</li>
         </ol>
 
-        <h3>Finalidades adicionales (puedes negarte)</h3>
+        <h3>Finalidades adicionales (requieren tu consentimiento y puedes negarte)</h3>
         <ol>
           <li>Enviarte promociones, novedades y descuentos.</li>
           <li>Mostrarte recomendaciones de productos y servicios según lo que has comprado o agendado.</li>
@@ -131,9 +146,13 @@ export default function AvisoDePrivacidadPage() {
           </li>
         </ol>
         <p>
-          Si no quieres que usemos tus datos para estas finalidades adicionales, desactiva &quot;Recibir
-          promociones&quot; en tu perfil o escríbenos al correo de contacto. Negarte no afecta los servicios que nos
-          pidas.
+          Para dejar de recibir promociones, desactiva «Recibir promociones» en «Mis datos y privacidad» de tu perfil.
+          Para retirar tu autorización de fotos, revócala en esa misma sección. Para negarte a cualquier otra de estas
+          finalidades, escríbenos al correo de privacidad. Negarte no afecta los servicios que nos pidas.
+        </p>
+        <p>
+          Para limitar el uso o la divulgación de tus datos en general, escríbenos al correo de privacidad con tu
+          solicitud. La atendemos en los mismos plazos de la sección 6.
         </p>
       </Seccion>
 
@@ -180,7 +199,11 @@ export default function AvisoDePrivacidadPage() {
           nos impida hacerlo.
         </p>
         <p>
-          Para ejercer cualquiera de estos derechos, envía un correo a{' '}
+          Puedes ejercerlos desde «Mis datos y privacidad» en tu perfil: ahí puedes descargar tus datos, pedir una
+          rectificación o la cancelación de tu cuenta y revocar tus consentimientos.
+        </p>
+        <p>
+          Si prefieres el correo, escribe a{' '}
           <strong>
             <a href={`mailto:${CORREO}`}>{CORREO}</a>
           </strong>{' '}
@@ -193,26 +216,46 @@ export default function AvisoDePrivacidadPage() {
           <li>en caso de rectificación, el dato correcto y, si aplica, un documento que lo respalde.</li>
         </ol>
         <p>
-          Te responderemos en un máximo de <strong>20 días hábiles</strong>. Si tu solicitud procede, la haremos
-          efectiva dentro de los <strong>15 días hábiles</strong> siguientes a nuestra respuesta.
+          Te responderemos en un máximo de <strong>20 días</strong> (hábiles, conforme a la ley del procedimiento
+          administrativo) desde que recibamos tu solicitud. Si tu solicitud procede, la haremos efectiva dentro de los{' '}
+          <strong>15 días</strong> siguientes a nuestra respuesta, contados de la misma forma. Cada plazo puede
+          ampliarse una sola vez por un periodo igual cuando el caso lo justifique; si eso pasa, te lo avisaremos.
         </p>
-        <p>Algunos datos también los puedes corregir tú misma desde tu perfil.</p>
+        <p>Ejercer tus derechos es gratuito.</p>
+        <p>
+          <strong>Para revocar tu consentimiento</strong>, hazlo en «Mis datos y privacidad» de tu perfil, donde se
+          aplica de inmediato, o envía tu solicitud a <a href={`mailto:${CORREO}`}>{CORREO}</a> con los datos de la lista
+          anterior. Por correo te responderemos en los mismos plazos.
+        </p>
+        <p>Algunos datos también los puedes corregir directamente desde tu perfil.</p>
       </Seccion>
 
       <Seccion n={7}>
         <ul>
           <li>Los datos de tu cuenta, mientras esté activa.</li>
-          <li>Los datos de pagos y facturas, el tiempo que exigen las leyes fiscales.</li>
+          <li>Los datos de pagos y facturas, al menos 5 años (artículo 30 del Código Fiscal de la Federación).</li>
           <li>Tus datos sensibles se borran cuando lo pidas o cuando cierres tu cuenta.</li>
         </ul>
         <p>Después de esos plazos los eliminamos o los dejamos anónimos.</p>
+        <p>
+          <strong>Si cancelas tu cuenta</strong>, borramos o anonimizamos tus datos de identificación y contacto, tus
+          datos de salud y de tu cabello, tus direcciones, tus tarjetas guardadas, las notas sobre ti en pedidos,
+          cotizaciones, ventas y seguimientos, y tus sesiones y avisos; conservamos, ya sin tu nombre, lo que la ley nos
+          obliga a guardar (pedidos, pagos, facturas y ventas, por 5 años) y el historial de tus citas, quejas y
+          valoraciones, junto con la constancia de tus consentimientos y de tu solicitud.
+        </p>
       </Seccion>
 
       <Seccion n={8}>
         <p>
-          Usamos cookies necesarias para mantener tu sesión iniciada, proteger tu cuenta y recordar preferencias como
-          el modo claro u oscuro. Sin ellas el sitio no funciona correctamente. Puedes borrarlas desde tu navegador,
-          pero tendrás que volver a iniciar sesión.
+          Usamos solo cookies estrictamente necesarias: la cookie de sesión mf_session, que mantiene tu sesión iniciada
+          y protege tu cuenta, y datos guardados en tu navegador, como tu carrito o el modo claro u oscuro. No usamos
+          cookies de analítica ni de publicidad. Sin ellas el sitio no funciona correctamente. Puedes borrarlas desde tu
+          navegador, pero tendrás que volver a iniciar sesión.
+        </p>
+        <p>
+          Conoce la lista completa, para qué sirve cada una, cuánto dura y cómo deshabilitarlas en nuestra{' '}
+          <Link href={documentoLegal('cookies').ruta}>{documentoLegal('cookies').titulo}</Link>.
         </p>
       </Seccion>
 
@@ -229,7 +272,8 @@ export default function AvisoDePrivacidadPage() {
 
       <Seccion n={10}>
         <p>
-          Si este aviso cambia, publicaremos la nueva versión en esta página con su fecha de actualización. Si el
+          Si este aviso cambia, publicaremos la nueva versión en esta página con su número de versión y su fecha de
+          vigencia. Si el
           cambio afecta las finalidades o requiere un nuevo consentimiento, te lo avisaremos por correo o al iniciar
           sesión.
         </p>
@@ -237,8 +281,11 @@ export default function AvisoDePrivacidadPage() {
 
       <Seccion n={11}>
         <p>
-          Si consideras que tu derecho a la protección de datos personales fue vulnerado, puedes acudir a la autoridad
-          competente en materia de protección de datos personales.
+          La autoridad en materia de protección de datos personales es la{' '}
+          <strong>Secretaría Anticorrupción y Buen Gobierno</strong>. Si consideras que tu derecho a la protección de
+          datos personales fue vulnerado, o no estás conforme con la respuesta que te dimos a una solicitud, puedes
+          presentar ante ella una solicitud de protección de datos dentro de los 15 días siguientes a la fecha en que
+          recibas nuestra respuesta (artículo 40 de la ley).
         </p>
       </Seccion>
     </DocumentoLegal>

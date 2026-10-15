@@ -9,6 +9,7 @@ import { api } from '../../services/auth';
 import { isAdminRol, getRolFromUser, rutaPorRol } from '../../utils/adminAuth';
 import { usePermisos } from '../../utils/permisos';
 import PanelShell from './PanelShell';
+import { esItemActivoAdmin } from './menuActivo';
 import PanelVerificando from './PanelVerificando';
 import PanelSinVerificar from './PanelSinVerificar';
 import { decidirAccesoPanel } from '../../utils/accesoPanel';
@@ -17,10 +18,12 @@ import {
   Bell,
   Database,
   FileText,
+  Inbox,
   Package,
   Receipt,
   RotateCcw,
   Scissors,
+  ScrollText,
   ShieldCheck,
   ShoppingCart,
   PackageCheck,
@@ -97,6 +100,13 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
     items: [
       { label: 'Usuarios y roles', href: '/admin/usuarios-roles', icon: ShieldCheck },
       { label: 'Gestión de personal', href: '/admin/gestion-personal', icon: User, permiso: 'empleados:lectura' },
+    ],
+  },
+  {
+    titulo: 'Privacidad',
+    items: [
+      { label: 'Consentimientos', href: '/admin/consentimientos', icon: ScrollText },
+      { label: 'Solicitudes ARCO', href: '/admin/solicitudes-arco', icon: Inbox },
     ],
   },
   {
@@ -260,7 +270,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       etiqueta="Administración"
       inicioHref="/admin"
       grupos={grupos}
-      esActivo={(href) => !!pathname?.startsWith(href)}
+      esActivo={(href) => esItemActivoAdmin(pathname, href)}
       pie={(colapsado) =>
         perfilUsuario ? (
           <div className={`flex items-center gap-2.5 ${colapsado ? 'lg:justify-center' : ''}`}>

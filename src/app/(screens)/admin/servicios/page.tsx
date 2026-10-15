@@ -20,6 +20,7 @@ import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
 import { IMG_SERVICIO_PLACEHOLDER } from '../../../utils/serviceImagePlaceholder';
 import { formatearPrecioMXN } from '../../../utils/formatoPrecio';
 import { leerPrecioPaquete } from '../paquetes/precioPaquete';
+import { CLASE_BOTON_CABECERA } from './accionesServicios';
 
 export default function ServiciosPage() {
   const router = useRouter();
@@ -178,17 +179,13 @@ export default function ServiciosPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/admin/paquetes')}
-              style={{ backgroundColor: 'transparent', color: 'var(--texto-enlace-sobre-calido)', border: '2px solid transparent' }}
-            >
-              <span className="inline-flex items-center gap-1.5"><ClipboardList size={16} aria-hidden /> Ver Paquetes</span>
+            <Button variant="outline" className={CLASE_BOTON_CABECERA} onClick={() => router.push('/admin/paquetes')}>
+              <ClipboardList size={16} aria-hidden /> Ver Paquetes
             </Button>
-            <Button variant="outline" onClick={() => setShowPaqueteForm(true)}>
+            <Button variant="outline" className={CLASE_BOTON_CABECERA} onClick={() => setShowPaqueteForm(true)}>
               + Crear Paquete
             </Button>
-            <Button onClick={() => router.push('/admin/servicios/nuevo')}>
+            <Button className={CLASE_BOTON_CABECERA} onClick={() => router.push('/admin/servicios/nuevo')}>
               + Nuevo Servicio
             </Button>
           </div>
@@ -240,7 +237,7 @@ export default function ServiciosPage() {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
-              <label className="flex items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
+              <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
                 <input
                   type="checkbox"
                   checked={mostrarInactivos}
@@ -293,7 +290,7 @@ export default function ServiciosPage() {
                             {reactivandoId === id ? 'Reactivando...' : 'Reactivar'}
                           </Button>
                         ) : (
-                          <Button variant="danger" size="sm" onClick={() => { setServicioToDelete(s); setShowDeleteModal(true); }}>Desactivar</Button>
+                          <Button variant="outline-danger" size="sm" onClick={() => { setServicioToDelete(s); setShowDeleteModal(true); }}>Desactivar</Button>
                         )}
                       </>
                     }

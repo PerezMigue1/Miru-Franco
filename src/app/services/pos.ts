@@ -12,6 +12,8 @@ export interface VentaLocalItemApi {
   cantidad: number;
   precioUnitario: number;
   subtotal?: number;
+  /** Cita que cobra esta línea (null si no cobra una): al anular la venta, esa cita vuelve a quedar por cobrar. */
+  citaId?: number | null;
   /**
    * Nombre ya resuelto por el backend (`presentacion.producto.nombre` + tamaño, o
    * `servicio.nombre` — ver `incluirVentaRelaciones()` en pos.service.ts). Nunca se
@@ -139,6 +141,7 @@ function normalizarItem(x: unknown): VentaLocalItemApi {
     cantidad: Number(n(r.cantidad, 1) ?? 1),
     precioUnitario: Number(n(r.precioUnitario ?? r.precio_unitario, 0) ?? 0),
     subtotal: n(r.subtotal) ?? undefined,
+    citaId: r.citaId == null && r.cita_id == null ? null : n(r.citaId ?? r.cita_id),
     nombre: resolverNombreItem(r),
   };
 }
@@ -169,6 +172,8 @@ function normalizarVenta(x: unknown): VentaLocalApi | null {
     notas: s(r.notas) || null,
     total: n(r.total),
     subtotal: n(r.subtotal),
+    // Decide qué acción se ofrece: "Cancelar" (sin corte) o "Anular venta cortada" (con corte).
+    corteId: n(r.corteId ?? r.corte_id),
     creadoEn: s(r.creadoEn ?? r.creado_en) || undefined,
   };
 }
@@ -311,6 +316,23 @@ export async function cancelarVenta(
   const obj = (res as Record<string, unknown>)?.data ?? res;
   const venta = normalizarVenta(obj);
   if (!venta) throw new Error('No se pudo cancelar la venta');
+  return venta;
+}
+
+/**
+ * Anula una venta pagada que YA entró a un corte (PATCH /pos/ventas/:id/anular, exige
+ * devoluciones:gestionar): el backend la cancela, devuelve el stock y registra una salida de
+ * efectivo por el total, que se descuenta en el siguiente corte de quien anula. El motivo es
+ * obligatorio. skip403Redirect: sin la clave el error se muestra en el modal, no en /403.
+ */
+export async function anularVentaCortada(
+  id: number,
+  payload: { motivoCancelacion: string }
+): Promise<VentaLocalApi> {
+  const res = await apiClient.patch<unknown>(`/api/pos/ventas/${id}/anular`, payload, getBackendBaseUrl(), { skip403Redirect: true });
+  const obj = (res as Record<string, unknown>)?.data ?? res;
+  const venta = normalizarVenta(obj);
+  if (!venta) throw new Error('No se pudo anular la venta');
   return venta;
 }
 

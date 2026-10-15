@@ -34,7 +34,6 @@ interface ServicioFila {
   fin: string;
   duracionMinutos: number | null;
   estado: string;
-  productos: string[];
   /** La cita completa: el anticipo y sus acciones salen de aquí. */
   cita: CitaApi;
 }
@@ -65,7 +64,6 @@ function mapearCita(c: CitaApi): ServicioFila {
     fin,
     duracionMinutos,
     estado: estadoMap[c.estado] ?? c.estado,
-    productos: [],
     cita: c,
   };
 }
@@ -119,7 +117,7 @@ export default function EjecucionServiciosPage() {
       const opts: PresentacionOpcion[] = [];
       productos.forEach((p) => (p.presentaciones ?? []).forEach((pr) => {
         const id = Number(pr.id);
-        if (!isNaN(id)) opts.push({ id, label: `${p.nombre} — ${pr.tamaño ?? pr.id}` });
+        if (!isNaN(id)) opts.push({ id, label: `${p.nombre} · ${pr.tamaño ?? pr.id}` });
       }));
       setPresentaciones(opts);
     } catch { setPresentaciones([]); }
@@ -189,7 +187,7 @@ export default function EjecucionServiciosPage() {
 
   const estados = {
     pendiente: { label: 'Pendiente', variant: 'warning' as const },
-    en_proceso: { label: 'En Proceso', variant: 'info' as const },
+    en_proceso: { label: 'En proceso', variant: 'info' as const },
     completado: { label: 'Completado', variant: 'success' as const },
   };
 
@@ -204,7 +202,7 @@ export default function EjecucionServiciosPage() {
         {/* Encabezado */}
         <div>
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-            Ejecución de Servicios
+            Ejecución de servicios
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
             {enProceso} servicio{enProceso === 1 ? '' : 's'} en curso
@@ -228,14 +226,14 @@ export default function EjecucionServiciosPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <TarjetaKpi icono={Clock3} etiqueta="Servicios Pendientes" cargando={loading} valor={pendientes} tono="aviso" alerta={pendientes > 0} />
-          <TarjetaKpi icono={Wrench} etiqueta="En Proceso" cargando={loading} valor={enProceso} />
-          <TarjetaKpi icono={CheckCircle2} etiqueta="Completados Hoy" cargando={loading} valor={completadosHoy} />
+          <TarjetaKpi icono={Clock3} etiqueta="Servicios pendientes" cargando={loading} valor={pendientes} tono="aviso" alerta={pendientes > 0} />
+          <TarjetaKpi icono={Wrench} etiqueta="En proceso" cargando={loading} valor={enProceso} />
+          <TarjetaKpi icono={CheckCircle2} etiqueta="Completados hoy" cargando={loading} valor={completadosHoy} />
         </div>
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
-        <Table headers={['Cliente', 'Servicio', 'Especialista', 'Inicio', 'Fin', 'Duración', 'Productos', 'Estado', 'Acciones']} headerSutil>
+        <Table headers={['Cliente', 'Servicio', 'Especialista', 'Horario', 'Estado', 'Acciones']} headerSutil>
           {servicios.map((servicio) => (
             <TableRow key={servicio.id}>
               <TableCell rowPadding="lg">
@@ -247,20 +245,11 @@ export default function EjecucionServiciosPage() {
               </TableCell>
               <TableCell rowPadding="lg">{servicio.servicio}</TableCell>
               <TableCell rowPadding="lg">{servicio.especialista}</TableCell>
-              <TableCell rowPadding="lg">{servicio.inicio}</TableCell>
-              <TableCell rowPadding="lg">{servicio.fin || '-'}</TableCell>
+              {/* Inicio, fin y duración juntos: en columnas separadas empujaban "Materiales" fuera del marco. */}
               <TableCell rowPadding="lg">
-                {servicio.duracionMinutos != null ? `${servicio.duracionMinutos} min` : '-'}
-              </TableCell>
-              <TableCell rowPadding="lg">
-                {servicio.productos.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {servicio.productos.map((p, i) => (
-                      <Badge key={i} variant="default" size="sm">{p}</Badge>
-                    ))}
-                  </div>
-                ) : (
-                  '-'
+                <span className="block mf-cifras">{servicio.fin ? `${servicio.inicio} a ${servicio.fin}` : servicio.inicio}</span>
+                {servicio.duracionMinutos != null && (
+                  <span className="block text-xs mf-cifras" style={{ color: 'var(--encabezados-alterno)' }}>{servicio.duracionMinutos} min</span>
                 )}
               </TableCell>
               <TableCell rowPadding="lg">
@@ -270,7 +259,7 @@ export default function EjecucionServiciosPage() {
               </TableCell>
               <TableCell rowPadding="lg">
                 {puedeAtenderCita(tienePermiso, servicio.especialistaId, miId) && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {servicio.estado === 'pendiente' && (
                     <Button size="sm" variant="primary" onClick={() => handleCheckIn(servicio.id)} disabled={savingId === servicio.id}>
                       {savingId === servicio.id ? 'Iniciando...' : 'Iniciar'}
@@ -313,7 +302,7 @@ export default function EjecucionServiciosPage() {
       <Modal
         isOpen={isModalMaterialesOpen}
         onClose={() => { if (!savingMat) { setIsModalMaterialesOpen(false); setCitaIdMateriales(null); } }}
-        title="Registrar Materiales"
+        title="Registrar materiales"
         size="md"
         footer={
           <>

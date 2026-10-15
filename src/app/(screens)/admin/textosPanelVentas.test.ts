@@ -55,3 +55,11 @@ describe('Textos y avisos del panel de ventas y catálogo', () => {
     }
   });
 });
+
+describe('Interruptor "Disponible" de una presentación', () => {
+  it('su nombre accesible incluye el Sí o No visible además de la etiqueta "Disponible"', () => {
+    const fuente = leer('productos/[id]/page.tsx');
+    expect(fuente).toContain('id={`disponible-boton-${index}`}');
+    expect(fuente).toContain('aria-labelledby={`disponible-${index} disponible-boton-${index}`}');
+  });
+});

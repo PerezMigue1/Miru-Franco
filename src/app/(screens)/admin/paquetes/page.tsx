@@ -14,7 +14,7 @@ import Input from '../../../components/ui/Input';
 import Textarea from '../../../components/ui/Textarea';
 import { Gift } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
-import { leerPrecioPaquete } from './precioPaquete';
+import { leerPrecioPaquete, mostrarPrecioPaquete } from './precioPaquete';
 
 type PaqueteRow = {
   id?: string | number;
@@ -36,9 +36,8 @@ function listaServiciosVinculados(p: PaqueteRow): string[] {
   return Array.isArray(a) ? a.map((x) => String(x)) : [];
 }
 
-function precioMostrar(p: PaqueteRow): string | number {
-  const v = p.precio_especial ?? p.precioEspecial;
-  return v ?? '—';
+function precioMostrar(p: PaqueteRow): string {
+  return mostrarPrecioPaquete(p.precio_especial ?? p.precioEspecial);
 }
 
 const getPaqueteId = (p: PaqueteRow): string | null => {
@@ -168,7 +167,7 @@ export default function PaquetesPage() {
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <TarjetaKpi icono={Gift} etiqueta="Total paquetes" valor={paquetes.length} />
-          <TarjetaKpi icono={Gift} etiqueta="Precio promedio" valor={<>${precioPromedio.toLocaleString('es-MX')}</>} />
+          <TarjetaKpi icono={Gift} etiqueta="Precio promedio" valor={mostrarPrecioPaquete(precioPromedio)} />
         </div>
 
         {loadError && (
@@ -184,8 +183,9 @@ export default function PaquetesPage() {
         )}
 
         {/* Listado */}
-        <Card variant="elevated" padding="lg">
-        <Table headers={['Evento', 'Servicios', 'Precio', 'Acciones']} headerSutil>
+        {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+        <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
+        <Table headers={['Evento', 'Servicios', 'Precio', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Paquetes: desplaza para ver más columnas">
           {!loading && paquetes.map((p) => {
             const currentId = getPaqueteId(p);
             if (!currentId) return null;
@@ -195,12 +195,12 @@ export default function PaquetesPage() {
                 <TableCell className="text-xs" rowPadding="lg" style={{ color: 'var(--encabezados-alterno)' }}>
                   {listaServiciosVinculados(p).length ? listaServiciosVinculados(p).join(', ') : 'N/A'}
                 </TableCell>
-                <TableCell className="font-bold" rowPadding="lg" style={{ color: 'var(--oro-texto)' }}>${precioMostrar(p)}</TableCell>
+                <TableCell className="font-bold" rowPadding="lg" style={{ color: 'var(--oro-texto)' }}>{precioMostrar(p)}</TableCell>
                 <TableCell rowPadding="lg">
-                  <div className="flex gap-2">
+                  <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                     <Button variant="outline" size="sm" onClick={() => router.push(`/admin/paquetes/${currentId}`)}>Ver</Button>
                     <Button
-                      variant="danger"
+                      variant="outline-danger"
                       size="sm"
                       onClick={() => {
                         setIdParaEliminar(currentId);
@@ -215,7 +215,7 @@ export default function PaquetesPage() {
             );
           })}
         </Table>
-        {loading && <p className="p-10 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando paquetes...</p>}
+        {loading && <p className="p-10 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando paquetes…</p>}
         {!loading && !loadError && paquetes.length === 0 && (
           <p className="p-10 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay paquetes registrados.</p>
         )}
@@ -249,14 +249,15 @@ export default function PaquetesPage() {
         isOpen={showDeleteModal}
         onClose={() => { if (!eliminando) setShowDeleteModal(false); }}
         title="Confirmar eliminación"
-      >
-        <div className="p-4">
-          <p className="mb-6 text-lg" style={{ color: 'var(--menu-texto-principal)' }}>¿Estás seguro de que deseas borrar este paquete? Esta acción es permanente.</p>
-          <div className="flex justify-end gap-3">
+        size="sm"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={eliminando}>Cancelar</Button>
             <Button variant="danger" onClick={manejarEliminacion} disabled={eliminando}>{eliminando ? 'Eliminando...' : 'Sí, eliminar ahora'}</Button>
-          </div>
-        </div>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--menu-texto-principal)' }}>¿Estás seguro de que deseas borrar este paquete? Esta acción es permanente.</p>
       </Modal>
     </AdminLayout>
   );

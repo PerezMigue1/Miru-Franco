@@ -1,6 +1,6 @@
 import type { ActualizarMiPerfilPayload, PerfilUsuarioCompleto, TipoCabelloValor } from '../services/perfil';
 import { telefonoSinLada } from './phone';
-import { requiereConsentimiento } from './consentimientoDatosSensibles';
+import { cuerpoAlergias } from './consentimientoDatosSensibles';
 
 /** Valores del formulario "Información personal" del perfil de la clienta (PerfilDatosForm). */
 export interface ValoresPerfil {
@@ -12,7 +12,7 @@ export interface ValoresPerfil {
   colorActual: string;
   productosUsados: string;
   alergias: string;
-  /** Consentimiento expreso para datos de salud: se pide en cada guardado con alergias y no se guarda. */
+  /** Consentimiento expreso para datos de salud: se pide cuando las alergias cambian a un texto nuevo y no se guarda. */
   consienteDatosSensibles: boolean;
   recibePromociones: boolean;
 }
@@ -66,8 +66,8 @@ export function cuerpoGuardarPerfil(
     colorNatural: values.colorNatural.trim() || null,
     colorActual: values.colorActual.trim() || null,
     productosUsados: values.productosUsados.trim() || null,
-    alergias: values.alergias.trim() || null,
-    ...(requiereConsentimiento(values.alergias) ? { consienteDatosSensibles: values.consienteDatosSensibles } : {}),
+    // Solo si cambiaron: nuevas, con el consentimiento de la casilla (validada antes); borradas, null.
+    ...cuerpoAlergias(perfil.alergias, values.alergias),
     recibePromociones: values.recibePromociones,
   };
 }

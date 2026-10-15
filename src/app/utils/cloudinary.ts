@@ -17,6 +17,12 @@ import { MENSAJE_SIN_CONEXION, esErrorDeRed } from './errorRed';
 
 export type UsoSubida = 'perfil' | 'galeria' | 'factura';
 
+/**
+ * Qué es una imagen que llega a la galería: foto real de un trabajo del salón o imagen ilustrativa. Las
+ * ilustrativas se firman para galeria/ilustrativas, así la URL lo dice y nunca se presentan como trabajo real.
+ */
+export type TipoImagenGaleria = 'real' | 'ilustrativa';
+
 /** Respuesta del backend: Cloudinary acepta la firma 1 hora desde `params.timestamp`. */
 export interface FirmaSubida {
   uploadUrl: string;
@@ -28,12 +34,19 @@ export interface FirmaSubida {
 const MENSAJE_FALLO_IMAGEN = 'No se pudo subir la imagen. Revisa que sea JPG, PNG, WebP, GIF, AVIF o HEIC y vuelve a intentarlo.';
 const MENSAJE_FALLO_PDF = 'No se pudo subir el PDF. Vuelve a intentarlo en unos momentos.';
 
-/** Pide al backend la firma de `uso` (una firma sirve para un lote dentro de su vigencia). */
-export async function pedirFirmaSubida(uso: UsoSubida): Promise<FirmaSubida> {
+/**
+ * Pide al backend la firma de `uso` (una firma sirve para un lote dentro de su vigencia). En galería,
+ * `ilustrativa` pide la carpeta de imágenes ilustrativas.
+ */
+export async function pedirFirmaSubida(uso: UsoSubida, { ilustrativa = false }: { ilustrativa?: boolean } = {}): Promise<FirmaSubida> {
   const res =
     uso === 'perfil'
       ? await apiClient.post<unknown>('/api/auth/me/foto/firma', undefined, getBackendBaseUrl())
-      : await apiClient.post<unknown>('/api/subidas/firma', { uso }, getBackendBaseUrl());
+      : await apiClient.post<unknown>(
+          '/api/subidas/firma',
+          uso === 'galeria' && ilustrativa ? { uso, ilustrativa: true } : { uso },
+          getBackendBaseUrl(),
+        );
   const data = (res as { data?: FirmaSubida } | null)?.data;
   if (!data?.uploadUrl || !data.apiKey || !data.signature || !data.params) {
     console.error('Firma de subida incompleta', res);
@@ -96,11 +109,14 @@ export async function subirPdfCloudinary(file: File): Promise<string> {
   return enviarFirmado(file, await pedirFirmaSubida('factura'), MENSAJE_FALLO_PDF);
 }
 
-/** Sube varias imágenes a la galería con una sola firma para todo el lote. */
-export async function subirImagenesCloudinary(files: FileList | File[]): Promise<string[]> {
+/**
+ * Sube varias imágenes a la galería con una sola firma para todo el lote. Las pantallas de servicios y
+ * "Subir imágenes" pasan `tipo` (obligatorio en su formulario): 'ilustrativa' va a galeria/ilustrativas.
+ */
+export async function subirImagenesCloudinary(files: FileList | File[], tipo?: TipoImagenGaleria): Promise<string[]> {
   const list = Array.from(files);
   if (!list.length) return [];
-  const firma = await pedirFirmaSubida('galeria');
+  const firma = await pedirFirmaSubida('galeria', { ilustrativa: tipo === 'ilustrativa' });
   return Promise.all(list.map((file) => subirFirmado(file, 'galeria', firma)));
 }
 

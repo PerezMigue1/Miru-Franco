@@ -15,6 +15,7 @@ import {
   getProductoPorId,
   updateProducto,
   deleteProducto,
+  reactivarProducto,
   serializarPresentacionesProducto,
   type Producto,
   type ProductoPayload,
@@ -26,6 +27,8 @@ import { MIRU_CATALOG_STOCK_CHANGED } from '../../../../utils/catalogStockSync';
 import { parseCategoriaSub } from '../../../../utils/inventarioInteligente';
 import { AlertTriangle, Check, X } from 'lucide-react';
 import { preciosFilaDesdePresentacion, recalcularPreciosPorDescuento } from '../precioDescuento';
+import { estadoProductoAdmin } from '../estadoProducto';
+import { textoDesdeArregloPostgres } from '../textoProducto';
 
 function limpiarTexto(value: string | undefined): string {
   return String(value ?? '').replace(/\u0000/g, '');
@@ -76,6 +79,7 @@ export default function ProductoDetalleAdminPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reactivando, setReactivando] = useState(false);
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -147,9 +151,13 @@ export default function ProductoDetalleAdminPage() {
           setNuevo(p.nuevo ?? false);
           setCrueltyFree(p.crueltyFree ?? false);
           setCaracteristicasText((p.caracteristicas ?? []).join('\n'));
-          setIngredientes(p.ingredientes ?? '');
-          setModoUso(p.modoUso ?? '');
-          setResultado(p.resultado ?? '');
+          // Algunos llegan como arreglo de Postgres ('{"…"}'): se muestran como texto, uno por línea.
+          const ingredientesTexto = textoDesdeArregloPostgres(p.ingredientes);
+          const modoUsoTexto = textoDesdeArregloPostgres(p.modoUso);
+          const resultadoTexto = textoDesdeArregloPostgres(p.resultado);
+          setIngredientes(ingredientesTexto);
+          setModoUso(modoUsoTexto);
+          setResultado(resultadoTexto);
           setDescuentoStr(String(p.descuento ?? 0));
           setDisponible(p.stock);
           const mappedPresentaciones: FilaPresentacion[] = (p.presentaciones ?? []).map((pr) => {
@@ -192,9 +200,9 @@ export default function ProductoDetalleAdminPage() {
             nuevo: Boolean(p.nuevo ?? false),
             crueltyFree: Boolean(p.crueltyFree ?? false),
             caracteristicasText: limpiarTexto((p.caracteristicas ?? []).join('\n')),
-            ingredientes: limpiarTexto(p.ingredientes ?? ''),
-            modoUso: limpiarTexto(p.modoUso ?? ''),
-            resultado: limpiarTexto(p.resultado ?? ''),
+            ingredientes: limpiarTexto(ingredientesTexto),
+            modoUso: limpiarTexto(modoUsoTexto),
+            resultado: limpiarTexto(resultadoTexto),
             presentaciones: mappedPresentaciones.map((pr) => ({
               presentacionId: pr.presentacionId,
               tamanio: limpiarTexto(pr.tamanio),
@@ -448,18 +456,38 @@ export default function ProductoDetalleAdminPage() {
     }
   };
 
-  const handleEliminar = async () => {
+  // Borrado lógico: el producto queda inactivo (no se borra) y se puede reactivar aquí mismo.
+  const handleDesactivar = async () => {
     if (!producto) return;
     setDeleting(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       await deleteProducto(producto.id);
-      window.location.href = '/admin/inventario';
+      setProducto((prev) => (prev ? { ...prev, activo: false } : prev));
+      setShowDeleteModal(false);
+      setSuccessMessage('Producto desactivado.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar el producto');
+      setError(err instanceof Error ? err.message : 'No se pudo desactivar el producto');
       setShowDeleteModal(false);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleReactivar = async () => {
+    if (!producto) return;
+    setReactivando(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const actualizado = await reactivarProducto(producto.id);
+      setProducto((prev) => (prev ? { ...prev, activo: actualizado.activo } : prev));
+      setSuccessMessage('Producto reactivado.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo reactivar el producto');
+    } finally {
+      setReactivando(false);
     }
   };
 
@@ -488,6 +516,7 @@ export default function ProductoDetalleAdminPage() {
   }
 
   const descuentoNum = parseFloat(descuentoStr) || 0;
+  const estadoAdmin = estadoProductoAdmin(producto.activo);
 
   return (
     <AdminLayout>
@@ -503,16 +532,23 @@ export default function ProductoDetalleAdminPage() {
               Editar producto
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          {/* Un solo botón principal: Reactivar va de contorno y Desactivar de contorno con texto de peligro. */}
+          <div className="flex flex-wrap items-center gap-3">
             {successMessage && (
-              <span className="text-sm font-medium" style={{ color: 'var(--success-texto)' }}>{successMessage}</span>
+              <span className="text-sm font-medium" role="status" style={{ color: 'var(--success-texto)' }}>{successMessage}</span>
             )}
             <Button variant="primary" onClick={handleGuardar} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </Button>
-            <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-              {deleting ? 'Eliminando...' : 'Eliminar'}
-            </Button>
+            {producto.activo === false ? (
+              <Button variant="outline" onClick={handleReactivar} disabled={reactivando}>
+                {reactivando ? 'Reactivando...' : estadoAdmin.accion}
+              </Button>
+            ) : (
+              <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
+                {deleting ? 'Desactivando...' : estadoAdmin.accion}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -691,7 +727,8 @@ export default function ProductoDetalleAdminPage() {
                         className="space-y-3 border-b pb-4 mb-4 last:mb-0 last:border-b-0"
                         style={{ borderColor: 'var(--fondos-suaves)' }}
                       >
-                      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                      {/* Tres por fila desde 1024 px: en 6 columnas "Fecha caducidad" quedaba cortada a 1440. */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
                         <div>
                           <Input
                             label="Tamaño"
@@ -758,29 +795,33 @@ export default function ProductoDetalleAdminPage() {
                             fullWidth
                           />
                         </div>
-                        <div className="flex items-end gap-2">
-                          <Button
-                            size="sm"
-                            variant={pr.disponible ? 'primary' : 'outline'}
-                            onClick={() =>
-                              setPresentaciones((prev) =>
-                                prev.map((p, i) =>
-                                  i === index
-                                    ? { ...p, disponible: !p.disponible, stock: p.disponible ? '0' : p.stock }
-                                    : p
+                        {/* Disponible con etiqueta visible y "Quitar" con texto (antes Sí/No sin etiqueta y una X con solo title). */}
+                        <div className="flex flex-wrap items-end gap-2">
+                          <div>
+                            <span className="mf-etiqueta" id={`disponible-${index}`}>Disponible</span>
+                            <Button
+                              variant={pr.disponible ? 'primary' : 'outline'}
+                              className="min-w-16"
+                              id={`disponible-boton-${index}`}
+                              // Nombre "Disponible Sí" o "Disponible No": incluye el texto visible del botón.
+                              aria-labelledby={`disponible-${index} disponible-boton-${index}`}
+                              aria-pressed={pr.disponible}
+                              onClick={() =>
+                                setPresentaciones((prev) =>
+                                  prev.map((p, i) =>
+                                    i === index
+                                      ? { ...p, disponible: !p.disponible, stock: p.disponible ? '0' : p.stock }
+                                      : p
+                                  )
                                 )
-                              )
-                            }
-                          >
-                            {pr.disponible ? 'Sí' : 'No'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => eliminarPresentacion(index)}
-                            title="Quitar presentación"
-                          >
-                            <X size={14} />
+                              }
+                            >
+                              {pr.disponible ? 'Sí' : 'No'}
+                            </Button>
+                          </div>
+                          <Button variant="outline-danger" onClick={() => eliminarPresentacion(index)} aria-label={`Quitar presentación ${index + 1}`}>
+                            <X size={16} aria-hidden />
+                            Quitar
                           </Button>
                         </div>
                       </div>
@@ -812,8 +853,17 @@ export default function ProductoDetalleAdminPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
+                    <span style={{ color: 'var(--encabezados-alterno)' }}>Estado:</span>
+                    <Badge variant={estadoAdmin.variante}>{estadoAdmin.estado}</Badge>
+                  </div>
+                  {producto.activo === false && (
+                    <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                      No se muestra en la tienda ni en el punto de venta. Usa &quot;Reactivar&quot; para volver a venderlo.
+                    </p>
+                  )}
+                  <div className="flex justify-between items-center">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Disponible:</span>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex min-h-11 min-w-11 items-center gap-2 cursor-pointer px-1">
                       <input
                         type="checkbox"
                         checked={disponible}
@@ -827,31 +877,31 @@ export default function ProductoDetalleAdminPage() {
                             prev.map((p) => ({ ...p, disponible: nuevoValor }))
                           );
                         }}
-                        className="rounded"
+                        className="h-5 w-5 rounded"
                       />
                       <span style={{ color: 'var(--menu-texto-principal)' }}>{disponible ? 'Sí' : 'No'}</span>
                     </label>
                   </div>
                   <div className="flex justify-between items-center">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Nuevo:</span>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex min-h-11 min-w-11 items-center gap-2 cursor-pointer px-1">
                       <input
                         type="checkbox"
                         checked={nuevo}
                         onChange={(e) => setNuevo(e.target.checked)}
-                        className="rounded"
+                        className="h-5 w-5 rounded"
                       />
                       <span style={{ color: 'var(--menu-texto-principal)' }}>{nuevo ? 'Sí' : 'No'}</span>
                     </label>
                   </div>
                   <div className="flex justify-between items-center">
                     <span style={{ color: 'var(--encabezados-alterno)' }}>Cruelty free:</span>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex min-h-11 min-w-11 items-center gap-2 cursor-pointer px-1">
                       <input
                         type="checkbox"
                         checked={crueltyFree}
                         onChange={(e) => setCrueltyFree(e.target.checked)}
-                        className="rounded"
+                        className="h-5 w-5 rounded"
                       />
                       <span style={{ color: 'var(--menu-texto-principal)' }}>{crueltyFree ? 'Sí' : 'No'}</span>
                     </label>
@@ -917,21 +967,21 @@ export default function ProductoDetalleAdminPage() {
       <Modal
         isOpen={showDeleteModal}
         onClose={() => !deleting && setShowDeleteModal(false)}
-        title="Eliminar producto"
+        title={estadoAdmin.confirmacion.titulo}
         size="sm"
         footer={
           <>
             <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
               Cancelar
             </Button>
-            <Button variant="danger" onClick={handleEliminar} disabled={deleting}>
-              {deleting ? 'Eliminando...' : 'Eliminar'}
+            <Button variant="danger" onClick={handleDesactivar} disabled={deleting}>
+              {deleting ? 'Desactivando...' : 'Desactivar'}
             </Button>
           </>
         }
       >
         <p style={{ color: 'var(--menu-texto-principal)' }}>
-          ¿Estás seguro de que deseas eliminar el producto &quot;{producto?.nombre}&quot;? Esta acción puede deshabilitarlo en el catálogo.
+          {estadoAdmin.confirmacion.mensaje(producto.nombre)}
         </p>
       </Modal>
     </AdminLayout>

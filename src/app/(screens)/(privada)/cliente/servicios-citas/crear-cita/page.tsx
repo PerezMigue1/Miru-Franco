@@ -16,6 +16,19 @@ import { CalendarDays, CalendarCheck2, Clock3, UserRound, Wallet } from 'lucide-
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import { PLAZOS_TERMINOS } from '../../../../../utils/terminosCondiciones';
+import AvisoSimplificado from '../../../../../components/legal/AvisoSimplificado';
+import CasillaPoliticaAnticipos from '../../../../../components/cliente/CasillaPoliticaAnticipos';
+import { MENSAJE_FALTA_ANTICIPOS } from '../../../../../components/cliente/consentimientoAnticipo';
+import {
+  anticipoDelServicio,
+  crearCitaConConsentimientos,
+  destinoTrasCrearCita,
+  MENSAJE_SERVICIO_NO_CARGADO,
+  servicioSinCargar,
+  TEXTO_FOTOS_RESULTADO,
+} from './consentimientosCita';
+
+const ID_CASILLA_ANTICIPOS = 'casilla-politica-anticipos';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -37,10 +50,18 @@ function CrearCitaContent() {
   /** Qué botón se usó (por clic, no por SubmitEvent.submitter, que Safari anterior a 15.4 no tiene). */
   const modoPago = useRef<'linea' | 'salon'>('linea');
   const [error, setError] = useState<string | null>(null);
+  /** Política de anticipos: obligatoria si el servicio pide anticipo. Fotos del resultado: opcional. Ambas sin marcar. */
+  const [aceptaAnticipos, setAceptaAnticipos] = useState(false);
+  const [errorAnticipos, setErrorAnticipos] = useState<string | null>(null);
+  const [autorizaFotos, setAutorizaFotos] = useState(false);
 
   const datosIncompletos = !servicioId || !especialistaId || !inicio || !fin;
   /** Anticipo del servicio: aparta el horario PLAZOS_TERMINOS.horasAnticipoCita horas mientras se paga. */
-  const anticipo = servicio?.anticipoMonto ?? 0;
+  const anticipo = anticipoDelServicio(servicio);
+  /** Con anticipo se pide y se registra la casilla de la Política de anticipos antes de crear la cita. */
+  const requiereAnticipo = anticipo > 0;
+  /** Sin el servicio no se sabe si pide anticipo: no se puede confirmar hasta reintentar. */
+  const sinServicio = servicioSinCargar({ servicioId, servicio, cargando: loadingServicio });
 
   useEffect(() => {
     if (!servicioId) {
@@ -52,6 +73,17 @@ function CrearCitaContent() {
       setLoadingServicio(false);
     });
   }, [servicioId]);
+
+  /** Botón "Reintentar" cuando el servicio no cargó. */
+  const cargarServicio = () => {
+    if (!servicioId) return;
+    setError(null);
+    setLoadingServicio(true);
+    getServicioPorId(servicioId).then((s) => {
+      setServicio(s);
+      setLoadingServicio(false);
+    });
+  };
 
   useEffect(() => {
     if (!especialistaId) {
@@ -69,23 +101,42 @@ function CrearCitaContent() {
       setError('Faltan datos de la cita. Vuelve a seleccionar especialista, fecha y hora.');
       return;
     }
+    // El aviso con "Reintentar" ya está a la vista y los botones desactivados; esto evita cualquier otro envío.
+    if (sinServicio) return;
+    // Pagar en línea y apartar para pagar en el salón piden la misma casilla de la Política de anticipos.
+    if (anticipo > 0 && !aceptaAnticipos) {
+      setErrorAnticipos(MENSAJE_FALTA_ANTICIPOS);
+      document.getElementById(ID_CASILLA_ANTICIPOS)?.focus();
+      return;
+    }
     // Con anticipo: el botón principal paga en línea; el secundario confirma y paga en el salón.
     const pagarEnSalon = modoPago.current === 'salon';
     setEnviando(anticipo > 0 && !pagarEnSalon ? 'linea' : 'salon');
     setError(null);
     try {
       const perfil = await getMiPerfil();
-      const cita = await crearCita({
-        clienteId: perfil.id,
-        especialistaId: especialistaId!,
-        servicioId: Number(servicioId),
-        fechaHoraInicio: inicio!,
-        fechaHoraFin: fin!,
-        notas: notas || undefined,
-        // Con anticipo, el backend fija el plazo según dónde se paga (en el salón vence 15 min antes del inicio).
-        ...(anticipo > 0 ? { pagoAnticipo: pagarEnSalon ? 'salon' as const : 'linea' as const } : {}),
-      }, { propios: true });
-      if ((cita.anticipoRequerido ?? 0) > 0 && !pagarEnSalon) {
+      // Las casillas se registran antes de apartar el horario: si el registro falla, la cita no se crea.
+      const cita = await crearCitaConConsentimientos(
+        { requiereAnticipo, autorizaFotos },
+        () =>
+          crearCita({
+            clienteId: perfil.id,
+            especialistaId: especialistaId!,
+            servicioId: Number(servicioId),
+            fechaHoraInicio: inicio!,
+            fechaHoraFin: fin!,
+            notas: notas || undefined,
+            // Con anticipo, el backend fija el plazo según dónde se paga (en el salón vence 15 min antes del inicio).
+            ...(anticipo > 0 ? { pagoAnticipo: pagarEnSalon ? 'salon' as const : 'linea' as const } : {}),
+          }, { propios: true }),
+      );
+      // Sin la casilla de anticipos registrada no se abre Mercado Pago: la confirmación la pide antes de pagar.
+      const destino = destinoTrasCrearCita({
+        anticipoRequerido: cita.anticipoRequerido,
+        anticiposRegistrados: requiereAnticipo,
+        pagarEnSalon,
+      });
+      if (destino === 'mercado_pago') {
         try {
           const { initPoint } = await crearPreferenciaAnticipo(cita.id);
           window.location.assign(initPoint);
@@ -131,7 +182,7 @@ function CrearCitaContent() {
             </Link>
           </Card>
         ) : (
-        <form onSubmit={manejarEnviar}>
+        <form onSubmit={manejarEnviar} noValidate>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <Card className="mf-entrada" padding="lg">
@@ -159,11 +210,24 @@ function CrearCitaContent() {
                     fullWidth
                     placeholder="Indica tus preferencias para la cita. Si tienes alergias, regístralas en Mi perfil, en Información personal."
                   />
+                  {/* Opcional y aparte de la Política de anticipos: solo se registra si la marca. */}
+                  <div className="mf-consentimiento">
+                    <label htmlFor="casilla-fotos-resultado">
+                      <input
+                        type="checkbox"
+                        id="casilla-fotos-resultado"
+                        checked={autorizaFotos}
+                        onChange={(e) => setAutorizaFotos(e.target.checked)}
+                      />
+                      <span>{TEXTO_FOTOS_RESULTADO}</span>
+                    </label>
+                  </div>
                 </div>
               </Card>
             </div>
 
-            <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
+            {/* En escritorio el resumen abarca las dos filas; la tarjeta de confirmar va bajo los detalles. */}
+            <div className="lg:row-span-2 lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
               <Card className="mf-entrada" style={{ ['--i' as string]: 1 }} padding="lg">
                 <h3
                   className="text-xl font-bold mb-5"
@@ -183,7 +247,7 @@ function CrearCitaContent() {
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                         Servicio
                       </p>
-                      <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{servicio?.nombre ?? 'No seleccionado'}</p>
+                      <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{servicio?.nombre ?? (sinServicio ? 'No se pudo cargar' : 'No seleccionado')}</p>
                     </div>
                     <div>
                       <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -248,6 +312,50 @@ function CrearCitaContent() {
                         </p>
                       </div>
                     )}
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            {/* Casilla de anticipos y botones de pago bajo "Detalles de la Cita" (columna ancha), no al fondo
+                de la columna angosta. En móvil quedan después del resumen. */}
+            <section aria-labelledby="titulo-confirmar-cita" className="lg:col-span-2">
+              <Card className="mf-entrada" style={{ ['--i' as string]: 2 }} padding="lg">
+                <h2
+                  id="titulo-confirmar-cita"
+                  className="text-2xl font-bold mb-6"
+                  style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
+                >
+                  Confirma tu cita
+                </h2>
+                {loadingServicio ? (
+                  <div className="space-y-3" aria-busy="true" aria-label="Cargando servicio">
+                    <div className="mf-skeleton h-11 w-full" />
+                    <div className="mf-skeleton h-4 w-2/3" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {anticipo > 0 && (
+                      <CasillaPoliticaAnticipos
+                        id={ID_CASILLA_ANTICIPOS}
+                        checked={aceptaAnticipos}
+                        onChange={(marcada) => {
+                          setAceptaAnticipos(marcada);
+                          if (marcada) setErrorAnticipos(null);
+                        }}
+                        error={errorAnticipos}
+                      />
+                    )}
+                    {sinServicio && (
+                      <div className="space-y-3 rounded-xl bg-fondos-suaves p-4">
+                        <p className="text-sm text-[var(--danger-texto)]" role="alert">
+                          {MENSAJE_SERVICIO_NO_CARGADO}
+                        </p>
+                        <Button type="button" variant="outline" fullWidth onClick={cargarServicio}>
+                          Reintentar
+                        </Button>
+                      </div>
+                    )}
                     {error && (
                       <p className="text-sm text-[var(--danger-texto)]" role="alert">{error}</p>
                     )}
@@ -258,7 +366,7 @@ function CrearCitaContent() {
                       fullWidth
                       size="lg"
                       className="mt-4"
-                      disabled={!!enviando || datosIncompletos}
+                      disabled={!!enviando || datosIncompletos || sinServicio}
                     >
                       <span className="mf-feedback-contenido w-full" data-cambiando={enviando === 'linea' ? 'true' : 'false'}>
                         {anticipo > 0
@@ -268,7 +376,7 @@ function CrearCitaContent() {
                     </Button>
                     {anticipo > 0 && (
                       <div className="space-y-2">
-                        <Button type="submit" value="salon" onClick={() => { modoPago.current = 'salon'; }} variant="outline" fullWidth disabled={!!enviando || datosIncompletos}>
+                        <Button type="submit" value="salon" onClick={() => { modoPago.current = 'salon'; }} variant="outline" fullWidth disabled={!!enviando || datosIncompletos || sinServicio}>
                           {enviando === 'salon' ? 'Apartando…' : 'Apartar y pagar en el salón'}
                         </Button>
                         <p className="text-sm text-encabezados-alterno">
@@ -277,10 +385,11 @@ function CrearCitaContent() {
                         </p>
                       </div>
                     )}
+                    <AvisoSimplificado finalidad="agendar y dar seguimiento a tu cita" />
                   </div>
                 )}
               </Card>
-            </div>
+            </section>
           </div>
         </form>
         )}

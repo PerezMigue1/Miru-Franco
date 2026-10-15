@@ -30,6 +30,8 @@ export default function CarritoComprasPage() {
 
   const { subtotal, total } = calcularResumenCarritoVistaPrevia(items);
   const haySesion = enCliente && hasValidToken();
+  /** Sin productos no se muestra el resumen en $0 con el botón apagado: la tarjeta vacía ya lleva a la tienda. */
+  const hayProductos = items.length > 0;
 
   const handleRemoveConfirm = () => {
     if (itemToRemove) {
@@ -51,7 +53,7 @@ export default function CarritoComprasPage() {
           subtitle="Revisa tus productos antes de finalizar la compra"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 lg:gap-10">
+        <div className={`grid grid-cols-1 ${hayProductos ? 'lg:grid-cols-[minmax(0,1fr)_22rem]' : ''} gap-6 lg:gap-10`}>
           <div>
             {items.length === 0 ? (
               <Card className="mf-entrada text-center py-16 px-6">
@@ -120,7 +122,7 @@ export default function CarritoComprasPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="w-9 h-9 !p-0 inline-flex items-center justify-center"
+                              className="w-11 h-11 !p-0 inline-flex items-center justify-center"
                               aria-label="Quitar uno"
                               disabled={cartLoading || item.cantidad <= 1}
                               onClick={() => handleQuantityChange(item, item.cantidad - 1)}
@@ -140,7 +142,7 @@ export default function CarritoComprasPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="w-9 h-9 !p-0 inline-flex items-center justify-center"
+                              className="w-11 h-11 !p-0 inline-flex items-center justify-center"
                               aria-label="Agregar uno"
                               disabled={cartLoading}
                               onClick={() => handleQuantityChange(item, item.cantidad + 1)}
@@ -165,6 +167,7 @@ export default function CarritoComprasPage() {
             )}
           </div>
 
+          {hayProductos && (
           <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
             <Card className="mf-entrada" style={{ ['--i' as string]: 1 }} padding="lg">
               <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}>
@@ -218,6 +221,7 @@ export default function CarritoComprasPage() {
               )}
             </Card>
           </div>
+          )}
         </div>
       </div>
 

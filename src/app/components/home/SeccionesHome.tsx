@@ -1,13 +1,15 @@
-import { Suspense, type ComponentType, type CSSProperties, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import Link from 'next/link';
 import type { Producto } from '../../services/productos';
 import type { Servicio } from '../../services/servicios';
-import { ArrowRight, Calendar, Clock3, Droplets, Scissors, Sparkles, Star, Wind } from 'lucide-react';
+import { ArrowRight, Clock3 } from 'lucide-react';
 import ServicioImagen, { ServicioImagenPlaceholder } from '../servicios/ServicioImagen';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
-import { fotosDeServicios } from '../../utils/galeria';
+import { fotosDeServicios, miniaturaDeServicio } from '../../utils/galeria';
+import { cifraServiciosDisponibles } from '../../utils/serviciosDisponibles';
 import GaleriaTrabajo from '../galeria/GaleriaTrabajo';
 import GaleriaVacia from '../galeria/GaleriaVacia';
+import LeyendaPrecioIva from '../tienda/LeyendaPrecioIva';
 import CarruselProductosHome from './CarruselProductosHome';
 
 /*
@@ -16,23 +18,6 @@ import CarruselProductosHome from './CarruselProductosHome';
  * el HTML es el mismo, pero React hidrata cada una como unidad aparte y cede el hilo entre ellas
  * (tareas cortas en lugar de una sola larga).
  */
-
-type FallbackServicio = {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  icono: ComponentType<{ className?: string; strokeWidth?: number; style?: CSSProperties }>;
-};
-
-/** Se muestran solo si el backend no devolvió servicios (misma lista de siempre). */
-const SERVICIOS_FALLBACK: FallbackServicio[] = [
-  { id: 1, nombre: 'Corte y Estilo', descripcion: 'Cortes modernos y clásicos adaptados a tu rostro y personalidad.', icono: Scissors },
-  { id: 2, nombre: 'Coloración', descripcion: 'Coloración profesional con productos de alta calidad.', icono: Sparkles },
-  { id: 3, nombre: 'Tratamientos', descripcion: 'Tratamientos reparadores y nutritivos para cabello dañado.', icono: Droplets },
-  { id: 4, nombre: 'Alaciado', descripcion: 'Alaciado permanente y semipermanente de larga duración.', icono: Wind },
-  { id: 5, nombre: 'Nanoplastía', descripcion: 'Tratamiento de nanoplastía para cabello liso y brillante.', icono: Star },
-  { id: 6, nombre: 'Peinados de Evento', descripcion: 'Peinados especiales para bodas, quinceañeras y eventos.', icono: Calendar },
-];
 
 interface Props {
   initialProductos: Producto[];
@@ -94,7 +79,7 @@ function FilaServicio({ servicio }: { servicio: Servicio }) {
       className="mf-carta-fila group"
     >
       <span className="mf-carta-fila__miniatura">
-        <ServicioImagen src={servicio.imagen ?? servicio.imagenes?.[0]} alt="" sizes="64px" />
+        <ServicioImagen src={miniaturaDeServicio(servicio)} alt="" sizes="64px" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 text-lg font-semibold leading-snug" style={{ color: 'var(--texto-fondo-oscuro)', fontFamily: 'var(--font-family-serif)' }}>
@@ -135,6 +120,10 @@ function BotonPrimario({ href, children, claro = false }: { href: string; childr
 export default function SeccionesHome({ initialProductos, initialServicios }: Props) {
   const servicios = initialServicios.slice(0, 6);
   const fotos = fotosDeServicios(initialServicios).slice(0, 7);
+  // Solo cifras con respaldo: el conteo real del catálogo (sin servicios, o si el API falló, se oculta).
+  // Años de experiencia y número de clientas no tienen fuente: no se anuncian.
+  const cifraServicios = cifraServiciosDisponibles(initialServicios);
+  const hayPreciosServicios = servicios.some((s) => s.precio);
 
   return (
     <>
@@ -153,9 +142,12 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
                 No hay productos disponibles por el momento.
               </p>
             ) : (
-              <Suspense fallback={null}>
-                <CarruselProductosHome productos={initialProductos} />
-              </Suspense>
+              <>
+                <Suspense fallback={null}>
+                  <CarruselProductosHome productos={initialProductos} />
+                </Suspense>
+                <LeyendaPrecioIva className="mt-4" />
+              </>
             )}
           </div>
         </section>
@@ -173,30 +165,28 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
             />
 
             {servicios.length > 0 ? (
-              <ul className="mf-carta mf-revelar">
-                {servicios.map((s) => (
-                  <li key={s.id}>
-                    <FilaServicio servicio={s} />
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="mf-carta mf-revelar">
+                  {servicios.map((s) => (
+                    <li key={s.id}>
+                      <FilaServicio servicio={s} />
+                    </li>
+                  ))}
+                </ul>
+                {hayPreciosServicios && <LeyendaPrecioIva sobreOscuro className="mt-6" />}
+              </>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {SERVICIOS_FALLBACK.map((s) => {
-                  const Icono = s.icono;
-                  return (
-                    <div
-                      key={s.id}
-                      className="mf-revelar rounded-[14px] p-6"
-                      style={{ backgroundColor: 'var(--blanco-04)', boxShadow: '0 0 0 1px var(--blanco-07)' }}
-                    >
-                      <Icono className="w-8 h-8 mb-4" strokeWidth={1.25} style={{ color: 'var(--logo-branding)' }} />
-                      <h3 className="font-semibold" style={{ color: 'var(--texto-fondo-oscuro)' }}>{s.nombre}</h3>
-                      <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>{s.descripcion}</p>
-                    </div>
-                  );
-                })}
-              </div>
+              // Sin catálogo (vacío o API caída) no se inventa una carta: se dice y se enlaza a los servicios.
+              <p className="py-8" style={{ color: 'var(--texto-fondo-oscuro-70)' }}>
+                La carta de servicios no está disponible en este momento.{' '}
+                <Link
+                  href="/cliente/servicios-citas"
+                  className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
+                  style={{ color: 'var(--texto-fondo-oscuro)' }}
+                >
+                  Ver servicios
+                </Link>
+              </p>
             )}
           </div>
         </section>
@@ -250,32 +240,22 @@ export default function SeccionesHome({ initialProductos, initialServicios }: Pr
                 En Mirú Franco, nos dedicamos a realzar tu belleza natural con productos y servicios de la más alta calidad. Nuestro equipo de profesionales está comprometido a brindarte una experiencia excepcional en cada visita.
               </p>
               <p className="mf-revelar text-base leading-relaxed mb-10 max-w-[62ch]" style={{ color: 'var(--texto-secundario)' }}>
-                Con años de experiencia en el cuidado capilar, combinamos técnicas tradicionales con innovaciones modernas para ofrecerte resultados que superen tus expectativas.
+                Estamos en Huejutla de Reyes, Hidalgo. Aquí puedes agendar tus servicios en línea, comprar productos profesionales para el cuidado de tu cabello y recogerlos en el salón.
               </p>
-              <dl className="mf-revelar grid grid-cols-3 border-t pt-6" style={{ borderColor: 'var(--mf-linea)' }}>
-                {[
-                  { num: '5+', label: 'Años de experiencia' },
-                  { num: '500+', label: 'Clientes satisfechos' },
-                  { num: '15+', label: 'Servicios disponibles' },
-                ].map((stat, i) => (
-                  <div
-                    key={stat.label}
-                    className={`px-3 sm:px-6 first:pl-0 ${i < 2 ? 'border-r' : ''}`}
-                    style={{ borderColor: 'var(--mf-linea)' }}
+              {cifraServicios && (
+                <dl className="mf-revelar border-t pt-6" style={{ borderColor: 'var(--mf-linea)' }}>
+                  <dt className="sr-only">{cifraServicios.label}</dt>
+                  <dd
+                    className="mf-cifras text-3xl md:text-4xl font-bold leading-none"
+                    style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
                   >
-                    <dt className="sr-only">{stat.label}</dt>
-                    <dd
-                      className="mf-cifras text-3xl md:text-4xl font-bold leading-none"
-                      style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
-                    >
-                      {stat.num}
-                    </dd>
-                    <dd className="mt-2 text-xs sm:text-sm" style={{ color: 'var(--encabezados-alterno)' }} aria-hidden>
-                      {stat.label}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+                    {cifraServicios.num}
+                  </dd>
+                  <dd className="mt-2 text-xs sm:text-sm" style={{ color: 'var(--encabezados-alterno)' }} aria-hidden>
+                    {cifraServicios.label}
+                  </dd>
+                </dl>
+              )}
             </div>
           </div>
         </section>

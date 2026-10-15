@@ -19,10 +19,11 @@ export default function Card({
   style,
   ...props
 }: CardProps) {
+  // lg: p-5 en móvil (con p-8 fijo, a 375 px las tablas se quedaban con 277 px de marco).
   const paddingStyles = {
     sm: 'p-4',
     md: 'p-6',
-    lg: 'p-8',
+    lg: 'p-5 sm:p-8',
   };
 
   const variants = {

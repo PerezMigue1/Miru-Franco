@@ -19,7 +19,7 @@ import { usePermisos } from '../../../../utils/permisos';
 import { puedeCrearSeguimientos } from '../../../../utils/permisosCitas';
 import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
 import { showToast } from '../../../../utils/toast';
-import { puedeMarcarAtendido } from '../_lib/panelOperacion';
+import { puedeMarcarAtendido, tonoSiHay } from '../_lib/panelOperacion';
 
 export default function SeguimientoPostServicioPage() {
   // Leer: todo el personal. Crear: solo con seguimientos:escritura (el becario no).
@@ -112,20 +112,20 @@ export default function SeguimientoPostServicioPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-              Seguimiento Post-Servicio
+              Seguimiento posterior al servicio
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
               Da seguimiento a la satisfacción de los clientes tras el servicio
             </p>
           </div>
           {puedeCrearSeguimientos(tienePermiso) && (
-            <Button onClick={() => { reset(); setIsOpen(true); }}>+ Nuevo Seguimiento</Button>
+            <Button onClick={() => { reset(); setIsOpen(true); }}>+ Nuevo seguimiento</Button>
           )}
         </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <TarjetaKpi icono={AlertTriangle} etiqueta="Requieren acción" cargando={loading} valor={requierenAccion} tono="peligro" alerta={requierenAccion > 0} />
+          <TarjetaKpi icono={AlertTriangle} etiqueta="Requieren acción" cargando={loading} valor={requierenAccion} tono={tonoSiHay(requierenAccion, 'peligro')} alerta={requierenAccion > 0} />
           <TarjetaKpi icono={ClipboardCheck} etiqueta="Total en vista" cargando={loading} valor={seguimientos.length} />
           <TarjetaKpi icono={ThumbsUp} etiqueta="Bien evaluados" cargando={loading} valor={bienEvaluados} />
         </div>
@@ -202,7 +202,7 @@ export default function SeguimientoPostServicioPage() {
       <Modal
         isOpen={isOpen}
         onClose={() => { if (!saving) { setIsOpen(false); reset(); } }}
-        title="Nuevo Seguimiento"
+        title="Nuevo seguimiento"
         size="md"
         footer={
           <>

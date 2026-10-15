@@ -162,13 +162,15 @@ export default function AgendaCalendarioPage() {
         {/* Encabezado */}
         <div>
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-            Agenda / Calendario
+            Agenda y calendario
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
             Visualiza la disponibilidad del salón y las citas programadas
           </p>
         </div>
 
+        {/* Desde xl el detalle del día va a la derecha del calendario; antes, debajo. */}
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
         {/* Calendario mensual */}
         <Card variant="elevated" padding="lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
@@ -248,7 +250,9 @@ export default function AgendaCalendarioPage() {
                       disabled={loading}
                       aria-pressed={esSeleccionado}
                       aria-label={`${celda.day}${esHoy ? ', hoy' : ''}${tieneCitas ? ', con citas' : ''}`}
-                      className="aspect-square rounded-lg flex flex-col items-center justify-center gap-1 transition-colors relative"
+                      // Cuadradas por debajo de lg (con 44 px de alto mínimo para el dedo); desde lg, alto fijo:
+                      // cuadradas a todo lo ancho la cuadrícula medía unos 1040 px de alto.
+                      className="aspect-square min-h-11 lg:aspect-auto lg:h-16 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors relative"
                       style={{
                         backgroundColor: esSeleccionado ? 'var(--botones-principales)' : 'var(--fondos-suaves)',
                         border: esHoy && !esSeleccionado ? '2px solid var(--logo-branding)' : '2px solid transparent',
@@ -334,6 +338,7 @@ export default function AgendaCalendarioPage() {
             </p>
           )
         )}
+        </div>
       </div>
     </OperacionLayout>
   );

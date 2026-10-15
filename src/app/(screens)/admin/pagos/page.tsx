@@ -11,7 +11,7 @@ import {
   varianteBadgeEstadoPago,
 } from '../../../services/ecommerce';
 import { enParaleloLimitado } from '../../../utils/enParaleloLimitado';
-import { resumenPagos } from './resumenPagos';
+import { fechaPago, resumenPagos } from './resumenPagos';
 import { getUsuarios } from '../../../services/usuarios';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
@@ -22,11 +22,7 @@ import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
 import { BadgeDollarSign, Clock3, Receipt, XCircle } from 'lucide-react';
 
-function fmtFecha(iso?: string | null): string {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-MX');
-}
+const fmtFecha = fechaPago;
 
 function fmtMoneda(v: number): string {
   return `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -102,17 +98,18 @@ export default function PagosPage() {
           <TarjetaKpi icono={Receipt} etiqueta="Total de pagos" cargando={loading} valor={totalPagos} />
           <TarjetaKpi icono={BadgeDollarSign} etiqueta="Monto aprobado" cargando={loading} valor={fmtMoneda(montoAprobado)} />
           <TarjetaKpi icono={Clock3} etiqueta="Pendientes" cargando={loading} valor={pendientes} tono="aviso" />
-          <TarjetaKpi icono={XCircle} etiqueta="Rechazados/cancelados" cargando={loading} valor={rechazados} tono="peligro" />
+          <TarjetaKpi icono={XCircle} etiqueta="Rechazados o cancelados" cargando={loading} valor={rechazados} tono="peligro" />
         </div>
 
         {/* Listado */}
-        <Card variant="elevated" padding="lg">
+        {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+        <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
         {loading ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando pagos…</p>
         ) : pagos.length === 0 ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay pagos registrados.</p>
         ) : (
-        <Table headers={['Cliente', 'Pedido', 'Monto', 'Método', 'Estado', 'Fecha', 'Acciones']} headerSutil>
+        <Table headers={['Cliente', 'Pedido', 'Monto', 'Método', 'Estado', 'Fecha', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Pagos: desplaza para ver más columnas">
           {pagos.map((pago) => (
             <TableRow key={pago.id}>
               <TableCell className="font-semibold" rowPadding="lg">{pago.cliente}</TableCell>

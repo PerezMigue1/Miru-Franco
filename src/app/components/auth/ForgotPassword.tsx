@@ -126,9 +126,9 @@ export default function ForgotPassword({
   return (
     <div className="w-full max-w-md mx-auto">
       <div>
-        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        <h1 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Recuperar Contraseña
-        </h2>
+        </h1>
         <p className="text-center mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
         </p>

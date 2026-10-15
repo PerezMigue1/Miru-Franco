@@ -8,7 +8,7 @@ import TarjetaKpi from '../../../components/ui/TarjetaKpi';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import { listarCitasDelDia, type CitaApi } from '../../../services/citas';
-import { resumenVentas } from '../../../services/pos';
+import { listarVentas, resumenVentas } from '../../../services/pos';
 import { listarSeguimientos } from '../../../services/seguimientos';
 import { usePermisos, evaluarPermiso } from '../../../utils/permisos';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../utils/estados';
@@ -20,7 +20,17 @@ import {
   Clock3,
 } from 'lucide-react';
 import { hoyEnMexico } from '../../../utils/fechaSoloDia';
-import { rutaVerTodasLasCitas } from './_lib/panelOperacion';
+import { fuenteVentasHoy, resumenVentasCobradas, rutaVerTodasLasCitas } from './_lib/panelOperacion';
+
+/**
+ * "Ventas de hoy" según el permiso: con caja:lectura, el resumen de caja; con solo ventas:escritura
+ * (empleada que cobra), las ventas pagadas del día sumadas igual que el "Total del día" del punto de venta.
+ */
+async function totalVentasHoy(fuente: 'resumen' | 'ventas', hoy: string): Promise<number> {
+  if (fuente === 'resumen') return (await resumenVentas(hoy, hoy)).totalMonto;
+  const { data } = await listarVentas({ desde: hoy, limit: 100 });
+  return resumenVentasCobradas(data).total;
+}
 
 /** Cualquiera de estas claves permite leer citas (mismas que exige GET /api/citas/dia en el backend). */
 const PERMISOS_CITAS = ['citas:propias', 'citas:asignadas', 'citas:escritura', 'citas:propia'];
@@ -78,7 +88,7 @@ export default function OperacionPage() {
     if (!permisosClave) return;
     const lista = permisosClave.split(',');
     const puedeVerCitas = PERMISOS_CITAS.some((p) => evaluarPermiso(lista, p));
-    const puedeVerCaja = evaluarPermiso(lista, 'caja:lectura');
+    const fuenteVentas = fuenteVentasHoy((clave) => evaluarPermiso(lista, clave));
     const puedeVerSeguimientos = evaluarPermiso(lista, 'seguimientos:lectura');
 
     const hoy = hoyEnMexico();
@@ -88,7 +98,7 @@ export default function OperacionPage() {
     // backend (p. ej. empleado no tiene caja:lectura ni seguimientos:lectura).
     Promise.allSettled([
       puedeVerCitas ? listarCitasDelDia(hoy) : Promise.resolve<CitaApi[]>([]),
-      puedeVerCaja ? resumenVentas(hoy, hoy) : Promise.reject(new Error('Sin permiso caja:lectura')),
+      fuenteVentas ? totalVentasHoy(fuenteVentas, hoy) : Promise.resolve(null),
       puedeVerSeguimientos
         ? listarSeguimientos({ requiereAccion: true, limit: 100 })
         : Promise.resolve({ data: [], total: 0 }),
@@ -101,7 +111,7 @@ export default function OperacionPage() {
           setError((prev) => prev ?? 'No se pudieron cargar las citas de hoy');
         }
 
-        setVentasHoyMonto(ventasRes.status === 'fulfilled' ? ventasRes.value.totalMonto : null);
+        setVentasHoyMonto(ventasRes.status === 'fulfilled' ? ventasRes.value : null);
 
         if (seguimientosRes.status === 'fulfilled') {
           setSeguimientosPendientes(seguimientosRes.value.data.length);
@@ -119,6 +129,8 @@ export default function OperacionPage() {
   }, [permisosClave]);
 
   const enCurso = citasHoy.filter((c) => c.estado === 'en_curso').length;
+  // Sin ningún permiso de ventas la tarjeta no se pinta (antes salía vacía con un aviso de rol).
+  const conVentas = fuenteVentasHoy(tienePermiso) !== null;
 
   return (
     <OperacionLayout>
@@ -130,7 +142,7 @@ export default function OperacionPage() {
             Panel de operación
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            Resumen operativo del día — {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long' })}
+            Resumen operativo del día · {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long' })}
           </p>
         </div>
 
@@ -140,8 +152,8 @@ export default function OperacionPage() {
           </Card>
         )}
 
-        {/* KPIs: dos columnas desde 360px, cuatro en escritorio */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* KPIs: dos columnas desde 360px, cuatro en escritorio (tres si el rol no ve ventas) */}
+        <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${conVentas ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
           <TarjetaKpi icono={CalendarDays} etiqueta="Citas de hoy" cargando={loading} valor={citasHoy.length} />
           <TarjetaKpi
             icono={Scissors}
@@ -151,14 +163,16 @@ export default function OperacionPage() {
             tono={enCurso > 0 ? 'aviso' : 'normal'}
             alerta={enCurso > 0}
           />
-          <TarjetaKpi
-            icono={BadgeDollarSign}
-            etiqueta="Ventas de hoy"
-            cargando={loading}
-            tono="oro"
-            valor={ventasHoyMonto === null ? '—' : fmtMoneda(ventasHoyMonto)}
-            detalle={ventasHoyMonto === null ? 'No disponible para tu rol' : undefined}
-          />
+          {conVentas && (
+            <TarjetaKpi
+              icono={BadgeDollarSign}
+              etiqueta="Ventas de hoy"
+              cargando={loading}
+              tono="oro"
+              valor={fmtMoneda(ventasHoyMonto ?? 0)}
+              error={ventasHoyMonto === null ? 'No se pudo cargar' : false}
+            />
+          )}
           <TarjetaKpi
             icono={AlertTriangle}
             etiqueta="Seguimientos pendientes"

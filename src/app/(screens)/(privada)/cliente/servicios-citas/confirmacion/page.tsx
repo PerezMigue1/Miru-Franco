@@ -214,8 +214,8 @@ function ConfirmacionContent() {
               style={{ backgroundColor: 'var(--fondos-suaves)' }}
             >
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                <strong>Importante:</strong> Recibirás un correo electrónico de confirmación con todos los detalles de tu cita.
-                Te recordaremos 24 horas antes de tu cita.
+                <strong>Importante:</strong> Tu cita aparece en Mis citas con todos sus detalles.
+                Antes de tu cita te mandaremos un recordatorio en tu cuenta y, si lo tienes activado, por correo.
               </p>
             </div>
 

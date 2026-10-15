@@ -109,6 +109,24 @@ describe('apiClient: los 4xx y la red se conservan', () => {
     expect(err.message).toBe('El correo ya está registrado');
   });
 
+  it('un 409 lleva status para que quien llama lo distinga sin leer el texto', async () => {
+    responder(409, JSON.stringify({ message: 'Ya tienes una solicitud de cancelación abierta.' }));
+    const err = await errorDe(apiClient.post('/api/arco/solicitudes', {}));
+    expect(err.status).toBe(409);
+    expect(err.message).toBe('Ya tienes una solicitud de cancelación abierta.');
+  });
+
+  it('GET con skip401Redirect: un 401 se lanza sin mandar al login (consultas de fondo)', async () => {
+    responder(401, JSON.stringify({ message: 'Token expirado' }));
+    const err = await errorDe(apiClient.get('/api/consentimientos/pendientes', { customBase: 'http://api.test', skip401Redirect: true }));
+    expect(err.status).toBe(401);
+    expect(replace).not.toHaveBeenCalled();
+    // Sin la opción, el mismo 401 sí manda al login.
+    responder(401, JSON.stringify({ message: 'Token expirado' }));
+    await errorDe(apiClient.get('/api/consentimientos/pendientes', { customBase: 'http://api.test' }));
+    expect(replace).toHaveBeenCalledWith(expect.stringMatching(/^\/login/));
+  });
+
   it('un fallo de red da el mensaje sin conexión', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     const err = await errorDe(apiClient.get('/usuarios'));

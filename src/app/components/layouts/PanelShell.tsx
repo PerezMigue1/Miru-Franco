@@ -1,12 +1,13 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronsLeft, ChevronsRight, ExternalLink, Menu, X, type LucideIcon } from 'lucide-react';
 import GlobalBreadcrumb from '../GlobalBreadcrumb';
 import ThemeToggle from '../ui/ThemeToggle';
+import { mostrarItemActivo } from './menuActivo';
 
 export interface PanelNavItem {
   label: string;
@@ -41,6 +42,15 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
   const [abierto, setAbierto] = useState(false);
   const [colapsado, setColapsado] = useState(false);
   const [rutaDelCajon, setRutaDelCajon] = useState(pathname);
+  const menuRef = useRef<HTMLElement>(null);
+
+  // El ítem activo de la parte baja del menú (Reportes, Usuarios, Base de datos…) quedaba fuera de
+  // la vista a 1440x900: al montar, al navegar y al abrir el cajón, el menú se desplaza hasta él.
+  // En la primera carga los ítems con permiso aparecen después: también se recalcula cuando cambian.
+  const totalItems = grupos.reduce((n, g) => n + g.items.length, 0);
+  useEffect(() => {
+    mostrarItemActivo(menuRef.current);
+  }, [pathname, abierto, colapsado, totalItems]);
 
   // Cierra el cajón al navegar (ajuste de estado en render, sin efecto encadenado)
   if (pathname !== rutaDelCajon) {
@@ -80,7 +90,7 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
           >
             {abierto ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
           </button>
-          <Link href={inicioHref} className="flex min-w-0 items-center gap-2.5 rounded-lg">
+          <Link href={inicioHref} className="flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg">
             <span className="relative h-8 w-8 shrink-0">
               <Image src="/logo-miru.jpg" alt="" fill sizes="32px" className="object-contain" priority />
             </span>
@@ -98,7 +108,7 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
           <ThemeToggle />
           <Link
             href="/home"
-            className="mf-panel-icono-btn w-auto! gap-2 px-2.5 text-sm font-medium sm:px-3"
+            className="mf-panel-icono-btn w-auto! min-w-11 justify-center gap-2 px-2.5 text-sm font-medium sm:px-3"
             style={{ display: 'inline-flex' }}
             aria-label="Ver sitio web"
           >
@@ -125,7 +135,7 @@ export default function PanelShell({ etiqueta, inicioHref, grupos, esActivo, pie
           data-colapsado={colapsado ? 'true' : 'false'}
           aria-label={`Menú de ${etiqueta.toLowerCase()}`}
         >
-          <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
+          <nav ref={menuRef} className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
             {grupos.map((grupo, gi) => (
               <div key={grupo.titulo ?? gi} className="mf-panel-grupo">
                 {grupo.titulo && (

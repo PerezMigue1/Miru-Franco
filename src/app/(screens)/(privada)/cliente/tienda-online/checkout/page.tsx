@@ -31,6 +31,19 @@ import {
   mensajeErrorLineasNoVendibles,
 } from '../../../../../utils/ventaDesdeCarrito';
 import DatosRecogerEnSalon from '../../../../../components/tienda/DatosRecogerEnSalon';
+import AvisoSimplificado from '../../../../../components/legal/AvisoSimplificado';
+import CasillasCompra, { idCasillaCompra } from './CasillasCompra';
+import InfoCompra from './InfoCompra';
+import {
+  CASILLAS_COMPRA,
+  CASILLAS_COMPRA_INICIALES,
+  conCandado,
+  crearPedidoConConsentimientos,
+  erroresCasillasCompra,
+  type EstadoCasillasCompra,
+  type IdCasillaCompra,
+} from './compraLegal';
+import { LEYENDA_PRECIOS, NOTA_TOTAL_COBRADO } from './infoComercio';
 
 type FormaPago = 'linea' | 'salon';
 
@@ -99,6 +112,8 @@ export default function CheckoutPage() {
    * y se apaga en el catch si algo sale mal después de encenderlo.
    */
   const compraFinalizadaRef = useRef(false);
+  /** Candado de ejecutarCompra: un segundo clic mientras se registra el consentimiento y se crea el pedido no hace nada. */
+  const enviandoRef = useRef(false);
 
   /**
    * Dos formas de pago: en línea (Mercado Pago Checkout Pro: la clienta escribe su tarjeta en la página
@@ -106,6 +121,20 @@ export default function CheckoutPage() {
    */
   const [formaPago, setFormaPago] = useState<FormaPago>('salon');
   const [solicitaFactura, setSolicitaFactura] = useState(false);
+  /** Términos de venta y Política de reembolsos: obligatorias y sin marcar al entrar. */
+  const [casillas, setCasillas] = useState<EstadoCasillasCompra>(CASILLAS_COMPRA_INICIALES);
+  const [erroresCasillas, setErroresCasillas] = useState<Partial<Record<IdCasillaCompra, string>>>({});
+
+  const cambiarCasilla = (id: IdCasillaCompra, marcada: boolean) => {
+    setCasillas((previas) => ({ ...previas, [id]: marcada }));
+    if (marcada) {
+      setErroresCasillas((previos) => {
+        const siguen = { ...previos };
+        delete siguen[id];
+        return siguen;
+      });
+    }
+  };
 
   const {
     register: regContacto,
@@ -168,7 +197,7 @@ export default function CheckoutPage() {
     setSubmitError(null);
   };
 
-  const ejecutarCompra = async () => {
+  const comprar = async () => {
     if (!hasValidToken()) {
       const msg = 'Inicia sesión para completar la compra.';
       setSubmitError(msg);
@@ -176,8 +205,17 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!(await triggerContacto())) {
+    const contactoValido = await triggerContacto();
+    // Las casillas se revisan junto con el contacto para mostrar todos los pendientes de una vez.
+    const faltanCasillas = erroresCasillasCompra(casillas);
+    setErroresCasillas(faltanCasillas);
+    if (!contactoValido) {
       setSubmitError('Revisa los datos de contacto antes de finalizar.');
+      return;
+    }
+    const primeraSinMarcar = CASILLAS_COMPRA.find((c) => faltanCasillas[c.id]);
+    if (primeraSinMarcar) {
+      document.getElementById(idCasillaCompra(primeraSinMarcar.id))?.focus();
       return;
     }
     setSubmitError(null);
@@ -200,17 +238,20 @@ export default function CheckoutPage() {
       });
       // Se recoge en el salón: el pedido no lleva dirección ni costo de envío. Con pago al recoger
       // queda apartado; en línea, queda pendiente hasta que Mercado Pago confirma el pago.
-      const pedido = await crearPedido({
-        estado: 'pendiente_pago' as EstadoPedidoUi,
-        moneda: 'MXN',
-        notasCliente,
-        metodoPago: formaPago === 'salon' ? METODO_PAGO_EN_SALON : METODO_PAGO_MERCADOPAGO,
-        items: items.map((item) => ({
-          cantidad: item.cantidad,
-          productoId: item.productoId,
-          presentacionId: item.presentacionId,
-        })),
-      }, { propios: true });
+      // Antes se registran las dos casillas: si el registro falla, el pedido no se crea.
+      const pedido = await crearPedidoConConsentimientos(() =>
+        crearPedido({
+          estado: 'pendiente_pago' as EstadoPedidoUi,
+          moneda: 'MXN',
+          notasCliente,
+          metodoPago: formaPago === 'salon' ? METODO_PAGO_EN_SALON : METODO_PAGO_MERCADOPAGO,
+          items: items.map((item) => ({
+            cantidad: item.cantidad,
+            productoId: item.productoId,
+            presentacionId: item.presentacionId,
+          })),
+        }, { propios: true }),
+      );
       pedidoId = pedido.id;
       // El servidor descuenta stock al crear el pedido; refrescar catálogos abiertos.
       emitCatalogStockChanged();
@@ -245,6 +286,12 @@ export default function CheckoutPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const ejecutarCompra = async () => {
+    // Candado al inicio: setSubmitting llega después de await triggerContacto(), y dos clics seguidos
+    // harían dos POST de consentimiento y dos pedidos.
+    await conCandado(enviandoRef, comprar);
   };
 
   const manejarSiguiente = async () => {
@@ -412,7 +459,7 @@ export default function CheckoutPage() {
                     </h3>
                     <p className="text-sm mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
                       Datos cargados de tu cuenta; puedes ajustarlos para este pedido. Para cambios permanentes,{' '}
-                      <Link href="/perfil" className="font-semibold underline" style={{ color: 'var(--checkout-entrega-enlace)' }}>
+                      <Link href="/perfil" className="font-semibold underline underline-offset-2" style={{ color: 'var(--menu-texto-principal)' }}>
                         edita tu perfil
                       </Link>
                       .
@@ -433,58 +480,65 @@ export default function CheckoutPage() {
                         {...regContacto('apellidos', { required: 'Indica tus apellidos.' })}
                       />
                     </div>
-                    <Input
-                      label="Correo"
-                      type="email"
-                      className="mt-4"
-                      error={contactoErrors.email?.message}
-                      fullWidth
-                      autoComplete="email"
-                      {...regContacto('email', {
-                        required: 'Indica tu correo electrónico.',
-                        validate: (v) => emailValido(v) || 'El correo no tiene un formato válido.',
-                      })}
-                    />
-                    <Input
-                      label="Teléfono"
-                      type="tel"
-                      className="mt-4"
-                      error={contactoErrors.telefono?.message}
-                      fullWidth
-                      autoComplete="tel"
-                      {...regContacto('telefono', {
-                        required: 'Indica un teléfono de contacto.',
-                        validate: (v) => telefonoValidoMx(v) || 'El teléfono debe incluir al menos 10 dígitos.',
-                      })}
-                    />
-                    <label className="flex items-center gap-2 mt-4 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={solicitaFactura}
-                        onChange={(e) => setSolicitaFactura(e.target.checked)}
-                      />
-                      <span style={{ color: 'var(--menu-texto-principal)' }}>Solicito factura fiscal (CFDI)</span>
-                    </label>
-                    {solicitaFactura && (
+                    {/* El margen va en un div: en Input, className cae en el campo, entre la etiqueta y su caja. */}
+                    <div className="mt-4">
                       <Input
-                        label="RFC"
-                        className="mt-3"
-                        error={contactoErrors.rfcFactura?.message}
+                        label="Correo"
+                        type="email"
+                        error={contactoErrors.email?.message}
                         fullWidth
-                        placeholder="XAXX010101000"
-                        {...regContacto('rfcFactura', {
-                          validate: (v) => {
-                            if (!solicitaFactura) return true;
-                            const r = v.trim().toUpperCase();
-                            if (!r) return 'Indica el RFC o desmarca "Solicito factura".';
-                            if (!rfcMexicoBasico(r)) return 'RFC inválido (revisa formato, 12 o 13 caracteres).';
-                            return true;
-                          },
-                          onChange: (e) => {
-                            e.target.value = e.target.value.toUpperCase();
-                          },
+                        autoComplete="email"
+                        {...regContacto('email', {
+                          required: 'Indica tu correo electrónico.',
+                          validate: (v) => emailValido(v) || 'El correo no tiene un formato válido.',
                         })}
                       />
+                    </div>
+                    <div className="mt-4">
+                      <Input
+                        label="Teléfono"
+                        type="tel"
+                        error={contactoErrors.telefono?.message}
+                        fullWidth
+                        autoComplete="tel"
+                        {...regContacto('telefono', {
+                          required: 'Indica un teléfono de contacto.',
+                          validate: (v) => telefonoValidoMx(v) || 'El teléfono debe incluir al menos 10 dígitos.',
+                        })}
+                      />
+                    </div>
+                    <div className="mf-consentimiento mt-4">
+                      <label htmlFor="casilla-solicita-factura">
+                        <input
+                          type="checkbox"
+                          id="casilla-solicita-factura"
+                          checked={solicitaFactura}
+                          onChange={(e) => setSolicitaFactura(e.target.checked)}
+                        />
+                        <span>Solicito factura fiscal (CFDI)</span>
+                      </label>
+                    </div>
+                    {solicitaFactura && (
+                      <div className="mt-3">
+                        <Input
+                          label="RFC"
+                          error={contactoErrors.rfcFactura?.message}
+                          fullWidth
+                          placeholder="XAXX010101000"
+                          {...regContacto('rfcFactura', {
+                            validate: (v) => {
+                              if (!solicitaFactura) return true;
+                              const r = v.trim().toUpperCase();
+                              if (!r) return 'Indica el RFC o desmarca "Solicito factura".';
+                              if (!rfcMexicoBasico(r)) return 'RFC inválido (revisa formato, 12 o 13 caracteres).';
+                              return true;
+                            },
+                            onChange: (e) => {
+                              e.target.value = e.target.value.toUpperCase();
+                            },
+                          })}
+                        />
+                      </div>
                     )}
                   </section>
 
@@ -509,8 +563,14 @@ export default function CheckoutPage() {
                       </strong>
                     </p>
                     <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Total estimado: el total final se confirma al crear tu pedido.
+                      {LEYENDA_PRECIOS} {NOTA_TOTAL_COBRADO}
                     </p>
+                  </section>
+
+                  <InfoCompra />
+
+                  <section className="pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+                    <CasillasCompra estado={casillas} errores={erroresCasillas} onCambio={cambiarCasilla} />
                   </section>
                 </div>
               </Card>
@@ -528,14 +588,7 @@ export default function CheckoutPage() {
                 </span>
               </Button>
             </div>
-            {paso === 3 && (
-              <p className="mf-leyenda-terminos">
-                Al confirmar tu pedido aceptas los{' '}
-                <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">
-                  Términos y Condiciones<span className="sr-only"> (se abre en otra pestaña)</span>
-                </a>
-              </p>
-            )}
+            <AvisoSimplificado finalidad="procesar tu pedido y tu pago" />
           </div>
 
           <div className="lg:sticky lg:top-[calc(var(--mf-header-offset,136px)+1rem)] lg:self-start">
@@ -579,7 +632,7 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <p className="text-xs mt-2" style={{ color: 'var(--encabezados-alterno)' }}>
-                    Monto estimado: el total final se confirma al crear tu pedido.
+                    {LEYENDA_PRECIOS}
                   </p>
                 </div>
               </div>

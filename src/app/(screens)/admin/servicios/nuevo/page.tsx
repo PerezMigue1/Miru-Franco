@@ -133,11 +133,11 @@ export default function NuevoServicioPage() {
               <Select label="Duración *" value={duracion} onChange={(e) => setDuracion(e.target.value)} options={duracionOptions} fullWidth />
               <Select label="Categoría *" value={categoria} onChange={(e) => setCategoria(e.target.value)} options={categoriaOptions} fullWidth />
               <div className="flex flex-wrap items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                   <input type="checkbox" checked={requiereEvaluacion} onChange={(e) => setRequiereEvaluacion(e.target.checked)} className="rounded" />
                   Requiere evaluación previa
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                   <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} className="rounded" />
                   Servicio activo
                 </label>
@@ -151,6 +151,7 @@ export default function NuevoServicioPage() {
                 <EditorImagenesPresentacionCloudinary
                   urls={imagenes}
                   onChange={setImagenes}
+                  pedirTipo
                 />
               </div>
             </div>

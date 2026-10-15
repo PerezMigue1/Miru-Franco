@@ -13,6 +13,7 @@ import PanelVerificando from './PanelVerificando';
 import PanelSinVerificar from './PanelSinVerificar';
 import { decidirAccesoPanel } from '../../utils/accesoPanel';
 import {
+  BadgeDollarSign,
   BrainCircuit,
   CalendarClock,
   CalendarDays,
@@ -69,10 +70,13 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Ejecución de servicios', href: '/operacion/ejecucion-servicios', icon: Scissors },
   { label: 'Cola de atención', href: '/operacion/cola-atencion', icon: Users },
   { label: 'Punto de venta', href: '/operacion/punto-de-venta', icon: Receipt, permiso: 'ventas:escritura' },
+  // Cobro sin cita exige `ventas:escritura`, el mismo permiso que ya pide la página
+  // (permisoRequerido en cobro-sin-cita/page.tsx) y que el punto de venta.
+  { label: 'Cobro sin cita', href: '/operacion/cobro-sin-cita', icon: BadgeDollarSign, permiso: 'ventas:escritura' },
   { label: 'Pedidos online', href: '/operacion/pedidos-online', icon: ShoppingBag, permiso: 'caja:escritura' },
   { label: 'Pedidos por recoger', href: '/operacion/pedidos-por-recoger', icon: PackageCheck, permiso: 'pedidos:entregar' },
   { label: 'Devoluciones', href: '/operacion/devoluciones', icon: RotateCcw, permiso: 'devoluciones:gestionar' },
-  { label: 'Agenda / Calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
+  { label: 'Agenda y calendario', href: '/operacion/agenda-calendario', icon: CalendarDays },
   { label: 'Gestión de citas', href: '/operacion/gestion-citas', icon: CalendarClock, permiso: 'citas:escritura' },
   { label: 'Segmentación de clientes', href: '/operacion/segmentacion-clientes', icon: BrainCircuit, permiso: 'clientes:lectura' },
   { label: 'Seguimiento', href: '/operacion/seguimiento-post-servicio', icon: ClipboardCheck, permiso: 'seguimientos:lectura' },

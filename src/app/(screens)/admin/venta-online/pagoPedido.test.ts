@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PagoApi } from '../../../services/ecommerce';
-import { elegirPagoPorAprobar, fmtMonedaPedido } from './pagoPedido';
+import { elegirPagoPorAprobar, fmtMonedaPedido, nombreClientaPedido } from './pagoPedido';
 
 const pago = (id: number, estado: string, creadoEn: string): PagoApi => ({
   id, estado, creadoEn, intentoNumero: id, monto: 100, moneda: 'MXN', metodo: 'transferencia', pedidoId: 9,
@@ -25,6 +25,21 @@ describe('Aprobar pago de un pedido online', () => {
     const pagos = [pago(2, 'aprobado', '2026-10-02T10:00:00Z'), pago(1, 'rechazado', '2026-10-01T10:00:00Z')];
     expect(elegirPagoPorAprobar(pagos)).toBeNull();
     expect(elegirPagoPorAprobar([])).toBeNull();
+  });
+});
+
+/** B9: sin el nombre de la clienta, la tabla mostraba su UUID. Mismo texto que en Pagos. */
+describe('Nombre de la clienta del pedido', () => {
+  const nombres = new Map([['u-1', { nombre: 'Ana López' }], ['u-2', { nombre: '  ' }]]);
+
+  it('usa el nombre registrado', () => {
+    expect(nombreClientaPedido(nombres, 'u-1')).toBe('Ana López');
+  });
+
+  it('sin nombre, sin usuario o con un usuario que no se cargó dice "Cliente sin nombre", nunca el UUID', () => {
+    expect(nombreClientaPedido(nombres, 'u-2')).toBe('Cliente sin nombre');
+    expect(nombreClientaPedido(nombres, '6f1c2a90-0d4e-4b7e-9a51-3c2f8e7d1b44')).toBe('Cliente sin nombre');
+    expect(nombreClientaPedido(nombres, null)).toBe('Cliente sin nombre');
   });
 });
 

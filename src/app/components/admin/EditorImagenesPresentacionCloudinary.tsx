@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { SubirImagenesCloudinaryButton } from './SubirImagenesCloudinaryButton';
 
@@ -10,6 +11,8 @@ type Props = {
   disabled?: boolean;
   /** Texto del botón de subida. */
   uploadLabel?: string;
+  /** Imágenes que llegan a la galería (servicios): pide elegir foto real o imagen ilustrativa antes de subir. */
+  pedirTipo?: boolean;
 };
 
 /**
@@ -20,6 +23,7 @@ export function EditorImagenesPresentacionCloudinary({
   onChange,
   disabled,
   uploadLabel = 'Subir imágenes',
+  pedirTipo = false,
 }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const effectivePreviewUrl = previewUrl && urls.includes(previewUrl) ? previewUrl : null;
@@ -73,18 +77,23 @@ export function EditorImagenesPresentacionCloudinary({
                   className="pointer-events-none h-full w-full object-cover bg-negro/5"
                 />
               </button>
+              {/* Objetivo de 44x44 en la esquina (antes 24x24); el círculo visible sigue siendo pequeño. */}
               <button
                 type="button"
                 aria-label={`Quitar imagen ${i + 1}`}
-                className="absolute top-0.5 right-0.5 z-[2] flex h-6 w-6 items-center justify-center rounded text-xs font-bold leading-none shadow opacity-90 hover:opacity-100"
-                style={{ backgroundColor: 'var(--danger)', color: 'var(--blanco)' }}
+                className="group absolute top-0 right-0 z-[2] flex h-11 w-11 items-start justify-end p-1 disabled:cursor-not-allowed"
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(i);
                 }}
                 disabled={disabled}
               >
-                ×
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-full shadow opacity-90 transition-opacity group-hover:opacity-100 group-disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--danger)', color: 'var(--blanco)' }}
+                >
+                  <X size={14} aria-hidden />
+                </span>
               </button>
             </li>
           ))}
@@ -98,6 +107,7 @@ export function EditorImagenesPresentacionCloudinary({
         onUrlsAdded={add}
         disabled={disabled}
         label={uploadLabel}
+        pedirTipo={pedirTipo}
       />
 
       <Modal
@@ -109,7 +119,7 @@ export function EditorImagenesPresentacionCloudinary({
         {effectivePreviewUrl && (
           <div className="flex flex-col gap-2">
             <p className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
-              Clic fuera del recuadro, el botón ✕ o la tecla Escape para cerrar.
+              Clic fuera del recuadro, el botón Cerrar o la tecla Escape para cerrar.
             </p>
             <div
               className="flex max-h-[min(85vh,900px)] w-full items-center justify-center overflow-auto rounded-md bg-negro/40 p-2"

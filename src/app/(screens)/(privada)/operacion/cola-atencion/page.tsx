@@ -68,7 +68,7 @@ function diffMinutos(desdeISO: string, hastaISO: string | Date): number | null {
 }
 
 function fmtMinutos(min: number | null): string {
-  return min === null ? '—' : `${min} min`;
+  return min === null ? 'Sin dato' : `${min} min`;
 }
 
 /** Espera de un turno: si ya fue atendido, tiempo final (horaCheckIn - llegada); si sigue esperando, tiempo transcurrido en vivo. */
@@ -164,7 +164,7 @@ export default function ColaAtencionPage() {
         {/* Encabezado */}
         <div>
           <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-            Cola de Atención
+            Cola de atención
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
             Turnos del día: citas y llegadas sin cita · {enEspera} turno{enEspera === 1 ? '' : 's'} en lista de espera
@@ -179,15 +179,15 @@ export default function ColaAtencionPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <TarjetaKpi icono={Users} etiqueta="En Espera" cargando={loading} valor={enEspera} tono="aviso" alerta={enEspera > 0} />
-          <TarjetaKpi icono={UserCheck} etiqueta="En Atención" cargando={loading} valor={enAtencion} />
-          <TarjetaKpi icono={Timer} etiqueta="Tiempo Promedio" cargando={loading} valor={fmtMinutos(tiempoPromedioMin)} />
+          <TarjetaKpi icono={Users} etiqueta="En espera" cargando={loading} valor={enEspera} tono="aviso" alerta={enEspera > 0} />
+          <TarjetaKpi icono={UserCheck} etiqueta="En atención" cargando={loading} valor={enAtencion} />
+          <TarjetaKpi icono={Timer} etiqueta="Tiempo promedio" cargando={loading} valor={fmtMinutos(tiempoPromedioMin)} />
         </div>
 
         {/* Listado */}
         <Card variant="elevated" padding="lg">
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
-          Lista de Turnos
+          Lista de turnos
         </h2>
         {estadoTurnos === 'error' ? (
           <div className="py-6 text-center">
@@ -195,14 +195,14 @@ export default function ColaAtencionPage() {
             <Button variant="outline" onClick={cargar}>Reintentar</Button>
           </div>
         ) : (
-        <Table headers={['Posición', 'Cliente', 'Hora de Llegada', 'Servicio', 'Estado', 'Tiempo de Espera', 'Acciones']} headerSutil>
+        <Table headers={['Posición', 'Cliente', 'Hora de llegada', 'Servicio', 'Estado', 'Tiempo de espera', 'Acciones']} headerSutil>
           {turnos.map((turno) => (
             <TableRow key={turno.id}>
               <TableCell rowPadding="lg">
                 {turno.posicion > 0 ? (
                   <Badge variant="info">{turno.posicion}</Badge>
                 ) : (
-                  <Badge variant="success">En Atención</Badge>
+                  <Badge variant="success">En atención</Badge>
                 )}
               </TableCell>
               <TableCell className="font-semibold" rowPadding="lg">
@@ -215,7 +215,7 @@ export default function ColaAtencionPage() {
               <TableCell rowPadding="lg">{turno.servicio}</TableCell>
               <TableCell rowPadding="lg">
                 <Badge variant={turno.estado === 'en_atencion' ? 'success' : 'warning'}>
-                  {turno.estado === 'en_atencion' ? 'En Atención' : 'Esperando'}
+                  {turno.estado === 'en_atencion' ? 'En atención' : 'Esperando'}
                 </Badge>
               </TableCell>
               <TableCell rowPadding="lg">

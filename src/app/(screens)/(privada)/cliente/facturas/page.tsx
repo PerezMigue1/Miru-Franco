@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import ModuleLayout from '../../../../components/layouts/ModuleLayout';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
@@ -112,16 +113,37 @@ export default function FacturasPage() {
           </Card>
         ) : (
           <>
-            <Card className="mb-6">
-              <Table headers={['Pedido', 'Folio / serie', 'UUID', 'Estado', 'Creado', 'XML', 'PDF']}>
-                {facturas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
-                      No hay facturas registradas para tus pedidos.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  facturas.map((doc) => (
+            {/* Sin facturas no se pinta la tabla: en móvil el aviso dentro de una celda colSpan
+                quedaba cortado. Estado vacío del sistema, como en /cliente/cotizaciones. Con error
+                ya se muestra el aviso de arriba. */}
+            {facturas.length === 0 ? (
+              !error && (
+                <Card className="mb-6">
+                  <div className="flex flex-col items-center px-2 py-10 text-center">
+                    <span
+                      className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full"
+                      style={{ backgroundColor: 'var(--fondos-suaves)' }}
+                      aria-hidden
+                    >
+                      <FileText size={24} style={{ color: 'var(--menu-texto-principal)' }} />
+                    </span>
+                    <h2
+                      className="text-xl font-bold"
+                      style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
+                    >
+                      Aún no tienes facturas
+                    </h2>
+                    <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: 'var(--encabezados-alterno)' }}>
+                      Cuando el salón emita la factura de alguno de tus pedidos, aquí podrás descargar su XML y su PDF.
+                      Si necesitas una, solicítala abajo.
+                    </p>
+                  </div>
+                </Card>
+              )
+            ) : (
+              <Card className="mb-6">
+                <Table headers={['Pedido', 'Folio / serie', 'UUID', 'Estado', 'Creado', 'XML', 'PDF']}>
+                  {facturas.map((doc) => (
                     <TableRow key={`${doc.pedidoId}-${doc.id}`}>
                       <TableCell className="font-mono font-semibold">#{doc.pedidoId}</TableCell>
                       <TableCell>
@@ -149,10 +171,10 @@ export default function FacturasPage() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </Table>
-            </Card>
+                  ))}
+                </Table>
+              </Card>
+            )}
 
             {!mostrarSolicitud ? (
               <Card>

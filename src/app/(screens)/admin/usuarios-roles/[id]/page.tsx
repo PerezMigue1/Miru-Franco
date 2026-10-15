@@ -9,9 +9,21 @@ import Input from '../../../../components/ui/Input';
 import Select from '../../../../components/ui/Select';
 import Textarea from '../../../../components/ui/Textarea';
 import FotoUsuarioUploader from '../../../../components/admin/FotoUsuarioUploader';
-import { getUsuarioById, updateUsuario, getRoles, opcionesRolEdicion, telefonoEdicionUsuario, type RolCatalogoItem, type RolValor } from '../../../../services/usuarios';
+import {
+  getUsuarioById,
+  updateUsuario,
+  rutaOrigenEdicion,
+  getRoles,
+  opcionesRolEdicion,
+  telefonoEdicionUsuario,
+  cuerpoPromocionesPanel,
+  NOTA_PROMOCIONES_PANEL,
+  type RolCatalogoItem,
+  type RolValor,
+} from '../../../../services/usuarios';
 import CasillaDatosSalud from '../../../../components/legal/CasillaDatosSalud';
-import { errorConsentimientoAlergias, requiereConsentimiento } from '../../../../utils/consentimientoDatosSensibles';
+import CasillaDocumento from '../../../../components/legal/CasillaDocumento';
+import { alergiasNuevas, cuerpoAlergias, errorConsentimientoCambio, mensajeSaludDelBackend } from '../../../../utils/consentimientoDatosSensibles';
 
 function rolValorParaSelect(rol: string): string {
   const r = String(rol || '').toLowerCase().trim();
@@ -39,12 +51,15 @@ export default function EditarUsuarioPage() {
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [foto, setFoto] = useState<string | null>(null);
   const [recibePromociones, setRecibePromociones] = useState(false);
+  // Lo guardado: el personal solo puede quitar las promociones, y la casilla de salud sale si cambian las alergias.
+  const [promocionesGuardadas, setPromocionesGuardadas] = useState(false);
   const [tipoCabello, setTipoCabello] = useState('');
   const [colorNatural, setColorNatural] = useState('');
   const [colorActual, setColorActual] = useState('');
   const [productosUsados, setProductosUsados] = useState('');
   const [alergias, setAlergias] = useState('');
-  // Consentimiento de la clienta para datos de salud: se confirma en cada guardado con alergias y no se guarda.
+  const [alergiasGuardadas, setAlergiasGuardadas] = useState('');
+  // La persona aceptó que se registren sus datos de salud: se confirma al cambiar las alergias y no se guarda.
   const [consienteDatosSensibles, setConsienteDatosSensibles] = useState(false);
   const [errorConsentimiento, setErrorConsentimiento] = useState<string | null>(null);
 
@@ -64,11 +79,13 @@ export default function EditarUsuarioPage() {
         setFechaNacimiento(u.fechaNacimiento ? u.fechaNacimiento.slice(0, 10) : '');
         setFoto(u.foto?.trim() || null);
         setRecibePromociones(u.recibePromociones ?? false);
+        setPromocionesGuardadas(u.recibePromociones ?? false);
         setTipoCabello(u.tipoCabello ?? '');
         setColorNatural(u.colorNatural ?? '');
         setColorActual(u.colorActual ?? '');
         setProductosUsados(u.productosUsados ?? '');
         setAlergias(u.alergias ?? '');
+        setAlergiasGuardadas(u.alergias ?? '');
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -87,9 +104,12 @@ export default function EditarUsuarioPage() {
       setError(tel.error);
       return;
     }
-    const faltaConsentimiento = errorConsentimientoAlergias(alergias, consienteDatosSensibles, 'personal');
+    const faltaConsentimiento = errorConsentimientoCambio(alergiasGuardadas, alergias, consienteDatosSensibles, 'personal');
     setErrorConsentimiento(faltaConsentimiento);
-    if (faltaConsentimiento) return;
+    if (faltaConsentimiento) {
+      document.getElementById('editar-usuario-consiente-salud')?.focus();
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -100,16 +120,24 @@ export default function EditarUsuarioPage() {
         rol: rol as RolValor,
         fechaNacimiento: fechaNacimiento || null,
         foto: foto,
-        recibePromociones,
+        // Solo si el personal las quitó: activarlas solo puede hacerlo la persona (el backend rechaza true).
+        ...cuerpoPromocionesPanel(promocionesGuardadas, recibePromociones),
         tipoCabello: tipoCabello || null,
         colorNatural: colorNatural.trim() || null,
         colorActual: colorActual.trim() || null,
         productosUsados: productosUsados.trim() || null,
-        alergias: alergias.trim() || null,
-        ...(requiereConsentimiento(alergias) ? { consienteDatosSensibles: true } : {}),
+        // Solo si cambiaron: nuevas con consienteDatosSensibles: true (casilla validada arriba); borradas, null.
+        ...cuerpoAlergias(alergiasGuardadas, alergias),
+        rutaOrigen: rutaOrigenEdicion(`/admin/usuarios-roles/${id}`),
       });
       router.push('/admin/usuarios-roles');
     } catch (err) {
+      // 400 CONSENTIMIENTO_SALUD_REQUERIDO: el mensaje va junto a la casilla de datos de salud.
+      const salud = mensajeSaludDelBackend(err);
+      if (salud) {
+        setErrorConsentimiento(salud);
+        return;
+      }
       const e = err as Error & { validationErrors?: Record<string, string> };
       let msg = e instanceof Error ? e.message : 'Error al guardar los cambios';
       if (e.validationErrors && Object.keys(e.validationErrors).length > 0) {
@@ -227,25 +255,38 @@ export default function EditarUsuarioPage() {
               </div>
               <div className="md:col-span-2 sm:col-span-2">
                 <Textarea label="Alergias conocidas" value={alergias} onChange={(e) => setAlergias(e.target.value)} rows={2} fullWidth />
-                <CasillaDatosSalud
-                  quien="personal"
-                  className="mt-2"
-                  checked={consienteDatosSensibles}
-                  onChange={(e) => {
-                    setConsienteDatosSensibles(e.target.checked);
-                    if (e.target.checked) setErrorConsentimiento(null);
-                  }}
-                  error={errorConsentimiento}
-                />
+                {alergiasNuevas(alergiasGuardadas, alergias) && (
+                  <CasillaDatosSalud
+                    quien="personal"
+                    id="editar-usuario-consiente-salud"
+                    className="mt-2"
+                    checked={consienteDatosSensibles}
+                    onChange={(e) => {
+                      setConsienteDatosSensibles(e.target.checked);
+                      if (e.target.checked) setErrorConsentimiento(null);
+                    }}
+                    aria-required
+                    error={errorConsentimiento}
+                  />
+                )}
               </div>
             </div>
           </div>
 
           <div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={recibePromociones} onChange={(e) => setRecibePromociones(e.target.checked)} className="rounded" />
-              <span className="text-sm" style={{ color: 'var(--menu-texto-principal)' }}>Acepta recibir promociones</span>
-            </label>
+            {/* El personal solo puede quitar las promociones; activarlas es decisión de la persona. */}
+            <CasillaDocumento
+              id="editar-usuario-promociones"
+              checked={recibePromociones}
+              onChange={(e) => setRecibePromociones(e.target.checked)}
+              disabled={!promocionesGuardadas}
+              aria-describedby="editar-usuario-promociones-nota"
+            >
+              Acepta recibir promociones
+            </CasillaDocumento>
+            <p id="editar-usuario-promociones-nota" className="text-xs pl-7" style={{ color: 'var(--encabezados-alterno)' }}>
+              {NOTA_PROMOCIONES_PANEL}
+            </p>
           </div>
 
         </div>

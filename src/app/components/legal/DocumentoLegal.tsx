@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import Header from '../../layouts/Header';
 import Footer from '../../layouts/Footer';
 import SuperficieCliente from '../cliente/SuperficieCliente';
 
 /**
- * Armazón de las páginas legales (/terminos-y-condiciones y /aviso-de-privacidad): cabecera con fecha,
- * índice con anclas (fijo al costado en escritorio, plegable en móvil, sin JavaScript) y texto de lectura.
+ * Armazón de las cuatro páginas legales: cabecera con el título, índice con anclas (fijo al costado en
+ * escritorio, plegable en móvil, sin JavaScript) y texto de lectura. La fecha no va aquí: cada página la
+ * muestra una sola vez en su encabezado de versión (EncabezadoVersion, "Versión X. Vigente desde el …").
  * Las clases `mf-terminos*` viven en cliente.css.
  */
 export interface SeccionLegal {
@@ -51,16 +52,11 @@ function ListaIndice({ secciones }: { secciones: readonly SeccionLegal[] }) {
 
 export default function DocumentoLegal({
   titulo,
-  fechaIso,
-  fechaTexto,
   secciones,
   etiquetaIndice,
   children,
 }: {
   titulo: string;
-  /** Día de calendario YYYY-MM-DD para <time dateTime>. */
-  fechaIso: string;
-  fechaTexto: string;
   secciones: readonly SeccionLegal[];
   /** aria-label del índice, p. ej. "Índice de los términos". */
   etiquetaIndice: string;
@@ -75,12 +71,6 @@ export default function DocumentoLegal({
           <header className="mf-terminos__cabecera">
             <h1 className="text-elegant-title">{titulo}</h1>
             <p className="mf-terminos__marca">Mirú Franco Salón Beauty</p>
-            <p className="mf-terminos__fecha">
-              <CalendarDays size={16} aria-hidden />
-              <span>
-                Última actualización: <time dateTime={fechaIso}>{fechaTexto}</time>
-              </span>
-            </p>
           </header>
 
           <div className="mf-terminos__cuerpo">

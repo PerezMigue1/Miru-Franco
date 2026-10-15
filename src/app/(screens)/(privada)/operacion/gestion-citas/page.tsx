@@ -36,7 +36,16 @@ import { PLAZOS_TERMINOS } from '../../../../utils/terminosCondiciones';
 import { fechaYHora24EnMexico } from '../../../../utils/fechaSoloDia';
 import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
 import { showToast } from '../../../../utils/toast';
-import { isoDesdeFechaHoraMexico, resumenCitasPagina, validarMotivoCancelacionCita } from '../_lib/panelOperacion';
+import { accionesAnticipo } from '../../../../utils/anticipoCita';
+import {
+  COLUMNAS_TABLA_CITAS,
+  TAMANO_PAGINA_CITAS,
+  accionesCita,
+  isoDesdeFechaHoraMexico,
+  resumenCitasPagina,
+  validarMotivoCancelacionCita,
+} from '../_lib/panelOperacion';
+import MenuMasAcciones from '../_lib/MenuMasAcciones';
 
 /** Combina fecha (YYYY-MM-DD) + hora (HH:mm) de México en un ISO string. */
 const combinar = isoDesdeFechaHoraMexico;
@@ -114,7 +123,6 @@ export default function GestionCitasPage() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSaving, setCancelSaving] = useState(false);
 
-  const TAMANO_PAGINA_CITAS = 100;
   const [pagina, setPagina] = useState(1);
   const [totalCitas, setTotalCitas] = useState(0);
 
@@ -136,7 +144,7 @@ export default function GestionCitasPage() {
       setLoading(false);
 
       // Riesgo de cancelación solo para citas activas (no aplica a canceladas/completadas/no_asistio).
-      // La página ya viene acotada a TAMANO_PAGINA_CITAS (100), igual que el máximo que acepta el DTO.
+      // La página ya viene acotada a TAMANO_PAGINA_CITAS (25), dentro del máximo de 100 que acepta el DTO.
       const idsActivos = data
         .filter((cita) => !['cancelada', 'completada', 'no_asistio'].includes(cita.estado))
         .map((cita) => cita.id);
@@ -312,7 +320,7 @@ export default function GestionCitasPage() {
 
   const esFinal = (e: EstadoCita) => ['cancelada', 'completada', 'no_asistio'].includes(e);
 
-  // Solo la página visible (hasta 100 citas): las etiquetas lo dicen para no leerse como totales.
+  // Solo la página visible (hasta 25 citas): las etiquetas lo dicen para no leerse como totales.
   const resumenPagina = resumenCitasPagina(citas);
   const altoRiesgo = Object.values(riesgos).filter((r) => r.nivelRiesgo === 'alto').length;
 
@@ -324,13 +332,13 @@ export default function GestionCitasPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-elegant-title" style={{ color: 'var(--menu-texto-principal)' }}>
-              Gestión de Citas
+              Gestión de citas
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
               Administra las citas del salón: agendar, confirmar, modificar o cancelar servicios
             </p>
           </div>
-          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>+ Nueva Cita</Button>
+          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>+ Nueva cita</Button>
         </div>
 
         {/* KPIs */}
@@ -419,58 +427,84 @@ export default function GestionCitasPage() {
             No hay citas registradas.
           </p>
         ) : (
-          <Table headers={['Cliente', 'Especialista', 'Fecha', 'Inicio', 'Fin', 'Servicio', 'Estado', 'Riesgo IA', 'Acciones']} headerSutil>
-            {citas.map((cita) => (
+          <Table headers={[...COLUMNAS_TABLA_CITAS]} headerSutil>
+            {citas.map((cita) => {
+              const anticipo = accionesAnticipo(cita, ahora, tienePermiso);
+              const acciones = accionesCita(cita.estado, anticipo.registrar || anticipo.reembolsar || anticipo.retener || anticipo.noAsistio);
+              const riesgo = riesgos[cita.id];
+              const cliente = cita.clienteNombre ?? 'Cliente sin nombre';
+              return (
               <TableRow key={cita.id}>
-                <TableCell rowPadding="lg">{cita.clienteNombre ?? 'Cliente sin nombre'}</TableCell>
-                <TableCell rowPadding="lg">{cita.especialistaNombre ?? 'Especialista sin nombre'}</TableCell>
-                <TableCell rowPadding="lg">{fmtFecha(cita.fechaHoraInicio)}</TableCell>
-                <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraInicio)}</TableCell>
-                <TableCell rowPadding="lg">{fmtHora(cita.fechaHoraFin)}</TableCell>
-                <TableCell rowPadding="lg">{cita.servicioNombre ?? 'Servicio'}</TableCell>
-                <TableCell rowPadding="lg">
+                {/* Cliente y servicio pueden saltar de línea: así la tabla cabe en el marco a 1440 px. */}
+                <TableCell className="min-w-24" style={{ whiteSpace: 'normal' }}>{cliente}</TableCell>
+                <TableCell>
+                  <span className="block mf-cifras">{fmtFecha(cita.fechaHoraInicio)}</span>
+                  <span className="block text-xs mf-cifras" style={{ color: 'var(--encabezados-alterno)' }}>
+                    {fmtHora(cita.fechaHoraInicio)} a {fmtHora(cita.fechaHoraFin)}
+                  </span>
+                </TableCell>
+                <TableCell className="min-w-24" style={{ whiteSpace: 'normal' }}>
+                  <span className="block">{cita.servicioNombre ?? 'Servicio'}</span>
+                  <span className="block text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                    Con {cita.especialistaNombre ?? 'especialista sin nombre'}
+                  </span>
+                </TableCell>
+                <TableCell>
                   <div className="flex min-w-32 flex-col items-start gap-1.5">
                     <Badge variant={varianteEstadoCita(cita.estado)}>{etiquetaEstadoCita(cita.estado)}</Badge>
                     {(cita.anticipoRequerido ?? 0) > 0 && <IndicadorAnticipo cita={cita} ahora={ahora} />}
                   </div>
                 </TableCell>
-                <TableCell rowPadding="lg">
+                <TableCell>
                   {esFinal(cita.estado) ? (
                     <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>No aplica</span>
-                  ) : riesgos[cita.id] ? (
-                    <div className="min-w-36 whitespace-normal" title={riesgos[cita.id].accionSugerida}>
-                      <Badge variant={varianteRiesgo(riesgos[cita.id].nivelRiesgo)} size="sm">
-                        {etiquetaRiesgo(riesgos[cita.id].nivelRiesgo)} · {riesgos[cita.id].porcentajeCancelacion}%
+                  ) : riesgo ? (
+                    // La acción sugerida va en el title (y para lector de pantalla): como párrafo alargaba cada fila.
+                    <span className="inline-flex" title={riesgo.accionSugerida}>
+                      <Badge variant={varianteRiesgo(riesgo.nivelRiesgo)} size="sm">
+                        {etiquetaRiesgo(riesgo.nivelRiesgo)} · {riesgo.porcentajeCancelacion}%
                       </Badge>
-                      <p className="text-xs mt-1 leading-snug" style={{ color: 'var(--encabezados-alterno)' }}>
-                        {riesgos[cita.id].accionSugerida}
-                      </p>
-                    </div>
+                      <span className="sr-only">Sugerencia: {riesgo.accionSugerida}</span>
+                    </span>
                   ) : (
                     <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
                       {loadingRiesgos ? 'Calculando…' : 'No disponible'}
                     </span>
                   )}
                 </TableCell>
-                <TableCell rowPadding="lg">
-                  <div className="flex gap-2 flex-wrap">
-                    {(cita.estado === 'pendiente' || cita.estado === 'confirmada') && (
+                <TableCell>
+                  {/* La acción del momento a la vista; reprogramar, cancelar y el anticipo en "Más". */}
+                  <div className="flex items-center gap-2">
+                    {acciones.principal === 'checkin' && (
                       <Button size="sm" variant="primary" onClick={() => handleCheckIn(cita.id)}>Check-in</Button>
                     )}
-                    {cita.estado === 'en_curso' && (
+                    {acciones.principal === 'checkout' && (
                       <Button size="sm" variant="primary" onClick={() => handleCheckOut(cita.id)}>Check-out</Button>
                     )}
-                    {!esFinal(cita.estado) && (
-                      <>
-                        <Button size="sm" variant="outline" onClick={() => openReprogramar(cita)}>Reprogramar</Button>
-                        <Button size="sm" variant="danger" onClick={() => openCancelar(cita.id)}>Cancelar</Button>
-                      </>
+                    {acciones.conMenu && (
+                      <MenuMasAcciones
+                        etiqueta={`Más acciones de la cita de ${cliente}`}
+                        acciones={(cerrar) => (
+                          <>
+                            {acciones.secundarias.includes('reprogramar') && (
+                              <Button size="sm" variant="outline" onClick={() => { cerrar(); openReprogramar(cita); }}>Reprogramar</Button>
+                            )}
+                            {acciones.secundarias.includes('cancelar') && (
+                              <Button size="sm" variant="outline-danger" onClick={() => { cerrar(); openCancelar(cita.id); }}>Cancelar cita</Button>
+                            )}
+                            <AccionesAnticipo cita={cita} ahora={ahora} onCambio={() => { void cargar(); }} conNoAsistio />
+                          </>
+                        )}
+                      />
                     )}
-                    <AccionesAnticipo cita={cita} ahora={ahora} onCambio={() => { void cargar(); }} conNoAsistio />
+                    {!acciones.principal && !acciones.conMenu && (
+                      <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>-</span>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </Table>
         )}
         {!loading && !error && totalCitas > 0 && (
@@ -487,7 +521,7 @@ export default function GestionCitasPage() {
               >
                 Anterior
               </Button>
-              <span className="text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+              <span className="text-xs whitespace-nowrap" style={{ color: 'var(--encabezados-alterno)' }}>
                 Página {pagina} de {totalPaginasCitas}
               </span>
               <Button
@@ -508,12 +542,12 @@ export default function GestionCitasPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => { if (!saving) { setIsModalOpen(false); resetForm(); } }}
-        title="Nueva Cita"
+        title="Nueva cita"
         size="md"
         footer={
           <>
             <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm(); }} disabled={saving}>Cancelar</Button>
-            <Button onClick={handleCrear} disabled={saving}>{saving ? 'Agendando…' : 'Agendar Cita'}</Button>
+            <Button onClick={handleCrear} disabled={saving}>{saving ? 'Agendando…' : 'Agendar cita'}</Button>
           </>
         }
       >
@@ -609,7 +643,7 @@ export default function GestionCitasPage() {
       <Modal
         isOpen={isReprogOpen}
         onClose={() => { if (!reprogSaving) { setIsReprogOpen(false); setReprogId(null); } }}
-        title="Reprogramar Cita"
+        title="Reprogramar cita"
         size="md"
         footer={
           <>

@@ -196,7 +196,8 @@ export default function ClienteNotificacionesPage() {
                         Marcar leída
                       </Button>
                     )}
-                    <Button size="sm" variant="danger" onClick={() => void borrar(n)}>
+                    {/* De contorno: el relleno se reserva para confirmar en el diálogo (Button.tsx) */}
+                    <Button size="sm" variant="outline-danger" onClick={() => void borrar(n)}>
                       Eliminar
                     </Button>
                   </div>

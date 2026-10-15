@@ -1,12 +1,14 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Check, Info, Star, Store } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Info, RotateCcw, Star, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ModuleLayout from '../../../../../../components/layouts/ModuleLayout';
 import Button from '../../../../../../components/ui/Button';
 import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
+import Modal from '../../../../../../components/ui/Modal';
+import Textarea from '../../../../../../components/ui/Textarea';
 import Table, { TableRow, TableCell } from '../../../../../../components/ui/Table';
 import DatosRecogerEnSalon from '../../../../../../components/tienda/DatosRecogerEnSalon';
 import { showConfirm, showToast } from '../../../../../../utils/toast';
@@ -28,6 +30,8 @@ import {
   listarValoracionesPedido,
   listarDevolucionesPedido,
   cancelarPedidoPropio,
+  revocarCompraPropia,
+  ORIGEN_REVOCACION,
   esPagoEnSalon,
   METODO_PAGO_MERCADOPAGO,
   etiquetaEstadoPedido,
@@ -45,7 +49,16 @@ import type {
   ValoracionApi,
   DevolucionApi,
   ReembolsoCancelacionApi,
+  RevocacionApi,
 } from '../../../../../../services/ecommerce';
+import { motivoVisibleDevolucion, puedeVerBotonRevocar, resultadoRevocacion, textoModalRevocacion } from './revocacion';
+import {
+  direccionEntregaRegistrada,
+  explicacionCancelarORevocar,
+  insigniaDevolucion,
+  puedeVerBotonCancelar,
+  textoRevocacionEntregado,
+} from './detallePedidoCliente';
 
 /** Qué sigue para la clienta según el estado del pedido (todo se recoge en el salón). */
 function textoRecoger(pedido: PedidoApi): string | null {
@@ -72,9 +85,6 @@ function textoRecoger(pedido: PedidoApi): string | null {
   }
 }
 
-/** La clienta puede cancelar mientras el salón no empezó a preparar su pedido. */
-const ESTADOS_CANCELABLES = new Set(['pendiente_pago', 'pagado']);
-
 export default function DetallePedidoPage() {
   const params = useParams();
   const router = useRouter();
@@ -94,6 +104,12 @@ export default function DetallePedidoPage() {
   const [cancelando, setCancelando] = useState(false);
   // Devolución del pago al cancelar un pedido pagado en línea: se deja visible mientras siga en la página.
   const [reembolso, setReembolso] = useState<ReembolsoCancelacionApi | null>(null);
+  // Revocación de compra (art. 56 LFPC): modal, motivo opcional, carga y resultado visible.
+  const [modalRevocar, setModalRevocar] = useState(false);
+  const [motivoRevocacion, setMotivoRevocacion] = useState('');
+  const [revocando, setRevocando] = useState(false);
+  const [errorRevocacion, setErrorRevocacion] = useState<string | null>(null);
+  const [revocacion, setRevocacion] = useState<RevocacionApi | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(pedidoId)) {
@@ -173,7 +189,10 @@ export default function DetallePedidoPage() {
   }
 
   const envio = envios[0];
-  const textoSiguiente = textoRecoger(pedido);
+  // Recogido y después revocado: el encabezado dice que se revocó y en qué va el reembolso.
+  const textoSiguiente = textoRevocacionEntregado(pedido, devoluciones) ?? textoRecoger(pedido);
+  const explicacionBotones = explicacionCancelarORevocar(pedido);
+  const direccionAnterior = direccionEntregaRegistrada(pedido.direccionTextoCompleta);
 
   const cancelarPedido = async () => {
     const ok = await showConfirm(
@@ -194,6 +213,39 @@ export default function DetallePedidoPage() {
       showToast(mensajeUsuarioDesdeErrorApi(e), 'error');
     } finally {
       setCancelando(false);
+    }
+  };
+
+  const abrirRevocar = () => {
+    setMotivoRevocacion('');
+    setErrorRevocacion(null);
+    setModalRevocar(true);
+  };
+
+  const confirmarRevocacion = async () => {
+    setRevocando(true);
+    setErrorRevocacion(null);
+    try {
+      const r = await revocarCompraPropia(pedido.id, motivoRevocacion);
+      setRevocacion(r.revocacion);
+      setModalRevocar(false);
+      const { mensaje, tipo } = resultadoRevocacion(r.revocacion);
+      showToast(mensaje, tipo, 8000);
+      // Recarga el pedido y lo que cambió con la revocación (si algo falla, se queda lo anterior).
+      const [p, hist, dev, pays] = await Promise.all([
+        obtenerPedido(pedido.id, { propios: true }).catch(() => r.pedido),
+        listarHistorialPedido(pedido.id, { propios: true }).catch(() => historial),
+        listarDevolucionesPedido(pedido.id, { propios: true }).catch(() => devoluciones),
+        listarPagosPorPedido(pedido.id, { propios: true }).catch(() => pagos),
+      ]);
+      if (p) setPedido(p);
+      setHistorial(hist);
+      setDevoluciones(dev);
+      setPagos(pays);
+    } catch (e) {
+      setErrorRevocacion(mensajeUsuarioDesdeErrorApi(e));
+    } finally {
+      setRevocando(false);
     }
   };
 
@@ -222,13 +274,37 @@ export default function DetallePedidoPage() {
                 Completar el pago
               </Button>
             )}
-            {ESTADOS_CANCELABLES.has(pedido.estado) && (
+            {puedeVerBotonCancelar(pedido) && (
               <Button variant="outline" onClick={() => void cancelarPedido()} disabled={cancelando}>
                 {cancelando ? 'Cancelando…' : 'Cancelar pedido'}
               </Button>
             )}
+            {puedeVerBotonRevocar(pedido) && (
+              <Button variant="outline" onClick={abrirRevocar} disabled={revocando}>
+                <RotateCcw size={16} aria-hidden className="mr-1.5" />
+                Revocar compra
+              </Button>
+            )}
           </div>
+          {explicacionBotones && (
+            <p className="w-full text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
+              {explicacionBotones}
+            </p>
+          )}
         </div>
+
+        {revocacion && (
+          <Card padding="md" className="mb-6" role="status" aria-live="polite">
+            <p className="flex items-start gap-2 text-sm font-medium" style={{ color: 'var(--menu-texto-principal)' }}>
+              {revocacion.estado === 'en_revision' ? (
+                <Info size={18} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--warning-texto)' }} />
+              ) : (
+                <Check size={18} aria-hidden className="mt-0.5 shrink-0" style={{ color: 'var(--success-texto)' }} />
+              )}
+              <span>{resultadoRevocacion(revocacion).mensaje}</span>
+            </p>
+          </Card>
+        )}
 
         {reembolso && (
           <Card padding="md" className="mb-6" role="status" aria-live="polite">
@@ -312,13 +388,13 @@ export default function DetallePedidoPage() {
             )}
 
             {/* Pedidos anteriores que guardaron una dirección: se muestra como historial. */}
-            {pedido.direccionTextoCompleta && (
+            {direccionAnterior && (
               <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) 120ms both' }}>
                 <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
                   Entrega registrada
                 </h2>
                 <p className="whitespace-pre-wrap" style={{ color: 'var(--menu-texto-principal)' }}>
-                  {pedido.direccionTextoCompleta}
+                  {direccionAnterior}
                 </p>
               </Card>
             )}
@@ -464,8 +540,13 @@ export default function DetallePedidoPage() {
                 <ul className="space-y-2 text-sm">
                   {devoluciones.map((d) => (
                     <li key={d.id} style={{ color: 'var(--menu-texto-principal)' }}>
-                      <Badge variant="warning" size="sm" className="mr-2">{d.estado}</Badge>
-                      {d.motivo ?? '—'}
+                      <Badge variant={insigniaDevolucion(d.estado).variante} size="sm" className="mr-2">
+                        {insigniaDevolucion(d.estado).texto}
+                      </Badge>
+                      {d.origen === ORIGEN_REVOCACION && (
+                        <Badge variant="info" size="sm" className="mr-2">Revocación (art. 56)</Badge>
+                      )}
+                      {motivoVisibleDevolucion(d)}
                       {d.monto != null && (
                         <span className="ml-2" style={{ color: 'var(--encabezados-alterno)' }}>
                           ({formatearPrecioMXN(d.monto)})
@@ -519,6 +600,45 @@ export default function DetallePedidoPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={modalRevocar}
+        onClose={() => { if (!revocando) setModalRevocar(false); }}
+        title={`Revocar tu compra del pedido #${pedido.id}`}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setModalRevocar(false)} disabled={revocando}>
+              No, conservarla
+            </Button>
+            <Button variant="danger" onClick={() => void confirmarRevocacion()} disabled={revocando}>
+              {revocando ? 'Revocando…' : 'Sí, revocar mi compra'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {textoModalRevocacion(pedido).map((parrafo) => (
+            <p key={parrafo} className="text-sm leading-relaxed" style={{ color: 'var(--texto-cuerpo)' }}>
+              {parrafo}
+            </p>
+          ))}
+          <Textarea
+            label="Motivo (opcional)"
+            value={motivoRevocacion}
+            maxLength={500}
+            onChange={(e) => setMotivoRevocacion(e.target.value)}
+            placeholder="No tienes que dar razones; si quieres, cuéntanos por qué."
+            rows={2}
+            fullWidth
+          />
+          {errorRevocacion && (
+            <p role="alert" className="text-sm" style={{ color: 'var(--danger-texto)' }}>
+              {errorRevocacion}
+            </p>
+          )}
+        </div>
+      </Modal>
     </ModuleLayout>
   );
 }

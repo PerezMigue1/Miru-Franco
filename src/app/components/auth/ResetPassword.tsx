@@ -278,9 +278,9 @@ export default function ResetPassword({
         >
           <TriangleAlert size={26} aria-hidden />
         </span>
-        <h2 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Enlace inválido o incompleto
-        </h2>
+        </h1>
         <p className="mb-6 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
           Abre el enlace completo del correo o solicita uno nuevo.
         </p>
@@ -308,9 +308,9 @@ export default function ResetPassword({
                   style={{ borderColor: 'var(--mf-linea-fuerte)', borderTopColor: 'var(--menu-texto-principal)' }}
                   aria-hidden
                 ></div>
-                <h2 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+                <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
                   Validando enlace...
-                </h2>
+                </h1>
                 <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                   Por favor espera mientras validamos tu enlace de recuperación
                 </p>
@@ -369,9 +369,9 @@ export default function ResetPassword({
   return (
     <div className="w-full max-w-md mx-auto">
       <div>
-        <h2 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        <h1 className="mf-titulo-pagina text-center mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
           Nueva Contraseña
-        </h2>
+        </h1>
         {nombreUsuario ? (
           <p className="text-center mb-4 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
             Hola <strong style={{ color: 'var(--menu-texto-principal)' }}>{nombreUsuario}</strong>, ingresa tu nueva contraseña

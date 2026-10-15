@@ -31,7 +31,7 @@ import { showAlert, showConfirm, showToast } from '../../../utils/toast';
 import { mensajeUsuarioDesdeErrorApi } from '../../../utils/apiErrorMessage';
 import { emitCatalogStockChanged } from '../../../utils/catalogStockSync';
 import { accionesPedido, siguientesEstadosSinCobro, type AccionPedido } from '../../../utils/flujoPedido';
-import { elegirPagoPorAprobar, fmtMonedaPedido } from './pagoPedido';
+import { elegirPagoPorAprobar, fmtMonedaPedido, nombreClientaPedido } from './pagoPedido';
 
 const TAMANO_PAGINA = 20;
 
@@ -90,7 +90,7 @@ function variantEstadoEnvio(estado?: string): 'default' | 'warning' | 'success' 
 const fmtMoneda = fmtMonedaPedido;
 
 function formatearFecha(fecha?: string | null) {
-  if (!fecha) return '—';
+  if (!fecha) return 'Sin dato';
   const d = new Date(fecha);
   if (Number.isNaN(d.getTime())) return fecha;
   return d.toLocaleString('es-MX', {
@@ -349,16 +349,17 @@ export default function VentaOnlinePage() {
               {totalPedidos.toLocaleString('es-MX')} pedido{totalPedidos === 1 ? '' : 's'} · todo se recoge en el salón
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/pagos')}>
+          {/* En móvil apilados a todo lo ancho (antes cada botón medía distinto). */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button size="sm" variant="outline" className="inline-flex items-center justify-center gap-1.5" onClick={() => router.push('/admin/pagos')}>
               <CreditCard size={14} />
               Pagos
             </Button>
-            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/devoluciones-cambios')}>
+            <Button size="sm" variant="outline" className="inline-flex items-center justify-center gap-1.5" onClick={() => router.push('/admin/devoluciones-cambios')}>
               <RotateCcw size={14} />
               Devoluciones
             </Button>
-            <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5" onClick={() => router.push('/admin/pedidos-por-recoger')}>
+            <Button size="sm" variant="outline" className="inline-flex items-center justify-center gap-1.5" onClick={() => router.push('/admin/pedidos-por-recoger')}>
               <PackageCheck size={14} />
               Pedidos por recoger
             </Button>
@@ -390,7 +391,7 @@ export default function VentaOnlinePage() {
             }}
             options={[
               { value: '', label: 'Todos' },
-              ...usuarios.map((u) => ({ value: u.id, label: `${u.nombre} — ${u.email}` })),
+              ...usuarios.map((u) => ({ value: u.id, label: `${u.nombre} · ${u.email}` })),
             ]}
             fullWidth
           />
@@ -405,29 +406,33 @@ export default function VentaOnlinePage() {
         </div>
       </Card>
 
-      <Card variant="elevated" padding="lg">
-        <Table headers={['Pedido', 'Cliente', 'Total', 'Método', 'Estado', 'Fecha', 'Acciones']} headerSutil>
+      {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+      <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
+        {/* El método va bajo el total y las acciones en una fila: a 1440 px se recortaban sin aviso. */}
+        <Table headers={['Pedido', 'Cliente', 'Total y método', 'Estado', 'Fecha', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Pedidos: desplaza para ver más columnas">
           {pedidos.map((p) => (
             <TableRow key={p.id}>
               <TableCell rowPadding="lg">#{p.id}</TableCell>
+              <TableCell rowPadding="lg">{nombreClientaPedido(usersMap, p.usuarioId)}</TableCell>
               <TableCell rowPadding="lg">
-                {usersMap.get(p.usuarioId ?? '')?.nombre ?? p.usuarioId ?? '—'}
+                <span className="block font-semibold">{fmtMoneda(p.total, p.moneda)}</span>
+                <span className="block text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                  {p.metodoPago ? etiquetaMetodoPagoPedido(p.metodoPago) : 'Método sin especificar'}
+                </span>
               </TableCell>
-              <TableCell className="font-semibold" rowPadding="lg">{fmtMoneda(p.total, p.moneda)}</TableCell>
-              <TableCell rowPadding="lg">{p.metodoPago ? etiquetaMetodoPagoPedido(p.metodoPago) : '—'}</TableCell>
               <TableCell rowPadding="lg">
                 <Badge variant={varianteBadgeEstadoPedido(p.estado)}>{etiquetaEstadoPedido(p.estado, p.metodoPago)}</Badge>
               </TableCell>
               <TableCell rowPadding="lg">{formatearFecha(p.creadoEn)}</TableCell>
               <TableCell rowPadding="lg">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                   <Button size="sm" variant="outline" onClick={() => setSelectedPedidoId(p.id)}>Editar</Button>
                   {/* Cobrar va por "Aprobar pago" o por Pedidos por recoger, que registran el pago. */}
                   {accionesPedido(p.estado, p.metodoPago).filter((a) => a !== 'cobrar' && a !== 'cobrarEntregar').map((accion) => (
                     <Button
                       key={accion}
                       size="sm"
-                      variant="outline"
+                      variant={accion === 'cancelar' ? 'outline-danger' : 'outline'}
                       onClick={() => void accionEstadoRapida(p.id, ACCION_RAPIDA[accion].estado)}
                       disabled={saving}
                     >
@@ -439,7 +444,7 @@ export default function VentaOnlinePage() {
             </TableRow>
           ))}
         </Table>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <p className="text-xs mf-cifras" style={{ color: 'var(--encabezados-alterno)' }}>
             Página {pagina} de {totalPaginas} · {totalPedidos.toLocaleString('es-MX')} pedidos
           </p>
@@ -503,7 +508,7 @@ export default function VentaOnlinePage() {
                   <>
                     <div>
                       <dt className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Empresa y guía</dt>
-                      <dd>{[envioActual.empresaEnvio, envioActual.numeroGuia].filter(Boolean).join(' · ') || '—'}</dd>
+                      <dd>{[envioActual.empresaEnvio, envioActual.numeroGuia].filter(Boolean).join(' · ') || 'Sin dato'}</dd>
                     </div>
                     <div>
                       <dt className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>Estado del envío</dt>
@@ -530,7 +535,7 @@ export default function VentaOnlinePage() {
             onChange={(e) => setFormNuevoPedido((p) => ({ ...p, usuarioId: e.target.value }))}
             options={[
               { value: '', label: 'Selecciona cliente' },
-              ...usuarios.map((u) => ({ value: u.id, label: `${u.nombre} — ${u.email}` })),
+              ...usuarios.map((u) => ({ value: u.id, label: `${u.nombre} · ${u.email}` })),
             ]}
             fullWidth
           />

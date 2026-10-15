@@ -6,7 +6,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
-import Table, { TableRow, TableCell } from '../../../components/ui/Table';
+import Table, { PaginacionTabla, TableRow, TableCell } from '../../../components/ui/Table';
 import Badge from '../../../components/ui/Badge';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
@@ -22,6 +22,7 @@ import {
   type RolValor,
 } from '../../../services/usuarios';
 import { api as authApi } from '../../../services/auth';
+import { paginar } from '../../../utils/paginacion';
 
 /** Roles de staff (referencia del panel de permisos a la derecha). */
 const ROLES_PERMITIDOS = ['admin', 'estilista', 'empleado', 'becario'] as const;
@@ -56,6 +57,7 @@ export default function UsuariosRolesPage() {
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [rolFiltro, setRolFiltro] = useState('all');
+  const [pagina, setPagina] = useState(1);
   const [miPropioId, setMiPropioId] = useState<string | null>(null);
   const [pendingRoleChange, setPendingRoleChange] = useState<{ usuario: Usuario; nuevoRol: string } | null>(null);
 
@@ -219,6 +221,8 @@ export default function UsuariosRolesPage() {
   const usuariosVisibles = usuarios
     .filter((u) => (mostrarInactivos ? !u.activo : u.activo))
     .filter((u) => rolFiltro === 'all' || rolValorParaSelect(u.rol) === rolFiltro);
+  // Casi mil usuarios: la tabla va de 50 en 50 (antes pintaba todos de golpe).
+  const paginaUsuarios = paginar(usuariosVisibles, pagina);
 
   const totalUsuarios = usuarios.length;
   const usuariosActivos = usuarios.filter((u) => u.activo).length;
@@ -275,101 +279,124 @@ export default function UsuariosRolesPage() {
           placeholder="Buscar por nombre, email o teléfono..."
           aria-label="Buscar usuario"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPagina(1);
+          }}
           className="w-full sm:w-64"
         />
         <Select
           value={rolFiltro}
           aria-label="Filtrar por rol"
-          onChange={(e) => setRolFiltro(e.target.value)}
+          onChange={(e) => {
+            setRolFiltro(e.target.value);
+            setPagina(1);
+          }}
           options={opcionesFiltroRol}
           className="w-full sm:w-48"
         />
-        <label className="flex items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
+        <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm px-2" style={{ color: 'var(--menu-texto-principal)' }}>
           <input
             type="checkbox"
             checked={mostrarInactivos}
-            onChange={(e) => setMostrarInactivos(e.target.checked)}
-            className="rounded"
+            onChange={(e) => {
+              setMostrarInactivos(e.target.checked);
+              setPagina(1);
+            }}
+            className="h-5 w-5 rounded"
           />
           Mostrar solo inactivos
         </label>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 mb-6">
-        <Card className="xl:col-span-2 overflow-hidden">
-          <h2 className="text-page-title mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
+        {/* Sin relleno alrededor de la tabla (con tarjeta y marco, en móvil solo cabían 1 o 2 columnas). */}
+        <Card className="xl:col-span-2 overflow-hidden !p-0">
+          <h2 className="text-page-title px-4 pt-4 pb-3 sm:px-6 sm:pt-6" style={{ color: 'var(--menu-texto-principal)' }}>
             Usuarios
           </h2>
           {loading ? (
-            <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
+            <p className="text-sm px-4 pb-6 sm:px-6" style={{ color: 'var(--encabezados-alterno)' }}>
               Cargando usuarios...
             </p>
+          ) : usuariosVisibles.length === 0 ? (
+            <p className="text-sm px-4 pb-6 sm:px-6" style={{ color: 'var(--encabezados-alterno)' }}>
+              {mostrarInactivos ? 'No hay usuarios inactivos.' : 'No se encontraron usuarios con estos filtros.'}
+            </p>
           ) : (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="min-w-[600px] px-4 sm:px-0">
-                <Table headers={['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado', 'Acciones']} headerSutil>
-                  {usuariosVisibles.map((usuario) => (
-                    <TableRow key={usuario.id}>
-                      <TableCell className="font-semibold" rowPadding="lg">{usuario.nombre}</TableCell>
-                      <TableCell className="text-sm" rowPadding="lg">{usuario.email}</TableCell>
-                      <TableCell className="text-sm" rowPadding="lg">{usuario.telefono || '—'}</TableCell>
-                      <TableCell rowPadding="lg">
-                        <div className="flex flex-col gap-1">
-                          <Badge variant={rolValorParaSelect(usuario.rol) === 'cliente' ? 'default' : 'info'} size="sm">
-                            {rolLabel(usuario.rol)}
-                          </Badge>
-                          <Select
-                            value={rolValorParaSelect(usuario.rol)}
-                            aria-label={`Rol de ${usuario.nombre}`}
-                            onChange={(e) => solicitarCambioRol(usuario, e.target.value)}
-                            options={opcionesRol}
-                            className="min-w-[120px] sm:min-w-[130px] w-full max-w-[140px]"
-                            disabled={cambiandoRolId === usuario.id || usuario.id === miPropioId}
-                            title={usuario.id === miPropioId ? 'No puedes cambiar tu propio rol desde aquí' : undefined}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell rowPadding="lg">
-                        <Badge variant={usuario.activo ? 'success' : 'danger'}>
-                          {usuario.activo ? 'Activo' : 'Inactivo'}
+            <>
+              {/* Correo y teléfono en una sola columna "Contacto": a 1440 px la tabla recortaba las acciones. */}
+              <Table headers={['Nombre', 'Contacto', 'Rol', 'Estado', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Usuarios: desplaza para ver más columnas">
+                {paginaUsuarios.filas.map((usuario) => (
+                  <TableRow key={usuario.id}>
+                    <TableCell className="font-semibold" rowPadding="lg">{usuario.nombre}</TableCell>
+                    <TableCell className="text-sm" rowPadding="lg">
+                      <span className="block">{usuario.email}</span>
+                      <span className="block text-xs" style={{ color: 'var(--encabezados-alterno)' }}>
+                        {usuario.telefono || 'Sin teléfono'}
+                      </span>
+                    </TableCell>
+                    <TableCell rowPadding="lg">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={rolValorParaSelect(usuario.rol) === 'cliente' ? 'default' : 'info'} size="sm">
+                          {rolLabel(usuario.rol)}
                         </Badge>
-                      </TableCell>
-                      <TableCell rowPadding="lg">
-                        <div className="flex flex-wrap gap-1 sm:gap-2">
-                          <Button size="sm" variant="outline" onClick={() => router.push(`/admin/usuarios-roles/${usuario.id}`)}>
-                            Editar
-                          </Button>
+                        <Select
+                          value={rolValorParaSelect(usuario.rol)}
+                          aria-label={`Rol de ${usuario.nombre}`}
+                          onChange={(e) => solicitarCambioRol(usuario, e.target.value)}
+                          options={opcionesRol}
+                          className="min-w-[130px] w-full max-w-[150px]"
+                          disabled={cambiandoRolId === usuario.id || usuario.id === miPropioId}
+                          title={usuario.id === miPropioId ? 'No puedes cambiar tu propio rol desde aquí' : undefined}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell rowPadding="lg">
+                      <Badge variant={usuario.activo ? 'success' : 'danger'}>
+                        {usuario.activo ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell rowPadding="lg">
+                      {/* En una sola fila y solo la acción que aplica (antes Eliminar y Activar siempre, uno deshabilitado). */}
+                      <div className="flex flex-nowrap gap-2 whitespace-nowrap">
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/admin/usuarios-roles/${usuario.id}`)}>
+                          Editar
+                        </Button>
+                        {usuario.activo ? (
                           <Button
                             size="sm"
-                            variant="danger"
+                            variant="outline-danger"
                             onClick={() => handleEliminarClick(usuario)}
-                            disabled={!usuario.activo || cambiandoEstadoId === usuario.id}
+                            disabled={cambiandoEstadoId === usuario.id}
                             title="Eliminar (desactivar)"
                           >
                             Eliminar
                           </Button>
+                        ) : (
                           <Button
                             size="sm"
-                            variant="primary"
+                            variant="outline"
                             onClick={() => handleActivar(usuario)}
-                            disabled={usuario.activo || cambiandoEstadoId === usuario.id}
-                            title="Activar"
+                            disabled={cambiandoEstadoId === usuario.id}
                           >
-                            {cambiandoEstadoId === usuario.id && !usuario.activo ? '...' : 'Activar'}
+                            {cambiandoEstadoId === usuario.id ? 'Activando…' : 'Activar'}
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </Table>
-              </div>
-            </div>
-          )}
-          {!loading && usuariosVisibles.length === 0 && (
-            <p className="text-sm py-4" style={{ color: 'var(--encabezados-alterno)' }}>
-              {mostrarInactivos ? 'No hay usuarios inactivos.' : 'No se encontraron usuarios con estos filtros.'}
-            </p>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+              <PaginacionTabla
+                className="px-4 py-4 sm:px-6"
+                pagina={paginaUsuarios.pagina}
+                totalPaginas={paginaUsuarios.totalPaginas}
+                total={usuariosVisibles.length}
+                unidad="usuarios"
+                onCambiar={setPagina}
+              />
+            </>
           )}
         </Card>
 

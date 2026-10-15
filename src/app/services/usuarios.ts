@@ -8,6 +8,7 @@ import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { validatePassword } from '../utils/security';
 import { esTelefonoMexicoValido, mensajeTelefonoInvalido, normalizarTelefonoRegistro, telefonoSinLada } from '../utils/phone';
+import type { SlugDocumentoLegal } from '../utils/documentosLegales';
 
 /** Valores de rol en BD (alineado con backend ROLES_DB). */
 export const ROLES_VALORES = ['cliente', 'becario', 'empleado', 'estilista', 'admin'] as const;
@@ -403,36 +404,113 @@ export interface DatosAltaUsuario {
   pregunta: string;
   respuesta: string;
   tipoCabello: string;
+  /** La persona leyó y aceptó los Términos y condiciones (el backend rechaza el alta sin esto). */
+  aceptaTerminos: boolean;
   /** La persona leyó y aceptó el aviso de privacidad (el backend rechaza el alta sin esto). */
   aceptaAviso: boolean;
 }
 
+export const MENSAJE_FALTA_TERMINOS_ALTA = 'Confirma que la persona leyó y aceptó los Términos y condiciones.';
+export const MENSAJE_FALTA_AVISO_ALTA = 'Confirma que la persona leyó y aceptó el aviso de privacidad.';
+
+/** Mensaje de cada casilla legal sin marcar en el alta del admin, para mostrarlo junto a la casilla. */
+export function erroresConsentimientoAlta(
+  d: Pick<DatosAltaUsuario, 'aceptaTerminos' | 'aceptaAviso'>,
+): Partial<Record<'aceptaTerminos' | 'aceptaAviso', string>> {
+  return {
+    ...(d.aceptaTerminos ? {} : { aceptaTerminos: MENSAJE_FALTA_TERMINOS_ALTA }),
+    ...(d.aceptaAviso ? {} : { aceptaAviso: MENSAJE_FALTA_AVISO_ALTA }),
+  };
+}
+
+export type CampoAlta = 'nombre' | 'email' | 'password' | 'telefono' | 'pregunta' | 'respuesta' | 'tipoCabello';
+
 /**
- * Valida el alta de usuario del admin. El backend exige teléfono, fecha de nacimiento y tipo de
- * cabello: se piden en el formulario en vez de inventarlos. La pregunta de seguridad es opcional.
- * La contraseña sigue la misma regla que el registro. Devuelve el primer error o null.
+ * Mensaje de cada campo del alta que falta o no es válido, para marcarlo junto al campo (aria-invalid). Teléfono,
+ * nombre, email y contraseña son obligatorios (el backend los exige). Fecha de nacimiento y tipo de cabello son
+ * opcionales por minimización (CreateUsuarioDto); si se elige un tipo de cabello, debe ser del backend. La pregunta
+ * de seguridad es opcional, pero si se usa van las dos partes. La contraseña sigue la regla del registro.
+ */
+export function erroresCamposAlta(d: DatosAltaUsuario): Partial<Record<CampoAlta, string>> {
+  const errores: Partial<Record<CampoAlta, string>> = {};
+  if (!d.nombre.trim()) errores.nombre = 'Escribe el nombre completo.';
+  if (!d.email.trim()) errores.email = 'Escribe el email.';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) errores.email = 'Escribe un email válido.';
+  if (!d.telefono.trim()) errores.telefono = 'El teléfono es obligatorio.';
+  else if (!esTelefonoMexicoValido(d.telefono)) errores.telefono = mensajeTelefonoInvalido();
+  if (d.pregunta.trim() && !d.respuesta.trim()) errores.respuesta = 'Escribe la respuesta de la pregunta de seguridad.';
+  if (!d.pregunta.trim() && d.respuesta.trim()) errores.pregunta = 'Elige una pregunta de seguridad para esa respuesta.';
+  if (d.tipoCabello && !TIPOS_CABELLO.some((t) => t.value === d.tipoCabello)) errores.tipoCabello = 'Elige un tipo de cabello de la lista.';
+  if (!d.password) {
+    errores.password = 'Escribe la contraseña.';
+  } else {
+    const v = validatePassword(d.password, {
+      nombre: d.nombre.trim(),
+      email: d.email.trim().toLowerCase(),
+      telefono: normalizarTelefonoRegistro(d.telefono),
+      fechaNacimiento: d.fechaNacimiento,
+      preguntaSeguridad: { respuesta: d.respuesta.trim() },
+    });
+    if (!v.valid) errores.password = v.errors?.[0] ?? v.message ?? 'La contraseña no cumple los requisitos.';
+  }
+  return errores;
+}
+
+/**
+ * Valida el alta de usuario del admin para el aviso de arriba: el primer problema o null. Cada campo además se
+ * marca con erroresCamposAlta. La fecha de nacimiento y el tipo de cabello son opcionales (minimización).
  */
 export function validarAltaUsuario(d: DatosAltaUsuario): string | null {
-  if (!d.nombre.trim() || !d.email.trim() || !d.password) {
-    return 'Nombre, email y contraseña son obligatorios.';
+  const campos = erroresCamposAlta(d);
+  if (!d.nombre.trim() || !d.email.trim() || !d.password) return 'Nombre, email y contraseña son obligatorios.';
+  for (const campo of ['email', 'telefono', 'respuesta', 'pregunta', 'tipoCabello'] as const) {
+    if (campos[campo]) return campos[campo];
   }
-  if (!d.telefono.trim()) return 'El teléfono es obligatorio.';
-  if (!esTelefonoMexicoValido(d.telefono)) return mensajeTelefonoInvalido();
-  if (!d.fechaNacimiento) return 'La fecha de nacimiento es obligatoria.';
-  // La pregunta de seguridad es opcional; si se usa, van las dos partes.
-  if (d.pregunta.trim() && !d.respuesta.trim()) return 'Escribe la respuesta de la pregunta de seguridad.';
-  if (!d.pregunta.trim() && d.respuesta.trim()) return 'Elige una pregunta de seguridad para esa respuesta.';
-  if (!TIPOS_CABELLO.some((t) => t.value === d.tipoCabello)) return 'Elige el tipo de cabello.';
-  if (!d.aceptaAviso) return 'Confirma que la persona leyó y aceptó el aviso de privacidad.';
-  const v = validatePassword(d.password, {
-    nombre: d.nombre.trim(),
-    email: d.email.trim().toLowerCase(),
-    telefono: normalizarTelefonoRegistro(d.telefono),
-    fechaNacimiento: d.fechaNacimiento,
-    preguntaSeguridad: { respuesta: d.respuesta.trim() },
-  });
-  if (!v.valid) return v.errors?.[0] ?? v.message ?? 'La contraseña no cumple los requisitos.';
-  return null;
+  const casillas = erroresConsentimientoAlta(d);
+  if (casillas.aceptaTerminos) return casillas.aceptaTerminos;
+  if (casillas.aceptaAviso) return casillas.aceptaAviso;
+  return campos.password ?? null;
+}
+
+export interface PerfilCapilarAlta {
+  tipoCabello?: string;
+  tieneAlergias?: true;
+  alergias?: string;
+  tratamientosQuimicos?: true;
+  tratamientos?: string;
+}
+
+/**
+ * Perfil capilar del alta con solo lo capturado (minimización): sin tipo de cabello elegido no se manda, las
+ * alergias van con "Tiene alergias" marcada y texto, los tratamientos con su casilla. undefined si no hay nada.
+ */
+export function perfilCapilarAlta(d: {
+  tipoCabello: string;
+  tieneAlergias: boolean;
+  alergias: string;
+  tratamientosQuimicos: boolean;
+  tratamientos: string;
+}): PerfilCapilarAlta | undefined {
+  const perfil: PerfilCapilarAlta = {};
+  if (d.tipoCabello.trim()) perfil.tipoCabello = d.tipoCabello.trim();
+  const alergias = d.tieneAlergias ? d.alergias.trim() : '';
+  if (alergias) {
+    perfil.tieneAlergias = true;
+    perfil.alergias = alergias;
+  }
+  if (d.tratamientosQuimicos) {
+    perfil.tratamientosQuimicos = true;
+    if (d.tratamientos.trim()) perfil.tratamientos = d.tratamientos.trim();
+  }
+  return Object.keys(perfil).length > 0 ? perfil : undefined;
+}
+
+/** Contrato del backend: el personal solo puede poner recibePromociones en false (true da 400). */
+export const NOTA_PROMOCIONES_PANEL = 'Solo la persona puede activar las promociones, desde su perfil.';
+
+/** recibePromociones al guardar desde el panel: solo se manda si el personal las quitó (true → false), nunca true. */
+export function cuerpoPromocionesPanel(guardado: boolean, actual: boolean): { recibePromociones?: false } {
+  return guardado && !actual ? { recibePromociones: false } : {};
 }
 
 /**
@@ -455,9 +533,12 @@ export interface CrearUsuarioPayload {
   telefono?: string;
   fechaNacimiento?: string;
   preguntaSeguridad?: { pregunta: string; respuesta: string };
-  perfilCapilar?: { tipoCabello: string; tieneAlergias: boolean; alergias?: string; tratamientosQuimicos: boolean; tratamientos?: string };
+  perfilCapilar?: { tipoCabello?: string; tieneAlergias?: boolean; alergias?: string; tratamientosQuimicos?: boolean; tratamientos?: string };
+  aceptaTerminos?: boolean;
   aceptaAvisoPrivacidad?: boolean;
   recibePromociones?: boolean;
+  /** Versión de cada documento que la persona aceptó (registro DOCUMENTOS_LEGALES). */
+  documentos?: { slug: SlugDocumentoLegal; version: string; hash: string }[];
   /** Usuarios creados por admin deben poder iniciar sesión sin verificación de correo */
   confirmado?: boolean;
   /** Obligatorio (true) si perfilCapilar.alergias trae texto. No se guarda. */
@@ -485,8 +566,20 @@ export async function createUsuario(payload: CrearUsuarioPayload): Promise<Usuar
   if (preguntaSeguridad?.pregunta.trim() && preguntaSeguridad.respuesta.trim()) {
     body.preguntaSeguridad = { pregunta: preguntaSeguridad.pregunta.trim(), respuesta: preguntaSeguridad.respuesta.trim() };
   }
-  if (perfilCapilar?.tipoCabello) body.perfilCapilar = perfilCapilar;
+  // Solo lo capturado: un tipo de cabello vacío o un booleano sin marcar no viajan, y las alergias nunca se descartan.
+  const perfil = perfilCapilar
+    ? perfilCapilarAlta({
+        tipoCabello: perfilCapilar.tipoCabello ?? '',
+        tieneAlergias: perfilCapilar.tieneAlergias === true || Boolean(perfilCapilar.alergias?.trim()),
+        alergias: perfilCapilar.alergias ?? '',
+        tratamientosQuimicos: perfilCapilar.tratamientosQuimicos === true,
+        tratamientos: perfilCapilar.tratamientos ?? '',
+      })
+    : undefined;
+  if (perfil) body.perfilCapilar = perfil;
+  if (payload.aceptaTerminos !== undefined) body.aceptaTerminos = payload.aceptaTerminos;
   if (payload.aceptaAvisoPrivacidad !== undefined) body.aceptaAvisoPrivacidad = payload.aceptaAvisoPrivacidad;
+  if (payload.documentos?.length) body.documentos = payload.documentos;
   if (payload.recibePromociones !== undefined) body.recibePromociones = payload.recibePromociones;
   if (payload.consienteDatosSensibles !== undefined) body.consienteDatosSensibles = payload.consienteDatosSensibles;
   // No enviar dirección embebida: DireccionUsuario se gestiona aparte tras crear el usuario.
@@ -527,8 +620,18 @@ export interface ActualizarUsuarioPayload {
   colorActual?: string | null;
   productosUsados?: string | null;
   alergias?: string | null;
-  /** Obligatorio (true) si alergias trae texto: el personal confirma que la clienta autorizó. No se guarda. */
+  /** Obligatorio (true) si las alergias cambian a un texto nuevo: el personal confirma que la persona aceptó. No se guarda. */
   consienteDatosSensibles?: boolean;
+  /** Pantalla desde la que se editó (evidencia de consentimientos). Opcional, máximo 300; sin él el backend guarda /admin/usuarios-roles. */
+  rutaOrigen?: string;
+}
+
+/** Límite de rutaOrigen en PUT /usuarios/:id y /usuarios/:id/perfil. */
+export const MAX_RUTA_ORIGEN_EDICION = 300;
+
+/** rutaOrigen de una edición del panel, recortada al límite del backend. */
+export function rutaOrigenEdicion(ruta: string): string {
+  return ruta.slice(0, MAX_RUTA_ORIGEN_EDICION);
 }
 
 export interface UsuarioPedidoRelacionado {

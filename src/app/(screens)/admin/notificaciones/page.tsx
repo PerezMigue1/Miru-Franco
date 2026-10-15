@@ -21,6 +21,7 @@ import { getUsuarios, type Usuario } from '../../../services/usuarios';
 import { showAlert, showToast } from '../../../utils/toast';
 import { Bell, BellOff, CheckCheck } from 'lucide-react';
 import { textoTotalNotificaciones } from './textoNotificaciones';
+import { etiquetaTipoNotificacion } from '../../(privada)/operacion/_lib/panelOperacion';
 
 export default function NotificacionesPage() {
   const [items, setItems] = useState<NotificacionApi[]>([]);
@@ -150,13 +151,14 @@ export default function NotificacionesPage() {
         )}
 
         {/* Listado */}
-        <Card variant="elevated" padding="lg">
+        {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+        <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
         {loading ? (
           <p className="p-6 text-center" style={{ color: 'var(--encabezados-alterno)' }}>
             Cargando…
           </p>
         ) : (
-          <Table headers={['Tipo', 'Usuario', 'Título', 'Estado', 'Fecha', 'Acciones']} headerSutil>
+          <Table headers={['Tipo', 'Usuario', 'Título', 'Estado', 'Fecha', 'Acciones']} headerSutil etiqueta="Notificaciones: desplaza para ver más columnas">
             {items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -168,7 +170,7 @@ export default function NotificacionesPage() {
                 <TableRow key={n.id}>
                   <TableCell rowPadding="lg">
                     <Badge variant="info" size="sm">
-                      {n.tipo}
+                      {etiquetaTipoNotificacion(n.tipo)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs font-mono max-w-[120px] truncate" rowPadding="lg">
@@ -191,13 +193,13 @@ export default function NotificacionesPage() {
                     {n.creadoEn ? new Date(n.creadoEn).toLocaleString('es-MX') : '—'}
                   </TableCell>
                   <TableCell rowPadding="lg">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                       {!n.leida && (
                         <Button size="sm" variant="outline" onClick={() => void marcarLeida(n)}>
                           Leída
                         </Button>
                       )}
-                      <Button size="sm" variant="danger" onClick={() => void borrar(n)}>
+                      <Button size="sm" variant="outline-danger" onClick={() => void borrar(n)}>
                         Eliminar
                       </Button>
                     </div>

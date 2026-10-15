@@ -4,7 +4,12 @@ import type { CSSProperties } from 'react';
 import { ButtonHTMLAttributes, cloneElement, isValidElement, ReactElement, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'outline' | 'chip';
+  /**
+   * 'danger' (relleno) es para confirmar en el diálogo; 'outline-danger' (contorno con texto de
+   * peligro) para la acción destructiva en una fila o junto al botón principal (Eliminar,
+   * Desactivar, Cancelar pedido), para que no se confunda con él.
+   */
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline-danger' | 'success' | 'warning' | 'outline' | 'chip';
   size?: 'sm' | 'md' | 'lg';
   children: ReactNode;
   fullWidth?: boolean;
@@ -35,6 +40,16 @@ const VARIANTES: Record<NonNullable<ButtonProps['variant']>, Record<string, stri
     '--btn-bg': 'var(--danger)',
     '--btn-texto': 'var(--texto-fondo-oscuro)',
     '--btn-bg-hover': 'var(--hover)',
+  },
+  // Texto y borde --danger-texto (AA en lino, terracota y superficies oscuras); al hover se llena de
+  // vino con marfil, como confirmación de que la acción es destructiva.
+  'outline-danger': {
+    '--btn-bg': 'transparent',
+    '--btn-texto': 'var(--danger-texto)',
+    '--btn-borde': '1.5px solid var(--danger-texto)',
+    '--btn-bg-hover': 'var(--danger)',
+    '--btn-texto-hover': 'var(--marfil)',
+    '--btn-borde-hover': 'var(--danger)',
   },
   // --success con texto claro no cumple AA: fondo aclarado + texto oscuro (auditoría de contraste).
   success: {
@@ -80,9 +95,10 @@ export default function Button({
   ...props
 }: ButtonProps) {
   // Mismo botón en cliente, /operacion y /admin (DESIGN.md): presión táctil, hover solo con
-  // puntero fino y transiciones por propiedad.
+  // puntero fino y transiciones por propiedad. inline-flex: los íconos de lucide son display:block
+  // y, sin esto, quedaban encima del texto ("Exportar CSV", "Agregar Observación", "Mis pedidos").
   const baseStyles =
-    'mf-btn mf-btn-color font-semibold rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed';
+    'mf-btn mf-btn-color inline-flex items-center justify-center gap-2 font-semibold rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed';
   const widthStyle = fullWidth ? 'w-full' : '';
   const mergedClassName = `${baseStyles} ${TAMANOS[size]} ${widthStyle} ${className}`.trim();
   const estilo = { ...VARIANTES[variant], ...style } as EstiloBoton;

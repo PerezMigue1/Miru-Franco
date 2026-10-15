@@ -19,6 +19,7 @@ import {
   type ServicioPayload,
 } from '../../../../services/servicios';
 import { EditorImagenesPresentacionCloudinary } from '../../../../components/admin/EditorImagenesPresentacionCloudinary';
+import { CLASE_BOTON_CABECERA } from '../accionesServicios';
 
 const CATEGORIAS_OPCIONES = [
   { label: 'Alaciados y Alisados', value: 'Alaciados y Alisados' },
@@ -201,14 +202,14 @@ export default function ServicioDetalleAdminPage() {
               Editar servicio
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/admin/servicios')} disabled={saving}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className={CLASE_BOTON_CABECERA} onClick={() => router.push('/admin/servicios')} disabled={saving}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={handleGuardar} disabled={saving}>
+            <Button variant="primary" className={CLASE_BOTON_CABECERA} onClick={handleGuardar} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </Button>
-            <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
+            <Button variant="outline-danger" className={CLASE_BOTON_CABECERA} onClick={() => setShowDeleteModal(true)} disabled={deleting}>
               Desactivar
             </Button>
           </div>
@@ -247,11 +248,11 @@ export default function ServicioDetalleAdminPage() {
               <Select label="Duración" value={duracion} onChange={(e) => setDuracion(e.target.value)} options={duracionOptions} fullWidth />
               <Select label="Categoría" value={categoria} onChange={(e) => setCategoria(e.target.value)} options={categoriaOptions} fullWidth />
               <div className="flex flex-wrap items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                   <input type="checkbox" checked={requiereEvaluacion} onChange={(e) => setRequiereEvaluacion(e.target.checked)} className="rounded" />
                   Requiere evaluación previa
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
+                <label className="flex min-h-11 items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--menu-texto-principal)' }}>
                   <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} className="rounded" />
                   Servicio activo
                 </label>
@@ -265,6 +266,7 @@ export default function ServicioDetalleAdminPage() {
                 <EditorImagenesPresentacionCloudinary
                   urls={imagenes}
                   onChange={setImagenes}
+                  pedirTipo
                 />
               </div>
             </div>

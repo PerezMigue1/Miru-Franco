@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState, type ReactNode, type SVGProps } from 'react';
+import Link from 'next/link';
 import {
   BrainCircuit,
   CircleDollarSign,
@@ -30,7 +30,7 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-import Table, { TableCell, TableRow } from '../ui/Table';
+import Table, { PaginacionTabla, TableCell, TableRow } from '../ui/Table';
 import {
   listarSegmentacionClientes,
   type ModeloClusteringApi,
@@ -51,10 +51,11 @@ const SEGMENTOS = [
  * claro/oscuro sin duplicar la paleta de marca en otro lugar.
  */
 const COLOR_SEGMENTO: Record<string, string> = {
-  'Sin compras registradas': 'var(--enlaces-textos-interactivos)', // cluster 1 · Badge "info"
-  'Recientes de consumo bajo': 'var(--logo-branding)', // cluster 0 · Badge "default"
-  'Frecuentes de alto valor': 'var(--success)', // cluster 2 · Badge "success"
-  'Clientes ocasionales por reactivar': 'var(--warning)', // cluster 3 · Badge "warning"
+  // Misma familia que los badges, en tonos de gráfica: 3:1 sobre la tarjeta terracota en claro y sobre la tarjeta oscura.
+  'Sin compras registradas': 'var(--grafica-azul)', // cluster 1 · Badge "info"
+  'Recientes de consumo bajo': 'var(--grafica-oro)', // cluster 0 · Badge "default"
+  'Frecuentes de alto valor': 'var(--grafica-verde)', // cluster 2 · Badge "success"
+  'Clientes ocasionales por reactivar': 'var(--grafica-ambar)', // cluster 3 · Badge "warning"
 };
 
 /**
@@ -85,6 +86,68 @@ function varianteSegmento(
   if (cluster === 3) return 'warning';
   if (cluster === 0) return 'info';
   return 'default';
+}
+
+/** Tabla de clientas: 25 por página (con más de mil filas sin paginar la pantalla no terminaba). */
+export const TAMANO_PAGINA_SEGMENTACION = 25;
+
+/** Una página de una lista; si la página pedida ya no existe (p. ej. tras filtrar) se ajusta a la última. */
+export function paginarLista<T>(lista: T[], pagina: number, tamano: number): { items: T[]; pagina: number; totalPaginas: number } {
+  const totalPaginas = Math.max(1, Math.ceil(lista.length / tamano));
+  const actual = Math.min(Math.max(1, pagina), totalPaginas);
+  return { items: lista.slice((actual - 1) * tamano, actual * tamano), pagina: actual, totalPaginas };
+}
+
+/**
+ * Etiqueta del eje de las barras: "Grupo 1…4", las mismas de las tarjetas de arriba. Los nombres
+ * completos no caben (se cortaban a 14 caracteres y a 375 px Recharts saltaba la mitad).
+ */
+export function etiquetaGrupo(segmento: string): string {
+  const indice = SEGMENTOS.indexOf(segmento);
+  return indice >= 0 ? `Grupo ${indice + 1}` : segmento;
+}
+
+/**
+ * Contenedor de una gráfica con alto explícito: ResponsiveContainer arranca en -1 × -1 y, sin un alto
+ * numérico, Recharts avisaba "width(-1) and height(-1)" en cada montaje. minWidth 0 la deja encoger
+ * dentro de la cuadrícula.
+ */
+export function ContenedorGrafica({ alto, children }: { alto: number; children?: ReactNode }) {
+  return (
+    <div style={{ width: '100%', height: alto }}>
+      <ResponsiveContainer width="100%" height={alto} minWidth={0}>
+        {children}
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Porcentaje de cada sector de la dona en el color de texto: en el del sector (oro sobre terracota) quedaba en 1.5:1. */
+export function EtiquetaPorcentajeDona({
+  x = 0,
+  y = 0,
+  textAnchor = 'middle',
+  pct = 0,
+}: {
+  x?: number;
+  y?: number;
+  textAnchor?: SVGProps<SVGTextElement>['textAnchor'];
+  pct?: number;
+}) {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor={textAnchor}
+      dominantBaseline="central"
+      fill="var(--menu-texto-principal)"
+      fontSize={12}
+      fontWeight={600}
+      className="mf-cifras"
+    >
+      {`${Number(pct).toFixed(0)}%`}
+    </text>
+  );
 }
 
 function moneda(valor: number): string {
@@ -141,7 +204,7 @@ function TooltipGrafica({
 
 interface PanelSegmentacionClientesProps {
   /**
-   * Base de la ruta del botón "Ver" — cada contexto tiene su propia ficha de cliente
+   * Base de la ruta del enlace del nombre: cada contexto tiene su propia ficha de cliente
    * (admin/clientes-crm/[id] vs. operacion/clientes-crm/[id]), con acciones distintas
    * en cada una (editar/eliminar son admin-only).
    */
@@ -151,13 +214,13 @@ interface PanelSegmentacionClientesProps {
 export default function PanelSegmentacionClientes({
   rutaBasePerfil = '/admin/clientes-crm',
 }: PanelSegmentacionClientesProps) {
-  const router = useRouter();
   const [clientes, setClientes] = useState<SegmentacionClienteApi[]>([]);
   const [modelo, setModelo] = useState<ModeloClusteringApi | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [segmento, setSegmento] = useState('');
+  const [paginaTabla, setPaginaTabla] = useState(1);
 
   const cargar = async () => {
     setLoading(true);
@@ -203,6 +266,9 @@ export default function PanelSegmentacionClientes({
       return coincideTexto && coincideSegmento;
     });
   }, [busqueda, clientes, segmento]);
+
+  // Solo se pinta la página visible; los filtros devuelven a la primera (en sus onChange).
+  const pagina = paginarLista(filtrados, paginaTabla, TAMANO_PAGINA_SEGMENTACION);
 
   const gastoTotal = clientes.reduce(
     (total, cliente) => total + cliente.variables.gasto_total,
@@ -508,14 +574,14 @@ export default function PanelSegmentacionClientes({
             >
               Clientes por segmento
             </h3>
-            <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
+            <ContenedorGrafica alto={260}>
                 <BarChart data={datosPorSegmento} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" vertical={false} />
                   <XAxis
                     dataKey="segmento"
                     tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }}
-                    tickFormatter={(v: string) => (v.length > 14 ? `${v.slice(0, 14)}…` : v)}
+                    tickFormatter={etiquetaGrupo}
+                    interval={0}
                     axisLine={{ stroke: 'var(--borde-sutil)' }}
                     tickLine={false}
                   />
@@ -531,7 +597,7 @@ export default function PanelSegmentacionClientes({
                       <TooltipGrafica
                         render={(p) => (
                           <>
-                            <p className="font-semibold">{String(p.segmento)}</p>
+                            <p className="font-semibold">{etiquetaGrupo(String(p.segmento))} · {String(p.segmento)}</p>
                             <p style={{ color: 'var(--encabezados-alterno)' }}>
                               {String(p.conteo)} clientes
                             </p>
@@ -546,8 +612,7 @@ export default function PanelSegmentacionClientes({
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+            </ContenedorGrafica>
           </Card>
 
           <Card variant="elevated" padding="lg">
@@ -557,14 +622,14 @@ export default function PanelSegmentacionClientes({
             >
               Gasto promedio por segmento
             </h3>
-            <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
+            <ContenedorGrafica alto={260}>
                 <BarChart data={datosPorSegmento} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" vertical={false} />
                   <XAxis
                     dataKey="segmento"
                     tick={{ fill: 'var(--encabezados-alterno)', fontSize: 11 }}
-                    tickFormatter={(v: string) => (v.length > 14 ? `${v.slice(0, 14)}…` : v)}
+                    tickFormatter={etiquetaGrupo}
+                    interval={0}
                     axisLine={{ stroke: 'var(--borde-sutil)' }}
                     tickLine={false}
                   />
@@ -580,7 +645,7 @@ export default function PanelSegmentacionClientes({
                       <TooltipGrafica
                         render={(p) => (
                           <>
-                            <p className="font-semibold">{String(p.segmento)}</p>
+                            <p className="font-semibold">{etiquetaGrupo(String(p.segmento))} · {String(p.segmento)}</p>
                             <p style={{ color: 'var(--encabezados-alterno)' }}>
                               {moneda(Number(p.gastoPromedio))} promedio
                             </p>
@@ -595,8 +660,7 @@ export default function PanelSegmentacionClientes({
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+            </ContenedorGrafica>
           </Card>
 
           <Card variant="elevated" padding="lg">
@@ -607,12 +671,11 @@ export default function PanelSegmentacionClientes({
               Gasto vs. frecuencia de compra
             </h3>
             <p className="text-xs mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
-              Cada punto es una clienta — color y forma indican su segmento. Escala
+              Cada punto es una clienta: color y forma indican su segmento. Escala
               logarítmica: la mayoría de clientes tiene valores bajos y unas pocas de
               alto valor estirarían el eje sin ella.
             </p>
-            <div style={{ width: '100%', height: 340 }}>
-              <ResponsiveContainer>
+            <ContenedorGrafica alto={340}>
                 <ScatterChart margin={{ top: 8, right: 12, left: 0, bottom: 24 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-sutil)" />
                   <XAxis
@@ -685,8 +748,7 @@ export default function PanelSegmentacionClientes({
                     />
                   ))}
                 </ScatterChart>
-              </ResponsiveContainer>
-            </div>
+            </ContenedorGrafica>
           </Card>
 
           <Card variant="elevated" padding="lg">
@@ -699,8 +761,7 @@ export default function PanelSegmentacionClientes({
             <p className="text-xs mb-3" style={{ color: 'var(--encabezados-alterno)' }}>
               Reparto del gasto total: tienda en línea vs. venta en salón
             </p>
-            <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
+            <ContenedorGrafica alto={260}>
                 <PieChart>
                   <Tooltip
                     content={
@@ -727,7 +788,7 @@ export default function PanelSegmentacionClientes({
                     innerRadius={60}
                     outerRadius={90}
                     paddingAngle={3}
-                    label={(props: unknown) => `${Number((props as { pct?: number }).pct ?? 0).toFixed(0)}%`}
+                    label={EtiquetaPorcentajeDona}
                     labelLine={false}
                   >
                     {proporcionCanal.map((entry) => (
@@ -735,8 +796,7 @@ export default function PanelSegmentacionClientes({
                     ))}
                   </Pie>
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
+            </ContenedorGrafica>
           </Card>
         </div>
       )}
@@ -747,13 +807,13 @@ export default function PanelSegmentacionClientes({
             placeholder="Buscar por nombre o correo…"
             aria-label="Buscar cliente por nombre o correo"
             value={busqueda}
-            onChange={(event) => setBusqueda(event.target.value)}
+            onChange={(event) => { setBusqueda(event.target.value); setPaginaTabla(1); }}
             fullWidth
           />
           <Select
             aria-label="Filtrar por segmento"
             value={segmento}
-            onChange={(event) => setSegmento(event.target.value)}
+            onChange={(event) => { setSegmento(event.target.value); setPaginaTabla(1); }}
             options={[
               { value: '', label: 'Todos los segmentos' },
               ...SEGMENTOS.map((nombre) => ({
@@ -774,6 +834,7 @@ export default function PanelSegmentacionClientes({
           </p>
         ) : (
           <div className="overflow-x-auto">
+            {/* Sin columna "Perfil" al final (se cortaba a 1440 px): el nombre es el enlace a la ficha. */}
             <Table
               headers={[
                 'Cliente',
@@ -782,16 +843,21 @@ export default function PanelSegmentacionClientes({
                 'Gasto',
                 'Recencia',
                 'Acción sugerida',
-                'Perfil',
               ]}
               headerSutil
             >
-              {filtrados.map((cliente) => (
+              {pagina.items.map((cliente) => (
                 <TableRow key={cliente.clienteId}>
                   <TableCell>
-                    <p className="font-semibold">{cliente.clienteNombre}</p>
+                    <Link
+                      href={`${rutaBasePerfil}/${cliente.clienteId}`}
+                      className="inline-flex min-h-11 items-center font-semibold underline decoration-1 underline-offset-4"
+                      style={{ color: 'var(--menu-texto-principal)' }}
+                    >
+                      {cliente.clienteNombre}
+                    </Link>
                     <p
-                      className="text-xs mt-1"
+                      className="text-xs mt-0.5"
                       style={{ color: 'var(--encabezados-alterno)' }}
                     >
                       {cliente.clienteEmail}
@@ -815,22 +881,17 @@ export default function PanelSegmentacionClientes({
                   >
                     <span className="text-sm">{cliente.accionSugerida}</span>
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        router.push(
-                          `${rutaBasePerfil}/${cliente.clienteId}`
-                        )
-                      }
-                    >
-                      Ver
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </Table>
+            <PaginacionTabla
+              pagina={pagina.pagina}
+              totalPaginas={pagina.totalPaginas}
+              total={filtrados.length}
+              unidad="clientes"
+              onCambiar={setPaginaTabla}
+              className="mt-4"
+            />
           </div>
         )}
 

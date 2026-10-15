@@ -14,6 +14,7 @@ import AnticipoPortal from '../../../../../components/cliente/AnticipoPortal';
 import { useAhora } from '../../../../../hooks/useAhora';
 import { etiquetaEstadoCita } from '../../../../../utils/estados';
 import { citaGestionablePorClienta } from '../../../../../components/cliente/citaGestionable';
+import TarjetaCitaMovil from './TarjetaCitaMovil';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -119,6 +120,20 @@ export default function MisCitasPage() {
         </Card>
       ) : (
         <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
+          {/* Por debajo de 640 px, tarjetas: en la tabla el estado y "Ver" quedaban fuera de vista. */}
+          <ul className="space-y-3 sm:hidden" aria-label="Mis citas">
+            {citasFiltradas.map((cita) => (
+              <TarjetaCitaMovil
+                key={cita.id}
+                cita={cita}
+                ahora={ahora}
+                fecha={formatearFecha(cita.fechaHoraInicio)}
+                hora={formatearHora(cita.fechaHoraInicio)}
+                variante={obtenerVariantEstado(cita.estado)}
+              />
+            ))}
+          </ul>
+          <div className="hidden sm:block">
           <Table headers={['ID', 'Servicio', 'Fecha', 'Hora', 'Especialista', 'Estado', 'Acciones']}>
             {citasFiltradas.map((cita) => (
               <TableRow key={cita.id}>
@@ -171,6 +186,7 @@ export default function MisCitasPage() {
               </TableRow>
             ))}
           </Table>
+          </div>
         </Card>
       )}
     </ModuleLayout>

@@ -3,7 +3,7 @@ import { hasSession } from '../../utils/security';
 const ADMIN_ROL_VALORES = ['admin', 'administrador'];
 
 /** Pantallas de acceso: regresar a ellas después de entrar haría un ciclo. */
-const PANTALLAS_DE_ACCESO = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback'];
+const PANTALLAS_DE_ACCESO = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback', '/auth/completar-registro'];
 
 /** Donde se guarda el regreso mientras el usuario va y viene de Google (no viaja en la URL de Google). */
 const CLAVE_REGRESO_GOOGLE = 'miru:regreso-tras-login';

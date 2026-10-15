@@ -18,6 +18,15 @@ export function elegirPagoPorAprobar(pagos: PagoApi[]): PagoApi | null {
   );
 }
 
+/**
+ * Nombre de la clienta de un pedido para la tabla. Sin nombre (o si su usuario no se cargó) dice
+ * "Cliente sin nombre", como Pagos; antes caía al UUID del usuario.
+ */
+export function nombreClientaPedido(usuarios: ReadonlyMap<string, { nombre?: string | null }>, usuarioId?: string | null): string {
+  const nombre = usuarioId ? usuarios.get(usuarioId)?.nombre?.trim() : '';
+  return nombre || 'Cliente sin nombre';
+}
+
 /** Monto de un pedido para la tabla y el detalle ("$1,234.50"); otra moneda se indica al final. */
 export function fmtMonedaPedido(n: number, moneda = 'MXN'): string {
   const precio = formatearPrecioMXN(n);

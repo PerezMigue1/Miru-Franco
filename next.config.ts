@@ -33,17 +33,8 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Solo orígenes con imágenes en uso: Cloudinary (fotos del salón) y las fotos de perfil de Google.
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'logos-world.net',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',

@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import TarjetaKpi from '../../../components/ui/TarjetaKpi';
-import Table, { TableRow, TableCell } from '../../../components/ui/Table';
+import Table, { TablaVacia, TableRow, TableCell } from '../../../components/ui/Table';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
-import { BadgeDollarSign, ShoppingCart, Trash2 } from 'lucide-react';
+import { BadgeDollarSign, ShoppingCart, Trash2, Truck } from 'lucide-react';
 import { listarProveedores, ProveedorApi } from '../../../services/proveedores';
 import { getProductosSinRedirigir } from '../../../services/productos';
 import { listarCompras, crearCompra, CompraApi, CrearCompraItemPayload } from '../../../services/compras';
@@ -66,7 +67,7 @@ export default function ComprasProveedoresPage() {
           const opts: PresentacionOpcion[] = [];
           prodRes.value.data.forEach((p) => (p.presentaciones ?? []).forEach((pr) => {
             const id = Number(pr.id);
-            if (!isNaN(id)) opts.push({ id, label: `${p.nombre} — ${pr.tamaño ?? pr.id}` });
+            if (!isNaN(id)) opts.push({ id, label: `${p.nombre} · ${pr.tamaño ?? pr.id}` });
           }));
           setPresentaciones(opts);
         }
@@ -155,7 +156,16 @@ export default function ComprasProveedoresPage() {
           {loading ? (
             <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
           ) : proveedores.length === 0 ? (
-            <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>No hay proveedores registrados.</p>
+            <TablaVacia
+              icono={Truck}
+              titulo="Todavía no hay proveedores"
+              descripcion="Registra uno para poder hacerle órdenes de compra."
+              accion={
+                <Button asChild variant="outline">
+                  <Link href="/admin/proveedores">Registrar proveedor</Link>
+                </Button>
+              }
+            />
           ) : (
           <div className="space-y-3">
             {proveedores.map((proveedor) => (
@@ -182,7 +192,7 @@ export default function ComprasProveedoresPage() {
           )}
         </Card>
 
-        <Card variant="elevated" padding="lg">
+        <Card variant="elevated" padding="lg" id="nueva-orden-compra" className="scroll-mt-20">
           <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--menu-texto-principal)' }}>
             Nueva Orden de Compra
           </h2>
@@ -212,7 +222,7 @@ export default function ComprasProveedoresPage() {
               <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--fondos-suaves)' }}>
                 {lineas.map((linea, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm p-2 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
-                    <span style={{ color: 'var(--menu-texto-principal)' }}>{linea.label} — {linea.cantidad} × {fmtMoneda(linea.costoUnitario)}</span>
+                    <span style={{ color: 'var(--menu-texto-principal)' }}>{linea.label}: {linea.cantidad} × {fmtMoneda(linea.costoUnitario)}</span>
                     <button type="button" onClick={() => quitarLinea(idx)} aria-label="Quitar línea">
                       <Trash2 size={15} style={{ color: 'var(--danger-texto)' }} />
                     </button>
@@ -238,9 +248,18 @@ export default function ComprasProveedoresPage() {
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>Cargando…</p>
         ) : compras.length === 0 ? (
-          <p className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>No hay compras registradas.</p>
+          <TablaVacia
+            icono={ShoppingCart}
+            titulo="Todavía no hay compras registradas"
+            descripcion="Elige un proveedor y una presentación en «Nueva orden de compra» para registrar la primera."
+            accion={
+              <Button asChild variant="outline">
+                <a href="#nueva-orden-compra">Registrar una compra</a>
+              </Button>
+            }
+          />
         ) : (
-        <Table headers={['Proveedor', 'Fecha', 'Productos', 'Total', 'Acciones']} headerSutil>
+        <Table headers={['Proveedor', 'Fecha', 'Productos', 'Total', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Compras: desplaza para ver más columnas">
           {compras.map((compra) => (
             <TableRow key={compra.id}>
               <TableCell className="font-semibold" rowPadding="lg">{compra.proveedorNombre ?? 'Proveedor'}</TableCell>
@@ -272,7 +291,7 @@ export default function ComprasProveedoresPage() {
             {detalleCompra.items.map((item) => (
               <div key={item.id} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                 <div>
-                  <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{item.productoNombre ?? 'Producto'} — {item.presentacionTamanio ?? ''}</p>
+                  <p className="font-medium" style={{ color: 'var(--menu-texto-principal)' }}>{item.productoNombre ?? 'Producto'}{item.presentacionTamanio ? ` · ${item.presentacionTamanio}` : ''}</p>
                   <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>{item.cantidad} × {fmtMoneda(item.costoUnitario)}</p>
                 </div>
                 <p className="font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>{fmtMoneda(item.subtotal)}</p>

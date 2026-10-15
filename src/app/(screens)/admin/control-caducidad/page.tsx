@@ -111,13 +111,14 @@ export default function ControlCaducidadPage() {
         </div>
 
         {/* Listado */}
-        <Card variant="elevated" padding="lg">
+        {/* Sin relleno alrededor de la tabla: con tarjeta y marco, en móvil solo cabían 1 o 2 columnas. */}
+        <Card variant="elevated" padding="lg" className="!p-0 overflow-hidden">
           {loading ? (
             <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>Cargando productos…</p>
           ) : productos.length === 0 ? (
-            <p className="text-sm py-8 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay productos en control de caducidad.</p>
+            <p className="text-sm py-8 px-4 text-center" style={{ color: 'var(--encabezados-alterno)' }}>No hay productos en control de caducidad.</p>
           ) : (
-          <Table headers={['Producto', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']} headerSutil>
+          <Table headers={['Producto', 'Fecha de Caducidad', 'Días Restantes', 'Estado', 'Acciones']} headerSutil stickyFirstColumn etiqueta="Caducidades: desplaza para ver más columnas">
             {productos.map((producto) => (
               <TableRow key={producto.id}>
                 <TableCell className="font-semibold" rowPadding="lg">{producto.nombre}</TableCell>
@@ -138,7 +139,7 @@ export default function ControlCaducidadPage() {
                 </TableCell>
                 <TableCell rowPadding="lg">
                   {producto.estado === 'vencido' && (
-                    <Button size="sm" variant="danger" onClick={() => openDescartar(producto)}>Descartar</Button>
+                    <Button size="sm" variant="outline-danger" onClick={() => openDescartar(producto)}>Descartar</Button>
                   )}
                 </TableCell>
               </TableRow>
