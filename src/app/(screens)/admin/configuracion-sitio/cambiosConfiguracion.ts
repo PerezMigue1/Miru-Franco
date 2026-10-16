@@ -32,8 +32,9 @@ export function valorInicial(clave: SeccionConfiguracion, dato: unknown): unknow
   const base = POR_OMISION[clave] as Record<string, unknown>;
   if (!esObjeto(dato)) return structuredClone(base);
   if (clave === 'reglas') {
+    // Las demás reglas se conservan tal cual (el editor las arma con definicionesReglas del backend).
     const f = dato.anticiposDesde;
-    return { anticiposDesde: typeof f === 'string' && f ? f : null };
+    return { ...structuredClone(dato), anticiposDesde: typeof f === 'string' && f ? f : null };
   }
   const salida: Record<string, unknown> = {};
   for (const [k, def] of Object.entries(base)) {

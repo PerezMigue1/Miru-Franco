@@ -7,9 +7,10 @@ import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import OpcionesAnticipo from './OpcionesAnticipo';
 import type { CitaApi } from '../../services/citas';
-import { avisoPagoEnSalon, estadoAnticipo, INFO_ANTICIPO, limiteAnticipo, tiempoRestante } from '../../utils/anticipoCita';
+import { avisoPagoEnSalon, estadoAnticipo, INFO_ANTICIPO, limiteAnticipo, minutosSalonDeCita, tiempoRestante } from '../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
-import { PLAZOS_TERMINOS } from '../../utils/terminosCondiciones';
+import { useTextosSitio } from '../../hooks/useTextosSitio';
+import { conUnidad } from '../../utils/textosSitio';
 
 /**
  * Anticipo de una cita en el portal: estado, monto, cuenta regresiva y botón para pagarlo con Mercado
@@ -19,15 +20,20 @@ import { PLAZOS_TERMINOS } from '../../utils/terminosCondiciones';
 export default function AnticipoPortal({ cita: citaInicial, ahora, detalle = false }: { cita: CitaApi; ahora: Date; detalle?: boolean }) {
   // Si la clienta cambia a pago en el salón, el plazo nuevo se refleja aquí sin recargar.
   const [cambioSalon, setCambioSalon] = useState<string | null>(null);
+  const { t, config } = useTextosSitio();
+  const { reglas } = config;
   const cita = cambioSalon ? { ...citaInicial, anticipoEnSalon: true, anticipoVenceEn: cambioSalon } : citaInicial;
   const rutaDetalle = `/cliente/servicios-citas/mis-citas/${cita.id}`;
   const estado = estadoAnticipo(cita, ahora);
-  if (estado === 'no_requiere') return detalle ? null : <span className="text-sm text-encabezados-alterno">Sin anticipo</span>;
+  if (estado === 'no_requiere') return detalle ? null : <span className="text-sm text-encabezados-alterno">{t('anticipos.sinAnticipo')}</span>;
 
   const info = INFO_ANTICIPO[estado];
   const pendiente = estado === 'pendiente';
   /** Eligió pagar en el salón: se le recuerda la hora límite (15 min antes de la cita). */
   const enSalon = pendiente && Boolean(cita.anticipoEnSalon);
+  const minutosSalon = minutosSalonDeCita(cita, reglas);
+  const horasLinea = cita.reglas?.plazoAnticipoHoras ?? reglas.citas.plazoAnticipoHoras;
+  const formas = [reglas.pagos.mercadoPagoAnticipos && 'en línea', reglas.citas.permitirAnticipoEnSalon && 'en el salón'].filter(Boolean).join(' o ');
 
   return (
     <div className={detalle ? 'space-y-3' : 'flex min-w-40 flex-col items-start gap-1.5'}>
@@ -41,22 +47,22 @@ export default function AnticipoPortal({ cita: citaInicial, ahora, detalle = fal
           {limiteAnticipo(cita.anticipoVenceEn, ahora) ?? <>Quedan <span className="mf-cifras">{tiempoRestante(cita.anticipoVenceEn, ahora)}</span></>}
         </p>
       )}
-      {enSalon && !detalle && <p className="text-xs text-encabezados-alterno">{avisoPagoEnSalon(cita.anticipoVenceEn)}</p>}
+      {enSalon && !detalle && <p className="text-xs text-encabezados-alterno">{avisoPagoEnSalon(cita.anticipoVenceEn, minutosSalon)}</p>}
       {detalle && (
         <p className="text-sm text-encabezados-alterno">
           {enSalon
-            ? avisoPagoEnSalon(cita.anticipoVenceEn)
+            ? avisoPagoEnSalon(cita.anticipoVenceEn, minutosSalon)
             : pendiente
-            ? `Págalo en línea o en el salón. Si no se paga en ${PLAZOS_TERMINOS.horasAnticipoCita} horas, el horario se libera.`
+            ? t('anticipos.pendiente', { formasPago: formas || 'en línea', plazoAnticipo: conUnidad(horasLinea, 'hora', 'horas') })
             : estado === 'pagado'
-              ? 'Se descuenta del total el día de tu cita.'
+              ? t('anticipos.pagado')
               : estado === 'en_revision'
-                ? 'El salón está revisando tu anticipo; te avisaremos en tu cuenta.'
+                ? t('anticipos.enRevision')
                 : estado === 'liberada' || estado === 'vencido'
-                  ? 'No recibimos el anticipo a tiempo y el horario se liberó.'
+                  ? t('anticipos.liberada')
                   : estado === 'retenido'
-                    ? 'La cita no se atendió y el anticipo se retuvo, como indican los términos.'
-                    : 'Te devolvimos el anticipo.'}
+                    ? t('anticipos.retenido')
+                    : t('anticipos.devuelto')}
         </p>
       )}
       {pendiente && detalle && (
@@ -72,7 +78,7 @@ export default function AnticipoPortal({ cita: citaInicial, ahora, detalle = fal
       {pendiente && !detalle && (
         <Button size="md" asChild>
           <Link href={rutaDetalle} className="inline-flex items-center justify-center">
-            Pagar anticipo
+            {t('anticipos.botonPagar')}
           </Link>
         </Button>
       )}

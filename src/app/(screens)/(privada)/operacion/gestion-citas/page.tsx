@@ -32,7 +32,7 @@ import { listarEmpleados, EmpleadoApi } from '../../../../services/empleados';
 import { usePermisos } from '../../../../utils/permisos';
 import { getServicios, Servicio } from '../../../../services/servicios';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../utils/estados';
-import { PLAZOS_TERMINOS } from '../../../../utils/terminosCondiciones';
+import { useConfiguracionPublica } from '../../../../hooks/useConfiguracionPublica';
 import { fechaYHora24EnMexico } from '../../../../utils/fechaSoloDia';
 import { mensajeUsuarioDesdeErrorApi } from '../../../../utils/apiErrorMessage';
 import { showToast } from '../../../../utils/toast';
@@ -73,6 +73,7 @@ function etiquetaRiesgo(nivel: NivelRiesgoCancelacion): string {
 
 export default function GestionCitasPage() {
   const ahora = useAhora();
+  const { reglas } = useConfiguracionPublica();
   const [citas, setCitas] = useState<CitaApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -604,8 +605,8 @@ export default function GestionCitasPage() {
               ]}
               helperText={
                 fPagoAnticipo === 'salon'
-                  ? `La clienta llega entre ${PLAZOS_TERMINOS.minutosLlegadaSalon} y ${PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos antes y lo paga a más tardar ${PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos antes de la cita.`
-                  : `La clienta tiene ${PLAZOS_TERMINOS.horasAnticipoCita} horas para pagarlo en línea, sin pasar de ${PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos antes de la cita.`
+                  ? `La clienta llega entre ${reglas.citas.minutosLlegadaAntes} y ${reglas.citas.minutosAntesPagoSalon} minutos antes y lo paga a más tardar ${reglas.citas.minutosAntesPagoSalon} minutos antes de la cita.`
+                  : `La clienta tiene ${reglas.citas.plazoAnticipoHoras} horas para pagarlo en línea, sin pasar de ${reglas.citas.minutosAntesPagoSalon} minutos antes de la cita.`
               }
               fullWidth
             />

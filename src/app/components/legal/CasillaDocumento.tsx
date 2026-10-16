@@ -1,6 +1,8 @@
 'use client';
 
 import type { InputHTMLAttributes, MouseEvent, ReactNode, Ref } from 'react';
+import { useEffect } from 'react';
+import { precargarVersionesVigentes } from '../../services/consentimientos';
 
 interface CasillaDocumentoProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'id' | 'children'> {
   id: string;
@@ -16,6 +18,10 @@ interface CasillaDocumentoProps extends Omit<InputHTMLAttributes<HTMLInputElemen
  * ella. Estilos del sistema (.mf-consentimiento): 44 px de alto, foco visible y ambos temas.
  */
 export default function CasillaDocumento({ id, children, error, className = '', ...input }: CasillaDocumentoProps) {
+  // La casilla lleva la versión vigente del documento (la publicada en el panel, si hay).
+  useEffect(() => {
+    void precargarVersionesVigentes();
+  }, []);
   const idError = `${id}-error`;
   return (
     <div className={`mf-consentimiento ${className}`.trim()}>

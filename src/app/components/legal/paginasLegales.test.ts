@@ -1,16 +1,18 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { createElement, type ComponentType } from 'react';
+import { createElement, type ComponentType, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DOCUMENTOS_LEGALES,
   documentoLegal,
   fechaVigenciaTexto,
   leyendaVersion,
+  textoVisibleDocumento,
   type SlugDocumentoLegal,
 } from '../../utils/documentosLegales';
+import { htmlPublicadoEsSeguro } from '../../services/documentosLegales';
 import { PLAZOS_TERMINOS } from '../../utils/terminosCondiciones';
 import { HORARIO_SALON } from '../../utils/contactoSalon';
 import { PROFECO } from './Profeco';
@@ -20,6 +22,9 @@ vi.mock('../../layouts/Header', () => ({ default: () => null }));
 vi.mock('../../layouts/Footer', () => ({ default: () => null }));
 vi.mock('../../services/productos', () => ({ getProductosSinRedirigir: async () => ({ data: [], error: null }) }));
 vi.mock('../../services/servicios', () => ({ getServicios: async () => ({ data: [], error: null }) }));
+// Las páginas muestran el texto publicado en la base (DocumentoVigente, componente de servidor asíncrono) o, si no se
+// puede, su JSX. Aquí se pinta el JSX (la base del hash); DocumentoVigente se prueba abajo con el real.
+vi.mock('./DocumentoVigente', () => ({ default: ({ children }: { children: ReactNode }) => children }));
 
 const RAIZ_APP = join(__dirname, '..', '..');
 
@@ -77,6 +82,9 @@ const MODULOS: Record<string, { default: ComponentType }> = {
   'politica-de-cookies': await import('../../politica-de-cookies/page'),
   'politica-de-reembolsos': await import('../../politica-de-reembolsos/page'),
 };
+
+/** El DocumentoVigente real (arriba se simula para pintar el JSX de cada página). */
+const { default: DocumentoVigenteReal } = await vi.importActual<typeof import('./DocumentoVigente')>('./DocumentoVigente');
 
 async function pintar(carpeta: string): Promise<string> {
   const modulo = MODULOS[carpeta];
@@ -178,6 +186,140 @@ describe('Hash del texto publicado', () => {
 
   it('cada documento del registro apunta a una página que esta prueba pinta', () => {
     for (const d of DOCUMENTOS_LEGALES) expect(Object.keys(MODULOS), d.slug).toContain(carpetaDe(d.ruta));
+  });
+});
+
+/**
+ * Variables de reglas del backend (VARIABLES_REGLAS de backend-miru configuracion-sitio/reglas-negocio.ts) que las
+ * páginas pintan desde PLAZOS_TERMINOS. La plantilla sembrada en la base lleva {variable} en su lugar.
+ */
+const VARIABLES_DE_PLAZOS: Readonly<Record<string, string>> = {
+  diasCambioProducto: 'diasCambioProducto',
+  diasResguardoPedidoPagado: 'diasResguardo',
+  minutosToleranciaCita: 'toleranciaLlegadaMinutos',
+  diasGarantiaServicio: 'diasGarantia',
+  horasPagoEnLinea: 'plazoPagoLineaHoras',
+  horasAnticipoCita: 'plazoAnticipoHoras',
+  minutosAntesPagoSalon: 'minutosAntesPagoSalon',
+  minutosLlegadaSalon: 'minutosLlegadaAntes',
+  mesesSoloPagoEnLinea: 'mesesSoloPagoEnLinea',
+  diasApartadoSinPreparar: 'diasPrepararApartado',
+  diasRecordatorioApartado: 'diaRecordatorioRecoger',
+  diasApartadoListo: 'diasCancelarNoRecogido',
+};
+
+/** El <main> de DocumentoLegal: lo que se guarda en la base como html publicado (sin el Header ni el Footer). */
+function principal(html: string): string {
+  const inicio = html.indexOf('<main');
+  const fin = html.lastIndexOf('</main>');
+  if (inicio < 0 || fin < 0) throw new Error('La página no pinta <main>');
+  return html.slice(inicio, fin + '</main>'.length);
+}
+
+/**
+ * Pinta la página con un número centinela en cada plazo de PLAZOS_TERMINOS y devuelve el <main> con {variable}
+ * en lugar de cada centinela: la plantilla que se siembra en la base.
+ */
+async function plantillaDe(carpeta: string): Promise<{ plantilla: string; variables: Record<string, string> }> {
+  const claves = Object.keys(VARIABLES_DE_PLAZOS);
+  const antes = Object.fromEntries(claves.map((k) => [k, Reflect.get(PLAZOS_TERMINOS, k)]));
+  const centinela = (i: number) => String(987650 + i);
+  claves.forEach((k, i) => Reflect.set(PLAZOS_TERMINOS, k, Number(centinela(i))));
+  let html: string;
+  try {
+    html = principal(await pintar(carpeta));
+  } finally {
+    for (const k of claves) Reflect.set(PLAZOS_TERMINOS, k, antes[k]);
+  }
+  const variables: Record<string, string> = {};
+  claves.forEach((k, i) => {
+    if (!html.includes(centinela(i))) return;
+    html = html.split(centinela(i)).join(`{${VARIABLES_DE_PLAZOS[k]}}`);
+    variables[VARIABLES_DE_PLAZOS[k]] = String(antes[k]);
+  });
+  return { plantilla: html, variables };
+}
+
+const llenar = (plantilla: string, variables: Record<string, string>) =>
+  plantilla.replace(/\{([A-Za-z]+)\}/g, (m, nombre: string) => variables[nombre] ?? m);
+
+/**
+ * Semilla de los documentos legales en la base (backend-miru, migración 20261017130000_documentos_legales): el
+ * html publicado de cada versión es el <main> de su página y la plantilla es ese mismo html con las variables de
+ * reglas. Con HTML_DOCUMENTOS_LEGALES_SALIDA=<archivo>, esta prueba escribe ahí el JSON con el que se generó la semilla.
+ */
+describe('Semilla de los documentos legales en la base', () => {
+  it('el <main> de cada página tiene exactamente el texto (y el hash) registrado', async () => {
+    for (const d of DOCUMENTOS_LEGALES) {
+      const html = principal(await pintar(carpetaDe(d.ruta)));
+      expect(hashTexto(texto(html)), d.slug).toBe(d.hash);
+    }
+  });
+
+  it('la plantilla con {variable}, llenada con los plazos de hoy, da exactamente el html publicado', async () => {
+    const semilla = [];
+    for (const d of DOCUMENTOS_LEGALES) {
+      const carpeta = carpetaDe(d.ruta);
+      const html = principal(await pintar(carpeta));
+      const { plantilla, variables } = await plantillaDe(carpeta);
+      expect(llenar(plantilla, variables), d.slug).toBe(html);
+      expect(plantilla).not.toMatch(/98765\d/);
+      semilla.push({ slug: d.slug, version: d.version, vigenteDesde: d.vigenteDesde, hash: d.hash, html, plantilla, variables });
+    }
+    expect(semilla.find((s) => s.slug === 'terminos')?.variables).toMatchObject({ diasCambioProducto: '7', plazoPagoLineaHoras: '24' });
+    const salida = process.env.HTML_DOCUMENTOS_LEGALES_SALIDA;
+    if (salida) writeFileSync(salida, JSON.stringify(semilla, null, 2));
+  });
+});
+
+/**
+ * La página pública muestra el html vigente de la base dentro del mismo armazón: el texto visible (y el hash) es el
+ * mismo que el del JSX. Si el backend no responde, el html no es seguro o su hash no corresponde, se ve el JSX.
+ */
+describe('Página pública con el texto publicado en la base', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  function backendCon(cuerpo: unknown, ok = true) {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://api.test');
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok, status: ok ? 200 : 503, json: async () => cuerpo })));
+  }
+
+  async function pintarVigente(slug: SlugDocumentoLegal, respaldo = 'TEXTO DE RESPALDO'): Promise<string> {
+    const elemento = await DocumentoVigenteReal({ slug, children: createElement('p', null, respaldo) });
+    return renderToStaticMarkup(elemento);
+  }
+
+  it.each(PAGINAS)('$carpeta: con el html de la base el texto visible da exactamente el hash registrado', async ({ slug, carpeta }) => {
+    const html = principal(await pintar(carpeta));
+    const d = documentoLegal(slug);
+    expect(htmlPublicadoEsSeguro(html)).toBe(true);
+    expect(textoVisibleDocumento(html)).toBe(texto(html));
+    backendCon({ success: true, data: { slug, version: d.version, vigenteDesde: d.vigenteDesde, hash: d.hash, html, requiereAceptacion: true } });
+    const pagina = await pintarVigente(slug);
+    expect(pagina).not.toContain('TEXTO DE RESPALDO');
+    expect(hashTexto(texto(pagina))).toBe(d.hash);
+    expect(texto(pagina)).toBe(texto(await pintar(carpeta)));
+  });
+
+  it('sin backend, con error o con un hash que no corresponde al texto, se ve el texto de la página (respaldo)', async () => {
+    const d = documentoLegal('terminos');
+    const html = principal(await pintar('terminos-y-condiciones'));
+    expect(await pintarVigente('terminos')).toContain('TEXTO DE RESPALDO');
+    backendCon({}, false);
+    expect(await pintarVigente('terminos')).toContain('TEXTO DE RESPALDO');
+    backendCon({ success: true, data: { slug: 'terminos', version: d.version, vigenteDesde: d.vigenteDesde, hash: 'f'.repeat(64), html } });
+    expect(await pintarVigente('terminos')).toContain('TEXTO DE RESPALDO');
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('fetch failed'))));
+    expect(await pintarVigente('terminos')).toContain('TEXTO DE RESPALDO');
+  });
+
+  it.each(PAGINAS)('$carpeta envuelve su texto con DocumentoVigente y conserva su metadata en el código', ({ slug, carpeta }) => {
+    const src = fuente(carpeta);
+    expect(src).toContain(`<DocumentoVigente slug="${slug}">`);
+    expect(src).toContain('export const metadata = metadataPublica(');
   });
 });
 

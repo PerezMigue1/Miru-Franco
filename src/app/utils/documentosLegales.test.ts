@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DOCUMENTOS_LEGALES, documentoLegal, leyendaVersion } from './documentosLegales';
+import { DOCUMENTOS_LEGALES, documentoLegal, hashTextoDocumento, leyendaVersion, textoVisibleDocumento } from './documentosLegales';
 
 /** Página de cada documento: src/app<ruta sin ancla>/page.tsx (anticipos comparte la de reembolsos). */
 function archivoDePagina(ruta: string): string {
@@ -78,5 +78,29 @@ describe('Hash de los documentos legales', () => {
 
   it('anticipos comparte el hash de reembolsos (vive en la misma página)', () => {
     expect(documentoLegal('anticipos').hash).toBe(documentoLegal('reembolsos').hash);
+  });
+});
+
+/**
+ * La misma regla del texto visible que usan la prueba "Hash del texto publicado" (components/legal/paginasLegales.test.ts)
+ * y el backend (backend-miru documentos-legales/html-seguro.ts, con estos mismos casos en html-seguro.spec.ts). La web
+ * la usa para comprobar que el html que manda el backend da el hash publicado antes de mostrarlo.
+ */
+describe('Texto visible y hash de un html publicado', () => {
+  it('quita etiquetas, decodifica las entidades de React y colapsa espacios y saltos', async () => {
+    const a = textoVisibleDocumento('<p class="x">Hola,\r\n   <strong>mundo</strong> &amp; más</p>');
+    const b = textoVisibleDocumento('<div><span>Hola,</span> <em>mundo</em>\n&amp; más</div>');
+    expect(a).toBe('Hola, mundo & más');
+    expect(await hashTextoDocumento('<p class="x">Hola,\r\n   <strong>mundo</strong> &amp; más</p>')).toBe(await hashTextoDocumento('<div><span>Hola,</span> <em>mundo</em>\n&amp; más</div>'));
+    expect(b).toBe(a);
+  });
+
+  it('decodifica &quot; &#x27; &lt; &gt; y &amp; en ese orden y no separa elementos pegados', () => {
+    expect(textoVisibleDocumento('<p>&quot;listo&quot; y &#x27;ya&#x27; &lt;b&gt; &amp;amp;</p>')).toBe(`"listo" y 'ya' <b> &amp;`);
+    expect(textoVisibleDocumento('<ol><li>a.</li><li>b</li></ol>')).toBe('a.b');
+  });
+
+  it('el hash es el SHA-256 hexadecimal en UTF-8 del texto (mismo valor que el backend)', async () => {
+    expect(await hashTextoDocumento('<p> abc </p>')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
   });
 });

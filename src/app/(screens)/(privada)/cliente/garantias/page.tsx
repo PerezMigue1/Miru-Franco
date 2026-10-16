@@ -10,7 +10,7 @@ import Textarea from '../../../../components/ui/Textarea';
 import Badge from '../../../../components/ui/Badge';
 import { getMiPerfil } from '../../../../services/auth';
 import { crearQueja, listarQuejasPorCliente, type QuejaApi } from '../../../../services/quejas';
-import { PLAZOS_TERMINOS } from '../../../../utils/terminosCondiciones';
+import { useTextosSitio } from '../../../../hooks/useTextosSitio';
 import { mensajeDeError } from '../../../../utils/errorRed';
 import { showToast } from '../../../../utils/toast';
 import { fechaHoraMexico } from '../../../../components/privacidad/textosPrivacidad';
@@ -18,6 +18,7 @@ import { ETIQUETA_ESTADO_QUEJA, MAX_ASUNTO, MAX_DESCRIPCION, validarQueja } from
 
 /** Garantías y soporte: las quejas de la clienta (de la base) y el formulario para registrar una nueva. */
 export default function GarantiasClientePage() {
+  const { t } = useTextosSitio();
   const [quejas, setQuejas] = useState<QuejaApi[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export default function GarantiasClientePage() {
     setEnviando(true);
     try {
       await crearQueja({ asunto: asunto.trim(), descripcion: descripcion.trim() });
-      showToast('Recibimos tu caso. Te responderemos en tu cuenta.', 'success');
+      showToast(t('garantias.toastRegistrado'), 'success');
       setAsunto('');
       setDescripcion('');
       setMostrarFormulario(false);
@@ -69,7 +70,7 @@ export default function GarantiasClientePage() {
       <div className="max-w-4xl mx-auto py-4">
         <PageHeader
           title="Garantías y soporte"
-          subtitle={`Si algo de tu servicio no salió como esperabas, tienes ${PLAZOS_TERMINOS.diasGarantiaServicio} días para reportarlo. También puedes escribirnos cualquier duda o sugerencia.`}
+          subtitle={t('garantias.subtitulo')}
         />
 
         <Card className="mb-6">
@@ -92,7 +93,7 @@ export default function GarantiasClientePage() {
             </div>
           ) : quejas.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-              Aún no tienes casos registrados.
+              {t('garantias.vacia')}
             </p>
           ) : (
             <ul className="divide-y" style={{ borderColor: 'var(--mf-linea)' }}>
@@ -127,7 +128,7 @@ export default function GarantiasClientePage() {
                 ¿Necesitas ayuda?
               </h2>
               <p className="mb-4 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                Cuéntanos qué pasó y te responderemos en tu cuenta.
+                {t('garantias.formularioTexto')}
               </p>
               <Button onClick={() => setMostrarFormulario(true)}>Reportar un caso</Button>
             </div>

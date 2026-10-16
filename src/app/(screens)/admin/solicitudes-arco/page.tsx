@@ -30,6 +30,7 @@ import {
   fechaHoraMexico,
   varianteEstadoArco,
 } from '../../../components/privacidad/textosPrivacidad';
+import { useConfiguracionPublica } from '../../../hooks/useConfiguracionPublica';
 import {
   avisoCorreoNoEnviado,
   confirmarYEjecutarCancelacion,
@@ -72,6 +73,7 @@ function DatoDetalle({ etiqueta, children }: { etiqueta: string; children: React
 }
 
 export default function SolicitudesArcoPage() {
+  const { reglas } = useConfiguracionPublica();
   const [filas, setFilas] = useState<SolicitudArcoAdmin[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -292,7 +294,7 @@ export default function SolicitudesArcoPage() {
           ) : (
             <Table headers={['Folio', 'Persona', 'Tipo', 'Estado', 'Creada', 'Vence', <span key="acciones" className="sr-only">Acciones</span>]} headersLegibles>
               {filas.map((s) => {
-                const urgencia = urgenciaSolicitud(s);
+                const urgencia = urgenciaSolicitud(s, new Date(), reglas.arco.diasAvisoVencePronto);
                 const estilo = ESTILO_URGENCIA[urgencia];
                 const insignia = insigniaDeUrgencia(urgencia);
                 const limite = fechaLimite(s);

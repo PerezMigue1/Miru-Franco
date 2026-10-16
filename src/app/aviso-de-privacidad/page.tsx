@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
+import DocumentoVigente from '../components/legal/DocumentoVigente';
 import EncabezadoVersion from '../components/legal/EncabezadoVersion';
 import { metadataPublica } from '../utils/seo';
 import { documentoLegal } from '../utils/documentosLegales';
@@ -39,6 +40,7 @@ const CORREO = 'mildredfranco24@gmail.com';
 
 export default function AvisoDePrivacidadPage() {
   return (
+    <DocumentoVigente slug="aviso-privacidad">
     <DocumentoLegal
       titulo="Aviso de Privacidad Integral"
       secciones={SECCIONES}
@@ -289,5 +291,6 @@ export default function AvisoDePrivacidadPage() {
         </p>
       </Seccion>
     </DocumentoLegal>
+    </DocumentoVigente>
   );
 }

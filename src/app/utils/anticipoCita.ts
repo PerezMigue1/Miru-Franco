@@ -1,6 +1,6 @@
 import type { CitaApi } from '../services/citas';
 import { diaEnMexico, formatearFechaSoloDia, horaEnMexico } from './fechaSoloDia';
-import { PLAZOS_TERMINOS } from './terminosCondiciones';
+import { REGLAS_PUBLICAS_POR_OMISION, type ReglasPublicas } from './reglasNegocio';
 
 /**
  * Estado del anticipo de una cita, igual en el portal y en /operacion. Sale de los campos de la cita y de
@@ -46,10 +46,13 @@ export function pagaEnSalon(c: CitaConAnticipo & Pick<CitaApi, 'anticipoEnSalon'
   return estado === 'pendiente' || estado === 'vencido';
 }
 
-/** Aviso para la clienta que eligió pagar en el salón; anticipoVenceEn ya es el inicio menos 15 min. */
-export function avisoPagoEnSalon(venceEn: string | null | undefined): string {
+/**
+ * Aviso para la clienta que eligió pagar en el salón; anticipoVenceEn ya es el inicio menos los minutos de la regla
+ * con que se creó la cita (minutosAntesPagoSalon; sin dato, la regla de hoy).
+ */
+export function avisoPagoEnSalon(venceEn: string | null | undefined, minutosAntesPagoSalon: number = REGLAS_PUBLICAS_POR_OMISION.citas.minutosAntesPagoSalon): string {
   const hora = horaEnMexico(venceEn);
-  const plazo = `${PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos antes de tu cita`;
+  const plazo = `${minutosAntesPagoSalon} minutos antes de tu cita`;
   return `Paga tu anticipo en el salón ${hora ? `antes de las ${hora} (${plazo})` : `a más tardar ${plazo}`}. También puedes pagarlo en línea.`;
 }
 
@@ -113,4 +116,10 @@ export function reembolsoSaleDeCaja(c: Pick<CitaApi, 'estado' | 'pagosAnticipo'>
     .filter((p) => p.estado === 'en_revision' || (c.estado === 'cancelada' && p.estado === 'aprobado' && !p.retenidoEn))
     .sort((a, b) => b.id - a.id)[0];
   return aReembolsar?.metodo === 'efectivo';
+}
+
+/** Minutos antes del inicio en que vence el anticipo en el salón: los guardados en la cita o, sin dato, los de hoy. */
+export function minutosSalonDeCita(cita: { reglas?: { minutosAntesPagoSalon?: number } | null }, reglas: ReglasPublicas = REGLAS_PUBLICAS_POR_OMISION): number {
+  const m = cita.reglas?.minutosAntesPagoSalon;
+  return typeof m === 'number' && Number.isFinite(m) ? m : reglas.citas.minutosAntesPagoSalon;
 }

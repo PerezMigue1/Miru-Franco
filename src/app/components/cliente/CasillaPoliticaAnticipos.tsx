@@ -1,6 +1,8 @@
 'use client';
 
 import { ENLACE_POLITICA_ANTICIPOS, TEXTO_POLITICA_ANTICIPOS } from './consentimientoAnticipo';
+import { useEffect } from 'react';
+import { precargarVersionesVigentes } from '../../services/consentimientos';
 
 interface CasillaPoliticaAnticiposProps {
   id: string;
@@ -14,6 +16,10 @@ interface CasillaPoliticaAnticiposProps {
  * pestaña y un resumen de cuándo se devuelve el anticipo. Estilos en sistema.css (`.mf-consentimiento`).
  */
 export default function CasillaPoliticaAnticipos({ id, checked, onChange, error }: CasillaPoliticaAnticiposProps) {
+  // La casilla lleva la versión vigente del documento (la publicada en el panel, si hay).
+  useEffect(() => {
+    void precargarVersionesVigentes();
+  }, []);
   const idError = `${id}-error`;
   const idResumen = `${id}-resumen`;
   return (

@@ -4,6 +4,7 @@ import { createElement, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { Servicio, ServiciosResult } from '../../services/servicios';
+import { TEXTOS_POR_OMISION } from '../../utils/textosSitio';
 
 vi.mock('../../layouts/Header', () => ({ default: () => null }));
 vi.mock('../../layouts/Footer', () => ({ default: () => null }));
@@ -81,7 +82,9 @@ describe('Citas: solo se anuncian los avisos que el backend manda', () => {
   it('la confirmación no promete un correo de confirmación', () => {
     const fuente = leer('src/app/(screens)/(privada)/cliente/servicios-citas/confirmacion/page.tsx');
     expect(fuente).not.toMatch(/correo electrónico de confirmación/i);
-    expect(fuente).toContain(RECORDATORIO);
+    // El texto sale de Admin > Textos del sitio; su valor de hoy es el mismo recordatorio.
+    expect(fuente).toContain("t('citas.recordatorio')");
+    expect(TEXTOS_POR_OMISION['citas.recordatorio']).toBe(RECORDATORIO);
   });
 
   it('reprogramar no promete una confirmación por correo', () => {
@@ -92,7 +95,7 @@ describe('Citas: solo se anuncian los avisos que el backend manda', () => {
 
   it('el detalle de la cita dice el mismo recordatorio', () => {
     const fuente = leer('src/app/(screens)/(privada)/cliente/servicios-citas/mis-citas/[id]/page.tsx');
-    expect(fuente).toContain(RECORDATORIO);
+    expect(fuente).toContain("t('citas.recordatorio')");
   });
 });
 

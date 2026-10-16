@@ -24,7 +24,10 @@ import { FormContacto, FormInicio, FormSobreNosotros, VistaPreviaContacto, Vista
 import Pestanas, { idPanel, idPestana } from './Pestanas';
 import { PantallaCargando, PantallaError, PantallaSinPermiso } from './piezas';
 import SeccionPermisos from './SeccionPermisos';
-import { FormReglas, PlazosTerminos } from './SeccionReglas';
+import { FormReglas } from './SeccionReglas';
+import FormReglasNegocio from './FormReglasNegocio';
+import AvisoReglasDocumentos from './AvisoReglasDocumentos';
+import type { ReglasAdmin } from './reglasNegocioAdmin';
 
 interface Valores {
   salon: DatosSalon;
@@ -33,20 +36,23 @@ interface Valores {
   contenido_inicio: ContenidoInicio;
   contenido_sobre_nosotros: ContenidoSobreNosotros;
   contenido_contacto: ContenidoContacto;
-  reglas: { anticiposDesde: string | null };
+  reglas: ReglasAdmin;
 }
 
 const CLAVES: SeccionConfiguracion[] = ['salon', 'redes', 'horario', 'contenido_inicio', 'contenido_sobre_nosotros', 'contenido_contacto', 'reglas'];
 
 function inicializar(c: ConfiguracionAdmin): Valores {
-  return Object.fromEntries(CLAVES.map((k) => [k, valorInicial(k, c.data?.[k]?.valor)])) as unknown as Valores;
+  // Reglas: las que usa hoy el backend, completas (con los valores de hoy en lo que nunca se guardó).
+  return Object.fromEntries(
+    CLAVES.map((k) => [k, valorInicial(k, k === 'reglas' ? (c.reglasVigentes ?? c.data?.reglas?.valor) : c.data?.[k]?.valor)]),
+  ) as unknown as Valores;
 }
 
 const PESTANAS = [
   { id: 'salon', etiqueta: 'Salón y redes' },
   { id: 'horario', etiqueta: 'Horario' },
   { id: 'textos', etiqueta: 'Textos del sitio' },
-  { id: 'reglas', etiqueta: 'Citas y anticipos' },
+  { id: 'reglas', etiqueta: 'Reglas' },
   { id: 'permisos', etiqueta: 'Permisos por rol' },
 ];
 const GRUPO = 'config-sitio';
@@ -115,7 +121,7 @@ export default function ConfiguracionSitioPage() {
             Configuración del sitio
           </h1>
           <p className="mt-1 max-w-[65ch] text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-            Datos del salón, horario, textos públicos, reglas de anticipos y permisos del personal. Lo que guardes aquí se
+            Datos del salón, horario, textos públicos, reglas del negocio y permisos del personal. Lo que guardes aquí se
             ve en el sitio en menos de un minuto, sin publicar de nuevo. Los documentos legales no cambian desde aquí.
           </p>
         </div>
@@ -240,22 +246,42 @@ export default function ConfiguracionSitioPage() {
 
             {panel(
               'reglas',
-              <EditorSeccion<{ anticiposDesde: string | null }>
+              <EditorSeccion<ReglasAdmin>
                 key={`reglas-${intento}`}
                 clave="reglas"
-                titulo="Reglas de citas y anticipos"
-                descripcion="Desde cuándo se pide anticipo al agendar en línea los servicios que lo tienen."
+                titulo="Reglas del negocio"
+                descripcion="Plazos de citas, anticipos y apartados, métodos de pago, plazos legales y días inhábiles. El sitio, los correos y los avisos usan estos valores."
                 guardado={valores.reglas}
                 actualizado={actualizado('reglas')}
                 camposLegales={camposLegales}
                 onGuardado={guardado('reglas')}
+                definiciones={config?.definicionesReglas}
               >
-                {({ valor, cambiar, errores }) => (
-                  <div className="space-y-8">
-                    <FormReglas valor={valor} respaldo={config?.anticiposDesdeRespaldo ?? null} errores={errores} onCambiar={cambiar} />
-                    <PlazosTerminos />
-                  </div>
-                )}
+                {({ valor, cambiar, errores }) => {
+                  const inicio = (
+                    <FormReglas
+                      valor={valor}
+                      respaldo={config?.anticiposDesdeRespaldo ?? null}
+                      errores={errores}
+                      onCambiar={(v) => cambiar({ ...valor, anticiposDesde: v.anticiposDesde })}
+                    />
+                  );
+                  return config?.definicionesReglas?.length ? (
+                    <div className="space-y-6">
+                      <AvisoReglasDocumentos reglas={valor} />
+                      <FormReglasNegocio
+                        valor={valor}
+                        definiciones={config.definicionesReglas}
+                        errores={errores}
+                        respaldoApartados={config.apartadosDesdeRespaldo ?? null}
+                        onCambiar={cambiar}
+                        inicioCitas={inicio}
+                      />
+                    </div>
+                  ) : (
+                    inicio
+                  );
+                }}
               </EditorSeccion>,
             )}
 

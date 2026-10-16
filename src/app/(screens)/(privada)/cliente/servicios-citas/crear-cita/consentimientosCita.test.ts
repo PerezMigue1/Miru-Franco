@@ -113,8 +113,8 @@ describe('Crear cita: si el servicio no cargó no se sabe si pide anticipo', () 
     expect(pagina).toMatch(/const sinServicio = servicioSinCargar\(\{ servicioId, servicio, cargando: loadingServicio \}\)/);
     expect(pagina).toMatch(/role="alert"[^>]*>\s*\{MENSAJE_SERVICIO_NO_CARGADO\}/);
     expect(pagina).toMatch(/onClick=\{cargarServicio\}[^>]*>\s*Reintentar/);
-    // Los dos botones de enviar quedan desactivados sin el servicio.
-    expect(pagina.match(/disabled=\{!!enviando \|\| datosIncompletos \|\| sinServicio\}/g)).toHaveLength(2);
+    // El botón de confirmar (uno solo: su texto cambia con la forma de pago) queda desactivado sin el servicio.
+    expect(pagina.match(/disabled=\{!!enviando \|\| datosIncompletos \|\| sinServicio\}/g)).toHaveLength(1);
   });
 });
 
@@ -146,7 +146,7 @@ describe('Crear cita: casilla y botones bajo "Detalles de la Cita" (no al fondo 
     expect(inicioResumen).toBeGreaterThan(-1);
     expect(inicioConfirmar).toBeGreaterThan(inicioResumen);
     const resumen = pagina.slice(inicioResumen, inicioConfirmar);
-    for (const pieza of ['<CasillaPoliticaAnticipos', "modoPago.current = 'linea'", "modoPago.current = 'salon'", '<AvisoSimplificado']) {
+    for (const pieza of ['<FormaPagoCita', '<CasillaPoliticaAnticipos', 'textoBotonConfirmar(', '<AvisoSimplificado']) {
       expect(resumen, pieza).not.toContain(pieza);
       expect(pagina.indexOf(pieza), pieza).toBeGreaterThan(inicioConfirmar);
     }
@@ -190,12 +190,11 @@ describe('Crear cita: casillas en la pantalla', () => {
     expect(pagina).not.toMatch(/defaultChecked|checked=\{true\}/);
   });
 
-  it('la de anticipos va antes de los botones de pagar y de apartar, solo si hay anticipo', () => {
+  it('la de anticipos va dentro de "Forma de pago", antes del botón de confirmar, solo si hay anticipo', () => {
     const casillaEn = pagina.indexOf('<CasillaPoliticaAnticipos');
-    expect(casillaEn).toBeGreaterThan(-1);
-    expect(casillaEn).toBeLessThan(pagina.indexOf("modoPago.current = 'linea'"));
-    expect(casillaEn).toBeLessThan(pagina.indexOf("modoPago.current = 'salon'"));
-    expect(pagina.slice(pagina.lastIndexOf('{anticipo > 0 && (', casillaEn), casillaEn)).not.toMatch(/\)\}/);
+    expect(casillaEn).toBeGreaterThan(pagina.indexOf('<FormaPagoCita'));
+    expect(casillaEn).toBeLessThan(pagina.indexOf('textoBotonConfirmar('));
+    expect(pagina.slice(pagina.lastIndexOf('anticipo > 0 ? (', casillaEn), casillaEn)).not.toMatch(/\) :/);
   });
 
   it('la de fotos es opcional, aparte y con el texto acordado', () => {

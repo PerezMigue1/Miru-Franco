@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import { documentoLegal } from '../../utils/documentosLegales';
+import { precargarVersionesVigentes } from '../../services/consentimientos';
 import CasillaDocumento, { EnlaceDocumento } from './CasillaDocumento';
 import type { CampoCasillaAlta, CasillasAlta as ValoresCasillasAlta } from './reglasAlta';
 
@@ -47,6 +49,10 @@ interface CasillasAltaProps {
 
 /** Las tres casillas del alta para formularios con estado propio (el registro con Google). */
 export default function CasillasAlta({ idBase, valores, onCambio, errores = {}, disabled }: CasillasAltaProps) {
+  // Al enviar, el alta lleva la versión vigente de Términos y Aviso (la publicada en el panel, si hay).
+  useEffect(() => {
+    void precargarVersionesVigentes();
+  }, []);
   return (
     <div className="space-y-1">
       {CAMPOS_CASILLA_ALTA.map((campo) => (

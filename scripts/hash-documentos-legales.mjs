@@ -15,6 +15,12 @@
 // Al cambiar el texto de una página legal: sube su versión en el registro, corre este script, copia el hash
 // nuevo al registro y siembra esa versión en el backend (versiones_documentos_legales es de solo inserción:
 // va como fila nueva en una migración nueva).
+//
+// Desde Admin > Documentos legales las versiones nuevas se publican en el panel: el backend arma el html, calcula
+// el hash con esta misma regla y lo guarda con la versión, y la página muestra ese texto (DocumentoVigente). El
+// JSX de cada page.tsx queda como respaldo si el backend no responde; este script sigue revisando ese respaldo.
+// La semilla del texto en la base (migración 20261017130000_documentos_legales del backend) salió de la prueba
+// "Semilla de los documentos legales en la base" con HTML_DOCUMENTOS_LEGALES_SALIDA=<archivo>.
 // Uso: node scripts/hash-documentos-legales.mjs            (hashes)
 //      node scripts/hash-documentos-legales.mjs --texto    (además, el texto exacto al que se le sacó cada hash)
 import { spawnSync } from 'node:child_process';

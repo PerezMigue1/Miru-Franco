@@ -1,5 +1,7 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
+import { normalizarReglasPublicas, REGLAS_PUBLICAS_POR_OMISION, type DefinicionRegla, type ReglasPublicas } from '../utils/reglasNegocio';
+import { normalizarTextos, TEXTOS_POR_OMISION } from '../utils/textosSitio';
 
 /**
  * Configuración del sitio (Admin > Configuración del sitio): la única fuente del contacto, el horario y los textos
@@ -65,6 +67,10 @@ export interface ConfiguracionPublica {
   contenido: { inicio: ContenidoInicio; sobreNosotros: ContenidoSobreNosotros; contacto: ContenidoContacto };
   /** Sin fecha de inicio de anticipos, el sitio no promete anticipo en ningún lado. */
   anticiposActivos: boolean;
+  /** Plazos, métodos de pago y variables de los textos (Admin > Configuración del sitio > Reglas). */
+  reglas: ReglasPublicas;
+  /** Textos del sitio (Admin > Textos del sitio), con las variables de reglas ya llenas. */
+  textos: Record<string, string>;
 }
 
 const PARRAFO_EQUIPO =
@@ -134,6 +140,8 @@ export const CONFIGURACION_POR_OMISION: ConfiguracionPublica = {
     },
   },
   anticiposActivos: false,
+  reglas: REGLAS_PUBLICAS_POR_OMISION,
+  textos: { ...TEXTOS_POR_OMISION },
 };
 
 const esTexto = (v: unknown): v is string => typeof v === 'string';
@@ -180,13 +188,15 @@ export function normalizarConfiguracion(dato: unknown): ConfiguracionPublica {
       contacto: mezclar(base.contenido.contacto, contenido.contacto),
     },
     anticiposActivos: d.anticiposActivos === true,
+    reglas: normalizarReglasPublicas(d.reglas),
+    textos: normalizarTextos(d.textos),
   };
 }
 
 /** Para componentes de servidor: revalida cada 60 s, así lo que guarda la dueña se ve sin deploy. Nunca lanza. */
 export async function obtenerConfiguracionPublica(): Promise<ConfiguracionPublica> {
   try {
-    const res = await fetch(`${getBackendBaseUrl()}/api/configuracion-publica`, { next: { revalidate: 60 } } as RequestInit);
+    const res = await fetch(`${getBackendBaseUrl()}/api/configuracion-publica`, { next: { revalidate: 60, tags: ['configuracion-publica'] } } as RequestInit);
     if (!res.ok) return CONFIGURACION_POR_OMISION;
     return normalizarConfiguracion(await res.json());
   } catch {
@@ -264,6 +274,12 @@ export interface ConfiguracionAdmin {
   data: Partial<Record<SeccionConfiguracion, { valor: unknown; actualizadoEn: string; actualizadoPor: string | null }>>;
   camposEnDocumentosLegales: Record<string, string[]>;
   anticiposDesdeRespaldo: string | null;
+  /** APARTADOS_DESDE del servidor (respaldo de tienda.apartadosDesde). */
+  apartadosDesdeRespaldo?: string | null;
+  /** Qué es cada regla: etiqueta, explicación, tipo, rango y mínimo de ley. */
+  definicionesReglas?: DefinicionRegla[];
+  /** Las reglas que usa hoy el backend, completas. */
+  reglasVigentes?: Record<string, unknown>;
 }
 export interface PermisosPorRol {
   catalogo: { clave: string; descripcion: string; grupo: string }[];
@@ -275,8 +291,17 @@ const BASE = () => getBackendBaseUrl();
 export function obtenerConfiguracionAdmin(): Promise<ConfiguracionAdmin> {
   return apiClient.get<ConfiguracionAdmin>('/api/configuracion-sitio', BASE());
 }
-export function guardarSeccionConfiguracion(clave: SeccionConfiguracion, valor: unknown): Promise<{ afectaDocumentosLegales: boolean }> {
-  return apiClient.put<{ afectaDocumentosLegales: boolean }>(`/api/configuracion-sitio/${clave}`, { valor }, BASE());
+/** `actualizadoEn`: la versión con que se abrió la sección; si otra persona guardó después, el backend responde 409. */
+export function guardarSeccionConfiguracion(
+  clave: SeccionConfiguracion,
+  valor: unknown,
+  actualizadoEn?: string | null,
+): Promise<{ afectaDocumentosLegales: boolean; actualizadoEn?: string }> {
+  return apiClient.put<{ afectaDocumentosLegales: boolean; actualizadoEn?: string }>(
+    `/api/configuracion-sitio/${clave}`,
+    actualizadoEn ? { valor, actualizadoEn } : { valor },
+    BASE(),
+  );
 }
 export async function obtenerHistorialConfiguracion(clave?: string): Promise<EntradaHistorial[]> {
   const r = await apiClient.get<{ data?: EntradaHistorial[] }>(`/api/configuracion-sitio/historial${clave ? `?clave=${encodeURIComponent(clave)}` : ''}`, BASE());

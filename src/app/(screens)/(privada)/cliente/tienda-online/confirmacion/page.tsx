@@ -33,6 +33,7 @@ import { hasValidToken } from '../../../../../utils/security';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import SelloConfirmacion from '../../../../../components/cliente/SelloConfirmacion';
 import EncabezadoPagoEnLinea from '../../../../../components/cliente/EncabezadoPagoEnLinea';
+import { useTextosSitio } from '../../../../../hooks/useTextosSitio';
 
 function formatFechaPedido(iso?: string): { fecha: string; hora: string } {
   if (!iso?.trim()) {
@@ -64,6 +65,8 @@ function formatFechaPedido(iso?: string): { fecha: string; hora: string } {
 
 function ConfirmacionCompraContent() {
   const router = useRouter();
+  // Textos de Admin > Textos del sitio (página Checkout).
+  const { t } = useTextosSitio();
   const searchParams = useSearchParams();
   const rawId = searchParams.get('pedidoId');
   const pedidoId = rawId ? parseInt(rawId, 10) : NaN;
@@ -268,14 +271,14 @@ function ConfirmacionCompraContent() {
               </div>
             )}
             <h1 className="mf-titulo-pagina mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-              {esCancelado ? 'Pedido cancelado' : '¡Gracias por tu compra!'}
+              {esCancelado ? 'Pedido cancelado' : t('tienda.confirmacionTitulo')}
             </h1>
             <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
               {esCancelado
                 ? 'Este pedido está cancelado.'
                 : esPagoEnSalon(pedido.metodoPago)
-                  ? 'Te apartamos tu pedido. Te avisamos en la app y por correo cuando esté listo para recogerlo y pagarlo en el salón.'
-                  : 'Tu pedido quedó registrado. Te avisamos en la app y por correo cuando esté listo para recoger en el salón.'}
+                  ? t('tienda.confirmacionApartado')
+                  : t('tienda.confirmacionRegistrado')}
             </p>
           </div>
           )}

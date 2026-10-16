@@ -2,6 +2,10 @@ import { ORIGEN_REVOCACION, type DevolucionApi, type PedidoApi } from '../../../
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
 import { etiquetaEstadoDevolucion } from '../../../../../../utils/politicaDevolucion';
 import { puedeVerBotonRevocar } from './revocacion';
+import { REGLAS_PUBLICAS_POR_OMISION } from '../../../../../../utils/reglasNegocio';
+import { textoSitio, TEXTOS_POR_OMISION } from '../../../../../../utils/textosSitio';
+
+type Textos = Record<string, string>;
 
 /** La clienta puede cancelar mientras el salón no empezó a preparar su pedido. */
 const ESTADOS_CANCELABLES = new Set(['pendiente_pago', 'pagado']);
@@ -16,11 +20,15 @@ export function puedeVerBotonCancelar(pedido: Pick<PedidoApi, 'estado'>): boolea
  * las dos cancelan y reembolsan, pero la revocación es el derecho legal y sigue disponible después.
  */
 export function explicacionCancelarORevocar(
-  pedido: Pick<PedidoApi, 'estado' | 'puedeRevocar' | 'revocableHasta'>,
+  pedido: Pick<PedidoApi, 'estado' | 'puedeRevocar' | 'revocableHasta'> & { reglas?: unknown },
   ahora: Date = new Date(),
+  textos: Textos = TEXTOS_POR_OMISION,
 ): string | null {
   if (!puedeVerBotonCancelar(pedido) || !puedeVerBotonRevocar(pedido, ahora)) return null;
-  return 'Las dos te devuelven lo que pagaste. «Cancelar pedido» solo se puede antes de que empecemos a prepararlo; «Revocar compra» es tu derecho por ley durante 5 días hábiles y sigue disponible aunque ya lo hayamos preparado o lo hayas recogido.';
+  // El plazo de revocación es el guardado en el pedido al crearlo (sin él, el de hoy).
+  const guardado = (pedido.reglas as { diasHabilesRevocacion?: unknown } | null | undefined)?.diasHabilesRevocacion;
+  const dias = typeof guardado === 'number' && Number.isFinite(guardado) ? guardado : REGLAS_PUBLICAS_POR_OMISION.revocacion.diasHabiles;
+  return textoSitio(textos, 'pedidos.cancelarORevocar', { diasRevocacion: dias });
 }
 
 type VarianteInsignia = 'default' | 'success' | 'warning' | 'danger';
@@ -39,6 +47,7 @@ export function insigniaDevolucion(estado: string): { texto: string; variante: V
 export function textoRevocacionEntregado(
   pedido: Pick<PedidoApi, 'estado'>,
   devoluciones: Pick<DevolucionApi, 'estado' | 'origen' | 'monto'>[],
+  textos: Textos = TEXTOS_POR_OMISION,
 ): string | null {
   if (pedido.estado !== 'entregado') return null;
   const revocacion = devoluciones.find((d) => d.origen === ORIGEN_REVOCACION && d.estado !== 'cancelada');
@@ -46,11 +55,11 @@ export function textoRevocacionEntregado(
   const monto = revocacion.monto != null ? ` ${formatearPrecioMXN(revocacion.monto)}` : '';
   switch (revocacion.estado) {
     case 'pendiente':
-      return `Revocaste tu compra. Entrega tu pedido en el salón: al recibirlo te reembolsamos${monto} por el mismo medio con el que pagaste.`;
+      return textoSitio(textos, 'pedidos.revocacion.pendiente', { monto });
     case 'aprobada':
-      return `Revocaste tu compra: recibimos tu pedido y te reembolsamos${monto} por el mismo medio con el que pagaste.`;
+      return textoSitio(textos, 'pedidos.revocacion.aprobada', { monto });
     case 'rechazada':
-      return 'Revocaste tu compra, pero el salón rechazó la revocación. Si tienes dudas, comunícate con el salón.';
+      return textoSitio(textos, 'pedidos.revocacion.rechazada');
     default:
       return null;
   }

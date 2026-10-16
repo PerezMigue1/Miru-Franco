@@ -1,7 +1,7 @@
 'use client';
 
 import ContactoProfeco from '../../../../../components/legal/Profeco';
-import { CONDICIONES_PAGO, LEYENDA_PRECIOS, QUEJAS, textoEntrega } from './infoComercio';
+import { condicionesPago, LEYENDA_PRECIOS, QUEJAS, textoEntrega } from './infoComercio';
 import { useConfiguracionPublica } from '../../../../../hooks/useConfiguracionPublica';
 import { domicilioCompleto, enlaceTelefono, enlaceWhatsApp } from '../../../../../services/configuracionSitio';
 
@@ -14,7 +14,9 @@ const ETIQUETA = { color: 'var(--menu-texto-principal)' };
  */
 export default function InfoCompra() {
   // Proveedor, domicilio, contacto y horario: Configuración del sitio (por omisión, los de los Términos).
-  const { salon, horario } = useConfiguracionPublica();
+  const { salon, horario, reglas } = useConfiguracionPublica();
+  // CONDICIONES_PAGO con las reglas guardadas: solo las formas de pago activas.
+  const condiciones = condicionesPago(reglas);
   const telefono = enlaceTelefono(salon.telefono);
   const whatsapp = enlaceWhatsApp(salon.whatsapp);
   const [usuarioCorreo, ...dominio] = salon.correoPrivacidad.split('@');
@@ -66,7 +68,7 @@ export default function InfoCompra() {
           <dt className="font-semibold" style={ETIQUETA}>Formas de pago</dt>
           <dd>
             <ul className="space-y-1">
-              {CONDICIONES_PAGO.map((c) => (
+              {condiciones.map((c) => (
                 <li key={c.titulo}>
                   <strong style={ETIQUETA}>{c.titulo}:</strong> {c.texto}
                 </li>

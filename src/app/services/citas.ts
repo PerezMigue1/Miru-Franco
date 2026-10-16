@@ -47,6 +47,8 @@ export interface CitaApi {
   anticipoPagado?: number;
   /** El anticipo se paga en el salón: su plazo (anticipoVenceEn) es el inicio menos 15 min. */
   anticipoEnSalon?: boolean;
+  /** Reglas con que se creó la cita (plazos del anticipo); null en las anteriores a esta ronda. */
+  reglas?: { plazoAnticipoHoras?: number; minutosAntesPagoSalon?: number } | null;
 }
 
 export interface PagoAnticipoApi {

@@ -54,3 +54,31 @@ describe('Menú de administración: configuración del sitio y reembolsos pendie
     expect(pagina('reembolsos-pendientes')).toContain('<AdminLayout');
   });
 });
+
+describe('Menú de administración: documentos legales', () => {
+  it('"Documentos legales" va en Sistema, con su ruta, ícono y el permiso configuracion:editar (solo admin)', () => {
+    const sistema = layout.slice(layout.indexOf("titulo: 'Sistema'"));
+    const item = sistema.match(/\{[^}]*label: 'Documentos legales'[^}]*\}/)?.[0];
+    expect(item).toContain("href: '/admin/documentos-legales'");
+    expect(item).toContain("permiso: 'configuracion:editar'");
+    expect(item).toMatch(/icon: [A-Za-z]+/);
+  });
+
+  it('la pantalla monta AdminLayout', () => {
+    expect(pagina('documentos-legales')).toContain('<AdminLayout>');
+  });
+});
+
+describe('Menú de administración: textos del sitio', () => {
+  it('"Textos del sitio" va en Sistema, con su ruta, ícono y el permiso configuracion:editar (solo admin)', () => {
+    const sistema = layout.slice(layout.indexOf("titulo: 'Sistema'"));
+    const item = sistema.match(/\{[^}]*label: 'Textos del sitio'[^}]*\}/)?.[0];
+    expect(item).toContain("href: '/admin/textos-sitio'");
+    expect(item).toContain("permiso: 'configuracion:editar'");
+    expect(item).toMatch(/icon: [A-Za-z]+/);
+  });
+
+  it('la pantalla monta AdminLayout', () => {
+    expect(pagina('textos-sitio')).toContain('<AdminLayout>');
+  });
+});

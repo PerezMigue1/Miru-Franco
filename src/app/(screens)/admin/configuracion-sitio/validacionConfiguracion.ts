@@ -275,8 +275,9 @@ export function prepararValor(clave: SeccionConfiguracion, borrador: unknown): u
         })),
       };
     case 'reglas': {
+      // Las demás reglas van completas (el backend vuelve a validar cada una); la fecha vacía se manda como null.
       const f = recortar(v.anticiposDesde);
-      return { anticiposDesde: f || null };
+      return { ...structuredClone(v), anticiposDesde: f || null };
     }
   }
 }
@@ -346,7 +347,7 @@ const REGLAS_SERVIDOR: Record<SeccionConfiguracion, Regla[]> = {
     [/introducción/i, 'introduccion'],
     [/agenda en línea/i, 'agendaTexto'],
   ],
-  reglas: [[/anticipos/i, 'anticiposDesde']],
+  reglas: [[/fecha de inicio de los anticipos/i, 'anticiposDesde']],
 };
 
 /** Reparte los mensajes del backend: junto a su campo si se reconoce, arriba de la sección si no. */

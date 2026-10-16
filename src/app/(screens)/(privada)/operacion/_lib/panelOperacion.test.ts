@@ -138,6 +138,21 @@ describe('Hallazgo 11: etiquetas de la ficha de clienta', () => {
     expect(etiquetaTipoNotificacion('algo_nuevo')).toBe('Algo nuevo');
     expect(etiquetaTipoNotificacion('')).toBe('Aviso');
   });
+  it('todos los tipos que crea el backend tienen su nombre en español (ninguno sale con el nombre interno)', () => {
+    const tipos = ['cita_nueva', 'anticipo_pagado', 'anticipo_por_devolver', 'pedido_nuevo', 'revocacion_por_recibir', 'arco_solicitud', 'arco_respuesta', 'pago_revision', 'pedido_cancelado_pagado', 'reembolso'];
+    expect(tipos.map(etiquetaTipoNotificacion)).toEqual([
+      'Cita nueva',
+      'Anticipo pagado',
+      'Anticipo por devolver',
+      'Pedido nuevo',
+      'Revocación por recibir',
+      'Solicitud ARCO',
+      'Respuesta a solicitud ARCO',
+      'Pago en revisión',
+      'Pedido pagado cancelado',
+      'Reembolso',
+    ]);
+  });
 });
 
 describe('Hallazgo 12: método de pago y folio de ventas', () => {

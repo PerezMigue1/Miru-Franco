@@ -8,12 +8,14 @@ import Card from '../../../../../../components/ui/Card';
 import Badge from '../../../../../../components/ui/Badge';
 import { obtenerCita, type CitaApi } from '../../../../../../services/citas';
 import AnticipoPortal from '../../../../../../components/cliente/AnticipoPortal';
+import PagoEnSalonCita from '../../../../../../components/cliente/PagoEnSalonCita';
 import { useAhora } from '../../../../../../hooks/useAhora';
 import { getServicioPorId } from '../../../../../../services/servicios';
 import type { Servicio } from '../../../../../../services/servicios';
 import { citaGestionablePorClienta } from '../../../../../../components/cliente/citaGestionable';
 import { etiquetaEstadoCita } from '../../../../../../utils/estados';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
+import { useTextosSitio } from '../../../../../../hooks/useTextosSitio';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -27,6 +29,7 @@ export default function DetalleMiCitaPage() {
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTextosSitio();
 
   useEffect(() => {
     if (!id || !Number.isFinite(Number(id))) {
@@ -144,7 +147,7 @@ export default function DetalleMiCitaPage() {
                     className="text-xl font-bold"
                     style={{ color: 'var(--menu-texto-principal)' }}
                   >
-                    {cita.servicioNombre ?? servicio?.nombre ?? '—'}
+                    {cita.servicioNombre ?? servicio?.nombre ?? '-'}
                   </p>
                   {servicio?.descripcion && (
                     <p className="text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
@@ -158,7 +161,7 @@ export default function DetalleMiCitaPage() {
                       Duración
                     </p>
                     <p style={{ color: 'var(--menu-texto-principal)' }}>
-                      {servicio?.duracion ?? (cita.servicioDuracionMinutos ? `${cita.servicioDuracionMinutos} min` : '—')}
+                      {servicio?.duracion ?? (cita.servicioDuracionMinutos ? `${cita.servicioDuracionMinutos} min` : '-')}
                     </p>
                   </div>
                   <div>
@@ -173,7 +176,7 @@ export default function DetalleMiCitaPage() {
                         ? formatearPrecioMXN(servicio.precio)
                         : cita.servicioPrecio
                           ? formatearPrecioMXN(cita.servicioPrecio)
-                          : '—'}
+                          : '-'}
                     </p>
                   </div>
                 </div>
@@ -220,7 +223,7 @@ export default function DetalleMiCitaPage() {
                   <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                     Especialista
                   </p>
-                  <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialistaNombre ?? '—'}</p>
+                  <p style={{ color: 'var(--menu-texto-principal)' }}>{cita.especialistaNombre ?? '-'}</p>
                 </div>
                 {cita.notas && (
                   <div>
@@ -249,6 +252,12 @@ export default function DetalleMiCitaPage() {
                 <AnticipoPortal cita={cita} ahora={ahora} detalle />
               </Card>
             )}
+            {['pendiente', 'confirmada', 'reprogramada'].includes(cita.estado) && (
+              <Card>
+                <h3 className="text-subtitle mb-4 text-menu-texto-principal">Forma de pago</h3>
+                <PagoEnSalonCita precio={servicio?.precio ?? cita.servicioPrecio} anticipo={cita.anticipoRequerido ?? 0} />
+              </Card>
+            )}
             <Card>
               <h3
                 className="text-subtitle mb-4"
@@ -257,7 +266,7 @@ export default function DetalleMiCitaPage() {
                 Recordatorios
               </h3>
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                Antes de tu cita te mandaremos un recordatorio en tu cuenta y, si lo tienes activado, por correo.
+                {t('citas.recordatorio')}
               </p>
             </Card>
           </div>

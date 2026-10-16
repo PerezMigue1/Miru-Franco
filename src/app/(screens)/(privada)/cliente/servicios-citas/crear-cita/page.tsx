@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ModuleLayout from '../../../../../components/layouts/ModuleLayout';
 import PageHeader from '../../../../../components/ui/PageHeader';
@@ -13,9 +13,11 @@ import { getMiPerfil } from '../../../../../services/auth';
 import { crearCita, crearPreferenciaAnticipo, obtenerEspecialistas, type EspecialistaApi } from '../../../../../services/citas';
 import Link from 'next/link';
 import { CalendarDays, CalendarCheck2, Clock3, UserRound, Wallet } from 'lucide-react';
+import FormaPagoCita from '../../../../../components/cliente/FormaPagoCita';
+import { useTextosSitio } from '../../../../../hooks/useTextosSitio';
+import { opcionesAnticipo, opcionInicial, saldoEnSalon, textoBotonConfirmar, type OpcionAnticipo } from '../../../../../utils/formaPago';
 import PasosFlujo, { PASOS_RESERVA } from '../../../../../components/cliente/PasosFlujo';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
-import { PLAZOS_TERMINOS } from '../../../../../utils/terminosCondiciones';
 import AvisoSimplificado from '../../../../../components/legal/AvisoSimplificado';
 import CasillaPoliticaAnticipos from '../../../../../components/cliente/CasillaPoliticaAnticipos';
 import { MENSAJE_FALTA_ANTICIPOS } from '../../../../../components/cliente/consentimientoAnticipo';
@@ -46,9 +48,13 @@ function CrearCitaContent() {
   const [especialista, setEspecialista] = useState<EspecialistaApi | null>(null);
   const [loadingEspecialista, setLoadingEspecialista] = useState(!!especialistaId);
 
-  const [enviando, setEnviando] = useState<false | 'linea' | 'salon'>(false);
-  /** Qué botón se usó (por clic, no por SubmitEvent.submitter, que Safari anterior a 15.4 no tiene). */
-  const modoPago = useRef<'linea' | 'salon'>('linea');
+  const [enviando, setEnviando] = useState<false | OpcionAnticipo>(false);
+  /** Reglas de Admin > Configuración del sitio > Reglas: plazos y formas de pago activas. */
+  const { t, textos, config } = useTextosSitio();
+  const { reglas } = config;
+  /** Forma de pago del anticipo elegida en "Forma de pago" (solo las opciones activas). */
+  const [opcionElegida, setOpcionElegida] = useState<OpcionAnticipo | null>(null);
+  const opcionPago: OpcionAnticipo = opcionElegida && opcionesAnticipo(reglas).includes(opcionElegida) ? opcionElegida : opcionInicial(reglas);
   const [error, setError] = useState<string | null>(null);
   /** Política de anticipos: obligatoria si el servicio pide anticipo. Fotos del resultado: opcional. Ambas sin marcar. */
   const [aceptaAnticipos, setAceptaAnticipos] = useState(false);
@@ -56,7 +62,7 @@ function CrearCitaContent() {
   const [autorizaFotos, setAutorizaFotos] = useState(false);
 
   const datosIncompletos = !servicioId || !especialistaId || !inicio || !fin;
-  /** Anticipo del servicio: aparta el horario PLAZOS_TERMINOS.horasAnticipoCita horas mientras se paga. */
+  /** Anticipo del servicio: aparta el horario las horas de la regla (citas.plazoAnticipoHoras) mientras se paga. */
   const anticipo = anticipoDelServicio(servicio);
   /** Con anticipo se pide y se registra la casilla de la Política de anticipos antes de crear la cita. */
   const requiereAnticipo = anticipo > 0;
@@ -109,8 +115,8 @@ function CrearCitaContent() {
       document.getElementById(ID_CASILLA_ANTICIPOS)?.focus();
       return;
     }
-    // Con anticipo: el botón principal paga en línea; el secundario confirma y paga en el salón.
-    const pagarEnSalon = modoPago.current === 'salon';
+    // Con anticipo: la forma de pago elegida en "Forma de pago" (en línea o en el salón).
+    const pagarEnSalon = opcionPago === 'salon';
     setEnviando(anticipo > 0 && !pagarEnSalon ? 'linea' : 'salon');
     setError(null);
     try {
@@ -168,10 +174,10 @@ function CrearCitaContent() {
           <Card className="mf-entrada max-w-xl text-center py-12 px-6">
             <CalendarDays size={36} strokeWidth={1.5} className="mx-auto mb-4" style={{ color: 'var(--logo-branding)' }} aria-hidden />
             <p className="text-lg font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-              Aún no has elegido un servicio y horario
+              {t('citas.crear.sinDatosTitulo')}
             </p>
             <p className="mt-2 text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-              Elige el servicio que quieres, luego el especialista, el día y la hora. Después vuelves aquí para confirmar.
+              {t('citas.crear.sinDatosTexto')}
             </p>
             <Link
               href="/cliente/servicios-citas"
@@ -208,6 +214,7 @@ function CrearCitaContent() {
                     onChange={(e) => setNotas(e.target.value)}
                     rows={4}
                     fullWidth
+                    // Se queda en el código: protege los datos de salud (no pedirlos en texto libre), no lo cambia el panel.
                     placeholder="Indica tus preferencias para la cita. Si tienes alergias, regístralas en Mi perfil, en Información personal."
                   />
                   {/* Opcional y aparte de la Política de anticipos: solo se registra si la marca. */}
@@ -293,7 +300,7 @@ function CrearCitaContent() {
                         className="mf-cifras text-3xl font-bold"
                         style={{ color: 'var(--menu-texto-principal)' }}
                       >
-                        {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '—'}
+                        {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '-'}
                       </p>
                     </div>
                     {anticipo > 0 && (
@@ -301,14 +308,14 @@ function CrearCitaContent() {
                         <div className="flex items-baseline justify-between gap-3">
                           <p className="flex items-center gap-2 text-sm font-semibold text-menu-texto-principal">
                             <Wallet size={16} aria-hidden className="shrink-0 text-logo-branding" />
-                            Anticipo para apartar tu cita
+                            {t('citas.formaPago.anticipoEtiqueta')}
                           </p>
                           <p className="mf-cifras text-xl font-bold text-menu-texto-principal">{formatearPrecioMXN(anticipo)}</p>
                         </div>
                         <p className="mt-2 text-sm text-encabezados-alterno">
-                          En línea tienes {PLAZOS_TERMINOS.horasAnticipoCita} horas para pagarlo, sin pasar de{' '}
-                          {PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos antes de tu cita; si no, el horario se libera.
-                          Se descuenta del total el día de tu cita.
+                          {saldoEnSalon(servicio?.precio, anticipo) !== null
+                            ? t('citas.crear.anticipoDescuentoSaldo', { saldo: formatearPrecioMXN(saldoEnSalon(servicio?.precio, anticipo) ?? 0) })
+                            : t('citas.crear.anticipoDescuento')}
                         </p>
                       </div>
                     )}
@@ -326,7 +333,7 @@ function CrearCitaContent() {
                   className="text-2xl font-bold mb-6"
                   style={{ color: 'var(--menu-texto-principal)', fontFamily: 'var(--font-family-serif)' }}
                 >
-                  Confirma tu cita
+                  {t('citas.crear.tituloConfirmar')}
                 </h2>
                 {loadingServicio ? (
                   <div className="space-y-3" aria-busy="true" aria-label="Cargando servicio">
@@ -335,15 +342,28 @@ function CrearCitaContent() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {anticipo > 0 && (
-                      <CasillaPoliticaAnticipos
-                        id={ID_CASILLA_ANTICIPOS}
-                        checked={aceptaAnticipos}
-                        onChange={(marcada) => {
-                          setAceptaAnticipos(marcada);
-                          if (marcada) setErrorAnticipos(null);
-                        }}
-                        error={errorAnticipos}
+                    {/* Siempre visible: con anticipo, sus opciones y la política; sin anticipo, cuánto y cómo se paga en el salón. */}
+                    {!sinServicio && (
+                      <FormaPagoCita
+                        precio={servicio?.precio}
+                        anticipo={anticipo}
+                        reglas={reglas}
+                        opcion={opcionPago}
+                        onOpcion={setOpcionElegida}
+                        deshabilitado={!!enviando}
+                        casilla={
+                          anticipo > 0 ? (
+                            <CasillaPoliticaAnticipos
+                              id={ID_CASILLA_ANTICIPOS}
+                              checked={aceptaAnticipos}
+                              onChange={(marcada) => {
+                                setAceptaAnticipos(marcada);
+                                if (marcada) setErrorAnticipos(null);
+                              }}
+                              error={errorAnticipos}
+                            />
+                          ) : undefined
+                        }
                       />
                     )}
                     {sinServicio && (
@@ -361,30 +381,15 @@ function CrearCitaContent() {
                     )}
                     <Button
                       type="submit"
-                      value="linea"
-                      onClick={() => { modoPago.current = 'linea'; }}
                       fullWidth
                       size="lg"
                       className="mt-4"
                       disabled={!!enviando || datosIncompletos || sinServicio}
                     >
-                      <span className="mf-feedback-contenido w-full" data-cambiando={enviando === 'linea' ? 'true' : 'false'}>
-                        {anticipo > 0
-                          ? enviando === 'linea' ? 'Abriendo Mercado Pago…' : 'Pagar anticipo con Mercado Pago'
-                          : enviando ? 'Confirmando…' : 'Confirmar Cita'}
+                      <span className="mf-feedback-contenido w-full" data-cambiando={enviando ? 'true' : 'false'}>
+                        {textoBotonConfirmar(anticipo, opcionPago, enviando, textos)}
                       </span>
                     </Button>
-                    {anticipo > 0 && (
-                      <div className="space-y-2">
-                        <Button type="submit" value="salon" onClick={() => { modoPago.current = 'salon'; }} variant="outline" fullWidth disabled={!!enviando || datosIncompletos || sinServicio}>
-                          {enviando === 'salon' ? 'Apartando…' : 'Apartar y pagar en el salón'}
-                        </Button>
-                        <p className="text-sm text-encabezados-alterno">
-                          Llega entre {PLAZOS_TERMINOS.minutosLlegadaSalon} y {PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos antes
-                          para pagarlo. Si a {PLAZOS_TERMINOS.minutosAntesPagoSalon} minutos de tu cita no se ha pagado, se cancela.
-                        </p>
-                      </div>
-                    )}
                     <AvisoSimplificado finalidad="agendar y dar seguimiento a tu cita" />
                   </div>
                 )}

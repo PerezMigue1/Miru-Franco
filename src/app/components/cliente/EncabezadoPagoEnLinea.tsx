@@ -4,6 +4,7 @@ import { AlertCircle, Clock } from 'lucide-react';
 import Button from '../ui/Button';
 import SelloConfirmacion from './SelloConfirmacion';
 import type { EstadoPagoEnLinea } from '../../services/ecommerce';
+import { useTextosSitio } from '../../hooks/useTextosSitio';
 
 /**
  * Encabezado del pedido pagado en línea (confirmación de compra) según el estado real que confirma el
@@ -26,6 +27,8 @@ export default function EncabezadoPagoEnLinea({
   /** Mensaje en español si no se pudo consultar el estado del pago. */
   errorConsulta: string | null;
 }) {
+  // Textos de Admin > Textos del sitio (página Checkout).
+  const { t } = useTextosSitio();
   const circulo = (icono: React.ReactNode, fondo: string) => (
     <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5" style={{ backgroundColor: fondo }}>
       {icono}
@@ -50,7 +53,7 @@ export default function EncabezadoPagoEnLinea({
           ¡Pago recibido!
         </h1>
         <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
-          Tu pedido quedó pagado. Te avisamos en la app y por correo cuando esté listo para recoger en el salón.
+          {t('tienda.pagoRecibidoTexto')}
         </p>
       </>
     );
@@ -120,7 +123,7 @@ export default function EncabezadoPagoEnLinea({
       <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
         {esperando
           ? 'Mercado Pago aún no lo confirma. Esta página se actualiza sola.'
-          : 'Mercado Pago aún no lo confirma. Te avisamos en la app y por correo en cuanto se acredite.'}
+          : t('tienda.pagoEnProcesoTexto')}
       </p>
     </>
   );

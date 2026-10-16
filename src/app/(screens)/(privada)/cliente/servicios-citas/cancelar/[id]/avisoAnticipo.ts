@@ -1,12 +1,15 @@
 import { apiClient } from '../../../../../../services/client';
 import { getBackendBaseUrl } from '../../../../../../services/config';
 import { formatearPrecioMXN } from '../../../../../../utils/formatoPrecio';
+import { REGLAS_PUBLICAS_POR_OMISION } from '../../../../../../utils/reglasNegocio';
+import { textoSitio, TEXTOS_POR_OMISION } from '../../../../../../utils/textosSitio';
 
 /**
  * Qué pasa con el anticipo si la clienta cancela. Política de anticipos compatible con el art. 56 de la Ley
- * Federal de Protección al Consumidor: si la cita está a más de 10 días hábiles del pago del anticipo y cancela
- * dentro de los 5 días hábiles siguientes al pago, se le devuelve completo; en otro caso no se devuelve (puede
- * reprogramar con aviso). Los días hábiles y la regla los calcula el backend.
+ * Federal de Protección al Consumidor: si la cita está a más de N días hábiles del pago del anticipo y cancela
+ * dentro de los M días hábiles siguientes al pago (los guardados en la cita; hoy 10 y 5), se le devuelve completo; en
+ * otro caso no se devuelve (puede reprogramar con aviso). Los días hábiles y la regla los calcula el backend. Los
+ * textos salen de Admin > Textos del sitio.
  */
 export interface PoliticaCancelacionAnticipo {
   reembolsable: boolean;
@@ -23,7 +26,22 @@ const FECHA_LARGA = new Intl.DateTimeFormat('es-MX', {
   year: 'numeric',
 });
 
-const REPROGRAMAR = 'Si reprogramas tu cita con aviso, tu anticipo se respeta para la nueva fecha.';
+/** Plazos de la política guardados en la cita (sin ellos, los de hoy) y los textos del sitio. */
+export interface OpcionesTextoCancelacion {
+  textos?: Record<string, string>;
+  diasExcepcion?: number;
+  diasReembolso?: number;
+}
+
+/** Los días de la política que se guardaron en la cita al crearla (lo que falte, los de hoy). */
+export function plazosDeCita(reglas: unknown): { diasExcepcion: number; diasReembolso: number } {
+  const r = reglas && typeof reglas === 'object' ? (reglas as Record<string, unknown>) : {};
+  const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+  return {
+    diasExcepcion: num(r.diasHabilesExcepcionAnticipo, REGLAS_PUBLICAS_POR_OMISION.citas.diasHabilesExcepcionAnticipo),
+    diasReembolso: num(r.diasHabilesCancelarConReembolso, REGLAS_PUBLICAS_POR_OMISION.citas.diasHabilesCancelarConReembolso),
+  };
+}
 
 function fecha(iso: string): string | null {
   const d = new Date(iso);
@@ -55,19 +73,33 @@ export async function consultarPoliticaCancelacionAnticipo(citaId: number): Prom
 }
 
 /** Texto que explica qué pasará con su anticipo si cancela ahora. */
-export function textoAnticipoAlCancelar(monto: number, p: PoliticaCancelacionAnticipo | null, ahora: Date = new Date()): string {
-  const anticipo = formatearPrecioMXN(monto);
-  if (!p) {
-    return `Si tu cita está a más de 10 días hábiles de la fecha en que pagaste tu anticipo de ${anticipo} y cancelas dentro de los 5 días hábiles siguientes a tu pago, te lo devolvemos completo; en otro caso no se devuelve. ${REPROGRAMAR}`;
-  }
+export function textoAnticipoAlCancelar(
+  monto: number,
+  p: PoliticaCancelacionAnticipo | null,
+  ahora: Date = new Date(),
+  { textos = TEXTOS_POR_OMISION, diasExcepcion, diasReembolso }: OpcionesTextoCancelacion = {},
+): string {
+  const plazos = plazosDeCita(null);
+  const v = { anticipo: formatearPrecioMXN(monto), diasExcepcion: diasExcepcion ?? plazos.diasExcepcion, diasReembolso: diasReembolso ?? plazos.diasReembolso };
+  const tx = (clave: string, extra: Record<string, string> = {}) => textoSitio(textos, clave, { ...v, ...extra });
+  const reprogramar = tx('citas.cancelar.reprogramar');
+  if (!p) return `${tx('citas.cancelar.anticipoSinDatos')} ${reprogramar}`;
   const limite = p.reembolsableHasta ? fecha(p.reembolsableHasta) : null;
   if (reembolsableAhora(p, ahora)) {
-    return `Si cancelas ahora, te devolvemos completo tu anticipo de ${anticipo} por el mismo medio con el que lo pagaste: tu cita está a más de 10 días hábiles de tu pago y cancelas dentro de los 5 días hábiles siguientes.${limite ? ` Tienes hasta el ${limite}.` : ''}`;
+    return `${tx('citas.cancelar.anticipoReembolsable')}${limite ? ` ${tx('citas.cancelar.anticipoHasta', { fechaLimite: limite })}` : ''}`;
   }
-  if (limite) {
-    return `Tu anticipo de ${anticipo} ya no se devuelve si cancelas: el plazo para cancelar con reembolso terminó el ${limite}. ${REPROGRAMAR}`;
-  }
-  return `Tu anticipo de ${anticipo} no se devuelve si cancelas, porque tu cita está a 10 días hábiles o menos de la fecha en que lo pagaste. ${REPROGRAMAR}`;
+  if (limite) return `${tx('citas.cancelar.anticipoPlazoTerminado', { fechaLimite: limite })} ${reprogramar}`;
+  return `${tx('citas.cancelar.anticipoNoReembolsable')} ${reprogramar}`;
+}
+
+/**
+ * Cancelar sin anticipo pagado: no tiene costo. Si la regla pide aviso mínimo, se dice que con menos aviso no se
+ * reagenda desde la cuenta (Configuración del sitio > Reglas, horasAvisoCancelarReagendar).
+ */
+export function textoCancelarSinAnticipo(horasAviso: number, textos: Record<string, string> = TEXTOS_POR_OMISION): string {
+  const base = textoSitio(textos, 'citas.cancelar.sinAnticipo');
+  if (!(horasAviso > 0)) return base;
+  return `${base} ${textoSitio(textos, 'citas.cancelar.avisoReagendar', { horasAviso: `${horasAviso} ${horasAviso === 1 ? 'hora' : 'horas'}` })}`;
 }
 
 /**
@@ -87,8 +119,6 @@ export function puedeConfirmarCancelacion({
 }
 
 /** Aviso al terminar de cancelar. */
-export function toastCitaCancelada(p: PoliticaCancelacionAnticipo | null, ahora: Date = new Date()): string {
-  return reembolsableAhora(p, ahora)
-    ? 'Tu cita quedó cancelada. Te devolvemos tu anticipo completo por el mismo medio con el que lo pagaste.'
-    : 'Tu cita quedó cancelada.';
+export function toastCitaCancelada(p: PoliticaCancelacionAnticipo | null, ahora: Date = new Date(), textos: Record<string, string> = TEXTOS_POR_OMISION): string {
+  return textoSitio(textos, reembolsableAhora(p, ahora) ? 'citas.cancelar.toastReembolso' : 'citas.cancelar.toast');
 }

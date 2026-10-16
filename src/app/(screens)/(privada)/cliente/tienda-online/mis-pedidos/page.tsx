@@ -13,8 +13,10 @@ import { listarPedidos, etiquetaEstadoPedido, etiquetaMetodoPagoPedido, variante
 import type { PedidoApi } from '../../../../../services/ecommerce';
 import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import TarjetaPedidoMovil from './TarjetaPedidoMovil';
+import { useTextosSitio } from '../../../../../hooks/useTextosSitio';
 
 export default function MisPedidosPage() {
+  const { t } = useTextosSitio();
   const router = useRouter();
   const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ export default function MisPedidosPage() {
   });
 
   const formatearFecha = (fecha: string | undefined) => {
-    if (!fecha) return '—';
+    if (!fecha) return '-';
     return new Date(fecha).toLocaleDateString('es-MX', {
       year: 'numeric',
       month: 'short',
@@ -90,7 +92,7 @@ export default function MisPedidosPage() {
       ) : filtrados.length === 0 ? (
         <Card className="text-center py-16">
           <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            {pedidos.length === 0 ? 'No tienes pedidos realizados' : 'Ningún pedido coincide con la búsqueda'}
+            {pedidos.length === 0 ? t('pedidos.lista.vacia') : t('pedidos.lista.sinResultados')}
           </p>
           <Button onClick={() => router.push('/cliente/tienda-online')}>Explorar productos</Button>
         </Card>
@@ -113,7 +115,7 @@ export default function MisPedidosPage() {
                 <TableCell className="font-semibold">
                   {formatearPrecioMXN(pedido.total)} {pedido.moneda}
                 </TableCell>
-                <TableCell>{pedido.metodoPago ? etiquetaMetodoPagoPedido(pedido.metodoPago) : '—'}</TableCell>
+                <TableCell>{pedido.metodoPago ? etiquetaMetodoPagoPedido(pedido.metodoPago) : '-'}</TableCell>
                 <TableCell>
                   <Badge variant={varianteBadgeEstadoPedido(pedido.estado)}>
                     {etiquetaEstadoPedido(pedido.estado, pedido.metodoPago)}

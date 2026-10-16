@@ -8,6 +8,9 @@ import { formatearFechaSoloDia } from './fechaSoloDia';
  * Al cambiar el texto de una página legal (o un plazo, horario o teléfono que la página pinta): sube su versión,
  * corre node scripts/hash-documentos-legales.mjs y copia aquí el hash nuevo. La prueba "Hash del texto publicado"
  * de components/legal/paginasLegales.test.ts falla si el hash no coincide con el texto que la página muestra.
+ * Las versiones publicadas desde Admin > Documentos legales viven en el backend (las páginas las muestran con
+ * DocumentoVigente y services/documentosLegales.ts da su versión y hash): este registro es el respaldo cuando el
+ * backend no responde y lo que siguen mandando hoy las casillas.
  */
 export type SlugDocumentoLegal = 'terminos' | 'aviso-privacidad' | 'cookies' | 'reembolsos' | 'anticipos';
 
@@ -94,4 +97,28 @@ export function fechaVigenciaTexto(slug: SlugDocumentoLegal): string {
 /** "Versión 2.0. Vigente desde el 14 de octubre de 2026.": el encabezado visible de cada página legal. */
 export function leyendaVersion(slug: SlugDocumentoLegal): string {
   return `Versión ${documentoLegal(slug).version}. Vigente desde el ${fechaVigenciaTexto(slug)}.`;
+}
+
+/**
+ * Texto visible de un html: sin etiquetas, con &quot; &#x27; &lt; &gt; y &amp; decodificados y con los espacios y
+ * saltos colapsados en uno. Es la regla del hash de cada documento legal (la misma de la prueba "Hash del texto
+ * publicado" y del backend, que la usa al publicar desde Admin > Documentos legales).
+ */
+export function textoVisibleDocumento(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** SHA-256 en hexadecimal (UTF-8) del texto visible. Con Web Crypto: sirve en el servidor y en el navegador. */
+export async function hashTextoDocumento(html: string): Promise<string> {
+  const datos = new TextEncoder().encode(textoVisibleDocumento(html));
+  const resumen = await globalThis.crypto.subtle.digest('SHA-256', datos);
+  return Array.from(new Uint8Array(resumen), (b) => b.toString(16).padStart(2, '0')).join('');
 }

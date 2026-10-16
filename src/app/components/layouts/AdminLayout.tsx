@@ -26,6 +26,7 @@ import {
   Receipt,
   RotateCcw,
   Scissors,
+  Scale,
   ScrollText,
   ShieldCheck,
   ShoppingCart,
@@ -38,6 +39,7 @@ import {
   Gift,
   Warehouse,
   ShieldUser,
+  Type,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -122,13 +124,15 @@ const GRUPOS_MODULOS: { titulo: string; items: { label: string; href: string; ic
       { label: 'Base de datos', href: '/admin/base-datos', icon: Database },
       { label: 'Configuración del sitio', href: '/admin/configuracion-sitio', icon: Settings2, permiso: 'configuracion:editar' },
       { label: 'Contenido del sitio', href: '/admin/contenido', icon: Newspaper, permiso: 'configuracion:editar' },
+      { label: 'Textos del sitio', href: '/admin/textos-sitio', icon: Type, permiso: 'configuracion:editar' },
+      { label: 'Documentos legales', href: '/admin/documentos-legales', icon: Scale, permiso: 'configuracion:editar' },
     ],
   },
 ];
 
 /**
  * Repuebla `localStorage.user` con `permisos` (y el resto del perfil) sin bloquear el
- * render — el acceso al panel ya se concedió con el rol cacheado. Una vez guardado,
+ * render: el acceso al panel ya se concedió con el rol cacheado. Una vez guardado,
  * emite el evento que `usePermisos()` escucha para que el sidebar se re-filtre solo.
  */
 function refrescarPermisosEnSegundoPlano(userJsonActual: string | null) {

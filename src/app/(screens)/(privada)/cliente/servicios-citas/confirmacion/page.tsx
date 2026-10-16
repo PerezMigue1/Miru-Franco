@@ -15,6 +15,7 @@ import { formatearPrecioMXN } from '../../../../../utils/formatoPrecio';
 import EncabezadoAnticipo from '../../../../../components/cliente/EncabezadoAnticipo';
 import { etiquetaEstadoCita, varianteEstadoCita } from '../../../../../utils/estados';
 import { tituloConfirmacionCita } from '../../../../../components/cliente/citaGestionable';
+import { useTextosSitio } from '../../../../../hooks/useTextosSitio';
 
 /** Parámetros con los que Mercado Pago regresa: solo indican que vale la pena esperar, nunca el estado. */
 const PARAMS_REGRESO_MP = ['payment_id', 'collection_id', 'collection_status', 'status', 'preference_id'];
@@ -31,6 +32,7 @@ function ConfirmacionContent() {
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTextosSitio();
 
   useEffect(() => {
     if (!citaId || !Number.isFinite(Number(citaId))) {
@@ -110,7 +112,7 @@ function ConfirmacionContent() {
               {tituloConfirmacionCita(cita.estado)}
             </h1>
             <p className="text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
-              Tu cita ha sido agendada exitosamente
+              {t('citas.confirmacion.titulo')}
             </p>
           </div>
           )}
@@ -163,7 +165,7 @@ function ConfirmacionContent() {
                   className="mf-cifras text-2xl font-bold"
                   style={{ color: 'var(--menu-texto-principal)' }}
                 >
-                  {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '—'}
+                  {servicio?.precio ? formatearPrecioMXN(servicio.precio) : '-'}
                 </span>
               </div>
               {conAnticipo && (
@@ -215,7 +217,7 @@ function ConfirmacionContent() {
             >
               <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
                 <strong>Importante:</strong> Tu cita aparece en Mis citas con todos sus detalles.
-                Antes de tu cita te mandaremos un recordatorio en tu cuenta y, si lo tienes activado, por correo.
+                {t('citas.recordatorio')}
               </p>
             </div>
 

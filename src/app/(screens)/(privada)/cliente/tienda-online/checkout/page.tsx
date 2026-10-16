@@ -44,20 +44,23 @@ import {
   type IdCasillaCompra,
 } from './compraLegal';
 import { LEYENDA_PRECIOS, NOTA_TOTAL_COBRADO } from './infoComercio';
+import { useTextosSitio } from '../../../../../hooks/useTextosSitio';
+import { listaMetodosSalon } from '../../../../../utils/reglasNegocio';
 
 type FormaPago = 'linea' | 'salon';
 
 const OPCIONES_FORMA_PAGO = [
   {
     value: 'linea',
-    titulo: 'Pagar en línea',
-    texto: 'Con tarjeta en la página segura de Mercado Pago.',
+    // Título y texto: Admin > Textos del sitio.
+    titulo: 'checkout.opcionLineaTitulo',
+    texto: 'checkout.opcionLineaTexto',
     icono: CreditCard,
   },
   {
     value: 'salon',
-    titulo: 'Pagar al recoger en el salón',
-    texto: 'Te apartamos el pedido y lo pagas en el mostrador cuando pases por él.',
+    titulo: 'checkout.opcionSalonTitulo',
+    texto: 'checkout.opcionSalonTexto',
     icono: Store,
   },
 ] as const;
@@ -107,7 +110,7 @@ export default function CheckoutPage() {
    * El guard de "carrito vacío → mandar a /carrito" (más abajo) reacciona a
    * clearCart() vaciando el carrito DURANTE una compra exitosa, ganándole la
    * carrera al router.push(confirmacion). Este ref le dice al guard "no me
-   * mandes al carrito, la compra ya terminó bien" — se enciende justo antes
+   * mandes al carrito, la compra ya terminó bien": se enciende justo antes
    * de clearCart() (no antes, para no atrapar al cliente si algo previo falla)
    * y se apaga en el catch si algo sale mal después de encenderlo.
    */
@@ -119,7 +122,12 @@ export default function CheckoutPage() {
    * Dos formas de pago: en línea (Mercado Pago Checkout Pro: la clienta escribe su tarjeta en la página
    * de Mercado Pago; aquí nunca entra un dato de tarjeta) o al recoger en el salón (apartado).
    */
-  const [formaPago, setFormaPago] = useState<FormaPago>('salon');
+  const [formaPagoElegida, setFormaPago] = useState<FormaPago>('salon');
+  /** Solo las formas de pago activas en Admin > Configuración del sitio > Reglas. */
+  const { t, piezas, config } = useTextosSitio();
+  const { reglas } = config;
+  const opcionesPago = OPCIONES_FORMA_PAGO.filter((op) => (op.value === 'linea' ? reglas.pagos.mercadoPagoTienda : reglas.pagos.metodosSalon.length > 0));
+  const formaPago: FormaPago = opcionesPago.some((op) => op.value === formaPagoElegida) ? formaPagoElegida : (opcionesPago[0]?.value ?? 'salon');
   const [solicitaFactura, setSolicitaFactura] = useState(false);
   /** Términos de venta y Política de reembolsos: obligatorias y sin marcar al entrar. */
   const [casillas, setCasillas] = useState<EstadoCasillasCompra>(CASILLAS_COMPRA_INICIALES);
@@ -332,7 +340,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const textoBotonFinal = formaPago === 'linea' ? 'Ir a pagar con Mercado Pago' : 'Apartar mi pedido';
+  const textoBotonFinal = formaPago === 'linea' ? t('checkout.botonLinea') : t('checkout.botonSalon');
 
   return (
     <ModuleLayout>
@@ -361,10 +369,10 @@ export default function CheckoutPage() {
             {paso === 1 && (
               <Card style={{ animation: 'fadeUp 350ms var(--mf-ease-out) both' }}>
                 <h2 className="text-page-title mb-2" style={{ color: 'var(--menu-texto-principal)' }}>
-                  Recoges tu pedido en el salón
+                  {t('checkout.recogerTitulo')}
                 </h2>
                 <p className="text-sm mb-5" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Lo preparamos y te lo apartamos en el mostrador.
+                  {t('checkout.recogerTexto')}
                 </p>
                 <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--fondos-suaves)' }}>
                   <DatosRecogerEnSalon />
@@ -379,10 +387,10 @@ export default function CheckoutPage() {
                     ¿Cómo quieres pagar?
                   </legend>
                   <p className="text-sm mb-5" style={{ color: 'var(--encabezados-alterno)' }}>
-                    En los dos casos recoges tu pedido en el salón.
+                    {opcionesPago.length > 1 ? t('checkout.ambasRecoges') : t('checkout.soloRecoges')}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {OPCIONES_FORMA_PAGO.map((op) => {
+                    {opcionesPago.map((op) => {
                       const Icono = op.icono;
                       const elegida = formaPago === op.value;
                       return (
@@ -406,10 +414,10 @@ export default function CheckoutPage() {
                           <span className="min-w-0">
                             <span className="flex items-center gap-2 font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
                               <Icono className="w-4 h-4 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
-                              {op.titulo}
+                              {t(op.titulo)}
                             </span>
                             <span className="block text-sm mt-1" style={{ color: 'var(--encabezados-alterno)' }}>
-                              {op.texto}
+                              {t(op.texto)}
                             </span>
                           </span>
                         </label>
@@ -424,21 +432,33 @@ export default function CheckoutPage() {
                 >
                   {formaPago === 'salon' ? (
                     <span>
-                      Tu pedido queda apartado. Pagas{' '}
-                      <strong className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>
-                        {formatearPrecioMXN(total)}
-                      </strong>{' '}
-                      en el mostrador cuando pases por él.
+                      {piezas(
+                        'checkout.avisoSalon',
+                        { metodosSalon: reglas.pagos.metodosSalon.length > 0 ? ` (${listaMetodosSalon(reglas.pagos.metodosSalon)})` : '' },
+                        {
+                          total: (
+                            <strong key="total" className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>
+                              {formatearPrecioMXN(total)}
+                            </strong>
+                          ),
+                        },
+                      )}
                     </span>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
                       <span>
-                        Al confirmar te llevamos a Mercado Pago para pagar{' '}
-                        <strong className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>
-                          {formatearPrecioMXN(total)}
-                        </strong>
-                        . Tu tarjeta la escribes allá: este sitio no la ve ni la guarda. Tienes 24 horas para completar el pago.
+                        {piezas(
+                          'checkout.avisoLinea',
+                          {},
+                          {
+                            total: (
+                              <strong key="total" className="mf-cifras" style={{ color: 'var(--menu-texto-principal)' }}>
+                                {formatearPrecioMXN(total)}
+                              </strong>
+                            ),
+                          },
+                        )}
                       </span>
                     </>
                   )}
@@ -606,7 +626,7 @@ export default function CheckoutPage() {
                       <span style={{ color: 'var(--menu-texto-principal)' }}>
                         {item.nombre}
                         {item.presentacion && (
-                          <span style={{ color: 'var(--encabezados-alterno)' }}> — {item.presentacion}</span>
+                          <span style={{ color: 'var(--encabezados-alterno)' }}> · {item.presentacion}</span>
                         )}
                         <span style={{ color: 'var(--encabezados-alterno)' }}> × {item.cantidad}</span>
                       </span>

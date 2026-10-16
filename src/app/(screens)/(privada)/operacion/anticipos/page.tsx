@@ -9,10 +9,16 @@ import Input from '../../../../components/ui/Input';
 import Badge from '../../../../components/ui/Badge';
 import { actualizarAnticipoServicio, getServicios, type Servicio } from '../../../../services/servicios';
 import { fmtMoneda, montoValido } from '../../../../utils/cobroPos';
-import { PLAZOS_TERMINOS } from '../../../../utils/terminosCondiciones';
+import { useConfiguracionPublica } from '../../../../hooks/useConfiguracionPublica';
 import { showToast } from '../../../../utils/toast';
 
 const precioNum = (p?: string | number | null) => Number(String(p ?? '').replace(/[^0-9.]/g, '')) || 0;
+
+/** Anticipo sugerido: el porcentaje de la regla sobre el precio, redondeado a pesos enteros (0: sin sugerencia). */
+export function anticipoSugerido(precio: number, porcentaje: number): number {
+  if (!(precio > 0) || !(porcentaje > 0)) return 0;
+  return Math.round((precio * porcentaje) / 100);
+}
 
 /**
  * Anticipo que pide cada servicio al agendar en línea (servicios:escritura: estilista y admin).
@@ -25,6 +31,9 @@ export default function AnticiposPorServicioPage() {
   const [error, setError] = useState<string | null>(null);
   const [guardandoId, setGuardandoId] = useState<string | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
+  /** Plazos y porcentaje sugerido de Admin > Configuración del sitio > Reglas. */
+  const { reglas } = useConfiguracionPublica();
+  const formas = [reglas.pagos.mercadoPagoAnticipos && 'con Mercado Pago', reglas.citas.permitirAnticipoEnSalon && 'en el salón'].filter(Boolean).join(' o ');
 
   const pedir = useCallback(() => {
     getServicios().then(({ data, error: e }) => {
@@ -68,8 +77,9 @@ export default function AnticiposPorServicioPage() {
         <div>
           <h1 className="text-elegant-title text-menu-texto-principal">Anticipos por servicio</h1>
           <p className="mt-1 max-w-3xl text-sm text-encabezados-alterno">
-            Lo que pide cada servicio cuando una clienta agenda en línea. Tiene {PLAZOS_TERMINOS.horasAnticipoCita} horas
-            para pagarlo con Mercado Pago o en el salón; si no, la cita se libera. Déjalo vacío o en 0 para no pedir anticipo.
+            Lo que pide cada servicio cuando una clienta agenda en línea. Tiene {reglas.citas.plazoAnticipoHoras} horas
+            para pagarlo {formas || 'con Mercado Pago'}; si no, la cita se libera. Déjalo vacío o en 0 para no pedir anticipo.
+            {reglas.citas.porcentajeAnticipoSugerido > 0 && ` Se sugiere el ${reglas.citas.porcentajeAnticipoSugerido}% del precio.`}
           </p>
         </div>
 
@@ -91,6 +101,7 @@ export default function AnticiposPorServicioPage() {
                 const borrador = borradores[id] ?? '';
                 const cambio = borrador.trim() !== actual && !(borrador.trim() === '0' && actual === '');
                 const ocupado = guardandoId === id;
+                const sugerido = anticipoSugerido(precioNum(s.precio), reglas.citas.porcentajeAnticipoSugerido);
                 return (
                   <li key={id} className="py-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -124,6 +135,11 @@ export default function AnticiposPorServicioPage() {
                             fullWidth
                           />
                         </div>
+                        {sugerido > 0 && borrador.trim() !== String(sugerido) && (
+                          <Button size="sm" variant="outline" className="mb-1" onClick={() => setBorradores((b) => ({ ...b, [id]: String(sugerido) }))}>
+                            {`Usar sugerido: ${fmtMoneda(sugerido)}`}
+                          </Button>
+                        )}
                         <Button size="sm" onClick={() => guardar(s)} disabled={ocupado || !cambio} className="mb-1">
                           {ocupado ? 'Guardando…' : 'Guardar'}
                         </Button>

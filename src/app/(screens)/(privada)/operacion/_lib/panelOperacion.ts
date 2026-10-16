@@ -157,6 +157,14 @@ const TIPOS_NOTIFICACION: Record<string, string> = {
   reembolso: 'Reembolso',
   cambio: 'Cambio de producto',
   cfdi: 'Factura',
+  // Avisos del personal y de privacidad que antes se veían con el nombre interno ("Cita nueva" salía de cita_nueva).
+  cita_nueva: 'Cita nueva',
+  anticipo_pagado: 'Anticipo pagado',
+  anticipo_por_devolver: 'Anticipo por devolver',
+  pedido_nuevo: 'Pedido nuevo',
+  revocacion_por_recibir: 'Revocación por recibir',
+  arco_solicitud: 'Solicitud ARCO',
+  arco_respuesta: 'Respuesta a solicitud ARCO',
 };
 
 export function etiquetaTipoNotificacion(tipo: string | null | undefined): string {

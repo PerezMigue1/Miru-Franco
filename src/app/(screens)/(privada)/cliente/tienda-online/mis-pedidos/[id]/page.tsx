@@ -11,6 +11,9 @@ import Modal from '../../../../../../components/ui/Modal';
 import Textarea from '../../../../../../components/ui/Textarea';
 import Table, { TableRow, TableCell } from '../../../../../../components/ui/Table';
 import DatosRecogerEnSalon from '../../../../../../components/tienda/DatosRecogerEnSalon';
+import { useTextosSitio } from '../../../../../../hooks/useTextosSitio';
+import { textoSitio, TEXTOS_POR_OMISION } from '../../../../../../utils/textosSitio';
+import { listaMetodosSalon, REGLAS_PUBLICAS_POR_OMISION, type ReglasPublicas } from '../../../../../../utils/reglasNegocio';
 import { showConfirm, showToast } from '../../../../../../utils/toast';
 import { mensajeUsuarioDesdeErrorApi } from '../../../../../../utils/apiErrorMessage';
 import {
@@ -60,26 +63,34 @@ import {
   textoRevocacionEntregado,
 } from './detallePedidoCliente';
 
-/** Qué sigue para la clienta según el estado del pedido (todo se recoge en el salón). */
-function textoRecoger(pedido: PedidoApi): string | null {
+/**
+ * Qué sigue para la clienta según el estado del pedido (todo se recoge en el salón). El plazo de pago en línea es el
+ * que se guardó en el pedido al crearlo; los métodos del salón, los activos en Admin > Configuración del sitio > Reglas.
+ */
+export function textoRecoger(
+  pedido: PedidoApi,
+  reglas: ReglasPublicas = REGLAS_PUBLICAS_POR_OMISION,
+  textos: Record<string, string> = TEXTOS_POR_OMISION,
+): string | null {
+  const t = (clave: string, v: Record<string, string | number> = {}) => textoSitio(textos, clave, v);
   const enSalon = esPagoEnSalon(pedido.metodoPago);
+  const horas = pedido.reglas?.plazoPagoLineaHoras ?? reglas.tienda.plazoPagoLineaHoras;
+  const metodos = reglas.pagos.metodosSalon.length ? ` (${listaMetodosSalon(reglas.pagos.metodosSalon)})` : '';
   switch (pedido.estado) {
     case 'pendiente_pago':
       return enSalon
-        ? 'Tu pedido está apartado. Lo preparamos y te avisamos cuando puedas pasar a pagarlo y recogerlo.'
+        ? t('pedidos.estado.apartado')
         : pedido.metodoPago === METODO_PAGO_MERCADOPAGO
-          ? 'Falta completar tu pago en Mercado Pago. Tienes 24 horas desde que hiciste el pedido.'
-          : 'Estamos confirmando tu pago. Después lo preparamos y te avisamos.';
+          ? t('pedidos.estado.faltaPago', { plazoPago: horas })
+          : t('pedidos.estado.confirmandoPago');
     case 'pagado':
-      return 'Pago recibido. Lo preparamos y te avisamos cuando esté listo para recoger.';
+      return t('pedidos.estado.pagado');
     case 'preparando':
-      return 'Estamos preparando tu pedido. Te avisamos en la app y por correo cuando esté listo.';
+      return t('pedidos.estado.preparando');
     case 'listo_recoger':
-      return enSalon
-        ? 'Tu pedido está listo. Pasa por él al salón y págalo en el mostrador.'
-        : 'Tu pedido está listo. Pasa por él al salón.';
+      return enSalon ? t('pedidos.estado.listoPagar', { metodosSalon: metodos }) : t('pedidos.estado.listo');
     case 'entregado':
-      return 'Recogiste tu pedido en el salón.';
+      return t('pedidos.estado.entregado');
     default:
       return null;
   }
@@ -91,6 +102,8 @@ export default function DetallePedidoPage() {
   const rawId = params.id as string;
   const pedidoId = parseInt(rawId, 10);
 
+  const { t, textos, config } = useTextosSitio();
+  const { reglas } = config;
   const [pedido, setPedido] = useState<PedidoApi | null>(null);
   const [items, setItems] = useState<PedidoItemApi[]>([]);
   const [envios, setEnvios] = useState<EnvioApi[]>([]);
@@ -190,8 +203,8 @@ export default function DetallePedidoPage() {
 
   const envio = envios[0];
   // Recogido y después revocado: el encabezado dice que se revocó y en qué va el reembolso.
-  const textoSiguiente = textoRevocacionEntregado(pedido, devoluciones) ?? textoRecoger(pedido);
-  const explicacionBotones = explicacionCancelarORevocar(pedido);
+  const textoSiguiente = textoRevocacionEntregado(pedido, devoluciones, textos) ?? textoRecoger(pedido, reglas, textos);
+  const explicacionBotones = explicacionCancelarORevocar(pedido, new Date(), textos);
   const direccionAnterior = direccionEntregaRegistrada(pedido.direccionTextoCompleta);
 
   const cancelarPedido = async () => {
@@ -337,7 +350,7 @@ export default function DetallePedidoPage() {
                   <TableRow key={producto.id}>
                     <TableCell className="font-semibold">
                       {producto.nombreProducto ?? 'Producto'}
-                      {producto.tamanio ? ` — ${producto.tamanio}` : ''}
+                      {producto.tamanio ? ` · ${producto.tamanio}` : ''}
                     </TableCell>
                     <TableCell>{producto.cantidad}</TableCell>
                     <TableCell>{formatearPrecioMXN(producto.precioUnitario)}</TableCell>
@@ -409,14 +422,14 @@ export default function DetallePedidoPage() {
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Empresa
                     </p>
-                    <p style={{ color: 'var(--menu-texto-principal)' }}>{envio.empresaEnvio ?? '—'}</p>
+                    <p style={{ color: 'var(--menu-texto-principal)' }}>{envio.empresaEnvio ?? '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--encabezados-alterno)' }}>
                       Guía
                     </p>
                     <p className="font-mono font-semibold" style={{ color: 'var(--menu-texto-principal)' }}>
-                      {envio.numeroGuia ?? '—'}
+                      {envio.numeroGuia ?? '-'}
                     </p>
                   </div>
                   <div>
@@ -473,7 +486,7 @@ export default function DetallePedidoPage() {
                   {facturas.map((f) => (
                     <li key={f.id} className="flex flex-wrap gap-2 items-center" style={{ color: 'var(--menu-texto-principal)' }}>
                       <span className="font-mono">#{f.id}</span>
-                      <span>{[f.serie, f.folio].filter(Boolean).join(' ') || '—'}</span>
+                      <span>{[f.serie, f.folio].filter(Boolean).join(' ') || '-'}</span>
                       <Badge variant="info" size="sm">{etiquetaEstadoFactura(f.estado)}</Badge>
                       {f.pdfUrl && (
                         <a href={f.pdfUrl} target="_blank" rel="noreferrer" className="underline text-xs">
@@ -497,7 +510,7 @@ export default function DetallePedidoPage() {
               </h2>
               {valoraciones.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                  Aún no hay reseñas registradas para productos de este pedido.
+                  {t('pedidos.sinValoraciones')}
                 </p>
               ) : (
                 <ul className="space-y-3">
@@ -531,7 +544,7 @@ export default function DetallePedidoPage() {
               </h2>
               {devoluciones.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-                  No hay solicitudes para este pedido.{' '}
+                  {t('pedidos.sinDevoluciones')}{' '}
                   <Button size="sm" variant="outline" onClick={() => router.push('/cliente/devoluciones')}>
                     Ir a devoluciones
                   </Button>
@@ -572,7 +585,7 @@ export default function DetallePedidoPage() {
                   <p style={{ color: 'var(--menu-texto-principal)' }}>
                     {pedido.creadoEn
                       ? new Date(pedido.creadoEn).toLocaleString('es-MX')
-                      : '—'}
+                      : '-'}
                   </p>
                 </div>
                 <div>

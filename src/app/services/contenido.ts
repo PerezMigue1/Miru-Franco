@@ -102,7 +102,8 @@ const esTextoONulo = (v: unknown): v is string | null => v === null || typeof v 
 export async function leerListaPublica<T>(ruta: string, normalizar: (item: unknown) => T | null): Promise<ListaPublica<T>> {
   const url = `${getBackendBaseUrl()}${ruta}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } } as RequestInit);
+    // Etiqueta: POST /api/revalidar la vacía al momento cuando el personal guarda (la de 60 s queda de respaldo).
+    const res = await fetch(url, { next: { revalidate: 60, tags: ['contenido-publico'] } } as RequestInit);
     if (!res.ok) return { data: [], error: textoRespuestaFallida(res.status, await res.text(), url) };
     const cuerpo = (await res.json()) as { data?: unknown } | unknown[];
     const lista = Array.isArray(cuerpo) ? cuerpo : Array.isArray((cuerpo as { data?: unknown })?.data) ? ((cuerpo as { data: unknown[] }).data) : [];

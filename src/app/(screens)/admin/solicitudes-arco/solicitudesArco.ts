@@ -33,14 +33,14 @@ export function fechaLimite(s: ConPlazos): string | null {
   return null;
 }
 
-export function urgenciaSolicitud(s: ConPlazos, ahora: Date = new Date()): UrgenciaArco {
+export function urgenciaSolicitud(s: ConPlazos, ahora: Date = new Date(), diasPorVencer: number = DIAS_POR_VENCER): UrgenciaArco {
   if (s.estado === 'atendida' || s.estado === 'rechazada') return 'cerrada';
   const limite = fechaLimite(s);
   const fin = limite ? new Date(limite).getTime() : Number.NaN;
   if (Number.isNaN(fin)) return 'en_plazo';
   const restante = fin - ahora.getTime();
   if (restante < 0) return 'vencida';
-  return restante <= DIAS_POR_VENCER * MS_POR_DIA ? 'por_vencer' : 'en_plazo';
+  return restante <= diasPorVencer * MS_POR_DIA ? 'por_vencer' : 'en_plazo';
 }
 
 /** Texto, insignia y fondo de fila de cada urgencia (tokens de peligro y aviso del sistema). */

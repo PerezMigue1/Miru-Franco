@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
+import DocumentoVigente from '../components/legal/DocumentoVigente';
 import EncabezadoVersion from '../components/legal/EncabezadoVersion';
 import ContactoProfeco from '../components/legal/Profeco';
 import { metadataPublica } from '../utils/seo';
@@ -39,6 +40,7 @@ const CORREO = 'mildredfranco24@gmail.com';
 export default function PoliticaDeReembolsosPage() {
   const terminos = documentoLegal('terminos');
   return (
+    <DocumentoVigente slug="reembolsos">
     <DocumentoLegal
       titulo="Política de Reembolsos, Cambios y Cancelaciones"
       secciones={SECCIONES}
@@ -156,5 +158,6 @@ export default function PoliticaDeReembolsosPage() {
         </p>
       </Seccion>
     </DocumentoLegal>
+    </DocumentoVigente>
   );
 }

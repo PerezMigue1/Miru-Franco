@@ -41,7 +41,7 @@ describe('"Cancelar pedido" y "Revocar compra" a la vez: una línea explica la d
 
   it('la pantalla usa las mismas reglas que los botones y muestra la línea', () => {
     expect(pagina).toMatch(/\{puedeVerBotonCancelar\(pedido\) && \(/);
-    expect(pagina).toMatch(/const explicacionBotones = explicacionCancelarORevocar\(pedido\);/);
+    expect(pagina).toMatch(/const explicacionBotones = explicacionCancelarORevocar\(pedido, new Date\(\), textos\);/);
     expect(pagina).toMatch(/\{explicacionBotones && \(/);
     expect(pagina).not.toContain('ESTADOS_CANCELABLES');
   });
@@ -90,7 +90,7 @@ describe('Pedido revocado después de recogerlo: el encabezado lo dice', () => {
   });
 
   it('la pantalla lo usa antes del texto de recoger', () => {
-    expect(pagina).toMatch(/const textoSiguiente = textoRevocacionEntregado\(pedido, devoluciones\) \?\? textoRecoger\(pedido\);/);
+    expect(pagina).toMatch(/const textoSiguiente = textoRevocacionEntregado\(pedido, devoluciones, textos\) \?\? textoRecoger\(pedido, reglas, textos\);/);
   });
 });
 

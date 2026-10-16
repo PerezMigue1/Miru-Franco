@@ -3,6 +3,30 @@
 import { apiClient } from './client';
 import { getBackendBaseUrl } from './config';
 import { documentoLegal, type SlugDocumentoLegal } from '../utils/documentosLegales';
+import { versionesVigentes, type VersionVigente } from './documentosLegales';
+
+/**
+ * Versión y hash vigentes de cada documento según el backend (una versión publicada desde Admin > Documentos legales
+ * entra sin deploy). Mientras no se cargan, o si el backend no responde, se usan las del registro de la web.
+ */
+let vigentes: VersionVigente[] | null = null;
+export async function precargarVersionesVigentes(): Promise<void> {
+  try {
+    vigentes = await versionesVigentes();
+  } catch {
+    /* sin backend: quedan las del registro */
+  }
+}
+/** Solo para pruebas. */
+export function olvidarVersionesVigentes(): void {
+  vigentes = null;
+}
+function versionDe(slug: SlugDocumentoLegal): { version: string; hash: string } {
+  const v = vigentes?.find((x) => x.slug === slug);
+  if (v) return { version: v.version, hash: v.hash };
+  const { version, hash } = documentoLegal(slug);
+  return { version, hash };
+}
 
 /**
  * Registro trazable de consentimientos (POST /api/consentimientos y lecturas propias). Cada casilla marcada
@@ -63,9 +87,9 @@ const TIPO_POR_DOCUMENTO: Record<SlugDocumentoLegal, TipoConsentimiento> = {
   anticipos: 'anticipos',
 };
 
-/** Casilla de un documento legal: lleva la versión y el hash publicados hoy en el registro. */
+/** Casilla de un documento legal: lleva la versión y el hash vigentes (del backend o, sin él, del registro). */
 export function aceptacionDeDocumento(slug: SlugDocumentoLegal): ItemConsentimiento {
-  const doc = documentoLegal(slug);
+  const doc = versionDe(slug);
   return { tipo: TIPO_POR_DOCUMENTO[slug], documentoSlug: slug, version: doc.version, hash: doc.hash, accion: 'aceptado' };
 }
 
@@ -77,7 +101,7 @@ export function revocacion(tipo: TipoConsentimiento): ItemConsentimiento {
 /** `documentos` del registro y del alta con Google: qué versión de cada documento aceptó. */
 export function documentosAceptados(slugs: SlugDocumentoLegal[]): { slug: SlugDocumentoLegal; version: string; hash: string }[] {
   return slugs.map((slug) => {
-    const { version, hash } = documentoLegal(slug);
+    const { version, hash } = versionDe(slug);
     return { slug, version, hash };
   });
 }
@@ -94,7 +118,15 @@ export async function registrarConsentimientos(entrada: {
   formulario: string;
   rutaOrigen?: string;
 }): Promise<ConsentimientoRegistrado[]> {
-  const res = await apiClient.post<unknown>('/api/consentimientos', entrada, opciones());
+  // La casilla que se armó con la versión del registro de la web (porque la precarga no había terminado) se manda
+  // con la vigente del backend, que es la que muestra la página legal. Una versión distinta (re-aceptación) no se toca.
+  if (!vigentes) await precargarVersionesVigentes();
+  const items = entrada.items.map((i) => {
+    if (i.accion !== 'aceptado' || !i.documentoSlug) return i;
+    const registro = documentoLegal(i.documentoSlug);
+    return i.version === registro.version && i.hash === registro.hash ? { ...i, ...versionDe(i.documentoSlug) } : i;
+  });
+  const res = await apiClient.post<unknown>('/api/consentimientos', { ...entrada, items }, opciones());
   return datosDe<ConsentimientoRegistrado>(res);
 }
 

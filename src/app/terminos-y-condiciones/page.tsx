@@ -3,6 +3,7 @@ import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import Card from '../components/ui/Card';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
+import DocumentoVigente from '../components/legal/DocumentoVigente';
 import EncabezadoVersion from '../components/legal/EncabezadoVersion';
 import ContactoProfeco from '../components/legal/Profeco';
 import { metadataPublica } from '../utils/seo';
@@ -45,6 +46,7 @@ function Seccion({ n, children }: { n: number; children: ReactNode }) {
 
 export default function TerminosYCondicionesPage() {
   return (
+    <DocumentoVigente slug="terminos">
     <DocumentoLegal
       titulo="Términos y Condiciones de Uso"
       secciones={SECCIONES}
@@ -363,5 +365,6 @@ export default function TerminosYCondicionesPage() {
         </p>
       </Seccion>
     </DocumentoLegal>
+    </DocumentoVigente>
   );
 }

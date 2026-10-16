@@ -15,6 +15,7 @@ import { useAhora } from '../../../../../hooks/useAhora';
 import { etiquetaEstadoCita } from '../../../../../utils/estados';
 import { citaGestionablePorClienta } from '../../../../../components/cliente/citaGestionable';
 import TarjetaCitaMovil from './TarjetaCitaMovil';
+import { useTextosSitio } from '../../../../../hooks/useTextosSitio';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -26,6 +27,7 @@ export default function MisCitasPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
+  const { t } = useTextosSitio();
 
   useEffect(() => {
     listarCitas({ orden: 'fechaHoraInicio', limit: 100, propios: true })
@@ -50,7 +52,7 @@ export default function MisCitasPage() {
   };
 
   const formatearFecha = (iso: string) => {
-    if (!iso) return '—';
+    if (!iso) return '-';
     return new Date(iso).toLocaleDateString('es-ES', {
       weekday: 'short',
       year: 'numeric',
@@ -61,7 +63,7 @@ export default function MisCitasPage() {
   };
 
   const formatearHora = (iso: string) => {
-    if (!iso) return '—';
+    if (!iso) return '-';
     return new Date(iso).toLocaleTimeString('es-MX', {
       hour: '2-digit',
       minute: '2-digit',
@@ -110,7 +112,7 @@ export default function MisCitasPage() {
       ) : citasFiltradas.length === 0 ? (
         <Card className="text-center py-16">
           <p className="text-lead mb-4" style={{ color: 'var(--encabezados-alterno)' }}>
-            {citas.length === 0 ? 'No tienes citas agendadas' : 'No hay citas que coincidan con tu búsqueda'}
+            {citas.length === 0 ? t('citas.lista.vacia') : t('citas.lista.sinResultados')}
           </p>
           {citas.length === 0 && (
             <Button onClick={() => router.push('/cliente/servicios-citas')}>
@@ -139,7 +141,7 @@ export default function MisCitasPage() {
               <TableRow key={cita.id}>
                 <TableCell className="font-mono text-xs">#{cita.id}</TableCell>
                 <TableCell>
-                  <span className="font-semibold">{cita.servicioNombre ?? '—'}</span>
+                  <span className="font-semibold">{cita.servicioNombre ?? '-'}</span>
                   {(cita.anticipoRequerido ?? 0) > 0 && (
                     <div className="mt-2">
                       <AnticipoPortal cita={cita} ahora={ahora} />
@@ -148,7 +150,7 @@ export default function MisCitasPage() {
                 </TableCell>
                 <TableCell>{formatearFecha(cita.fechaHoraInicio)}</TableCell>
                 <TableCell>{formatearHora(cita.fechaHoraInicio)}</TableCell>
-                <TableCell>{cita.especialistaNombre ?? '—'}</TableCell>
+                <TableCell>{cita.especialistaNombre ?? '-'}</TableCell>
                 <TableCell>
                   <Badge variant={obtenerVariantEstado(cita.estado)}>
                     {etiquetaEstadoCita(cita.estado)}

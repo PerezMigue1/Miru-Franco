@@ -162,6 +162,8 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'solicitudes-arco': { label: 'Solicitudes ARCO', href: '/admin/solicitudes-arco' },
       'configuracion-sitio': { label: 'Configuración del sitio', href: '/admin/configuracion-sitio' },
       contenido: { label: 'Contenido del sitio', href: '/admin/contenido' },
+      'textos-sitio': { label: 'Textos del sitio', href: '/admin/textos-sitio' },
+      'documentos-legales': { label: 'Documentos legales', href: '/admin/documentos-legales' },
       'reembolsos-pendientes': { label: 'Reembolsos pendientes', href: '/admin/reembolsos-pendientes' },
     };
 
@@ -215,6 +217,8 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
       'segmentacion-clientes': 'Segmentación de clientes',
       'seguimiento-post-servicio': 'Seguimiento posterior al servicio',
       galeria: 'Galería',
+      'equipo-sitio': 'Equipo en el sitio',
+      horario: 'Horario y días inhábiles',
     };
     operacion.push({ label: modulos[segments[1]] ?? segments[1] });
     return operacion;

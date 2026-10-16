@@ -12,6 +12,8 @@ import { cambiosDeSeccion } from './cambiosConfiguracion';
 import HistorialSeccion from './HistorialSeccion';
 import { AvisoDocumentosLegales, COLOR_SUAVE, COLOR_TEXTO, ErroresGenerales, ResumenGuardado } from './piezas';
 import { mensajesDelServidor, prepararValor, repartirErroresServidor, validarSeccion, type Errores } from './validacionConfiguracion';
+import type { DefinicionRegla } from '../../../utils/reglasNegocio';
+import { cambiosDeReglas, rutaDeMensaje, validarReglasNegocio } from './reglasNegocioAdmin';
 
 export const MENSAJE_CORREGIR = 'Corrige los campos marcados antes de guardar.';
 
@@ -26,6 +28,10 @@ interface Props<T> {
   onGuardado: (valor: T) => void;
   children: (p: { valor: T; cambiar: (valor: T) => void; errores: Errores }) => ReactNode;
   vistaPrevia?: (valor: T, errores: Errores) => ReactNode;
+  /** En Reglas: definicionesReglas del backend (validación por regla, resumen de cambios e historial). */
+  definiciones?: DefinicionRegla[];
+  /** Aviso que se muestra arriba del botón Guardar (por ejemplo, documentos legales que quedarían desactualizados). */
+  avisoAntesDeGuardar?: (valor: T) => ReactNode;
 }
 
 /**
@@ -33,7 +39,19 @@ interface Props<T> {
  * "Guardar" con diálogo que resume qué cambia, errores 400 del backend junto a sus campos, aviso de
  * documentos legales después de guardar y su historial.
  */
-export default function EditorSeccion<T>({ clave, titulo, descripcion, guardado, actualizado, camposLegales, onGuardado, children, vistaPrevia }: Props<T>) {
+export default function EditorSeccion<T>({
+  clave,
+  titulo,
+  descripcion,
+  guardado,
+  actualizado,
+  camposLegales,
+  onGuardado,
+  children,
+  vistaPrevia,
+  definiciones,
+  avisoAntesDeGuardar,
+}: Props<T>) {
   const idTitulo = useId();
   const [borrador, setBorrador] = useState<T>(guardado);
   const [servidor, setServidor] = useState<{ porCampo: Errores; generales: string[] }>({ porCampo: {}, generales: [] });
@@ -41,12 +59,20 @@ export default function EditorSeccion<T>({ clave, titulo, descripcion, guardado,
   const [guardando, setGuardando] = useState(false);
   const [avisoLegal, setAvisoLegal] = useState(false);
   const [versionHistorial, setVersionHistorial] = useState(0);
+  /** Versión de lo guardado con que se abrió (o se guardó por última vez) la sección: evita pisar el cambio de otra persona. */
+  const [versionBase, setVersionBase] = useState<string | null>(actualizado?.actualizadoEn ?? null);
 
-  const erroresCliente = useMemo(() => validarSeccion(clave, borrador), [clave, borrador]);
+  const erroresCliente = useMemo(
+    () => ({ ...validarSeccion(clave, borrador), ...(clave === 'reglas' ? validarReglasNegocio(borrador, definiciones) : {}) }),
+    [clave, borrador, definiciones],
+  );
   const errores = { ...erroresCliente, ...servidor.porCampo };
   const anterior = useMemo(() => prepararValor(clave, guardado), [clave, guardado]);
   const nuevo = useMemo(() => prepararValor(clave, borrador), [clave, borrador]);
-  const cambios = useMemo(() => cambiosDeSeccion(clave, anterior, nuevo), [clave, anterior, nuevo]);
+  const cambios = useMemo(
+    () => [...cambiosDeSeccion(clave, anterior, nuevo), ...(clave === 'reglas' ? cambiosDeReglas(anterior, nuevo, definiciones) : [])],
+    [clave, anterior, nuevo, definiciones],
+  );
   const hayCambios = cambios.length > 0;
   const tocaLegal = (camposLegales?.[clave] ?? []).some(
     (c) => JSON.stringify((anterior as Record<string, unknown>)[c]) !== JSON.stringify((nuevo as Record<string, unknown>)[c]),
@@ -68,7 +94,8 @@ export default function EditorSeccion<T>({ clave, titulo, descripcion, guardado,
   const guardar = async () => {
     setGuardando(true);
     try {
-      const r = await guardarSeccionConfiguracion(clave, nuevo);
+      const r = await guardarSeccionConfiguracion(clave, nuevo, versionBase);
+      if (r?.actualizadoEn) setVersionBase(r.actualizadoEn);
       setAvisoLegal(r?.afectaDocumentosLegales === true);
       setBorrador(nuevo as T);
       onGuardado(nuevo as T);
@@ -76,13 +103,31 @@ export default function EditorSeccion<T>({ clave, titulo, descripcion, guardado,
       setServidor({ porCampo: {}, generales: [] });
       showToast(`${titulo}: cambios guardados. El sitio los muestra en menos de un minuto.`, 'success');
     } catch (e) {
+      if ((e as { status?: number } | null)?.status === 409) {
+        setServidor({ porCampo: {}, generales: [mensajeDeError(e, 'Otra persona guardó cambios en esta sección. Recarga la página y vuelve a intentarlo.')] });
+        return;
+      }
       const mensajes = mensajesDelServidor(e);
-      setServidor(mensajes ? repartirErroresServidor(clave, mensajes) : { porCampo: {}, generales: [mensajeDeError(e, 'No se pudo guardar. Intenta de nuevo.')] });
+      setServidor(mensajes ? repartir(mensajes) : { porCampo: {}, generales: [mensajeDeError(e, 'No se pudo guardar. Intenta de nuevo.')] });
     } finally {
       setGuardando(false);
       setConfirmando(false);
     }
   };
+
+  /** En Reglas, cada mensaje del backend va junto a la regla que nombra; si no, como en las demás secciones. */
+  function repartir(mensajes: string[]) {
+    if (clave !== 'reglas') return repartirErroresServidor(clave, mensajes);
+    const porCampo: Errores = {};
+    const resto: string[] = [];
+    for (const m of mensajes) {
+      const ruta = rutaDeMensaje(m, definiciones);
+      if (ruta && !porCampo[ruta]) porCampo[ruta] = m;
+      else resto.push(m);
+    }
+    const r = repartirErroresServidor(clave, resto);
+    return { porCampo: { ...r.porCampo, ...porCampo }, generales: r.generales };
+  }
 
   const generales = servidor.generales.length
     ? servidor.generales
@@ -117,6 +162,8 @@ export default function EditorSeccion<T>({ clave, titulo, descripcion, guardado,
           {vistaPrevia && <div className="min-w-0 xl:sticky xl:top-20 xl:self-start">{vistaPrevia(borrador, errores)}</div>}
         </div>
 
+        {hayCambios && avisoAntesDeGuardar?.(borrador)}
+
         <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-end" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
           <p className="text-sm sm:mr-auto" style={{ color: COLOR_SUAVE }} aria-live="polite">
             {hayCambios ? `${cambios.length} ${cambios.length === 1 ? 'cambio' : 'cambios'} sin guardar.` : 'Sin cambios por guardar.'}
@@ -129,7 +176,7 @@ export default function EditorSeccion<T>({ clave, titulo, descripcion, guardado,
           </Button>
         </div>
 
-        <HistorialSeccion clave={clave} version={versionHistorial} />
+        <HistorialSeccion clave={clave} version={versionHistorial} definiciones={definiciones} />
       </section>
 
       <Modal

@@ -1,13 +1,14 @@
 'use client';
 
 import { Bell, Clock, MapPin } from 'lucide-react';
-import { useConfiguracionPublica } from '../../hooks/useConfiguracionPublica';
+import { useTextosSitio } from '../../hooks/useTextosSitio';
 import { domicilioCompleto, enlaceTelefono, frasesHorario } from '../../services/configuracionSitio';
 
 /** Dónde y cuándo se recoge el pedido (todo se recoge en el salón): checkout y detalle del pedido. */
 export default function DatosRecogerEnSalon({ conAviso = true }: { conAviso?: boolean }) {
   // Nombre, domicilio, mapa, teléfono y horario: Configuración del sitio.
-  const { salon, horario } = useConfiguracionPublica();
+  const { t, config } = useTextosSitio();
+  const { salon, horario } = config;
   const domicilio = domicilioCompleto(salon);
   const mapa = salon.mapaUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${salon.nombre}, ${domicilio}`)}`;
   const telefono = enlaceTelefono(salon.telefono);
@@ -62,7 +63,8 @@ export default function DatosRecogerEnSalon({ conAviso = true }: { conAviso?: bo
         <li className="flex items-start gap-3">
           <Bell className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--logo-branding)' }} aria-hidden />
           <p className="text-sm" style={{ color: 'var(--encabezados-alterno)' }}>
-            Suele estar listo en 24 a 48 horas hábiles. Te avisamos en la app y por correo cuando puedas pasar por él.
+            {/* Texto de Admin > Textos del sitio con el tiempo de preparación de las reglas (sin punto doble). */}
+            {t('checkout.recogerAviso').replace(/\.\.(?!\.)/g, '.')}
           </p>
         </li>
       )}

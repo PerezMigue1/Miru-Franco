@@ -31,6 +31,8 @@ import {
   requiereArticulo,
 } from '../../../../utils/politicaDevolucion';
 import { hasValidToken } from '../../../../utils/security';
+import { useConfiguracionPublica } from '../../../../hooks/useConfiguracionPublica';
+import { textoSitio } from '../../../../utils/textosSitio';
 import { showAlert, showConfirm, showToast } from '../../../../utils/toast';
 
 /** Pedidos sobre los que cabe una solicitud: entregados, o cancelados que ya se pagaron (reembolso). */
@@ -40,6 +42,8 @@ const varianteEstado = (estado: string) =>
   estado === 'aprobada' ? 'success' : estado === 'rechazada' ? 'danger' : estado === 'pendiente' ? 'warning' : 'default';
 
 export default function DevolucionesPage() {
+  const { reglas, textos } = useConfiguracionPublica();
+  const t = (clave: string) => textoSitio(textos, clave, reglas.variables);
   const [lista, setLista] = useState<DevolucionApi[]>([]);
   const [pedidos, setPedidos] = useState<PedidoApi[]>([]);
   const [items, setItems] = useState<PedidoItemApi[]>([]);
@@ -145,7 +149,7 @@ export default function DevolucionesPage() {
         },
         { propios: true }
       );
-      showToast('Solicitud registrada.', 'success');
+      showToast(t('devoluciones.toastRegistrada'), 'success');
       limpiar();
       await cargar();
     } catch (e) {
@@ -179,7 +183,7 @@ export default function DevolucionesPage() {
             Devoluciones y cambios
           </h1>
           <p className="text-base md:text-lg" style={{ color: 'var(--encabezados-alterno)' }}>
-            Solicitudes registradas en el sistema según tus pedidos
+            {t('devoluciones.subtitulo')}
           </p>
         </div>
 
@@ -199,7 +203,7 @@ export default function DevolucionesPage() {
             Política
           </h3>
           <ul className="text-sm space-y-1" style={{ color: 'var(--encabezados-alterno)' }}>
-            <li>• Cambio: producto sellado y sin abrir (o con defecto de fábrica), dentro de {DIAS_CAMBIO_PRODUCTO} días naturales tras recogerlo</li>
+            <li>• Cambio: producto sellado y sin abrir (o con defecto de fábrica), dentro de {reglas.tienda.diasCambioProducto ?? DIAS_CAMBIO_PRODUCTO} días naturales tras recogerlo</li>
             <li>• Reembolso: solo por defecto de fábrica, error del salón o falta de existencias</li>
             <li>• El salón revisa cada solicitud y calcula el monto; puedes cancelarla mientras esté pendiente</li>
           </ul>
@@ -219,7 +223,7 @@ export default function DevolucionesPage() {
                 {lista.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8" style={{ color: 'var(--encabezados-alterno)' }}>
-                      No hay devoluciones registradas.
+                      {t('devoluciones.vacia')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -271,7 +275,7 @@ export default function DevolucionesPage() {
                   </Button>
                   {hasValidToken() && pedidos.length === 0 && (
                     <p className="text-sm mt-4" style={{ color: 'var(--encabezados-alterno)' }}>
-                      Necesitas un pedido entregado, o uno cancelado que ya hayas pagado.{' '}
+                      {t('devoluciones.requisito')}{' '}
                       <Link href="/cliente/tienda-online/mis-pedidos" className="underline font-medium">
                         Ver pedidos
                       </Link>

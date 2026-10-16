@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import DocumentoLegal, { SeccionDocumento } from '../components/legal/DocumentoLegal';
+import DocumentoVigente from '../components/legal/DocumentoVigente';
 import EncabezadoVersion from '../components/legal/EncabezadoVersion';
 import { metadataPublica } from '../utils/seo';
 import { documentoLegal } from '../utils/documentosLegales';
@@ -56,6 +57,7 @@ const CORREO = 'mildredfranco24@gmail.com';
 export default function PoliticaDeCookiesPage() {
   const aviso = documentoLegal('aviso-privacidad');
   return (
+    <DocumentoVigente slug="cookies">
     <DocumentoLegal
       titulo="Política de Cookies"
       secciones={SECCIONES}
@@ -230,5 +232,6 @@ export default function PoliticaDeCookiesPage() {
         </p>
       </Seccion>
     </DocumentoLegal>
+    </DocumentoVigente>
   );
 }

@@ -7,7 +7,7 @@ import { explicacionAnticipos, fechaLarga, NOTA_PLAZOS_TERMINOS, PLAZOS_SOLO_LEC
 import { COLOR_SUAVE, COLOR_TEXTO, MensajeError } from './piezas';
 import type { Errores } from './validacionConfiguracion';
 
-type Reglas = { anticiposDesde: string | null };
+type Reglas = { anticiposDesde: string | null } & Record<string, unknown>;
 
 interface Props {
   valor: Reglas;
@@ -35,7 +35,7 @@ export function FormReglas({ valor, respaldo, errores, onCambiar }: Props) {
         <input
           type="checkbox"
           checked={usarVariable}
-          onChange={(e) => onCambiar({ anticiposDesde: e.target.checked ? null : ultimaFecha || hoyEnMexico() })}
+          onChange={(e) => onCambiar({ ...valor, anticiposDesde: e.target.checked ? null : ultimaFecha || hoyEnMexico() })}
           aria-describedby="reglas-respaldo"
           className="h-5 w-5 shrink-0"
         />
@@ -56,7 +56,7 @@ export function FormReglas({ valor, respaldo, errores, onCambiar }: Props) {
           disabled={usarVariable}
           onChange={(e) => {
             setUltimaFecha(e.target.value);
-            onCambiar({ anticiposDesde: e.target.value });
+            onCambiar({ ...valor, anticiposDesde: e.target.value });
           }}
           aria-invalid={error ? true : undefined}
           aria-describedby={['reglas-explicacion', error && 'reglas-error'].filter(Boolean).join(' ')}

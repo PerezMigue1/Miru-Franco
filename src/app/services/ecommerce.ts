@@ -232,6 +232,8 @@ export interface PedidoApi {
   puedeRevocar?: boolean;
   /** Lo que se reintegraría al revocar: el total menos los reembolsos ya aprobados. */
   montoRevocable?: number;
+  /** Reglas con que se creó el pedido (plazo de pago en línea, días para cambios...); sin dato en los anteriores. */
+  reglas?: { plazoPagoLineaHoras?: number; diasCambioProducto?: number } | null;
 }
 
 function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
@@ -256,6 +258,7 @@ function normalizarPedido(raw: Record<string, unknown>): PedidoApi {
     usuarioNombre: usuarioObj?.nombre != null ? str(usuarioObj.nombre) : null,
     usuarioEmail: usuarioObj?.email != null ? str(usuarioObj.email) : null,
     direccionEnvioId: raw.direccionEnvioId != null ? str(raw.direccionEnvioId) : raw.direccion_envio_id != null ? str(raw.direccion_envio_id) : null,
+    ...(raw.reglas && typeof raw.reglas === 'object' && !Array.isArray(raw.reglas) ? { reglas: raw.reglas as PedidoApi['reglas'] } : {}),
     ...(Array.isArray(raw.items)
       ? {
           items: (raw.items as Record<string, unknown>[]).map((it) => {

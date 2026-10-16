@@ -7,13 +7,24 @@ import Button from '../../../components/ui/Button';
 import { obtenerHistorialEnPantalla, type EntradaHistorial, type SeccionConfiguracion } from '../../../services/configuracionSitio';
 import { fechaHoraMexico } from '../../../components/privacidad/textosPrivacidad';
 import { mensajeDeError } from '../../../utils/errorRed';
+import type { DefinicionRegla } from '../../../utils/reglasNegocio';
 import { cambiosDePermisos, cambiosDeSeccion, type PermisoCatalogo } from './cambiosConfiguracion';
+import { cambiosDeReglas } from './reglasNegocioAdmin';
 import { CambiosPermisos, COLOR_SUAVE, COLOR_TEXTO, ListaCambios, MensajeError } from './piezas';
 
 const POR_PAGINA = 10;
 
 /** Un cambio del historial: cuándo, quién y qué campos cambiaron (en permisos, claves agregadas y quitadas). */
-export function EntradaHistorialVista({ entrada, catalogo = [] }: { entrada: EntradaHistorial; catalogo?: PermisoCatalogo[] }) {
+export function EntradaHistorialVista({
+  entrada,
+  catalogo = [],
+  definiciones,
+}: {
+  entrada: EntradaHistorial;
+  catalogo?: PermisoCatalogo[];
+  /** En Reglas: para nombrar cada regla que cambió. */
+  definiciones?: DefinicionRegla[];
+}) {
   const esPermisos = entrada.clave.startsWith('permisos:');
   return (
     <li className="space-y-2 border-t pt-3" style={{ borderColor: 'var(--mf-linea-fuerte)' }}>
@@ -31,7 +42,12 @@ export function EntradaHistorialVista({ entrada, catalogo = [] }: { entrada: Ent
       {esPermisos ? (
         <CambiosPermisos {...cambiosDePermisos(entrada.valorAnterior, entrada.valorNuevo, catalogo)} />
       ) : (
-        <ListaCambios cambios={cambiosDeSeccion(entrada.clave as SeccionConfiguracion, entrada.valorAnterior, entrada.valorNuevo)} />
+        <ListaCambios
+          cambios={[
+            ...cambiosDeSeccion(entrada.clave as SeccionConfiguracion, entrada.valorAnterior, entrada.valorNuevo),
+            ...(entrada.clave === 'reglas' ? cambiosDeReglas(entrada.valorAnterior, entrada.valorNuevo, definiciones) : []),
+          ]}
+        />
       )}
     </li>
   );
@@ -43,10 +59,11 @@ interface Props {
   /** Cambia después de cada guardado: si el historial está abierto, se vuelve a leer. */
   version?: number;
   catalogo?: PermisoCatalogo[];
+  definiciones?: DefinicionRegla[];
 }
 
 /** Historial de una sección, plegado: se lee del API la primera vez que se abre. */
-export default function HistorialSeccion({ clave, version = 0, catalogo }: Props) {
+export default function HistorialSeccion({ clave, version = 0, catalogo, definiciones }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [entradas, setEntradas] = useState<EntradaHistorial[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +119,7 @@ export default function HistorialSeccion({ clave, version = 0, catalogo }: Props
           <>
             <ol className="space-y-3">
               {entradas.slice(0, visibles).map((e) => (
-                <EntradaHistorialVista key={e.id} entrada={e} catalogo={catalogo} />
+                <EntradaHistorialVista key={e.id} entrada={e} catalogo={catalogo} definiciones={definiciones} />
               ))}
             </ol>
             {entradas.length > visibles && (

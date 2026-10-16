@@ -8,6 +8,7 @@ import Textarea from '../ui/Textarea';
 import { crearDevolucion, listarPedidoItems, type CausaDevolucion, type PedidoApi, type PedidoItemApi, type TipoDevolucion } from '../../services/ecommerce';
 import { causasDe, DIAS_CAMBIO_PRODUCTO, etiquetaCausa, requiereArticulo } from '../../utils/politicaDevolucion';
 import { diaEnMexico } from '../../utils/fechaSoloDia';
+import { useConfiguracionPublica } from '../../hooks/useConfiguracionPublica';
 import { showToast } from '../../utils/toast';
 
 interface NuevaSolicitudDevolucionProps {
@@ -25,6 +26,7 @@ function esElegible(p: PedidoApi): boolean {
  * valida la política (plazo de 7 días, producto sellado, pedido pagado), la deja pendiente y calcula el monto.
  */
 export default function NuevaSolicitudDevolucion({ pedidos, onCreada }: NuevaSolicitudDevolucionProps) {
+  const { reglas } = useConfiguracionPublica();
   const elegibles = pedidos.filter(esElegible).sort((a, b) => b.id - a.id).slice(0, 100);
   const [pedidoId, setPedidoId] = useState('');
   const [items, setItems] = useState<PedidoItemApi[]>([]);
@@ -88,7 +90,7 @@ export default function NuevaSolicitudDevolucion({ pedidos, onCreada }: NuevaSol
     <Card variant="elevated" padding="lg">
       <h2 className="text-lg font-semibold text-menu-texto-principal">Nueva solicitud de cambio o reembolso</h2>
       <p className="mb-4 text-sm text-encabezados-alterno">
-        Cambio: producto sellado y sin abrir o con defecto de fábrica, dentro de {DIAS_CAMBIO_PRODUCTO} días naturales tras recogerlo.
+        Cambio: producto sellado y sin abrir o con defecto de fábrica, dentro de {reglas.tienda.diasCambioProducto ?? DIAS_CAMBIO_PRODUCTO} días naturales tras recogerlo.
         Reembolso: solo por defecto de fábrica, error del salón (producto distinto) o falta de existencias.
       </p>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

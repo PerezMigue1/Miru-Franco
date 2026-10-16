@@ -22,6 +22,8 @@ import {
   ClipboardList,
   Clock3,
   HandCoins,
+  CalendarOff,
+  Contact,
   ImagePlus,
   Images,
   LayoutDashboard,
@@ -86,6 +88,8 @@ const NAV_ITEMS: { label: string; href: string; icon: LucideIcon; permiso?: stri
   { label: 'Mi asistencia', href: '/operacion/mi-asistencia', icon: Clock3 },
   { label: 'Gestión de equipo', href: '/operacion/gestion-equipo', icon: UserCog, permiso: 'asistencia:gestionar' },
   { label: 'Galería', href: '/operacion/galeria', icon: Images, permiso: PERMISOS_GALERIA },
+  { label: 'Equipo en el sitio', href: '/operacion/equipo-sitio', icon: Contact, permiso: ['equipo:publico', 'configuracion:editar'] },
+  { label: 'Horario y días inhábiles', href: '/operacion/horario', icon: CalendarOff, permiso: 'horario:editar' },
   { label: 'Comisiones', href: '/operacion/comisiones', icon: HandCoins, permiso: PERMISOS_COMISIONES },
   { label: 'Anticipos por servicio', href: '/operacion/anticipos', icon: Wallet, permiso: 'servicios:escritura' },
 ];

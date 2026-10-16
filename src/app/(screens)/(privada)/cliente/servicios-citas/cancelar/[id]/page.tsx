@@ -13,8 +13,10 @@ import { estadoAnticipo } from '../../../../../../utils/anticipoCita';
 import { showToast } from '../../../../../../utils/toast';
 import {
   consultarPoliticaCancelacionAnticipo,
+  plazosDeCita,
   puedeConfirmarCancelacion,
   textoAnticipoAlCancelar,
+  textoCancelarSinAnticipo,
   toastCitaCancelada,
   type PoliticaCancelacionAnticipo,
 } from './avisoAnticipo';
@@ -23,6 +25,7 @@ import {
   citaGestionablePorClienta,
   mensajeErrorCancelarCita,
 } from '../../../../../../components/cliente/citaGestionable';
+import { useTextosSitio } from '../../../../../../hooks/useTextosSitio';
 
 const TZ_MEXICO = 'America/Mexico_City';
 
@@ -43,6 +46,7 @@ export default function CancelarCitaPage() {
   // Qué pasa con el anticipo pagado si cancela (regla del backend); null mientras carga o si no responde.
   const [politicaAnticipo, setPoliticaAnticipo] = useState<PoliticaCancelacionAnticipo | null>(null);
   const [cargandoPolitica, setCargandoPolitica] = useState(false);
+  const { textos, config } = useTextosSitio();
 
   useEffect(() => {
     if (!id || !Number.isFinite(Number(id))) {
@@ -88,9 +92,9 @@ export default function CancelarCitaPage() {
     setCancelando(true);
     setErrorCancelar(null);
     try {
-      const motivoCancelacion = [motivo, comentarios].filter(Boolean).join(' — ') || 'Sin motivo especificado';
+      const motivoCancelacion = [motivo, comentarios].filter(Boolean).join(': ') || 'Sin motivo especificado';
       await cancelarCita(Number(id), { motivoCancelacion }, { propios: true });
-      const avisoCancelada = toastCitaCancelada(cita && estadoAnticipo(cita) === 'pagado' ? politicaAnticipo : null);
+      const avisoCancelada = toastCitaCancelada(cita && estadoAnticipo(cita) === 'pagado' ? politicaAnticipo : null, new Date(), textos);
       showToast(avisoCancelada, 'success');
       router.push('/cliente/servicios-citas/mis-citas');
     } catch (err) {
@@ -141,7 +145,13 @@ export default function CancelarCitaPage() {
   });
   // Anticipo pagado: se devuelve o no según la política de anticipos (art. 56), que calcula el backend.
   const anticipoPagado = estadoAnticipo(cita) === 'pagado';
-  const avisoAnticipo = textoAnticipoAlCancelar(cita.anticipoRequerido ?? 0, politicaAnticipo);
+  // Los plazos de la política son los guardados en la cita; los textos, los de Admin > Textos del sitio.
+  const avisoAnticipo = textoAnticipoAlCancelar(cita.anticipoRequerido ?? 0, politicaAnticipo, new Date(), { textos, ...plazosDeCita(cita.reglas) });
+  const reglasCita = (cita.reglas ?? {}) as { horasAvisoCancelarReagendar?: unknown };
+  const horasAviso =
+    typeof reglasCita.horasAvisoCancelarReagendar === 'number' ? reglasCita.horasAvisoCancelarReagendar : config.reglas.citas.horasAvisoCancelarReagendar;
+  // Sin anticipo pagado cancelar no cuesta; antes decía "sin costo" también con anticipo pagado y contradecía la política.
+  const avisoSinAnticipo = textoCancelarSinAnticipo(horasAviso, textos);
 
   if (mostrarConfirmacion) {
     return (
@@ -183,7 +193,7 @@ export default function CancelarCitaPage() {
                   Cita a cancelar:
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Servicio:</strong> {cita.servicioNombre ?? '—'}
+                  <strong>Servicio:</strong> {cita.servicioNombre ?? 'No especificado'}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Fecha:</strong> {fecha}
@@ -192,7 +202,7 @@ export default function CancelarCitaPage() {
                   <strong>Hora:</strong> {hora}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Especialista:</strong> {cita.especialistaNombre ?? '—'}
+                  <strong>Especialista:</strong> {cita.especialistaNombre ?? 'No especificado'}
                 </p>
               </div>
             </div>
@@ -244,7 +254,7 @@ export default function CancelarCitaPage() {
               </h2>
               <div className="space-y-2">
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Servicio:</strong> {cita.servicioNombre ?? '—'}
+                  <strong>Servicio:</strong> {cita.servicioNombre ?? 'No especificado'}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
                   <strong>Fecha:</strong> {fecha}
@@ -253,7 +263,7 @@ export default function CancelarCitaPage() {
                   <strong>Hora:</strong> {hora}
                 </p>
                 <p style={{ color: 'var(--encabezados-alterno)' }}>
-                  <strong>Especialista:</strong> {cita.especialistaNombre ?? '—'}
+                  <strong>Especialista:</strong> {cita.especialistaNombre ?? 'No especificado'}
                 </p>
               </div>
             </div>
@@ -302,8 +312,7 @@ export default function CancelarCitaPage() {
                     </>
                   ) : (
                     <>
-                      <strong>Importante:</strong> Puedes cancelar sin costo antes de que empiece tu cita.
-                      Si solo necesitas otro horario, te recomendamos reprogramarla.
+                      <strong>Importante:</strong> {avisoSinAnticipo}
                     </>
                   )}
                 </p>

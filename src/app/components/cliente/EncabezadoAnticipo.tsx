@@ -6,7 +6,7 @@ import { CircleAlert, Clock3, HandCoins, Undo2 } from 'lucide-react';
 import SelloConfirmacion from './SelloConfirmacion';
 import OpcionesAnticipo from './OpcionesAnticipo';
 import { consultarEstadoAnticipo, type CitaApi, type EstadoPagoAnticipo } from '../../services/citas';
-import { avisoPagoEnSalon, limiteAnticipo, tiempoRestante } from '../../utils/anticipoCita';
+import { avisoPagoEnSalon, limiteAnticipo, minutosSalonDeCita, tiempoRestante } from '../../utils/anticipoCita';
 import { formatearPrecioMXN } from '../../utils/formatoPrecio';
 import { useAhora } from '../../hooks/useAhora';
 
@@ -133,7 +133,7 @@ export default function EncabezadoAnticipo({ cita, volvioDeMercadoPago }: { cita
       <p className="text-lg text-encabezados-alterno">
         {estado === 'rechazado' ? 'Tu pago no se completó. ' : ''}
         {enSalon ? (
-          avisoPagoEnSalon(venceEn)
+          avisoPagoEnSalon(venceEn, minutosSalonDeCita(cita))
         ) : (
           <>Paga el anticipo de <span className="mf-cifras font-semibold text-menu-texto-principal">{monto}</span> para confirmar tu cita.</>
         )}

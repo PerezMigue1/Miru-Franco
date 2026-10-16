@@ -9,9 +9,12 @@ import { conAceptacionDeAnticipos, ENLACE_POLITICA_ANTICIPOS, MENSAJE_FALTA_ANTI
 import { puedeElegirPagoEnSalon, textosAdvertenciaAnticipo } from './advertenciaAnticipo';
 import { crearPreferenciaAnticipo, pagarAnticipoEnSalon, type CitaApi } from '../../services/citas';
 import { mensajeUsuarioDesdeErrorApi } from '../../utils/apiErrorMessage';
+import { useTextosSitio } from '../../hooks/useTextosSitio';
+import { minutosSalonDeCita } from '../../utils/anticipoCita';
+import { textoMetodosSalon } from '../../utils/formaPago';
 
 interface Props {
-  cita: Pick<CitaApi, 'id' | 'fechaHoraInicio' | 'anticipoEnSalon'>;
+  cita: Pick<CitaApi, 'id' | 'fechaHoraInicio' | 'anticipoEnSalon' | 'reglas'>;
   venceEn: string | null;
   enSalon: boolean;
   ahora: Date;
@@ -31,7 +34,14 @@ export default function OpcionesAnticipo({ cita, venceEn, enSalon, ahora, rutaOr
   const [ocupado, setOcupado] = useState<'linea' | 'salon' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const idCasilla = `anticipo-politica-${cita.id}`;
-  const ofrecerSalon = !enSalon && puedeElegirPagoEnSalon({ fechaHoraInicio: cita.fechaHoraInicio, anticipoEnSalon: enSalon }, ahora);
+  const { t, textos, config } = useTextosSitio();
+  const { reglas } = config;
+  const minutosSalon = minutosSalonDeCita(cita, reglas);
+  // Solo las formas de pago activas en Admin > Configuración del sitio > Reglas.
+  const ofrecerLinea = reglas.pagos.mercadoPagoAnticipos;
+  const ofrecerSalon =
+    !enSalon && reglas.citas.permitirAnticipoEnSalon && puedeElegirPagoEnSalon({ fechaHoraInicio: cita.fechaHoraInicio, anticipoEnSalon: enSalon }, ahora, minutosSalon);
+  const metodosSalon = textoMetodosSalon(reglas, textos);
 
   const revisarCasilla = () => {
     if (acepta) return true;
@@ -70,12 +80,13 @@ export default function OpcionesAnticipo({ cita, venceEn, enSalon, ahora, rutaOr
   return (
     <div className="space-y-3 text-left">
       <ul className="space-y-1.5 rounded-[12px] bg-fondos-suaves px-4 py-3 text-sm text-encabezados-alterno">
-        {textosAdvertenciaAnticipo({ enSalon, venceEn, ahora }).map((t) => (
+        {textosAdvertenciaAnticipo({ enSalon, venceEn, ahora, reglas, minutosAntesPagoSalon: minutosSalon, plazoAnticipoHoras: cita.reglas?.plazoAnticipoHoras, textos }).map((t) => (
           <li key={t}>{t}</li>
         ))}
+        {(enSalon || ofrecerSalon) && metodosSalon && <li>{metodosSalon}</li>}
         <li>
           <Link href={ENLACE_POLITICA_ANTICIPOS} className="inline-flex min-h-11 items-center font-semibold text-menu-texto-principal underline underline-offset-2">
-            Leer la Política de anticipos y cancelación
+            {t('anticipos.enlacePolitica')}
           </Link>
         </li>
       </ul>
@@ -88,12 +99,14 @@ export default function OpcionesAnticipo({ cita, venceEn, enSalon, ahora, rutaOr
         }}
         error={errorCasilla}
       />
-      <Button fullWidth size="lg" onClick={() => void pagarEnLinea()} disabled={ocupado !== null}>
-        {ocupado === 'linea' ? 'Abriendo Mercado Pago…' : 'Pagar anticipo con Mercado Pago'}
-      </Button>
+      {ofrecerLinea && (
+        <Button fullWidth size="lg" onClick={() => void pagarEnLinea()} disabled={ocupado !== null}>
+          {ocupado === 'linea' ? 'Abriendo Mercado Pago…' : t('anticipos.botonMercadoPago')}
+        </Button>
+      )}
       {ofrecerSalon && (
         <Button fullWidth size="lg" variant="outline" onClick={() => void pagarEnSalon()} disabled={ocupado !== null}>
-          <Store size={18} aria-hidden /> {ocupado === 'salon' ? 'Guardando…' : 'Pagar en el salón'}
+          <Store size={18} aria-hidden /> {ocupado === 'salon' ? 'Guardando…' : t('anticipos.botonSalon')}
         </Button>
       )}
       {error && (
